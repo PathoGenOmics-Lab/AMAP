@@ -11,7 +11,6 @@ import pandas as pd
 from io import StringIO
 from typing import List, Any, Tuple
 
-
 def get_seq(chck_rds: list, fasta_file: str, fasta_name: str) -> List[Tuple[str, int]]:
     chck_rds_set = set(chck_rds)  # Convert the list to a set for faster searching
     selected_seqs = [seq_record for seq_record in SeqIO.parse(fasta_file, "fasta") if seq_record.id in chck_rds_set] # Use list comprehension for faster, more readable code
@@ -72,7 +71,6 @@ def classify_bakta_records(bakta_records, blast_records, output_file='classified
     case3 = set()
     case4 = set()
 
-    # Convertir bakta_records en un DataFrame de pandas
     bakta_df = pd.DataFrame([{'id': record.id, 'sequence_nt': str(record.seq)} for record in bakta_records])
 
     # Combinar bakta_df y blast_records usando 'id' y 'qseqid' como claves
@@ -121,8 +119,7 @@ def classify_bakta_records(bakta_records, blast_records, output_file='classified
     results_df.to_csv(output_file + '_classifiedcases.tsv', sep='\t', index=False)
 
     return case1, case2, case3, case4
-
-   
+ 
 def process_genome(genome: Tuple[str, str], current_working_directory: str, blast_db_multi: str) -> None:
     name, path = genome[0], genome[1]
     os.chdir(path)

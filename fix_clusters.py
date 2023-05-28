@@ -87,3 +87,9 @@ def process_element(element):
         return [element.split(";")[0], length, element]
     else:
         return [element.split("_")[0], int(element.split("_")[1].split("-")[1]) - int(element.split("_")[1].split("-")[0]), element]
+
+def match_elements(l_bak, l_gen):
+    non_matching_bak = [bak for bak in l_bak if not any(bak[1] == gen[1] for gen in l_gen)]
+    non_matching_gen = [gen for gen in l_gen if not any(gen[1] == bak[1] for bak in l_bak)]
+    matching_elements = [(bak, gen) for bak in l_bak for gen in l_gen if bak[1] == gen[1]]
+    return non_matching_bak, non_matching_gen, matching_elements

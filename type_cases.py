@@ -24,3 +24,15 @@ def create_database(fasta: str, basename: str) -> None:
 def get_tsv(tsvfile: str) -> List[List[str]]:
     with open(tsvfile,'r') as intsv:
         return [line.strip('\n').split('\t') for line in intsv]
+
+def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
+    # Create a BLASTN command line with the specified parameters and output format 6.
+    blastn_cline_tab = NcbiblastnCommandline(query=in_query, db=in_subject, outfmt='6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qcovs qcovhsp qlen slen', dust="no")
+    blastn_out_tab, _ = blastn_cline_tab()
+    # Convert the tabular BLASTN output to a list of dictionaries.
+    tab_data = [
+        dict(zip(['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qcovs', 'qcovhsp', 'qlen', 'slen'], line.split("\t")))
+        for line in blastn_out_tab.strip().split("\n")
+    ]
+    df = pd.DataFrame(tab_data) # Convert the tabular BLASTN results to a DataFrame.
+    return df    # Return the tabular BLASTN results.

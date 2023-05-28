@@ -24,3 +24,51 @@ def do_ranges_overlap(a, b):
     b_start, b_end = sorted(b)
 
     return (a_start < b_end) and (a_end > b_start)
+
+def create_database(fasta: str, basename: str) -> None:
+    subprocess.run(['makeblastdb', '-in', fasta, '-dbtype', 'nucl', '-out', basename])
+
+def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
+    blastn_cline_tab = NcbiblastnCommandline(query=in_query, db=in_subject, outfmt='6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qcovs qcovhsp qlen slen', dust="no")
+    blastn_out_tab, _ = blastn_cline_tab()
+    blastn_cline_xml = NcbiblastnCommandline(query=in_query, db=in_subject, outfmt='5', dust="no")
+    blastn_out_xml, _ = blastn_cline_xml()
+
+    tab_data = [
+        dict(zip(['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qcovs', 'qcovhsp', 'qlen', 'slen'], line.split("\t")))
+        for line in blastn_out_tab.strip().split("\n")
+    ] if len(blastn_out_tab.strip()) > 0 else []
+
+    blastn_out_xml = StringIO(blastn_out_xml)
+    if blastn_out_xml.getvalue().strip():
+        blast_records = list(NCBIXML.parse(blastn_out_xml))
+    else:
+        blast_records = []
+
+    combined_results = []
+
+    for tab in tab_data:
+        query_id = tab['qseqid']
+        subject_id = tab['sseqid']
+        xml_record = next((record for record in blast_records if record.query == query_id and any(subject_id in alignment.hit_def for alignment in record.alignments)), None)
+
+        if xml_record is not None:
+            combined_result = {
+                "tab_data": tab,
+                "xml_data": xml_record,
+                "subject_name": xml_record.descriptions[0].title.split()[1] if len(xml_record.descriptions) > 0 else None
+            }
+            combined_results.append(combined_result)
+
+    df = pd.DataFrame.from_records(
+        [
+            {
+                **{"" + k: v for k, v in result["tab_data"].items()},
+                "xml_data": result["xml_data"],
+                "subject_name": result["subject_name"]
+            }
+            for result in combined_results
+        ]
+    )
+
+    return df

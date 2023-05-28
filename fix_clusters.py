@@ -157,22 +157,22 @@ def process_line(line):
     rv_elements = [part for part in line_parts if "Rv" in part]
     
     # Parse rv_elements once before the loop
-    rv_elements_parsed = [(element, int(element.split("_")[1].split("-")[1]) - int(element.split("_")[1].split("-")[0])) for element in rv_elements]
+    rv_elements_dict = {element: int(element.split("_")[1].split("-")[1]) - int(element.split("_")[1].split("-")[0]) for element in rv_elements}
 
     matching_dict = {}
-    used_rv_elements = set()
     for g_element in g_elements:
         el = process_element(g_element)
-        g_start, g_end = [int(x) for x in el[2].split(";")[1].split(",")]
+        g_start, g_end = map(int, el[2].split(";")[1].split(","))
         g_length = g_end - g_start
 
-        for rv_element, rv_length in rv_elements_parsed:
-            if rv_element not in used_rv_elements and g_length == rv_length:
-                matching_dict[g_element] = rv_element
-                used_rv_elements.add(rv_element)
-                break
+        # Find a match in rv_elements_dict
+        matched_rv = next((rv for rv, rv_length in rv_elements_dict.items() if g_length == rv_length), None)
+        if matched_rv is not None:
+            matching_dict[g_element] = matched_rv
+            del rv_elements_dict[matched_rv]  # This ensures that a RV element can't be used twice
 
     return matching_dict
+
 
 create_database("G48915_L4.fna", "G48915_L4database")
 

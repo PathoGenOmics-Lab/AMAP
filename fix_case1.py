@@ -71,3 +71,35 @@ def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
 
     # Return the combined BLAST
     return df
+
+def process_blast1_results(blast1: pd.DataFrame, case1bakta_records) -> Tuple[List[str], List[str], List[str]]:
+    lista_resultados = []
+    lista_111 = set()
+    lista_122 = set()
+
+    for _, row in blast1.iterrows():
+        qseqid = row['qseqid']
+        sseqid = row['sseqid']
+        slen = int(row['slen'])
+        qlen = int(row['qlen'])
+        xml_data = row['xml_data']
+        for alignment in xml_data.alignments:
+            for hsp in alignment.hsps:
+                matches = hsp.match.count('|')
+                numb = (matches/slen)*100
+                if numb >= 80:
+                    lista_111.add(qseqid) 
+                    res = f"{qseqid}\t{sseqid}\t{matches}\t{slen}\t{qlen}\t{numb}\t1.1.1. remove\n"
+                    logging.info(f"Resultados:\n{qseqid}\t1.1.1. remove\n")
+                    lista_resultados.append(res)
+                elif qseqid not in lista_111:
+                    lista_122.add(qseqid)
+                    res = f"{qseqid}\t{sseqid}\t{matches}\t{slen}\t{qlen}\t{numb}\t1.1.2. stay\n"
+                    lista_resultados.append(res)
+
+    for record in case1bakta_records:
+        if record.id not in lista_111 and record.id not in lista_122:
+            lista_122.add(record.id)
+
+    return lista_resultados, list(lista_111), list(lista_122)
+

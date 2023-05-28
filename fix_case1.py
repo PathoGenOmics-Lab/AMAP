@@ -103,3 +103,40 @@ def process_blast1_results(blast1: pd.DataFrame, case1bakta_records) -> Tuple[Li
 
     return lista_resultados, list(lista_111), list(lista_122)
 
+def process_blast112_results(blast112: pd.DataFrame, lista_1121: List[str], lista_122: List[str]) -> Tuple[List[str], List[str]]:
+    lista_resultados = []
+    lista_1122 = set()
+    
+    processed_qseqids = set()
+
+    for _, row in blast112.iterrows():
+        qseqid = row['qseqid']
+        sseqid = row['sseqid']
+        slen = int(row['slen'])
+        qlen = int(row['qlen'])
+        xml_data = row['xml_data']
+        for alignment in xml_data.alignments:
+            for hsp in alignment.hsps:
+                matches = hsp.match.count('|')
+                numb = (matches/qlen)*100
+                if numb >= 80:
+                    res = f"{qseqid}\t{sseqid}\t{matches}\t{slen}\t{qlen}\t{numb}\t1.1.2.1. remove\n"
+                    lista_resultados.append(res)
+                    lista_1121.append(qseqid) 
+                elif qseqid not in lista_1121:
+                    res = f"{qseqid}\t{sseqid}\t{matches}\t{slen}\t{qlen}\t{numb}\t1.1.2.2. stay\n"
+                    lista_resultados.append(res)
+                    lista_1122.add(qseqid)
+
+                processed_qseqids.add(qseqid)
+
+    # Clasificar como 1.1.2.2 si no hay resultados de BLAST
+    for qseqid in lista_122:
+        if qseqid not in processed_qseqids:
+            res = f"{qseqid}\tNo hit\t0\t0\t0\t0\t1.1.2.2. stay\n"
+            lista_resultados.append(res)
+            lista_1122.add(qseqid)
+
+    return lista_resultados, list(lista_1122)
+
+

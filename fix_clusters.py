@@ -18,3 +18,9 @@ def get_seq(chck_rds: list, fasta_file: str, fasta_name: str) -> List[Tuple[str,
     SeqIO.write(selected_seqs, fasta_name, "fasta") # Write the selected sequences to a fasta file
     seq_lengths = [(seq_record.id, len(seq_record.seq)) for seq_record in selected_seqs] # Use list comprehension to create the list of sequence lengths
     return seq_lengths
+
+def do_ranges_overlap(a, b):
+    a_start, a_end = sorted(a)
+    b_start, b_end = sorted(b)
+
+    return (a_start < b_end) and (a_end > b_start)

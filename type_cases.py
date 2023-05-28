@@ -114,4 +114,36 @@ def classify_bakta_records(bakta_records, blast_records, output_file='classified
     results_df.to_csv(output_file + '_classifiedcases.tsv', sep='\t', index=False)
     return case1, case2, case3, case4
  
+def main():
+    parser = argparse.ArgumentParser(description="Clasifica los registros de Bakta y BLAST y genera los archivos fasta respectivos.")
+    parser.add_argument('-t', '--tsv_file', help="Ruta al archivo Bakta TSV que contiene los genomas a procesar.")
+    parser.add_argument('-r', '--reference_multi_fa', help="Ruta al archivo multi-fasta de referencia para crear la base de datos de BLAST.")
+    parser.add_argument('-n', '--blast_db_multi', help="Nombre de la base de datos de BLAST a crear.")
+    args = parser.parse_args()
+
+    create_database(args.reference_multi_fa, args.blast_db_multi)  # Crear base de datos de BLAST   
+    tsv_list = get_tsv(args.tsv_file)  # Obtener lista de genomas a procesar desde el archivo TSV
+    current_working_directory = os.getcwd()
+    
+    for genome in tsv_list: # Procesar cada genoma
+        name, path = genome[0], genome[1]
+        
+        # Cambiar a la carpeta del genoma
+        os.chdir(path)
+        
+        # Obtener información del GFF y ejecutar BLAST
+        get_gff(name)
+        bakta_records = SeqIO.parse(f"{name}_bakta.multifa", "fasta")
+        blast_db_path = os.path.join(current_working_directory, args.blast_db_multi)
+        blast_records = blastn(f"{name}_bakta.multifa", blast_db_path)
+
+        # Clasificar los registros de Bakta
+        cases = classify_bakta_records(bakta_records, blast_records, name)
+        
+        # Generar los archivos fasta para cada caso
+        for case_num, case in enumerate(cases, start=1):
+            get_seq(case, f"{name}_bakta.multifa", f"{name}_case{case_num}.bakta.fa")
+
+if __name__ == "__main__":
+    main()
    

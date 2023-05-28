@@ -79,28 +79,34 @@ def classify_bakta_records(bakta_records, blast_records, output_file='classified
 
     # Reemplazar NaN por -1
     merged_df.fillna(-1, inplace=True)
+    
+    # Convertir las columnas relevantes a int
+    merged_df['qlen'] = merged_df['qlen'].astype(int)
+    merged_df['slen'] = merged_df['slen'].astype(int)
+    merged_df['mismatch'] = merged_df['mismatch'].astype(int)
+    merged_df['gapopen'] = merged_df['gapopen'].astype(int)
+    merged_df['length'] = merged_df['length'].astype(int)
+    merged_df['qcovhsp'] = merged_df['qcovhsp'].astype(int)
+
     merged_df.to_csv(output_file + '_blastres.tsv', sep='\t', index=False)
+    
+    # Clasificar cada id
+    for id in bakta_df['id']:
+        in_case3 = False
+        for _, row in merged_df[merged_df['id'] == id].iterrows():
+            if row['qseqid'] == -1:
+                case1.add(id)
+            elif row['qlen'] == row['slen'] and row['mismatch'] == 0 and row['gapopen'] == 0 and row['qlen'] == row['length'] and row['qcovhsp'] == 100:
+                case2.add(id)
+                break
+            elif row['qlen'] == row['slen']:
+                case3.add(id)
+                in_case3 = True
+            elif not in_case3 and (row['qlen'] > row['slen'] or row['qlen'] < row['slen']):
+                case4.add(id)
 
-    # Case 1: Los registros que no tienen coincidencia en los registros de blast
-    case1 = set(merged_df[merged_df['qseqid'] == -1]['id'])
-
-    # Case 2: Los registros con una coincidencia perfecta en los registros de blast
-    perfect_match_condition = (merged_df['qlen'] == merged_df['slen']) & \
-                              (merged_df['mismatch'] == 0) & \
-                              (merged_df['gapopen'] == 0) & \
-                              (merged_df['qlen'] == merged_df['length']) & \
-                              (merged_df['qcovhsp'] == 100)
-    case2 = set(merged_df[perfect_match_condition]['id'])
-
-    # Case 3: Los registros que tienen la misma longitud que su coincidencia en los registros de blast, pero no son una coincidencia perfecta
-    same_length_condition = (merged_df['qlen'] == merged_df['slen']) & \
-                            ~perfect_match_condition
-    case3 = set(merged_df[same_length_condition]['id'])
-
-    # Case 4: Los registros cuya longitud difiere de su coincidencia en los registros de blast y que no estan en el caso 3
-    length_diff_condition = (merged_df['qlen'] != merged_df['slen']) & \
-                            ~merged_df['id'].isin(case3)
-    case4 = set(merged_df[length_diff_condition]['id'])
+    # Eliminar los elementos de case3 que también están en case4
+    case3 = case3 - case4
 
     # Crear un DataFrame para almacenar los resultados
     results = []
@@ -112,6 +118,7 @@ def classify_bakta_records(bakta_records, blast_records, output_file='classified
 
     # Guardar los resultados en un archivo TSV
     results_df.to_csv(output_file + '_classifiedcases.tsv', sep='\t', index=False)
+
     return case1, case2, case3, case4
  
 def main():

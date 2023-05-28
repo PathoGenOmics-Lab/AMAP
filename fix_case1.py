@@ -21,3 +21,7 @@ def get_seq(chck_rds: list, fasta_file: str, fasta_name: str) -> List[Tuple[str,
 
 def create_database(fasta: str, basename: str) -> None:
     os.system(f'makeblastdb -in {fasta} -dbtype nucl -out {basename}')
+
+def get_tsv(tsvfile: str) -> List[List[str]]:
+    with open(tsvfile,'r') as intsv:
+        return [line.strip('\n').split('\t') for line in intsv]

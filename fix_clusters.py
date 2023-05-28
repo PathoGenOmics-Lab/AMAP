@@ -19,12 +19,6 @@ def get_seq(chck_rds: list, fasta_file: str, fasta_name: str) -> List[Tuple[str,
     seq_lengths = [(seq_record.id, len(seq_record.seq)) for seq_record in selected_seqs] # Use list comprehension to create the list of sequence lengths
     return seq_lengths
 
-def do_ranges_overlap(a, b):
-    a_start, a_end = sorted(a)
-    b_start, b_end = sorted(b)
-
-    return (a_start < b_end) and (a_end > b_start)
-
 def create_database(fasta: str, basename: str) -> None:
     subprocess.run(['makeblastdb', '-in', fasta, '-dbtype', 'nucl', '-out', basename])
 
@@ -155,9 +149,6 @@ def process_non_matching_elements_modified(non_matching_gen, enter, bakta_coords
                     break  # Sal del bucle una vez que encuentres una coincidencia que no se haya utilizado todavía
     return lista
 
-def ranges_overlap(start1, end1, start2, end2):
-    return max(int(start1), int(start2)) <= min(int(end1), int(end2))
-
 def process_line(line):
     line_parts = line.split(".")
     g_elements = [part for part in line_parts if "G48915_L4_" in part]
@@ -203,17 +194,12 @@ with open("AQUI.G48915_L4.cleancoord.tsv", "w") as enter:
                         lgene =[gen[0], int(gen[1].split("-")[1]) - int(gen[1].split("-")[0]), gene]
                         
                         lista_coordenadas = process_non_matching_elements([lgene], enter, lista_coordenadas)     
-####
+
                     elif "case1" in element:
-####
+
                         enter.write(str(element) + "\n") 
 
             if "Cluster -1" not in line:
-            #if "Cluster 3635" in line:
-            #if "Cluster 155" in line:
-            #if "Cluster 824" in line:
-            #if "Cluster 2258" in line:
-            #if "Cluster 821" in line:
                 l = line.strip("\n").split(":")
                 cluster = l[0]
                 rvs, g_genes, diff, case1, case2, case3, case4 = count_cases(l[1])  # print(cluster,case1,case2,case3,case4,diff,rvs)

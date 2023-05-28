@@ -139,4 +139,83 @@ def process_blast112_results(blast112: pd.DataFrame, lista_1121: List[str], list
 
     return lista_resultados, list(lista_1122)
 
+def main():
+    """
+    Esta es la función principal que ejecuta el análisis.
+    """
+    parser = argparse.ArgumentParser(description="")
+    parser.add_argument('-t', dest="tsv_file", help="Path to the Bakta multi-fasta file.")
+    args = parser.parse_args()
+
+    caso1h37rv = "case1_H37Rv.fasta"
+    referencia = "reference.fa"
+    create_database(referencia, "ref_fasta")
+    create_database(caso1h37rv, "ref_case1")
+
+    tsv_list = get_tsv(args.tsv_file)
+    current_working_directory = os.path.abspath('.')
+
+    with open("resultados.txt","w") as salida:
+        for genome in tsv_list:
+            name, path = genome
+            os.chdir(path)
+            caso1anot = f"{name}_case1.bakta.fa"
+            case1bakta_records = SeqIO.parse(caso1anot, "fasta")
+            blast1 = blastn(caso1anot, os.path.join(current_working_directory, "ref_case1"))
+
+            lista_resultados, lista_111, lista_122 = process_blast1_results(blast1, case1bakta_records)
+
+            get_seq(lista_122, caso1anot, "case112.fasta")
+            blast112 = blastn("case112.fasta", os.path.join(current_working_directory, "ref_fasta"))
+
+            lista_1121 = []
+            lista_resultados_112, lista_1122 = process_blast112_results(blast112, lista_1121, lista_122)
+
+            lista_resultados.extend(lista_resultados_112)
+            
+            highest_percentage = process_results(lista_resultados)
+        
+            updated_list = [format_entry(qseqid, entry) for qseqid, entry in highest_percentage.items()]
+            
+            with open(f"{name}_case1.final.tsv","w") as salida1:
+                for i in updated_list:
+                    sentencia = f"{name}\t{i}"
+                    data = i.split("\t")
+                    salida.write(sentencia)
+                    sentencia = f"{data[0]}\t{data[6].strip()}\t0\t0\tNA\n"
+                    salida1.write(sentencia)
+
+def process_results(lista_resultados):
+    """
+    Procesa la lista de resultados y devuelve el porcentaje más alto para cada qseqid.
+    """
+    highest_percentage = {}
+    for item in lista_resultados:
+        data = item.split("\t")
+        qseqid = data[0]
+        sseqid = data[1]
+        matches = int(data[2])
+        slen = int(data[3])
+        qlen = int(data[4])
+        numb = float(data[5])
+        category = data[6]
+        
+        if qseqid in highest_percentage:
+            current_category = highest_percentage[qseqid]["category"]
+            if category.startswith("remove") and not current_category.startswith("remove"):
+                highest_percentage[qseqid] = {"sseqid": sseqid, "matches": matches, "slen": slen, "qlen": qlen, "numb": numb, "category": category}
+            elif numb > highest_percentage[qseqid]["numb"]:
+                highest_percentage[qseqid] = {"sseqid": sseqid, "matches": matches, "slen": slen, "qlen": qlen, "numb": numb, "category": category}
+        else:
+            highest_percentage[qseqid] = {"sseqid": sseqid, "matches": matches, "slen": slen, "qlen": qlen, "numb": numb, "category": category}
+    return highest_percentage
+
+def format_entry(qseqid, entry):
+    """
+    Formatea una entrada de la lista de resultados.
+    """
+    return "\t".join([qseqid, entry["sseqid"], str(entry["matches"]), str(entry["slen"]), str(entry["qlen"]), str(entry["numb"]), entry["category"]])
+
+if __name__ == "__main__":
+    main()
 

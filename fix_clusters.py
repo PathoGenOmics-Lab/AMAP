@@ -72,3 +72,11 @@ def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
     )
 
     return df
+
+def count_cases(genes):
+    g_genes = genes.split(".")
+    cases = ["case1", "case2", "case3", "case4"]
+    counts = {case: genes.count(case) for case in cases}
+    rvs = genes.count("Rv")
+    diff = rvs - sum(counts.values())
+    return rvs, g_genes, diff, counts["case1"], counts["case2"], counts["case3"], counts["case4"]

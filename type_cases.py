@@ -64,3 +64,54 @@ def get_gff(name: str):
 
     extracted_sequences = filtered_df.apply(extract_sequence, axis=1, args=(unique_seq,))
     SeqIO.write(extracted_sequences.tolist(), name + '_bakta.multifa', "fasta")
+
+def classify_bakta_records(bakta_records, blast_records, output_file='classified_cases.tsv'):
+    case1 = set()
+    case2 = set()
+    case3 = set()
+    case4 = set()
+
+    # Convertir bakta_records en un DataFrame de pandas
+    bakta_df = pd.DataFrame([{'id': record.id, 'sequence_nt': str(record.seq)} for record in bakta_records])
+
+    # Combinar bakta_df y blast_records usando 'id' y 'qseqid' como claves
+    merged_df = pd.merge(bakta_df, blast_records, left_on='id', right_on='qseqid', how='left')
+
+    # Reemplazar NaN por -1
+    merged_df.fillna(-1, inplace=True)
+    merged_df.to_csv(output_file + '_blastres.tsv', sep='\t', index=False)
+
+    # Case 1: Los registros que no tienen coincidencia en los registros de blast
+    case1 = set(merged_df[merged_df['qseqid'] == -1]['id'])
+
+    # Case 2: Los registros con una coincidencia perfecta en los registros de blast
+    perfect_match_condition = (merged_df['qlen'] == merged_df['slen']) & \
+                              (merged_df['mismatch'] == 0) & \
+                              (merged_df['gapopen'] == 0) & \
+                              (merged_df['qlen'] == merged_df['length']) & \
+                              (merged_df['qcovhsp'] == 100)
+    case2 = set(merged_df[perfect_match_condition]['id'])
+
+    # Case 3: Los registros que tienen la misma longitud que su coincidencia en los registros de blast, pero no son una coincidencia perfecta
+    same_length_condition = (merged_df['qlen'] == merged_df['slen']) & \
+                            ~perfect_match_condition
+    case3 = set(merged_df[same_length_condition]['id'])
+
+    # Case 4: Los registros cuya longitud difiere de su coincidencia en los registros de blast y que no estan en el caso 3
+    length_diff_condition = (merged_df['qlen'] != merged_df['slen']) & \
+                            ~merged_df['id'].isin(case3)
+    case4 = set(merged_df[length_diff_condition]['id'])
+
+    # Crear un DataFrame para almacenar los resultados
+    results = []
+    for case, ids in zip(['case1', 'case2', 'case3', 'case4'], [case1, case2, case3, case4]):
+        for id in ids:
+            results.append({'id': id, 'case': case})
+
+    results_df = pd.DataFrame(results)
+
+    # Guardar los resultados en un archivo TSV
+    results_df.to_csv(output_file + '_classifiedcases.tsv', sep='\t', index=False)
+    return case1, case2, case3, case4
+ 
+   

@@ -77,10 +77,12 @@ def count_cases(genes):
 
 def process_element(element):
     if "case" in element:
-        length = int(element.split(";")[1].split(",")[1]) - int(element.split(";")[1].split(",")[0])
+        parts = element.split(";")[1].split(",")
+        length = int(parts[1]) - int(parts[0])
         return [element.split(";")[0], length, element]
     else:
-        return [element.split("_")[0], int(element.split("_")[1].split("-")[1]) - int(element.split("_")[1].split("-")[0]), element]
+        parts = element.split("_")[1].split("-")
+        return [element.split("_")[0], int(parts[1]) - int(parts[0]), element]
 
 def match_elements(l_bak, l_gen):
     non_matching_bak = [bak for bak in l_bak if not any(bak[1] == gen[1] for gen in l_gen)]

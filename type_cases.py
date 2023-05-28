@@ -17,3 +17,7 @@ def get_seq(chck_rds: list, fasta_file: str, fasta_name: str) -> List[Tuple[str,
     SeqIO.write(selected_seqs, fasta_name, "fasta") # Write the selected sequences to a fasta file
     seq_lengths = [(seq_record.id, len(seq_record.seq)) for seq_record in selected_seqs] # Use list comprehension to create the list of sequence lengths
     return seq_lengths
+
+def create_database(fasta: str, basename: str) -> None:
+    os.system(f'makeblastdb -in {fasta} -dbtype nucl -out {basename}')
+

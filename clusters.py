@@ -39,3 +39,29 @@ def cluster_records(bakta_file, h37rv_file, eps=0.95, min_samples=1):
     labels = clustering.labels_
 
     return labels, all_records
+
+def main(prefix, h37rv_file):
+    print(prefix)
+    bakta_file = f"{prefix}-complete.fa"
+    labels = cluster_records(bakta_file, h37rv_file)
+
+    bakta_records = list(SeqIO.parse(bakta_file, "fasta"))
+    h37rv_records = list(SeqIO.parse(h37rv_file, "fasta"))
+
+    all_records = bakta_records + h37rv_records
+
+    with open(f"{prefix}.clusters", "w") as resultado:
+        for label in set(labels[0]):
+            lista = []
+            for i in range(len(labels[0])):
+                if labels[0][i] == label:
+                    lista.append(all_records[i].id)
+            s = f"Cluster {label}:" + ".".join(lista) + "\n"
+            resultado.write(s)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Procesar archivos con prefijo variable.")
+    parser.add_argument("input_prefix", help="El prefijo del archivo a procesar.")
+    args = parser.parse_args()
+    h37rv_file = "nt_h37rv.fasta"
+    main(args.input_prefix, h37rv_file)

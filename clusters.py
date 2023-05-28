@@ -30,3 +30,12 @@ def calculate_jaccard_similarity_matrix(bakta_file, h37rv_file):
                 similarity_matrix[j, i] = jaccard
 
     return similarity_matrix, all_records
+
+def cluster_records(bakta_file, h37rv_file, eps=0.95, min_samples=1):
+    similarity_matrix, all_records = calculate_jaccard_similarity_matrix(bakta_file, h37rv_file)
+    distance_matrix = 1 - similarity_matrix
+
+    clustering = DBSCAN(eps=eps, min_samples=min_samples, metric='precomputed').fit(distance_matrix)
+    labels = clustering.labels_
+
+    return labels, all_records

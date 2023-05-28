@@ -29,6 +29,13 @@ def get_tsv(tsvfile: str) -> List[List[str]]:
 def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
     """
     Function to perform a BLASTN search and return the results in a DataFrame with both tabular (format 6) and XML (format 5) outputs.
+
+    Arguments:
+        in_query        -- string with the path or filename of the query.
+        in_subject      -- string with the path or filename of the subject database.
+
+    Returns:
+        df              -- DataFrame containing the combined BLASTN results in tabular and XML formats.
     """
     # Create a BLASTN command line with the specified parameters and output format 6.
     blastn_cline_tab = NcbiblastnCommandline(query=in_query, db=in_subject, outfmt='6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qcovs qcovhsp qlen slen', dust="no")
@@ -46,28 +53,42 @@ def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
 
     # Convert the XML BLASTN output to a list of BlastRecords.
     blastn_out_xml = StringIO(blastn_out_xml)
-    blast_records = list(NCBIXML.parse(blastn_out_xml)) if blastn_out_xml.getvalue().strip() else []
 
-    # Create a dictionary to store the blast records for quick lookup.
-    blast_dict = {(record.query, alignment.hit_def): record for record in blast_records for alignment in record.alignments}
+    if blastn_out_xml.getvalue().strip():
+        blast_records = list(NCBIXML.parse(blastn_out_xml))
+    else:
+        blast_records = []
 
     # Combine the tabular and XML BLASTN outputs.
     combined_results = []
+
     for tab in tab_data:
         # Find the XML data that corresponds to the current tabular data.
         query_id = tab['qseqid']
         subject_id = tab['sseqid']
-        xml_record = blast_dict.get((query_id, subject_id))
+
+        # Find the BlastRecord corresponding to the current tabular data.
+        xml_record = next((record for record in blast_records if record.query == query_id and any(subject_id in alignment.hit_def for alignment in record.alignments)), None)
+
         if xml_record is not None:
-            combined_result = tab
-            combined_result.update({
+            combined_result = {
+                "tab_data": tab,
                 "xml_data": xml_record,
                 "subject_name": xml_record.descriptions[0].title.split()[1] if len(xml_record.descriptions) > 0 else None
-            })
+            }
             combined_results.append(combined_result)
 
     # Convert the combined BLASTN results to a DataFrame.
-    df = pd.DataFrame(combined_results)
+    df = pd.DataFrame.from_records(
+        [
+            {
+                **{"" + k: v for k, v in result["tab_data"].items()},
+                "xml_data": result["xml_data"],
+                "subject_name": result["subject_name"]
+            }
+            for result in combined_results
+        ]
+    )
 
     # Return the combined BLAST
     return df

@@ -191,6 +191,7 @@ def main():
                     elements = l[1].split(".")
                     l_bak = [process_element(element) for element in elements if "case" in element]
                     l_gen = [process_element(element) for element in elements if "case" not in element]
+                    non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
 
                     if "case4" not in line:
                         if diff == 0:
@@ -204,7 +205,7 @@ def main():
                                     lista_coordenadas.add(real_coord)
                                     enter.write(f"{el[0]}\t{real_coord[0]}\t{real_coord[1]}\t{el_split[2]}\t{rv_element}.{cluster}\n")
                         else:
-                            non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
+                            
 
                             for bak, gen in matching_elements:
                                 if bak[1] == gen[1]:
@@ -218,7 +219,6 @@ def main():
 
                     if "case4" in line:
                         if diff <= 0:
-                            non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
                             if len(non_matching_gen) != 0:                                              
                                 lista_set = set()
                                 for matching_element in matching_elements:
@@ -282,28 +282,23 @@ def main():
 
                                     for el in non_matching_bak:
                                         diff_bk = el[1] - original_len
-                                        if long > el[1]:
+                                        if (long > el[1]) or (diff_bk < 450 and diff_rv < diff_bk):
                                             write_ele = True
                                             no_bak.append(el)
-                                        elif diff_bk < 450:
-                                            if diff_rv < diff_bk:
-                                                write_ele = True
-                                                no_bak.append(el)
+
                                     if write_ele: 
                                         coord = (int(element[1]),int(element[2]))
-
                                         if tuple(coord) not in lista_set:
                                             towrite =  [str(item) for item in element]
                                             enter.write("\t".join(towrite)+"\n")
-
                                             lista_set.add(tuple(coord))
+                                
                                 for bakta in non_matching_bak:
                                     if bakta not in no_bak:
                                         print("aqui2",bakta)
                                         enter.write(str(bakta) + "\n")
 
                         elif diff > 0:
-                            non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
                             lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas)
 if __name__ == "__main__":
     main()          

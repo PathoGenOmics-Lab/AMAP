@@ -24,50 +24,31 @@ def get_seq(chck_rds: list, fasta_file: str, fasta_name: str) -> List[Tuple[str,
 def create_database(fasta: str, basename: str) -> None:
     subprocess.run(['makeblastdb', '-in', fasta, '-dbtype', 'nucl', '-out', basename])
 
+def run_blast(in_query: str, in_subject: str, outfmt: str) -> str:
+    cline = NcbiblastnCommandline(query=in_query, db=in_subject, outfmt=outfmt, dust="no")
+    out, _ = cline()
+    return out
+
 def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
-    blastn_cline_tab = NcbiblastnCommandline(query=in_query, db=in_subject, outfmt='6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qcovs qcovhsp qlen slen', dust="no")
-    blastn_out_tab, _ = blastn_cline_tab()
-    blastn_cline_xml = NcbiblastnCommandline(query=in_query, db=in_subject, outfmt='5', dust="no")
-    blastn_out_xml, _ = blastn_cline_xml()
+    blastn_out_tab = run_blast(in_query, in_subject, '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qcovs qcovhsp qlen slen')
+    blastn_out_xml = run_blast(in_query, in_subject, '5')
 
     tab_data = [
         dict(zip(['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qcovs', 'qcovhsp', 'qlen', 'slen'], line.split("\t")))
         for line in blastn_out_tab.strip().split("\n")
     ] if len(blastn_out_tab.strip()) > 0 else []
 
-    blastn_out_xml = StringIO(blastn_out_xml)
-    if blastn_out_xml.getvalue().strip():
-        blast_records = list(NCBIXML.parse(blastn_out_xml))
-    else:
-        blast_records = []
+    blast_records = {record.query: record for record in NCBIXML.parse(StringIO(blastn_out_xml)) if blastn_out_xml.strip()} or {}
 
-    combined_results = []
+    combined_results = [
+        {**tab,
+            "xml_data": xml_record,
+            "subject_name": xml_record.descriptions[0].title.split()[1] if xml_record.descriptions else None}
+        for tab in tab_data
+        if (xml_record := blast_records.get(tab['qseqid'])) and any(tab['sseqid'] in alignment.hit_def for alignment in xml_record.alignments)
+    ]
 
-    for tab in tab_data:
-        query_id = tab['qseqid']
-        subject_id = tab['sseqid']
-        xml_record = next((record for record in blast_records if record.query == query_id and any(subject_id in alignment.hit_def for alignment in record.alignments)), None)
-
-        if xml_record is not None:
-            combined_result = {
-                "tab_data": tab,
-                "xml_data": xml_record,
-                "subject_name": xml_record.descriptions[0].title.split()[1] if len(xml_record.descriptions) > 0 else None
-            }
-            combined_results.append(combined_result)
-
-    df = pd.DataFrame.from_records(
-        [
-            {
-                **{"" + k: v for k, v in result["tab_data"].items()},
-                "xml_data": result["xml_data"],
-                "subject_name": result["subject_name"]
-            }
-            for result in combined_results
-        ]
-    )
-
-    return df
+    return pd.DataFrame(combined_results)
 
 def count_cases(genes):
     g_genes = genes.split(".")

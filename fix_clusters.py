@@ -294,7 +294,6 @@ def main():
                                 
                                 for bakta in non_matching_bak:
                                     if bakta not in no_bak:
-                                        print("aqui2",bakta)
                                         enter.write(str(bakta) + "\n")
 
                         elif diff > 0:

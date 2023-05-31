@@ -13,24 +13,10 @@ import os
 from collections import defaultdict
 
 def get_seq(chck_rds, fasta_file: str, fasta_name: str):
-    """
-    Extract sequences from a given fasta file that contain a specified string in their ID. 
-    The selected sequences are then written to a new fasta file.
-
-    Args:
-        chck_rds (str): The string to check for in the sequence IDs.
-        fasta_file (str): The path to the input fasta file.
-        fasta_name (str): The path to the output fasta file.
-
-    """
     selected_seqs = []
-
-    # Parse the fasta file and select sequences where the ID contains 'chck_rds'
     for seq_record in SeqIO.parse(fasta_file, "fasta"):
         if chck_rds in seq_record.id:
             selected_seqs.append(seq_record)
-
-    # Write the selected sequences to a new fasta file
     SeqIO.write(selected_seqs, fasta_name, "fasta")
 
 def create_database(fasta: str, basename: str) -> None:

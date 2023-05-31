@@ -139,45 +139,35 @@ def process_non_matching_elements_modified(non_matching_gen, enter, bakta_coords
                     break  # Sal del bucle una vez que encuentres una coincidencia que no se haya utilizado todavía
     return lista
 
+
 def process_line(line):
-    """
-    Process a given line, split it into parts and match elements based on certain conditions.
-
-    Args:
-        line (str): The string line to be processed.
-
-    Returns:
-        Dict: A dictionary where keys are 'g_elements' that match the length of 'rv_elements', 
-              and the values are the corresponding 'rv_elements'.
-    """
-    
-    # Split the line into parts
+    # Divide la línea en partes
     line_parts = line.split(".")
-    
-    # Filter the parts for 'g_elements' and 'rv_elements'
-    g_elements = [part for part in line_parts if "G48915_L4_" in part]
-    rv_elements = [part for part in line_parts if "Rv" in part]
+    # Filtra las partes para 'g_elements' y 'rv_elements'
+    g_elements = (part for part in line_parts if "G48915_L4_" in part)
+    rv_elements = (part for part in line_parts if "Rv" in part)
 
-    # Parse rv_elements once before the loop
-    rv_elements_parsed = [(element, int(element.split("_")[1].split("-")[1]) - int(element.split("_")[1].split("-")[0])) for element in rv_elements]
+    # Analiza 'rv_elements' una vez antes del bucle usando expresiones regulares para extraer números
+    rv_elements_parsed = [(element, abs(int(matches[0]) - int(matches[1]))) 
+                          for element in rv_elements 
+                          for matches in re.findall(r'(\d+)-(\d+)', element)]
 
-    matching_dict = {}
-    used_rv_elements = set()
-
+    matching_dict = {}  # Diccionario para almacenar elementos coincidentes
+    used_rv_elements = set()  # Conjunto para almacenar 'rv_elements' usados
+    # Procesa cada 'g_element', calcula su longitud y busca coincidencias
     for g_element in g_elements:
-        # Process each 'g_element' and compute its length
-        el = process_element(g_element)
-        g_start, g_end = [int(x) for x in el[2].split(";")[1].split(",")]
-        g_length = g_end - g_start
+        el = process_element(g_element)  # Asume que process_element es una función definida en tu código
+        g_start, g_end = map(int, el[2].split(";")[1].split(","))
+        g_length = abs(g_end - g_start)
 
-        # Match 'g_elements' with 'rv_elements' based on length
+        # Empareja 'g_elements' con 'rv_elements' basándose en la longitud
         for rv_element, rv_length in rv_elements_parsed:
             if rv_element not in used_rv_elements and g_length == rv_length:
                 matching_dict[g_element] = rv_element
                 used_rv_elements.add(rv_element)
-                break
-
+                break  # Sal del bucle una vez que encuentres una coincidencia que no se haya utilizado todavía
     return matching_dict
+
 
 def main():
     create_database("G48915_L4.fna", "G48915_L4database")
@@ -194,39 +184,35 @@ def main():
                     cluster1_genes(line, lista_coordenadas, enter)
 
                 if "Cluster -1" not in line:
-                #if "Cluster 3635" in line:
-                #if "Cluster 155" in line:
-                #if "Cluster 824" in line:
-                #if "Cluster 2258" in line:
-                #if "Cluster 821" in line:
                     l = line.strip("\n").split(":")
                     cluster = l[0]
                     rvs, g_genes, diff, case1, case2, case3, case4 = count_cases(l[1])  # print(cluster,case1,case2,case3,case4,diff,rvs)
+
+                    elements = l[1].split(".")
+                    l_bak = [process_element(element) for element in elements if "case" in element]
+                    l_gen = [process_element(element) for element in elements if "case" not in element]
 
                     if "case4" not in line:
                         if diff == 0:
                             matching_dict = process_line(l[1])
                             for g_element, rv_element in matching_dict.items():
                                 el = process_element(g_element)
-                                real_coord = tuple(map(int, el[2].split(";")[1].split(",")))
+                                el_split = el[2].split(";")
+
+                                real_coord = tuple(map(int, el_split[1].split(",")))
                                 if real_coord not in lista_coordenadas:
-                                    aaa = el[2].split(";")[2]
-                                    aa = el[2].split(";")[1].split(",")
-                                    enter.write(f"{el[0]}\t{aa[0]}\t{aa[1]}\t{aaa}\t{rv_element}.{cluster}\n")
                                     lista_coordenadas.add(real_coord)
+                                    enter.write(f"{el[0]}\t{real_coord[0]}\t{real_coord[1]}\t{el_split[2]}\t{rv_element}.{cluster}\n")
                         else:
-                            l_bak = [process_element(element) for element in l[1].split(".") if "case" in element]
-                            l_gen = [process_element(element) for element in l[1].split(".") if "case" not in element]
                             non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
 
-                            for matching_element in matching_elements:
-                                bak, gen = matching_element
+                            for bak, gen in matching_elements:
                                 if bak[1] == gen[1]:
-                                    aaa = bak[2].split(";")[2]
-                                    aa = bak[2].split(";")[1].split(",")
-                                    enter.write(f"{bak[0]}\t{aa[0]}\t{aa[1]}\t{aaa}\t{gen[0]}.{cluster}\n")
-                                    real_coord = tuple(map(int, bak[2].split(";")[1].split(",")))
-                                    lista_coordenadas.add(tuple(real_coord))
+                                    bak_split = bak[2].split(";")
+                                    real_coord = tuple(map(int, bak_split[1].split(",")))
+                                    if real_coord not in lista_coordenadas:
+                                        lista_coordenadas.add(real_coord)
+                                        enter.write(f"{bak[0]}\t{real_coord[0]}\t{real_coord[1]}\t{bak_split[2]}\t{gen[0]}.{cluster}\n")
 
                             lista_coordenadas = process_non_matching_genes(non_matching_gen, enter, lista_coordenadas)
 

@@ -12,7 +12,7 @@ from io import StringIO
 import os
 from collections import defaultdict
 from typing import List, Any, Tuple
-
+#current time 18 min
 
 def get_seq(chck_rds: list, fasta_file: str, fasta_name: str) -> List[Tuple[str, int]]:
     chck_rds_set = set(chck_rds)  # Convert the list to a set for faster searching
@@ -100,7 +100,6 @@ def process_non_matching_elements(non_matching_gen, enter, bakta_coords):
         for qseqid, coords_list in result.items():
             for coords in coords_list:
                 ordered_coords = (min(int(coords[0]), int(coords[1])), max(int(coords[0]), int(coords[1])))
-                full_coords = (qseqid, ordered_coords[0], ordered_coords[1])
                 f_coord = (ordered_coords[0], ordered_coords[1])
                 lengg = int(coords[1]) - int(coords[0])
                 lenn = "+"

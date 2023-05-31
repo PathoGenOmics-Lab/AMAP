@@ -69,50 +69,62 @@ def match_elements(l_bak, l_gen):
     matching_elements = [(bak, gen) for bak in l_bak for gen in l_gen if bak[1] == gen[1]]
     return non_matching_bak, non_matching_gen, matching_elements
 
-def process_element_processsafe2(element):
-    pid = os.getpid()  # Get process ID
-    with NamedTemporaryFile(suffix=f".{pid}.fasta", delete=False) as query_file:  # Use process ID in the file name
-        get_seq(element[0], "nt_h37rv.fasta", query_file.name)
-        blast_out = blastn(query_file.name, "G48915_L4database")
-        os.remove(query_file.name)
+
+
+def process_element_with_blastn(element: tuple) -> dict:
+    pid = os.getpid()  # Get current process ID
+    with NamedTemporaryFile(suffix=f".{pid}.fasta", delete=False) as query_file:  # Create a temporary file with the process ID
+        get_seq(element[0], "nt_h37rv.fasta", query_file.name)  # Assuming get_seq is a defined function in your code
+        blast_out = blastn(query_file.name, "G48915_L4database")  # Run blastn
+        os.remove(query_file.name)  # Remove the temporary file
 
     blast_results = {}
     for blast_result in blast_out.itertuples(index=False):
-        qseqid, pident, slen, qlen, xml_data, sstart, send = blast_result.qseqid, blast_result.pident, blast_result.slen, blast_result.qlen, blast_result.xml_data, blast_result.sstart, blast_result.send
+        if float(blast_result.pident) > 90:  # Filter results with pident > 90
+            matches = blast_result.xml_data.alignments[0].hsps[0].match.count('|') / float(blast_result.qlen) * 100
+            if matches >= 80:  # Filter results with matches >= 80
+                if blast_result.qseqid not in blast_results:
+                    blast_results[blast_result.qseqid] = []
+                blast_results[blast_result.qseqid].append((blast_result.sstart, blast_result.send, blast_result.qlen))
 
-        if float(pident) > 90:
-            matches = xml_data.alignments[0].hsps[0].match.count('|') / float(qlen) * 100
-            if matches >= 80:
-                if qseqid not in blast_results:
-                    blast_results[qseqid] = []
-                blast_results[qseqid].append((sstart, send, qlen))
     return blast_results
 
-def process_non_matching_elements(non_matching_gen, enter, bakta_coords):
+
+def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords: set) -> set:
     with ThreadPoolExecutor() as executor:
-        results = list(executor.map(process_element_processsafe2, non_matching_gen))
-    
+        results = list(executor.map(process_element_with_blastn, non_matching_gen))
+
     for result in results:
-        for qseqid, coords_list in result.items():
-            for coords in coords_list:
+        for gene_id, coordinates_list in result.items():
+            for coords in coordinates_list:
                 ordered_coords = (min(int(coords[0]), int(coords[1])), max(int(coords[0]), int(coords[1])))
-                full_coords = (qseqid, ordered_coords[0], ordered_coords[1])
-                f_coord = (ordered_coords[0], ordered_coords[1])
-                lengg = int(coords[1]) - int(coords[0])
-                lenn = "+"
-                if lengg < 0:
-                    lenn = "-"
-                if f_coord not in bakta_coords:
-                    enter.write(f"{qseqid}\t{ordered_coords[0]}\t{ordered_coords[1]}\t{lenn}\n")
-                    bakta_coords.add(f_coord)
-                    break  # Sal del bucle una vez que encuentres una coincidencia que no se haya utilizado todavía
-    
+                coord_range = ordered_coords[0], ordered_coords[1]
+                len_difference = int(coords[1]) - int(coords[0])
+                length_indicator = "+" if len_difference >= 0 else "-"
+                if coord_range not in bakta_coords:
+                    file_writer.write(f"{gene_id}\t{ordered_coords[0]}\t{ordered_coords[1]}\t{length_indicator}\n")
+                    bakta_coords.add(coord_range)
+                    break  # Break once you find a match that hasn't been used yet
+
     return bakta_coords
+
+def cluster1_genes(line: str, coord_list: list, file_writer) -> list:
+    line_elements = line.strip("\n").split(":")
+    genes = line_elements[1].split(".")
+    for element in genes:
+        if "case" not in element:
+            gene = element.split("_")
+            gene_details = [gene[0], abs(int(gene[1].split("-")[1]) - int(gene[1].split("-")[0])), element]
+            coord_list = process_non_matching_genes([gene_details], file_writer, coord_list)
+        elif "case1" in element:
+            file_writer.write(str(element) + "\n") 
+
+    return coord_list
 
 def process_non_matching_elements_modified(non_matching_gen, enter, bakta_coords):
     lista = []
     with ThreadPoolExecutor() as executor:
-        results = list(executor.map(process_element_processsafe2, non_matching_gen))
+        results = list(executor.map(process_element_with_blastn, non_matching_gen))
     
     for result in results:        
         for qseqid, coords_list in result.items():
@@ -192,7 +204,7 @@ with open("AQUI.G48915_L4.cleancoord.tsv", "w") as enter:
                         gen = gene.split("_")
                         lgene =[gen[0], int(gen[1].split("-")[1]) - int(gen[1].split("-")[0]), gene]
                         
-                        lista_coordenadas = process_non_matching_elements([lgene], enter, lista_coordenadas)     
+                        lista_coordenadas = process_non_matching_genes([lgene], enter, lista_coordenadas)     
 
                     elif "case1" in element:
 
@@ -233,7 +245,7 @@ with open("AQUI.G48915_L4.cleancoord.tsv", "w") as enter:
                                 real_coord = tuple(map(int, bak[2].split(";")[1].split(",")))
                                 lista_coordenadas.add(tuple(real_coord))
                         
-                        lista_coordenadas = process_non_matching_elements(non_matching_gen, enter, lista_coordenadas)
+                        lista_coordenadas = process_non_matching_genes(non_matching_gen, enter, lista_coordenadas)
                 
                 if "case4" in line:
                     if diff < 0 or diff == 0:
@@ -340,5 +352,5 @@ with open("AQUI.G48915_L4.cleancoord.tsv", "w") as enter:
                         l_gen = [process_element(element) for element in l[1].split(".") if "case" not in element]
                         non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
                                             
-                        lista_coordenadas = process_non_matching_elements(l_gen, enter, lista_coordenadas)                    
+                        lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas)                    
                         

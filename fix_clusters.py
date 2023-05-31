@@ -69,8 +69,6 @@ def match_elements(l_bak, l_gen):
     matching_elements = [(bak, gen) for bak in l_bak for gen in l_gen if bak[1] == gen[1]]
     return non_matching_bak, non_matching_gen, matching_elements
 
-
-
 def process_element_with_blastn(element: tuple) -> dict:
     pid = os.getpid()  # Get current process ID
     with NamedTemporaryFile(suffix=f".{pid}.fasta", delete=False) as query_file:  # Create a temporary file with the process ID
@@ -88,7 +86,6 @@ def process_element_with_blastn(element: tuple) -> dict:
                 blast_results[blast_result.qseqid].append((blast_result.sstart, blast_result.send, blast_result.qlen))
 
     return blast_results
-
 
 def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords: set) -> set:
     with ThreadPoolExecutor() as executor:
@@ -353,4 +350,3 @@ with open("AQUI.G48915_L4.cleancoord.tsv", "w") as enter:
                         non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
                                             
                         lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas)                    
-                        

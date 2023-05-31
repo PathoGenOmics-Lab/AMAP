@@ -49,32 +49,12 @@ def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
     return pd.DataFrame(combined_results)
 
 def count_cases(genes):
-    """
-    Count occurrences of different cases ("case1", "case2", "case3", "case4") and 'Rv' in a given genes string. 
-    Also calculate the difference between the count of 'Rv' and the sum of counts of all cases.
-
-    Args:
-        genes (str): The string containing genes information, separated by dots ("."). 
-
-    Returns:
-        Tuple: A tuple containing total 'Rv' counts, a list of genes, the difference between the count of 'Rv' and the sum of cases, 
-               and the count of each case respectively.
-    """
-    # Split the genes string into a list
-    genes_list = genes.split(".")
+    g_genes = genes.split(".")
     cases = ["case1", "case2", "case3", "case4"]
-
-    # Count the occurrences of each case in the genes string
-    case_counts = {case: genes.count(case) for case in cases}
-
-    # Count the occurrences of 'Rv' in the genes string
-    rv_counts = genes.count("Rv")
-
-    # Calculate the difference between 'Rv' count and the sum of all case counts
-    rv_cases_difference = rv_counts - sum(case_counts.values())
-
-    # Return the counts and the genes list
-    return rv_counts, genes_list, rv_cases_difference, *case_counts.values()
+    counts = {case: genes.count(case) for case in cases}
+    rvs = genes.count("Rv")
+    diff = rvs - sum(counts.values())
+    return rvs, g_genes, diff, counts["case1"], counts["case2"], counts["case3"], counts["case4"]
 
 def process_element(element):
     if "case" in element:

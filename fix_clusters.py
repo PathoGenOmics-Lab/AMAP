@@ -11,6 +11,8 @@ from tempfile import NamedTemporaryFile
 from io import StringIO
 import os
 from collections import defaultdict
+from typing import List, Any, Tuple
+
 
 def get_seq(chck_rds: list, fasta_file: str, fasta_name: str) -> List[Tuple[str, int]]:
     chck_rds_set = set(chck_rds)  # Convert the list to a set for faster searching

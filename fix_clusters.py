@@ -287,8 +287,8 @@ def main():
                                     if bakta not in no_bak:
                                         enter.write(str(bakta) + "\n")
 
-
                         elif diff > 0:
                             lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas)
+
 if __name__ == "__main__":
     main()          

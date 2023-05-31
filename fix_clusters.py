@@ -216,76 +216,44 @@ def main():
                             lista_coordenadas = process_non_matching_genes(non_matching_gen, enter, lista_coordenadas)
 
                     if "case4" in line:
+                        lista_set = set()
+                        no_bak = []
+
                         if diff <= 0:
-                            if len(non_matching_gen) != 0:                                              
-                                lista_set = set()
-                                for matching_element in matching_elements:
-                                    bak, gen = matching_element
-                                    if bak[1] == gen[1]:                               
-                                        real_coord = tuple(map(int, bak[2].split(";")[1].split(",")))
-                                        if real_coord not in lista_coordenadas:
-                                            bak_splits = bak[2].split(";")
-                                            aaa = bak_splits[2]
-                                            aa = bak_splits[1].split(",")
-                                            enter.write(f"{bak[0]}\t{aa[0]}\t{aa[1]}\t{aaa}\t{gen[0]}.{cluster}\n")
-                                            lista_coordenadas.add(real_coord)
-                                            lista_set.add(real_coord)
-
-                                        else:
-                                            if gen not in non_matching_gen:
-                                                non_matching_gen.append(gen)
-                                lista_res = process_non_matching_elements_modified(non_matching_gen, enter, lista_coordenadas)  
-                                no_bak = []
-                                for element in lista_res:
-                                    write_ele = False
-                                    original_coord = element[0].split("_")[1].split("-")
-                                    original_len = int(original_coord[1])-int(original_coord[0])
-                                    long = int(element[2]) - int(element[1])
-
-                                    diff_rv = long - original_len
-
-                                    for el in non_matching_bak:
-                                        diff_bk = el[1] - original_len
-                                        if diff_rv == 0 or long > el[1] or (diff_bk < 450 and diff_rv < diff_bk):
-                                            write_ele = True
-                                            if el not in no_bak:
-                                                no_bak.append(el)
-
-                                    if write_ele:
-                                        coord = (int(element[1]),int(element[2]))
-                                        if tuple(coord) not in lista_set:
-                                            towrite =  [str(item) for item in element]
-                                            enter.write("\t".join(towrite)+"\n")
-                                            lista_coordenadas.add(tuple(coord))
-                                            lista_set.add(tuple(coord))
-                                
-                                for bakta in non_matching_bak:
-                                    if bakta not in no_bak:
-                                        print("aqui1",bakta)
-                                        enter.write(str(bakta) + "\n")
-                            else:
-                                no_bak = []
+                            if not non_matching_gen:
                                 non_matching_gen = [elemento for sublistas in matching_elements for elemento in sublistas if "case" not in elemento[2]]
-                                lista_set = set()
-                                lista_res = process_non_matching_elements_modified(tuple(non_matching_gen), enter, lista_coordenadas)
 
-                                for element in lista_res:
-                                    original_coord = element[0].split("_")[1].split("-")
-                                    original_len = int(original_coord[1])-int(original_coord[0])
-                                    long = int(element[2]) - int(element[1])
-                                    diff_rv = long - original_len
+                            for matching_element in matching_elements:
+                                bak, gen = matching_element
+                                if bak[1] == gen[1]:                               
+                                    real_coord = tuple(map(int, bak[2].split(";")[1].split(",")))
+                                    if real_coord not in lista_coordenadas:
+                                        bak_splits = bak[2].split(";")
+                                        enter.write("{}\t{}\t{}\t{}.{}\n".format(bak[0], *bak_splits[1].split(","), bak_splits[2], gen[0], cluster))
+                                        lista_coordenadas.add(real_coord)
+                                        lista_set.add(real_coord)
+                                    elif gen not in non_matching_gen:
+                                        non_matching_gen.append(gen)
 
-                                    no_bak += [el for el in non_matching_bak if (long > el[1]) or (el[1] - original_len < 450 and diff_rv < el[1] - original_len)]
+                            lista_res = process_non_matching_elements_modified(non_matching_gen, enter, lista_coordenadas)  
 
-                                    if no_bak: 
-                                        coord = (int(element[1]),int(element[2]))
-                                        if coord not in lista_set:
-                                            enter.write("\t".join(map(str, element))+"\n")
-                                            lista_set.add(coord)
+                            for element in lista_res:
+                                original_coord = element[0].split("_")[1].split("-")
+                                original_len = int(original_coord[1])-int(original_coord[0])
+                                long = int(element[2]) - int(element[1])
+                                diff_rv = long - original_len
 
-                                for bakta in non_matching_bak:
-                                    if bakta not in no_bak:
-                                        enter.write(str(bakta) + "\n")
+                                no_bak += [el for el in non_matching_bak if (long > el[1]) or (el[1] - original_len < 450 and diff_rv < el[1] - original_len)]
+
+                                if no_bak:
+                                    coord = (int(element[1]),int(element[2]))
+                                    if coord not in lista_set:
+                                        enter.write("\t".join(map(str, element))+"\n")
+                                        lista_set.add(coord)
+
+                            for bakta in non_matching_bak:
+                                if bakta not in no_bak:
+                                    enter.write(str(bakta) + "\n")
 
                         elif diff > 0:
                             lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas)

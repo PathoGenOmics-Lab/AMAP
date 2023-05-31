@@ -217,9 +217,7 @@ def main():
                             lista_coordenadas = process_non_matching_genes(non_matching_gen, enter, lista_coordenadas)
 
                     if "case4" in line:
-                        if diff < 0 or diff == 0:
-                            l_bak = [process_element(element) for element in l[1].split(".") if "case" in element]
-                            l_gen = [process_element(element) for element in l[1].split(".") if "case" not in element]
+                        if diff <= 0:
                             non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
                             if len(non_matching_gen) != 0:                                              
                                 lista_set = set()
@@ -248,19 +246,11 @@ def main():
 
                                     for el in non_matching_bak:
                                         diff_bk = el[1] - original_len
-                                        if diff_rv == 0:
+                                        if diff_rv == 0 or long > el[1] or (diff_bk < 450 and diff_rv < diff_bk):
                                             write_ele = True
                                             if el not in no_bak:
-                                                no_bak.append(el)                                       
-                                        if long > el[1]:
-                                            write_ele = True
-                                            if el not in no_bak:
-                                                no_bak.append(el)  
-                                        if diff_bk < 450:
-                                            if diff_rv < diff_bk:
-                                                write_ele = True
-                                                if el not in no_bak:
-                                                    no_bak.append(el)  
+                                                no_bak.append(el)
+
                                     if write_ele:
                                         coord = (int(element[1]),int(element[2]))
                                         if tuple(coord) not in lista_set:
@@ -313,10 +303,7 @@ def main():
                                         enter.write(str(bakta) + "\n")
 
                         elif diff > 0:
-                            l_bak = [process_element(element) for element in l[1].split(".") if "case" in element]
-                            l_gen = [process_element(element) for element in l[1].split(".") if "case" not in element]
                             non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
-
                             lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas)
 if __name__ == "__main__":
     main()          

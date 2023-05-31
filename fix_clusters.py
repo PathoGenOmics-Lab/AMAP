@@ -9,9 +9,9 @@ from concurrent.futures import ThreadPoolExecutor
 import subprocess
 from tempfile import NamedTemporaryFile
 from io import StringIO
-import os
 from collections import defaultdict
 from typing import List, Any, Tuple
+import re
 
 def get_seq(chck_rds, fasta_file: str, fasta_name: str):
     selected_seqs = []

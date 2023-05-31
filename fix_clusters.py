@@ -118,25 +118,24 @@ def cluster1_genes(line: str, coord_list: set, file_writer) -> set:
             file_writer.write(str(element) + "\n") 
     return coord_list
 
-def process_non_matching_elements_modified(non_matching_gen, enter, bakta_coords):
-    lista = []
-    with ThreadPoolExecutor() as executor:
-        results = list(executor.map(process_element_with_blastn, non_matching_gen))
+def process_non_matching_elements_modified(non_matching_elements, output_file, processed_coordinates):
+    processed_coordinates = set(processed_coordinates)  # Change to set for faster lookup
+    coordinates_list = []
     
-    for result in results:        
-        for qseqid, coords_list in result.items():
-            for coords in coords_list:
-                ordered_coords = (min(int(coords[0]), int(coords[1])), max(int(coords[0]), int(coords[1])))
-                f_coord = (ordered_coords[0], ordered_coords[1])
-                lengg = int(coords[1]) - int(coords[0])
-                lenn = "+"
-                if lengg < 0:
-                    lenn = "-"
-                if f_coord not in bakta_coords:
-                    lista.append([qseqid, ordered_coords[0], ordered_coords[1],lenn])
-                    bakta_coords.add(f_coord)
-                    break  # Sal del bucle una vez que encuentres una coincidencia que no se haya utilizado todavía
-    return lista
+    for element in non_matching_elements:
+        blastn_results = process_element_with_blastn(element)
+        for sequence_id, coord_list in blastn_results.items():
+            for coordinate in coord_list:
+                ordered_coords = (min(int(coordinate[0]), int(coordinate[1])), max(int(coordinate[0]), int(coordinate[1])))
+                formatted_coord = (ordered_coords[0], ordered_coords[1])
+                length_difference = int(coordinate[1]) - int(coordinate[0])
+                direction = "+" if length_difference >= 0 else "-"
+                
+                if formatted_coord not in processed_coordinates:
+                    coordinates_list.append([sequence_id, ordered_coords[0], ordered_coords[1], direction])
+                    processed_coordinates.add(formatted_coord)
+                    break  # Exit the loop once you find a match that has not been used yet
+    return coordinates_list
 
 def process_line(line):
     """

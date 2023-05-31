@@ -105,7 +105,7 @@ def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords
 
     return bakta_coords
 
-def cluster1_genes(line: str, coord_list: set, file_writer) -> list:
+def cluster1_genes(line: str, coord_list: set, file_writer) -> set:
     line_elements = line.strip("\n").split(":")
     genes = line_elements[1].split(".")
     for element in genes:
@@ -126,7 +126,6 @@ def process_non_matching_elements_modified(non_matching_gen, enter, bakta_coords
         for qseqid, coords_list in result.items():
             for coords in coords_list:
                 ordered_coords = (min(int(coords[0]), int(coords[1])), max(int(coords[0]), int(coords[1])))
-                full_coords = (qseqid, ordered_coords[0], ordered_coords[1])
                 f_coord = (ordered_coords[0], ordered_coords[1])
                 lengg = int(coords[1]) - int(coords[0])
                 lenn = "+"

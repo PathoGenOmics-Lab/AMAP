@@ -204,9 +204,7 @@ def main():
                                 if real_coord not in lista_coordenadas:
                                     lista_coordenadas.add(real_coord)
                                     enter.write(f"{el[0]}\t{real_coord[0]}\t{real_coord[1]}\t{el_split[2]}\t{rv_element}.{cluster}\n")
-                        else:
-                            
-
+                        else:                            
                             for bak, gen in matching_elements:
                                 if bak[1] == gen[1]:
                                     bak_split = bak[2].split(";")
@@ -258,6 +256,7 @@ def main():
                                             enter.write("\t".join(towrite)+"\n")
                                             lista_coordenadas.add(tuple(coord))
                                             lista_set.add(tuple(coord))
+                                
                                 for bakta in non_matching_bak:
                                     if bakta not in no_bak:
                                         print("aqui1",bakta)

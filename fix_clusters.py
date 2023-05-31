@@ -270,8 +270,6 @@ def main():
                                             lista_set.add(tuple(coord))
                                 for bakta in non_matching_bak:
                                     if bakta not in no_bak:
-                                        print(long)
-                                        print(diff_rv)
                                         print("aqui1",bakta)
                                         enter.write(str(bakta) + "\n")
                             else:
@@ -311,8 +309,6 @@ def main():
                                             lista_set.add(tuple(coord))
                                 for bakta in non_matching_bak:
                                     if bakta not in no_bak:
-                                        print(long)
-                                        print(diff_rv)
                                         print("aqui2",bakta)
                                         enter.write(str(bakta) + "\n")
 

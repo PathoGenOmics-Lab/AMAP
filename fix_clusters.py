@@ -105,7 +105,7 @@ def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords
 
     return bakta_coords
 
-def cluster1_genes(line: str, coord_list: list, file_writer) -> list:
+def cluster1_genes(line: str, coord_list: set, file_writer) -> list:
     line_elements = line.strip("\n").split(":")
     genes = line_elements[1].split(".")
     for element in genes:
@@ -115,7 +115,6 @@ def cluster1_genes(line: str, coord_list: list, file_writer) -> list:
             coord_list = process_non_matching_genes([gene_details], file_writer, coord_list)
         elif "case1" in element:
             file_writer.write(str(element) + "\n") 
-
     return coord_list
 
 def process_non_matching_elements_modified(non_matching_gen, enter, bakta_coords):
@@ -191,21 +190,7 @@ def main():
             for line in in_file:
 
                 if "Cluster -1" in line:
-                    l = line.strip("\n").split(":")
-                    cluster = l[0]
-                    genes = l[1]
-                    g_genes = genes.split(".")
-                    for element in g_genes:
-                        if "case" not in element:
-                            gene = element
-                            gen = gene.split("_")
-                            lgene =[gen[0], int(gen[1].split("-")[1]) - int(gen[1].split("-")[0]), gene]
-
-                            lista_coordenadas = process_non_matching_genes([lgene], enter, lista_coordenadas)     
-
-                        elif "case1" in element:
-
-                            enter.write(str(element) + "\n") 
+                    cluster1_genes(line, lista_coordenadas, enter)
 
                 if "Cluster -1" not in line:
                 #if "Cluster 3635" in line:

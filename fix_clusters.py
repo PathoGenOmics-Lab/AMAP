@@ -279,16 +279,12 @@ def main():
                                     original_len = int(original_coord[1])-int(original_coord[0])
                                     long = int(element[2]) - int(element[1])
                                     diff_rv = long - original_len
-
                                     for el in non_matching_bak:
                                         diff_bk = el[1] - original_len
-                                        if long > el[1]:
+                                        if (long > el[1]) or (diff_bk < 450 and diff_rv < diff_bk):
                                             write_ele = True
                                             no_bak.append(el)
-                                        elif diff_bk < 450:
-                                            if diff_rv < diff_bk:
-                                                write_ele = True
-                                                no_bak.append(el)
+                                    
                                     if write_ele: 
                                         coord = (int(element[1]),int(element[2]))
 

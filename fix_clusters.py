@@ -127,7 +127,6 @@ def process_non_matching_elements_modified(non_matching_gen, enter, bakta_coords
         for qseqid, coords_list in result.items():
             for coords in coords_list:
                 ordered_coords = (min(int(coords[0]), int(coords[1])), max(int(coords[0]), int(coords[1])))
-                full_coords = (qseqid, ordered_coords[0], ordered_coords[1])
                 f_coord = (ordered_coords[0], ordered_coords[1])
                 lengg = int(coords[1]) - int(coords[0])
                 lenn = "+"
@@ -243,7 +242,7 @@ def main():
                                     long = int(element[2]) - int(element[1])
 
                                     diff_rv = long - original_len
-                                    
+
                                     for el in non_matching_bak:
                                         diff_bk = el[1] - original_len
                                         if diff_rv == 0 or long > el[1] or (diff_bk < 450 and diff_rv < diff_bk):

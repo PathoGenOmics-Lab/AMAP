@@ -12,6 +12,7 @@ from io import StringIO
 from collections import defaultdict
 from typing import List, Any, Tuple
 import re
+import argparse
 
 def get_seq(chck_rds, fasta_file: str, fasta_name: str):
     selected_seqs = []
@@ -167,6 +168,11 @@ def process_line(line):
                 break  # Sal del bucle una vez que encuentres una coincidencia que no se haya utilizado todav�a
     return matching_dict
 
+def argparse():
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('-p', '--prefix', help='')
+    args = parser.parse_args()
+    return args
 
 def main():
     create_database("G48915_L4.fna", "G48915_L4database")

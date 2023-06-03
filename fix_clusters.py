@@ -14,11 +14,12 @@ import argparse
 import glob
 
 def get_seq(chck_rds, fasta_file: str, fasta_name: str):
-    selected_seqs = []
-    for seq_record in SeqIO.parse(fasta_file, "fasta"):
-        if chck_rds in seq_record.id:
-            selected_seqs.append(seq_record)
-    SeqIO.write(selected_seqs, fasta_name, "fasta")
+    def selected_seqs_gen():
+        for seq_record in SeqIO.parse(fasta_file, "fasta"):
+            if chck_rds in seq_record.id:
+                yield seq_record
+                break
+    SeqIO.write(selected_seqs_gen(), fasta_name, "fasta")
 
 def create_database(fasta: str, basename: str) -> None:
     subprocess.run(['makeblastdb', '-in', fasta, '-dbtype', 'nucl', '-out', basename])
@@ -28,9 +29,19 @@ def run_blast(in_query: str, in_subject: str, outfmt: str) -> str:
     out, _ = cline()
     return out
 
+def run_blast_tab(in_query: str, in_subject: str): 
+    return run_blast(in_query, in_subject, '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qcovs qcovhsp qlen slen')
+
+def run_blast_xml(in_query: str, in_subject: str): 
+    return run_blast(in_query, in_subject, '5')
+
 def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
-    blastn_out_tab = run_blast(in_query, in_subject, '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qcovs qcovhsp qlen slen')
-    blastn_out_xml = run_blast(in_query, in_subject, '5')
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future_tab = executor.submit(run_blast_tab, in_query, in_subject)
+        future_xml = executor.submit(run_blast_xml, in_query, in_subject)
+        
+        blastn_out_tab = future_tab.result()
+        blastn_out_xml = future_xml.result()
 
     tab_data = [
         dict(zip(['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qcovs', 'qcovhsp', 'qlen', 'slen'], line.split("\t")))
@@ -319,13 +330,13 @@ def main(prefix):
 if __name__ == "__main__":
     args = parse_argparse() 
     main(args.prefix)         
-    directory_path = os.path.dirname(args.prefix)
-    # All files under '/mypath/' that match '*database*'
-    file_pattern = f"{args.prefix}*database*" 
-    files = glob.glob(file_pattern) # Use glob to match the pattern
-    for f in files: # Loop over the matched files
-        try:
-            os.remove(f)  # Try to remove the file
-            print(f'Successfully removed file {f}')
-        except Exception as e:  # Catch any exceptions (like the file not existing)
-            print(f'Failed to remove file {f}. Reason: {e}')
+    #directory_path = os.path.dirname(args.prefix)
+    ## All files under '/mypath/' that match '*database*'
+    #file_pattern = f"{args.prefix}*database*" 
+    #files = glob.glob(file_pattern) # Use glob to match the pattern
+    #for f in files: # Loop over the matched files
+    #    try:
+    #        os.remove(f)  # Try to remove the file
+    #        print(f'Successfully removed file {f}')
+    #    except Exception as e:  # Catch any exceptions (like the file not existing)
+    #        print(f'Failed to remove file {f}. Reason: {e}')

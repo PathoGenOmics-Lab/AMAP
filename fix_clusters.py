@@ -14,6 +14,7 @@ import argparse
 import glob
 
 def get_seq(chck_rds, fasta_file: str, fasta_name: str):
+    '''Extracts a sequence from a fasta file and writes it to a new fasta file.'''
     def selected_seqs_gen():
         for seq_record in SeqIO.parse(fasta_file, "fasta"):
             if chck_rds in seq_record.id:
@@ -21,27 +22,26 @@ def get_seq(chck_rds, fasta_file: str, fasta_name: str):
                 break
     SeqIO.write(selected_seqs_gen(), fasta_name, "fasta")
 
-
 def create_database(fasta: str, basename: str) -> None:
+    '''Creates a blast database from a fasta file.'''
     subprocess.run(['makeblastdb', '-in', fasta, '-dbtype', 'nucl', '-out', basename])
 
 def run_blast(in_query: str, in_subject: str, outfmt: str) -> str:
+    '''Runs blastn with the given parameters and returns the output.'''
     cline = NcbiblastnCommandline(query=in_query, db=in_subject, outfmt=outfmt, dust="no")
     out, _ = cline()
     return out
 
-from concurrent.futures import ThreadPoolExecutor
-from io import StringIO
-from Bio.Blast import NCBIXML
-import pandas as pd
-
 def run_blast_tab(in_query: str, in_subject: str): 
+    '''Runs blastn with the given parameters and returns the output in tabular format.'''
     return run_blast(in_query, in_subject, '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qcovs qcovhsp qlen slen')
 
 def run_blast_xml(in_query: str, in_subject: str): 
+    '''Runs blastn with the given parameters and returns the output in xml format.'''
     return run_blast(in_query, in_subject, '5')
 
 def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
+    '''Runs blastn with the given parameters and returns the output in a pandas DataFrame.'''
     with ThreadPoolExecutor(max_workers=2) as executor:
         future_tab = executor.submit(run_blast_tab, in_query, in_subject)
         future_xml = executor.submit(run_blast_xml, in_query, in_subject)
@@ -68,6 +68,7 @@ def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
 
 
 def count_cases(genes):
+    '''Counts the number of genes in each case and the number of Rv genes.'''
     g_genes = genes.split(".")
     cases = ["case1", "case2", "case3", "case4"]
     counts = {case: genes.count(case) for case in cases}
@@ -76,6 +77,7 @@ def count_cases(genes):
     return rvs, g_genes, diff, counts["case1"], counts["case2"], counts["case3"], counts["case4"]
 
 def process_element(element):
+    '''Processes an element from the cluster file and returns the element name, length and the element itself.'''
     if "case" in element:
         length = int(element.split(";")[1].split(",")[1]) - int(element.split(";")[1].split(",")[0])
         return [element.split(";")[0], length, element]
@@ -83,12 +85,14 @@ def process_element(element):
         return [element.split("_")[0], int(element.split("_")[1].split("-")[1]) - int(element.split("_")[1].split("-")[0]), element]
 
 def match_elements(l_bak, l_gen):
+    '''Matches the elements from the cluster file with the elements from the blastn output.'''
     non_matching_bak = [bak for bak in l_bak if not any(bak[1] == gen[1] for gen in l_gen)]
     non_matching_gen = [gen for gen in l_gen if not any(gen[1] == bak[1] for bak in l_bak)]
     matching_elements = [(bak, gen) for bak in l_bak for gen in l_gen if bak[1] == gen[1]]
     return non_matching_bak, non_matching_gen, matching_elements
 
 def process_element_with_blastn(element: tuple) -> dict:
+
     pid = os.getpid()  # Get current process ID
     with NamedTemporaryFile(suffix=f".{pid}.fasta", delete=False) as query_file:  # Create a temporary file with the process ID
         get_seq(element[0], "nt_h37rv.fasta", query_file.name)  # Assuming get_seq is a defined function in your code
@@ -125,6 +129,7 @@ def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords
     return bakta_coords
 
 def cluster1_genes(line: str, coord_list: set, file_writer) -> set:
+    
     line_elements = line.strip("\n").split(":")
     genes = line_elements[1].split(".")
     for element in genes:
@@ -157,7 +162,8 @@ def process_non_matching_elements_modified(non_matching_gen, bakta_coords):
     return lista
 
 
-def process_line(line, prefix):
+def process_line(line:str, prefix: str) -> list:
+    '''Process a line from the cluster file and returns a list of matching elements.'''
     name = prefix.split('/')[-1] + "_"
     # Divide la linea en partes
     line_parts = line.split(".")
@@ -187,8 +193,9 @@ def process_line(line, prefix):
     return matching_dict
 
 def parse_argparse():
+    '''Parse the command line arguments.'''
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('-p', '--prefix', help='')
+    parser.add_argument('-p', '--prefix', help='path to the prefix of the files')
     args = parser.parse_args()
     return args
 
@@ -199,8 +206,8 @@ def main(prefix):
     with open(f"{prefix}.cleancoord.tsv", "w") as enter:
         with open(f"{prefix}.clusters", "r") as in_file:
             lista_coordenadas = set()
-            #lista_coordenadas.add((1164572,1165123))
-            #lista_coordenadas.add((3378001,3378243))
+            lista_coordenadas.add((1164572,1165123))
+            lista_coordenadas.add((3378001,3378243))
 
             for line in in_file:
 

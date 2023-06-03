@@ -12,7 +12,7 @@ from io import StringIO
 import re
 import argparse
 import glob
-
+#current execution 12 minutes
 def get_seq(chck_rds, fasta_file: str, fasta_name: str):
     def selected_seqs_gen():
         for seq_record in SeqIO.parse(fasta_file, "fasta"):

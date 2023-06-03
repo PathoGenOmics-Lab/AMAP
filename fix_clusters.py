@@ -118,7 +118,7 @@ def cluster1_genes(line: str, coord_list: set, file_writer) -> set:
             file_writer.write(str(element) + "\n") 
     return coord_list
 
-def process_non_matching_elements_modified(non_matching_gen, enter, bakta_coords):
+def process_non_matching_elements_modified(non_matching_gen, bakta_coords):
     lista = []
     with ThreadPoolExecutor() as executor:
         results = list(executor.map(process_element_with_blastn, non_matching_gen))
@@ -222,7 +222,7 @@ def main(prefix):
                             lista_coordenadas = process_non_matching_genes(non_matching_gen, enter, lista_coordenadas)
 
 
-                    if "case4" in line and diff <= 0:
+                    elif "case4" in line and diff <= 0:
                         non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
                         if len(non_matching_gen) != 0:                                              
                             lista_set = set()
@@ -239,7 +239,7 @@ def main(prefix):
                                     else:
                                         if gen not in non_matching_gen:
                                             non_matching_gen.append(gen)
-                            lista_res = process_non_matching_elements_modified(non_matching_gen, enter, lista_coordenadas)  
+                            lista_res = process_non_matching_elements_modified(non_matching_gen, lista_coordenadas)  
                             no_bak = []
                             for element in lista_res:
                                 write_ele = False
@@ -283,7 +283,7 @@ def main(prefix):
                                         non_matching_gen.append(element)
 
                             lista_set = set()
-                            lista_res = process_non_matching_elements_modified(non_matching_gen, enter, lista_coordenadas)
+                            lista_res = process_non_matching_elements_modified(non_matching_gen, lista_coordenadas)
 
                             for element in lista_res:
                                 write_ele = False
@@ -312,25 +312,18 @@ def main(prefix):
                                     print("aqui2",bakta)
                                     enter.write(str(bakta) + "\n")
 
-                    if "case4" in line and diff > 0:
+                    elif "case4" in line and diff > 0:
                         non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
                         lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas) 
 
 if __name__ == "__main__":
     args = parse_argparse() 
     main(args.prefix)         
-
     directory_path = os.path.dirname(args.prefix)
-
-
     # All files under '/mypath/' that match '*database*'
     file_pattern = f"{args.prefix}*database*" 
-
-    # Use glob to match the pattern
-    files = glob.glob(file_pattern)
-
-    # Loop over the matched files
-    for f in files:
+    files = glob.glob(file_pattern) # Use glob to match the pattern
+    for f in files: # Loop over the matched files
         try:
             os.remove(f)  # Try to remove the file
             print(f'Successfully removed file {f}')

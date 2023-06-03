@@ -9,8 +9,6 @@ from concurrent.futures import ThreadPoolExecutor
 import subprocess
 from tempfile import NamedTemporaryFile
 from io import StringIO
-from collections import defaultdict
-from typing import List, Any, Tuple
 import re
 import argparse
 
@@ -182,8 +180,8 @@ def main(prefix):
     with open(f"{prefix}.cleancoord.tsv", "w") as enter:
         with open(f"{prefix}.clusters", "r") as in_file:
             lista_coordenadas = set()
-            lista_coordenadas.add((1164572,1165123))
-            lista_coordenadas.add((3378001,3378243))
+            #lista_coordenadas.add((1164572,1165123))
+            #lista_coordenadas.add((3378001,3378243))
 
             for line in in_file:
 
@@ -268,16 +266,22 @@ def main(prefix):
                                     if bakta not in no_bak:
                                         print(long)
                                         print(diff_rv)
-                                        print("aqui1",bakta)
-                                        enter.write(str(bakta) + "\n")
+                                        cutt = bakta[2].split(";")
+                                        write_cutt = cutt[0]+"\t"+cutt[1].split(",")[0]+"\t"+cutt[1].split(",")[1]+"\t"+cutt[2]
+                                        print("aqui1",bakta[2].split(";"),write_cutt)
+                                        enter.write(write_cutt + "\n")
                             else:
                                 no_bak = []
                                 non_matching_gen = []
-                                for sublistas in matching_elements:
-                                    for elemento in sublistas:
-                                        if "case" not in elemento[2]:
-                                            if elemento not in non_matching_gen:
-                                                non_matching_gen.append(elemento)
+                                # Loop over sublists in the 'matching_elements' list
+                                for sublist in matching_elements:
+                                    # Loop over elements in each sublist
+                                    for element in sublist:
+                                        # Check if the string "case" is not in the third element (at index 2) of 'element' and 
+                                        # if the element is not in the 'non_matching_gen' list, add it
+                                        if "case" not in element[2] and element not in non_matching_gen:
+                                            non_matching_gen.append(element)
+
                                 lista_set = set()
                                 lista_res = process_non_matching_elements_modified(non_matching_gen, enter, lista_coordenadas)
 

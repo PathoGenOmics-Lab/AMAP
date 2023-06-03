@@ -9,29 +9,46 @@ from concurrent.futures import ThreadPoolExecutor
 import subprocess
 from tempfile import NamedTemporaryFile
 from io import StringIO
-from collections import defaultdict
-from typing import List, Any, Tuple
 import re
 import argparse
+import glob
+from functools import partial
 
 def get_seq(chck_rds, fasta_file: str, fasta_name: str):
-    selected_seqs = []
-    for seq_record in SeqIO.parse(fasta_file, "fasta"):
-        if chck_rds in seq_record.id:
-            selected_seqs.append(seq_record)
-    SeqIO.write(selected_seqs, fasta_name, "fasta")
+    '''Extracts a sequence from a fasta file and writes it to a new fasta file.'''
+    def selected_seqs_gen():
+        for seq_record in SeqIO.parse(fasta_file, "fasta"):
+            if chck_rds in seq_record.id:
+                yield seq_record
+                break
+    SeqIO.write(selected_seqs_gen(), fasta_name, "fasta")
 
 def create_database(fasta: str, basename: str) -> None:
+    '''Creates a blast database from a fasta file.'''
     subprocess.run(['makeblastdb', '-in', fasta, '-dbtype', 'nucl', '-out', basename])
 
 def run_blast(in_query: str, in_subject: str, outfmt: str) -> str:
+    '''Runs blastn with the given parameters and returns the output.'''
     cline = NcbiblastnCommandline(query=in_query, db=in_subject, outfmt=outfmt, dust="no")
     out, _ = cline()
     return out
 
+def run_blast_tab(in_query: str, in_subject: str): 
+    '''Runs blastn with the given parameters and returns the output in tabular format.'''
+    return run_blast(in_query, in_subject, '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qcovs qcovhsp qlen slen')
+
+def run_blast_xml(in_query: str, in_subject: str): 
+    '''Runs blastn with the given parameters and returns the output in xml format.'''
+    return run_blast(in_query, in_subject, '5')
+
 def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
-    blastn_out_tab = run_blast(in_query, in_subject, '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qcovs qcovhsp qlen slen')
-    blastn_out_xml = run_blast(in_query, in_subject, '5')
+    '''Runs blastn with the given parameters and returns the output in a pandas DataFrame.'''
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future_tab = executor.submit(run_blast_tab, in_query, in_subject)
+        future_xml = executor.submit(run_blast_xml, in_query, in_subject)
+        
+        blastn_out_tab = future_tab.result()
+        blastn_out_xml = future_xml.result()
 
     tab_data = [
         dict(zip(['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qcovs', 'qcovhsp', 'qlen', 'slen'], line.split("\t")))
@@ -50,7 +67,9 @@ def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
 
     return pd.DataFrame(combined_results)
 
+
 def count_cases(genes):
+    '''Counts the number of genes in each case and the number of Rv genes.'''
     g_genes = genes.split(".")
     cases = ["case1", "case2", "case3", "case4"]
     counts = {case: genes.count(case) for case in cases}
@@ -59,6 +78,7 @@ def count_cases(genes):
     return rvs, g_genes, diff, counts["case1"], counts["case2"], counts["case3"], counts["case4"]
 
 def process_element(element):
+    '''Processes an element from the cluster file and returns the element name, length and the element itself.'''
     if "case" in element:
         length = int(element.split(";")[1].split(",")[1]) - int(element.split(";")[1].split(",")[0])
         return [element.split(";")[0], length, element]
@@ -66,16 +86,18 @@ def process_element(element):
         return [element.split("_")[0], int(element.split("_")[1].split("-")[1]) - int(element.split("_")[1].split("-")[0]), element]
 
 def match_elements(l_bak, l_gen):
+    '''Matches the elements from the cluster file with the elements from the blastn output.'''
     non_matching_bak = [bak for bak in l_bak if not any(bak[1] == gen[1] for gen in l_gen)]
     non_matching_gen = [gen for gen in l_gen if not any(gen[1] == bak[1] for bak in l_bak)]
     matching_elements = [(bak, gen) for bak in l_bak for gen in l_gen if bak[1] == gen[1]]
     return non_matching_bak, non_matching_gen, matching_elements
 
-def process_element_with_blastn(element: tuple) -> dict:
+def process_element_with_blastn(element: tuple, prefix:str) -> dict:
+    name = prefix.split('/')[-1]+"database"
     pid = os.getpid()  # Get current process ID
     with NamedTemporaryFile(suffix=f".{pid}.fasta", delete=False) as query_file:  # Create a temporary file with the process ID
         get_seq(element[0], "nt_h37rv.fasta", query_file.name)  # Assuming get_seq is a defined function in your code
-        blast_out = blastn(query_file.name, "G48915_L4database")  # Run blastn
+        blast_out = blastn(query_file.name, name)  # Run blastn
         os.remove(query_file.name)  # Remove the temporary file
 
     blast_results = {}
@@ -89,10 +111,11 @@ def process_element_with_blastn(element: tuple) -> dict:
 
     return blast_results
 
-def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords: set) -> set:
+def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords: set, prefix) -> set:
+#    Aquí 'prefix' se fija como un argumento para todas las llamadas a 'process_element_with_blastn'.
+    fixed_process_element_with_blastn = partial(process_element_with_blastn, prefix=prefix)
     with ThreadPoolExecutor() as executor:
-        results = list(executor.map(process_element_with_blastn, non_matching_gen))
-
+        results = list(executor.map(fixed_process_element_with_blastn, non_matching_gen))
     for result in results:
         for gene_id, coordinates_list in result.items():
             for coords in coordinates_list:
@@ -107,22 +130,31 @@ def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords
 
     return bakta_coords
 
-def cluster1_genes(line: str, coord_list: set, file_writer) -> set:
+def cluster1_genes(line: str, coord_list: set, file_writer, prefix) -> set:
+    
     line_elements = line.strip("\n").split(":")
     genes = line_elements[1].split(".")
     for element in genes:
         if "case" not in element:
             gene = element.split("_")
             gene_details = [gene[0], abs(int(gene[1].split("-")[1]) - int(gene[1].split("-")[0])), element]
-            coord_list = process_non_matching_genes([gene_details], file_writer, coord_list)
+            coord_list = process_non_matching_genes([gene_details], file_writer, coord_list, prefix)
         elif "case1" in element:
             file_writer.write(str(element) + "\n") 
     return coord_list
 
-def process_non_matching_elements_modified(non_matching_gen, enter, bakta_coords):
+def process_non_matching_elements_modified(non_matching_gen, bakta_coords, prefix):
     lista = []
+
+
+#    Aquí 'prefix' se fija como un argumento para todas las llamadas a 'process_element_with_blastn'.
+    fixed_process_element_with_blastn = partial(process_element_with_blastn, prefix=prefix)
+
     with ThreadPoolExecutor() as executor:
-        results = list(executor.map(process_element_with_blastn, non_matching_gen))
+        results = list(executor.map(fixed_process_element_with_blastn, non_matching_gen))
+
+    #with ThreadPoolExecutor() as executor:
+    #    results = list(executor.map(process_element_with_blastn, non_matching_gen, prefix))
     
     for result in results:        
         for qseqid, coords_list in result.items():
@@ -140,9 +172,10 @@ def process_non_matching_elements_modified(non_matching_gen, enter, bakta_coords
     return lista
 
 
-def process_line(line, prefix):
-    name=prefix.split('/')[-1]+"_"
-    # Divide la l�nea en partes
+def process_line(line:str, prefix: str) -> list:
+    '''Process a line from the cluster file and returns a list of matching elements.'''
+    name = prefix.split('/')[-1] + "_"
+    # Divide la linea en partes
     line_parts = line.split(".")
     # Filtra las partes para 'g_elements' y 'rv_elements'
     g_elements = (part for part in line_parts if name in part)
@@ -170,8 +203,9 @@ def process_line(line, prefix):
     return matching_dict
 
 def parse_argparse():
+    '''Parse the command line arguments.'''
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('-p', '--prefix', help='')
+    parser.add_argument('-p', '--prefix', help='path to the prefix of the files')
     args = parser.parse_args()
     return args
 
@@ -182,15 +216,15 @@ def main(prefix):
     with open(f"{prefix}.cleancoord.tsv", "w") as enter:
         with open(f"{prefix}.clusters", "r") as in_file:
             lista_coordenadas = set()
-            lista_coordenadas.add((1164572,1165123))
-            lista_coordenadas.add((3378001,3378243))
+            #lista_coordenadas.add((1164572,1165123))
+            #lista_coordenadas.add((3378001,3378243))
 
             for line in in_file:
 
                 if "Cluster -1" in line:
-                    cluster1_genes(line, lista_coordenadas, enter)
+                    lista_coordenadas = cluster1_genes(line, lista_coordenadas, enter, prefix)
 
-                if "Cluster -1" not in line:
+                else:
                     l = line.strip("\n").split(":")
                     cluster = l[0]
                     rvs, g_genes, diff, case1, case2, case3, case4 = count_cases(l[1])  # print(cluster,case1,case2,case3,case4,diff,rvs)
@@ -220,8 +254,7 @@ def main(prefix):
                                         lista_coordenadas.add(real_coord)
                                         enter.write(f"{bak[0]}\t{real_coord[0]}\t{real_coord[1]}\t{bak_split[2]}\t{gen[0]}.{cluster}\n")
 
-                            lista_coordenadas = process_non_matching_genes(non_matching_gen, enter, lista_coordenadas)
-
+                            lista_coordenadas = process_non_matching_genes(non_matching_gen, enter, lista_coordenadas, prefix)
 
                     if "case4" in line:
                         if diff < 0 or diff == 0:
@@ -241,7 +274,7 @@ def main(prefix):
                                         else:
                                             if gen not in non_matching_gen:
                                                 non_matching_gen.append(gen)
-                                lista_res = process_non_matching_elements_modified(non_matching_gen, enter, lista_coordenadas)  
+                                lista_res = process_non_matching_elements_modified(non_matching_gen, lista_coordenadas, prefix)  
                                 no_bak = []
                                 for element in lista_res:
                                     write_ele = False
@@ -279,7 +312,7 @@ def main(prefix):
                                             if elemento not in non_matching_gen:
                                                 non_matching_gen.append(elemento)
                                 lista_set = set()
-                                lista_res = process_non_matching_elements_modified(non_matching_gen, enter, lista_coordenadas)
+                                lista_res = process_non_matching_elements_modified(non_matching_gen, lista_coordenadas, prefix)
 
                                 for element in lista_res:
                                     write_ele = False
@@ -310,8 +343,18 @@ def main(prefix):
 
                         elif diff > 0:
                             non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
-                            lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas) 
+                            lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas, prefix) 
 
 if __name__ == "__main__":
     args = parse_argparse() 
-    main(args.prefix)         
+    main(args.prefix)               
+    directory_path = os.path.dirname(args.prefix)
+    # All files under '/mypath/' that match '*database*'
+    file_pattern = f"{args.prefix}*database*" 
+    files = glob.glob(file_pattern) # Use glob to match the pattern
+    for f in files: # Loop over the matched files
+        try:
+            os.remove(f)  # Try to remove the file
+            print(f'Successfully removed file {f}')
+        except Exception as e:  # Catch any exceptions (like the file not existing)
+            print(f'Failed to remove file {f}. Reason: {e}')

@@ -114,10 +114,8 @@ def process_element_with_blastn(element: tuple, prefix:str) -> dict:
 def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords: set, prefix) -> set:
 #    Aquí 'prefix' se fija como un argumento para todas las llamadas a 'process_element_with_blastn'.
     fixed_process_element_with_blastn = partial(process_element_with_blastn, prefix=prefix)
-
     with ThreadPoolExecutor() as executor:
         results = list(executor.map(fixed_process_element_with_blastn, non_matching_gen))
-
     for result in results:
         for gene_id, coordinates_list in result.items():
             for coords in coordinates_list:
@@ -218,8 +216,8 @@ def main(prefix):
     with open(f"{prefix}.cleancoord.tsv", "w") as enter:
         with open(f"{prefix}.clusters", "r") as in_file:
             lista_coordenadas = set()
-            lista_coordenadas.add((1164572,1165123))
-            lista_coordenadas.add((3378001,3378243))
+            #lista_coordenadas.add((1164572,1165123))
+            #lista_coordenadas.add((3378001,3378243))
 
             for line in in_file:
 

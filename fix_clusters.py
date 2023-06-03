@@ -169,7 +169,7 @@ def process_line(line, prefix):
                 break  # Sal del bucle una vez que encuentres una coincidencia que no se haya utilizado todav�a
     return matching_dict
 
-def argparse():
+def parse_argparse():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('-p', '--prefix', help='')
     args = parser.parse_args()
@@ -313,4 +313,5 @@ def main(prefix):
                             lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas) 
 
 if __name__ == "__main__":
-    main()          
+    args = parse_argparse() 
+    main(args.prefix)         

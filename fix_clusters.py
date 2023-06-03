@@ -140,8 +140,8 @@ def process_non_matching_elements_modified(non_matching_gen, bakta_coords):
 
 
 def process_line(line, prefix):
-    name=prefix.split('/')[-1]+"_"
-    # Divide la l�nea en partes
+    name = prefix.split('/')[-1] + "_"
+    # Divide la linea en partes
     line_parts = line.split(".")
     # Filtra las partes para 'g_elements' y 'rv_elements'
     g_elements = (part for part in line_parts if name in part)
@@ -187,9 +187,9 @@ def main(prefix):
             for line in in_file:
 
                 if "Cluster -1" in line:
-                    cluster1_genes(line, lista_coordenadas, enter)
+                    lista_coordenadas = cluster1_genes(line, lista_coordenadas, enter)
 
-                if "Cluster -1" not in line:
+                else:
                     l = line.strip("\n").split(":")
                     cluster = l[0]
                     rvs, g_genes, diff, case1, case2, case3, case4 = count_cases(l[1])  # print(cluster,case1,case2,case3,case4,diff,rvs)

@@ -12,6 +12,7 @@ from io import StringIO
 import re
 import argparse
 import glob
+from functools import partial
 
 def get_seq(chck_rds, fasta_file: str, fasta_name: str):
     '''Extracts a sequence from a fasta file and writes it to a new fasta file.'''
@@ -111,8 +112,11 @@ def process_element_with_blastn(element: tuple, prefix:str) -> dict:
     return blast_results
 
 def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords: set, prefix) -> set:
+#    Aquí 'prefix' se fija como un argumento para todas las llamadas a 'process_element_with_blastn'.
+    fixed_process_element_with_blastn = partial(process_element_with_blastn, prefix=prefix)
+
     with ThreadPoolExecutor() as executor:
-        results = list(executor.map(process_element_with_blastn, non_matching_gen, prefix))
+        results = list(executor.map(fixed_process_element_with_blastn, non_matching_gen))
 
     for result in results:
         for gene_id, coordinates_list in result.items():
@@ -143,8 +147,16 @@ def cluster1_genes(line: str, coord_list: set, file_writer, prefix) -> set:
 
 def process_non_matching_elements_modified(non_matching_gen, bakta_coords, prefix):
     lista = []
+
+
+#    Aquí 'prefix' se fija como un argumento para todas las llamadas a 'process_element_with_blastn'.
+    fixed_process_element_with_blastn = partial(process_element_with_blastn, prefix=prefix)
+
     with ThreadPoolExecutor() as executor:
-        results = list(executor.map(process_element_with_blastn, non_matching_gen, prefix))
+        results = list(executor.map(fixed_process_element_with_blastn, non_matching_gen))
+
+    #with ThreadPoolExecutor() as executor:
+    #    results = list(executor.map(process_element_with_blastn, non_matching_gen, prefix))
     
     for result in results:        
         for qseqid, coords_list in result.items():
@@ -338,13 +350,13 @@ def main(prefix):
 if __name__ == "__main__":
     args = parse_argparse() 
     main(args.prefix)               
-    #directory_path = os.path.dirname(args.prefix)
-    ## All files under '/mypath/' that match '*database*'
-    #file_pattern = f"{args.prefix}*database*" 
-    #files = glob.glob(file_pattern) # Use glob to match the pattern
-    #for f in files: # Loop over the matched files
-    #    try:
-    #        os.remove(f)  # Try to remove the file
-    #        print(f'Successfully removed file {f}')
-    #    except Exception as e:  # Catch any exceptions (like the file not existing)
-    #        print(f'Failed to remove file {f}. Reason: {e}')
+    directory_path = os.path.dirname(args.prefix)
+    # All files under '/mypath/' that match '*database*'
+    file_pattern = f"{args.prefix}*database*" 
+    files = glob.glob(file_pattern) # Use glob to match the pattern
+    for f in files: # Loop over the matched files
+        try:
+            os.remove(f)  # Try to remove the file
+            print(f'Successfully removed file {f}')
+        except Exception as e:  # Catch any exceptions (like the file not existing)
+            print(f'Failed to remove file {f}. Reason: {e}')

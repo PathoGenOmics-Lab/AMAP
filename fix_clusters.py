@@ -91,12 +91,12 @@ def match_elements(l_bak, l_gen):
     matching_elements = [(bak, gen) for bak in l_bak for gen in l_gen if bak[1] == gen[1]]
     return non_matching_bak, non_matching_gen, matching_elements
 
-def process_element_with_blastn(element: tuple) -> dict:
-
+def process_element_with_blastn(element: tuple, prefix:str) -> dict:
+    name = prefix.split('/')[-1]+"database"
     pid = os.getpid()  # Get current process ID
     with NamedTemporaryFile(suffix=f".{pid}.fasta", delete=False) as query_file:  # Create a temporary file with the process ID
         get_seq(element[0], "nt_h37rv.fasta", query_file.name)  # Assuming get_seq is a defined function in your code
-        blast_out = blastn(query_file.name, "G48915_L4database")  # Run blastn
+        blast_out = blastn(query_file.name, name)  # Run blastn
         os.remove(query_file.name)  # Remove the temporary file
 
     blast_results = {}
@@ -110,9 +110,9 @@ def process_element_with_blastn(element: tuple) -> dict:
 
     return blast_results
 
-def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords: set) -> set:
+def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords: set, prefix) -> set:
     with ThreadPoolExecutor() as executor:
-        results = list(executor.map(process_element_with_blastn, non_matching_gen))
+        results = list(executor.map(process_element_with_blastn, non_matching_gen, prefix))
 
     for result in results:
         for gene_id, coordinates_list in result.items():
@@ -128,7 +128,7 @@ def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords
 
     return bakta_coords
 
-def cluster1_genes(line: str, coord_list: set, file_writer) -> set:
+def cluster1_genes(line: str, coord_list: set, file_writer, prefix) -> set:
     
     line_elements = line.strip("\n").split(":")
     genes = line_elements[1].split(".")
@@ -136,15 +136,15 @@ def cluster1_genes(line: str, coord_list: set, file_writer) -> set:
         if "case" not in element:
             gene = element.split("_")
             gene_details = [gene[0], abs(int(gene[1].split("-")[1]) - int(gene[1].split("-")[0])), element]
-            coord_list = process_non_matching_genes([gene_details], file_writer, coord_list)
+            coord_list = process_non_matching_genes([gene_details], file_writer, coord_list, prefix)
         elif "case1" in element:
             file_writer.write(str(element) + "\n") 
     return coord_list
 
-def process_non_matching_elements_modified(non_matching_gen, bakta_coords):
+def process_non_matching_elements_modified(non_matching_gen, bakta_coords, prefix):
     lista = []
     with ThreadPoolExecutor() as executor:
-        results = list(executor.map(process_element_with_blastn, non_matching_gen))
+        results = list(executor.map(process_element_with_blastn, non_matching_gen, prefix))
     
     for result in results:        
         for qseqid, coords_list in result.items():
@@ -212,7 +212,7 @@ def main(prefix):
             for line in in_file:
 
                 if "Cluster -1" in line:
-                    lista_coordenadas = cluster1_genes(line, lista_coordenadas, enter)
+                    lista_coordenadas = cluster1_genes(line, lista_coordenadas, enter, prefix)
 
                 else:
                     l = line.strip("\n").split(":")
@@ -244,7 +244,7 @@ def main(prefix):
                                         lista_coordenadas.add(real_coord)
                                         enter.write(f"{bak[0]}\t{real_coord[0]}\t{real_coord[1]}\t{bak_split[2]}\t{gen[0]}.{cluster}\n")
 
-                            lista_coordenadas = process_non_matching_genes(non_matching_gen, enter, lista_coordenadas)
+                            lista_coordenadas = process_non_matching_genes(non_matching_gen, enter, lista_coordenadas, prefix)
 
                     if "case4" in line:
                         if diff < 0 or diff == 0:
@@ -264,7 +264,7 @@ def main(prefix):
                                         else:
                                             if gen not in non_matching_gen:
                                                 non_matching_gen.append(gen)
-                                lista_res = process_non_matching_elements_modified(non_matching_gen, lista_coordenadas)  
+                                lista_res = process_non_matching_elements_modified(non_matching_gen, lista_coordenadas, prefix)  
                                 no_bak = []
                                 for element in lista_res:
                                     write_ele = False
@@ -302,7 +302,7 @@ def main(prefix):
                                             if elemento not in non_matching_gen:
                                                 non_matching_gen.append(elemento)
                                 lista_set = set()
-                                lista_res = process_non_matching_elements_modified(non_matching_gen, lista_coordenadas)
+                                lista_res = process_non_matching_elements_modified(non_matching_gen, lista_coordenadas, prefix)
 
                                 for element in lista_res:
                                     write_ele = False
@@ -333,7 +333,7 @@ def main(prefix):
 
                         elif diff > 0:
                             non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
-                            lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas) 
+                            lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas, prefix) 
 
 if __name__ == "__main__":
     args = parse_argparse() 

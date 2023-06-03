@@ -11,6 +11,7 @@ from tempfile import NamedTemporaryFile
 from io import StringIO
 import re
 import argparse
+import glob
 
 def get_seq(chck_rds, fasta_file: str, fasta_name: str):
     selected_seqs = []
@@ -318,3 +319,20 @@ def main(prefix):
 if __name__ == "__main__":
     args = parse_argparse() 
     main(args.prefix)         
+
+    directory_path = os.path.dirname(args.prefix)
+
+
+    # All files under '/mypath/' that match '*database*'
+    file_pattern = f"{args.prefix}*database*" 
+
+    # Use glob to match the pattern
+    files = glob.glob(file_pattern)
+
+    # Loop over the matched files
+    for f in files:
+        try:
+            os.remove(f)  # Try to remove the file
+            print(f'Successfully removed file {f}')
+        except Exception as e:  # Catch any exceptions (like the file not existing)
+            print(f'Failed to remove file {f}. Reason: {e}')

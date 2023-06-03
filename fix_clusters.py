@@ -140,11 +140,12 @@ def process_non_matching_elements_modified(non_matching_gen, enter, bakta_coords
     return lista
 
 
-def process_line(line):
+def process_line(line, prefix):
+    name=prefix.split('/')[-1]+"_"
     # Divide la l�nea en partes
     line_parts = line.split(".")
     # Filtra las partes para 'g_elements' y 'rv_elements'
-    g_elements = (part for part in line_parts if "G48915_L4_" in part)
+    g_elements = (part for part in line_parts if name in part)
     rv_elements = (part for part in line_parts if "Rv" in part)
 
     # Analiza 'rv_elements' una vez antes del bucle usando expresiones regulares para extraer n�meros
@@ -174,11 +175,12 @@ def argparse():
     args = parser.parse_args()
     return args
 
-def main():
-    create_database("G48915_L4.fna", "G48915_L4database")
-
-    with open("AQUI.G48915_L4.cleancoord.tsv", "w") as enter:
-        with open("G48915_L4.clusters", "r") as in_file:
+def main(prefix):
+    
+    create_database(f"{prefix}.fna", f"{prefix}database")
+    
+    with open(f"{prefix}.cleancoord.tsv", "w") as enter:
+        with open(f"{prefix}.clusters", "r") as in_file:
             lista_coordenadas = set()
             lista_coordenadas.add((1164572,1165123))
             lista_coordenadas.add((3378001,3378243))
@@ -200,7 +202,7 @@ def main():
 
                     if "case4" not in line:
                         if diff == 0:
-                            matching_dict = process_line(l[1])
+                            matching_dict = process_line(l[1], prefix)
                             for g_element, rv_element in matching_dict.items():
                                 el = process_element(g_element)
                                 el_split = el[2].split(";")

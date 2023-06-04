@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
 
-def main():
-    df1 = pd.read_csv('G26689_L8.tsv', sep='\t', header=0)
-    df2 = pd.read_csv('G26689_L8.cleancoord.tsv', sep='\t', header=None, names=['Locus Tag', 'Start', 'Stop', 'Strand', 'Cluster'])
+# Definimos los nombres de las columnas
+column_names = ["Sequence Id", "Type", "Start", "Stop", "Strand", "Locus Tag", "Gene", "Product", "DbXrefs"]
 
-if '__name__' == '__main__':
-    main()
+# Leemos el primer archivo, ignorando las líneas que comienzan con "#"
+df1 = pd.read_csv('G26689_L8.tsv', sep='\t', comment='#', names=column_names)
+
+df2 = pd.read_csv('G26689_L8.cleancoord.tsv', sep='\t', header=None, names=["Locus Tag", "Start", "Stop", "Strand", "Cluster"])

@@ -96,7 +96,7 @@ def process_element_with_blastn(element: tuple, prefix:str) -> dict:
     name = prefix.split('/')[-1]+"database"
     pid = os.getpid()  # Get current process ID
     with NamedTemporaryFile(suffix=f".{pid}.fasta", delete=False) as query_file:  # Create a temporary file with the process ID
-        get_seq(element[0], "nt_h37rv.fasta", query_file.name)  # Assuming get_seq is a defined function in your code
+        get_seq(element[0], "/storage/PGO/results/mtb/proj_anc2023/bakta/last_step/nt_correctedH37Rv.fa", query_file.name)  # Assuming get_seq is a defined function in your code
         blast_out = blastn(query_file.name, name)  # Run blastn
         os.remove(query_file.name)  # Remove the temporary file
 
@@ -140,7 +140,10 @@ def cluster1_genes(line: str, coord_list: set, file_writer, prefix) -> set:
             gene_details = [gene[0], abs(int(gene[1].split("-")[1]) - int(gene[1].split("-")[0])), element]
             coord_list = process_non_matching_genes([gene_details], file_writer, coord_list, prefix)
         elif "case1" in element:
-            file_writer.write(str(element) + "\n") 
+            wr = element.split(";")
+            num = wr[1].split(",")
+            to_write = wr[0]+"\t"+num[0]+"\t"+num[1]+"\t"+wr[2]
+            file_writer.write(to_write + "\n") 
     return coord_list
 
 def process_non_matching_elements_modified(non_matching_gen, bakta_coords, prefix):
@@ -299,10 +302,10 @@ def main(prefix):
                                             lista_set.add(tuple(coord))
                                 for bakta in non_matching_bak:
                                     if bakta not in no_bak:
-                                        print(long)
-                                        print(diff_rv)
-                                        print("aqui1",bakta)
-                                        enter.write(str(bakta) + "\n")
+                                        wr = bakta[2].split(";")
+                                        num = wr[1].split(",")
+                                        to_write = wr[0]+"\t"+num[0]+"\t"+num[1]+"\t"+wr[2]
+                                        enter.write(to_write + "\n")                             
                             else:
                                 no_bak = []
                                 non_matching_gen = []
@@ -336,19 +339,21 @@ def main(prefix):
                                             lista_set.add(tuple(coord))
                                 for bakta in non_matching_bak:
                                     if bakta not in no_bak:
-                                        print(long)
-                                        print(diff_rv)
-                                        print("aqui2",bakta)
-                                        enter.write(str(bakta) + "\n")
 
+                                        wr = bakta[2].split(";")
+                                        num = wr[1].split(",")
+                                        to_write = wr[0]+"\t"+num[0]+"\t"+num[1]+"\t"+wr[2]
+                                        enter.write(to_write + "\n") 
                         elif diff > 0:
                             non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
                             lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas, prefix) 
 
 if __name__ == "__main__":
     args = parse_argparse() 
-    main(args.prefix)               
     directory_path = os.path.dirname(args.prefix)
+    os.chdir(directory_path)
+    main(args.prefix)               
+
     # All files under '/mypath/' that match '*database*'
     file_pattern = f"{args.prefix}*database*" 
     files = glob.glob(file_pattern) # Use glob to match the pattern

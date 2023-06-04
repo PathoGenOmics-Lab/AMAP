@@ -3,13 +3,15 @@
 import pandas as pd
 import numpy as np
 import argparse
+import os
 def main():
     args = parse_argparse() 
     file_1 = f"{args.input}.tsv"
     file_2 = f"{args.input}.cleancoord.tsv"  
     # Define column names
     column_names = ["Sequence Id", "Type", "Start", "Stop", "Strand", "Locus Tag", "Gene", "Product", "DbXrefs"]
-
+    directory_path = os.path.dirname(args.input)
+    os.chdir(directory_path)
     # Read first file, ignore lines that start with "#"
     df1 = pd.read_csv(file_1, sep='\t', comment='#', names=column_names)
 

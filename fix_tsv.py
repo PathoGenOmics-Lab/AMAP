@@ -2,15 +2,18 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
-
+import argparse
 def main():
+    args = parse_argparse() 
+    file_1 = f"{args.input}.tsv"
+    file_2 = f"{args.input}.cleancoord.tsv"  
     # Define column names
     column_names = ["Sequence Id", "Type", "Start", "Stop", "Strand", "Locus Tag", "Gene", "Product", "DbXrefs"]
 
     # Read first file, ignore lines that start with "#"
-    df1 = pd.read_csv('G26689_L8.tsv', sep='\t', comment='#', names=column_names)
+    df1 = pd.read_csv(file_1, sep='\t', comment='#', names=column_names)
 
-    df2 = pd.read_csv('G26689_L8.cleancoord.tsv', sep='\t', header=None, names=["Locus Tag", "Start", "Stop", "Strand", "Cluster"])
+    df2 = pd.read_csv(file_2, sep='\t', header=None, names=["Locus Tag", "Start", "Stop", "Strand", "Cluster"])
     df2_unique = df2[~df2['Locus Tag'].isin(df1['Locus Tag'])]
     df2_unique['Locus Tag'] = df2_unique['Locus Tag'].str.split('_').str[0]
     df1.set_index('Locus Tag', inplace=True)
@@ -42,7 +45,7 @@ def main():
     # Write to a TSV file
     final_df.to_csv('final.tsv', sep='\t', index=False)
 
-def argparse():
+def parse_argparse():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('-i', '--input', help='Input path', required=True)
     args = parser.parse_args()

@@ -43,7 +43,7 @@ def main():
     final_df = final_df.reset_index()
     final_df = final_df.reindex(columns=["Sequence Id", "Type", "Start", "Stop", "Strand", "Locus Tag", "Gene", "Product", "DbXrefs"])
     # Write to a TSV file
-    final_df.to_csv('final.tsv', sep='\t', index=False)
+    final_df.to_csv(f"{args.input}.final.tsv"  , sep='\t', index=False)
 
 def parse_argparse():
     parser = argparse.ArgumentParser(description='')

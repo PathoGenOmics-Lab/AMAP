@@ -80,7 +80,7 @@ def main():
     output = f"{new_path}.gbk"
     directory_path = os.path.dirname(args.prefix)
     os.chdir(directory_path)
-    tsv_to_gbk(inputt, fasta, args.gbk_file, output)
+    tsv_to_gbk(inputt, fasta, output)
 
     destination_path = "/storage/PGO/results/mtb/proj_anc2023/bakta/fix_gbk/all_gbk"
 

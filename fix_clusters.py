@@ -12,6 +12,8 @@ import re
 import argparse
 import glob
 from functools import partial
+import os
+from Bio.SeqRecord import SeqRecord
 
 def get_seq(chck_rds, fasta_file: str, fasta_name: str):
     '''Extracts a sequence from a fasta file, translates it, and writes it to a new fasta file.'''
@@ -32,9 +34,10 @@ def create_database(fasta: str, basename: str) -> None:
 
 def run_blast(in_query: str, in_subject: str, outfmt: str) -> str:
     '''Runs blastn with the given parameters and returns the output.'''
-    cline = NcbiblastnCommandline(query=in_query, db=in_subject, outfmt=outfmt, dust="no")
+    cline = NcbitblastnCommandline(query=in_query, db=in_subject, outfmt=outfmt, seg="no")
     out, _ = cline()
     return out
+
 
 def run_blast_tab(in_query: str, in_subject: str): 
     '''Runs blastn with the given parameters and returns the output in tabular format.'''
@@ -177,7 +180,6 @@ def process_non_matching_elements_modified(non_matching_gen, bakta_coords, prefi
                     break  # Sal del bucle una vez que encuentres una coincidencia que no se haya utilizado todav�a
     return lista
 
-
 def process_line(line:str, prefix: str) -> list:
     '''Process a line from the cluster file and returns a list of matching elements.'''
     name = prefix.split('/')[-1] + "_"
@@ -222,8 +224,7 @@ def main(prefix):
     with open(f"{prefix}.cleancoord.tsv", "w") as enter:
         with open(f"{prefix}.clusters", "r") as in_file:
             lista_coordenadas = set()
-            #lista_coordenadas.add((1164572,1165123))
-            #lista_coordenadas.add((3378001,3378243))
+
 
             for line in in_file:
 

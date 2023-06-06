@@ -218,6 +218,15 @@ def process_line(line:str, prefix: str) -> list:
                 break  # Sal del bucle una vez que encuentres una coincidencia que no se haya utilizado todav�a
     return matching_dict
 
+def process_coordinates_and_write(element_info, rv_element, coordinates_list, output, cluster):
+    """Process coordinates and write to output if the coordinates are not in the list."""
+    element_info_split = element_info[2].split(";")
+    real_coordinates = tuple(map(int, element_info_split[1].split(",")))
+    if real_coordinates not in coordinates_list:
+        coordinates_list.add(real_coordinates)
+        output.write(f"{element_info[0]}\t{real_coordinates[0]}\t{real_coordinates[1]}\t{element_info_split[2]}\t{rv_element}.{cluster}\n")
+    return coordinates_list
+
 def parse_argparse():
     '''Parse the command line arguments.'''
     parser = argparse.ArgumentParser(description='')
@@ -241,34 +250,25 @@ def main(prefix):
                     l = line.strip("\n").split(":")
                     cluster = l[0]
                     rvs, g_genes, diff, case1, case2, case3, case4 = count_cases(l[1])  # print(cluster,case1,case2,case3,case4,diff,rvs)
-#
+
                     elements = l[1].split(".")
                     l_bak = [process_element(element) for element in elements if "case" in element]
                     l_gen = [process_element(element) for element in elements if "case" not in element]
                     non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
-#
+
                     if "case4" not in line:
                         if diff == 0:
                             matching_dict = process_line(l[1], prefix)
-                            for g_element, rv_element in matching_dict.items():
-                                el = process_element(g_element)
-                                el_split = el[2].split(";")
-#
-                                real_coord = tuple(map(int, el_split[1].split(",")))
-                                if real_coord not in lista_coordenadas:
-                                    lista_coordenadas.add(real_coord)                                    
-                                    enter.write(f"{el[0]}\t{real_coord[0]}\t{real_coord[1]}\t{el_split[2]}\t{rv_element}.{cluster}\n")
+                            for gene_element, rv_element in matching_dict.items():
+                                processed_element = process_element(gene_element)
+                                lista_coordenadas = process_coordinates_and_write(processed_element, rv_element, lista_coordenadas, enter, cluster)
                         else:                            
                             for bak, gen in matching_elements:
                                 if bak[1] == gen[1]:
-                                    bak_split = bak[2].split(";")
-                                    real_coord = tuple(map(int, bak_split[1].split(",")))
-                                    if real_coord not in lista_coordenadas:
-                                        lista_coordenadas.add(real_coord)
-                                        enter.write(f"{bak[0]}\t{real_coord[0]}\t{real_coord[1]}\t{bak_split[2]}\t{gen[0]}.{cluster}\n")
-#
-                            lista_coordenadas = process_non_matching_genes(non_matching_gen, enter, lista_coordenadas, prefix)
-#
+                                    lista_coordenadas = process_coordinates_and_write(bak, gen[0], lista_coordenadas, enter, cluster)
+
+                        lista_coordenadas = process_non_matching_genes(non_matching_gen, enter, lista_coordenadas, prefix)
+
                     if "case4" in line:
                         if diff < 0 or diff == 0:
                             non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
@@ -294,9 +294,9 @@ def main(prefix):
                                     original_coord = element[0].split("_")[1].split("-")
                                     original_len = int(original_coord[1])-int(original_coord[0])
                                     long = int(element[2]) - int(element[1])
-#
+
                                     diff_rv = long - original_len
-#
+
                                     for el in non_matching_bak:
                                         diff_bk = el[1] - original_len
                                         if diff_rv == 0 or long > el[1] or (diff_bk < 150 and diff_rv < diff_bk):

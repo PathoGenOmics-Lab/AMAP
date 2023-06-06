@@ -114,7 +114,7 @@ def process_element_with_blastn(element: Tuple, prefix: str) -> Dict:
     
     for blast_result in blast_out.itertuples(index=False): # Process blast results
         # Filter results with pident (percentage of identity) > 90
-        if float(blast_result.pident) > 90:
+        if float(blast_result.pident) > 70:
             # Get sequence alignment and matching sequence
             query = blast_result.xml_data.alignments[0].hsps[0].query
             matching = blast_result.xml_data.alignments[0].hsps[0].match            

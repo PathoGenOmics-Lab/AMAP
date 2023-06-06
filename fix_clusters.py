@@ -14,6 +14,8 @@ import glob
 from functools import partial
 import os
 from Bio.SeqRecord import SeqRecord
+from collections import defaultdict
+from typing import Tuple, Dict
 
 def get_seq(chck_rds, fasta_file: str, fasta_name: str):
     '''Extracts a sequence from a fasta file, translates it, and writes it to a new fasta file.'''
@@ -70,7 +72,6 @@ def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
         for tab in tab_data
         if (xml_record := blast_records.get(tab['qseqid'])) and any(tab['sseqid'] in alignment.hit_def for alignment in xml_record.alignments)
     ]
-
     return pd.DataFrame(combined_results)
 
 
@@ -98,21 +99,29 @@ def match_elements(l_bak, l_gen):
     matching_elements = [(bak, gen) for bak in l_bak for gen in l_gen if bak[1] == gen[1]]
     return non_matching_bak, non_matching_gen, matching_elements
 
-def process_element_with_blastn(element: tuple, prefix:str) -> dict:
-    name = prefix.split('/')[-1]+"database"
-    pid = os.getpid()  # Get current process ID
-    with NamedTemporaryFile(suffix=f".{pid}.fasta", delete=False) as query_file:  # Create a temporary file with the process ID
-        get_seq(element[0], "/storage/PGO/results/mtb/proj_anc2023/bakta/last_step/nt_correctedH37Rv.fa", query_file.name)  # Assuming get_seq is a defined function in your code
-        blast_out = blastn(query_file.name, name)  # Run blastn
-        os.remove(query_file.name)  # Remove the temporary file
+def process_element_with_blastn(element: Tuple, prefix: str) -> Dict:
+    '''Processes a single element using blastn and returns results'''
+    name = prefix.split('/')[-1] + "database" # Get the database name
+    pid = os.getpid() # Get current process ID
 
-    blast_results = {}
-    for blast_result in blast_out.itertuples(index=False):
-        if float(blast_result.pident) > 90:  # Filter results with pident > 90
-            matches = blast_result.xml_data.alignments[0].hsps[0].match.count('|') / float(blast_result.qlen) * 100
-            if matches >= 80:  # Filter results with matches >= 80
-                if blast_result.qseqid not in blast_results:
-                    blast_results[blast_result.qseqid] = []
+    # Create a temporary file with the process ID
+    with NamedTemporaryFile(suffix=f".{pid}.fasta") as query_file:
+        # Write query sequence to temporary file
+        get_seq(element[0], "/storage/PGO/results/mtb/proj_anc2023/bakta/last_step/nt_correctedH37Rv.fa", query_file.name)        
+        blast_out = blastn(query_file.name, name) # Run blastn
+
+    blast_results = defaultdict(list) # Initialize dictionary to store results
+    
+    for blast_result in blast_out.itertuples(index=False): # Process blast results
+        # Filter results with pident (percentage of identity) > 90
+        if float(blast_result.pident) > 90:
+            # Get sequence alignment and matching sequence
+            query = blast_result.xml_data.alignments[0].hsps[0].query
+            matching = blast_result.xml_data.alignments[0].hsps[0].match            
+            exact_matches = sum(1 for a, b in zip(query, matching) if a == b) # Compute exact matches            
+            matches = exact_matches / float(blast_result.qlen) * 100 # Calculate match percentage            
+            if matches >= 80: # Filter results with matches >= 80
+                # Append result to the dictionary
                 blast_results[blast_result.qseqid].append((blast_result.sstart, blast_result.send, blast_result.qlen))
 
     return blast_results
@@ -144,7 +153,9 @@ def cluster1_genes(line: str, coord_list: set, file_writer, prefix) -> set:
         if "case" not in element:
             gene = element.split("_")
             gene_details = [gene[0], abs(int(gene[1].split("-")[1]) - int(gene[1].split("-")[0])), element]
+            print(gene_details)
             coord_list = process_non_matching_genes([gene_details], file_writer, coord_list, prefix)
+            print(coord_list)
         elif "case1" in element:
             wr = element.split(";")
             num = wr[1].split(",")
@@ -224,7 +235,6 @@ def main(prefix):
     with open(f"{prefix}.cleancoord.tsv", "w") as enter:
         with open(f"{prefix}.clusters", "r") as in_file:
             lista_coordenadas = set()
-
 
             for line in in_file:
 

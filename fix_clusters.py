@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os
 import pandas as pd
 from Bio import SeqIO
 from Bio.Blast import NCBIXML
-from Bio.Blast.Applications import NcbiblastnCommandline
+from Bio.Blast.Applications import NcbitblastnCommandline
 from concurrent.futures import ThreadPoolExecutor
 import subprocess
 from tempfile import NamedTemporaryFile
@@ -15,11 +14,15 @@ import glob
 from functools import partial
 
 def get_seq(chck_rds, fasta_file: str, fasta_name: str):
-    '''Extracts a sequence from a fasta file and writes it to a new fasta file.'''
+    '''Extracts a sequence from a fasta file, translates it, and writes it to a new fasta file.'''
     def selected_seqs_gen():
         for seq_record in SeqIO.parse(fasta_file, "fasta"):
             if chck_rds in seq_record.id:
-                yield seq_record
+                # Traducir la secuencia de nucleótidos a proteínas
+                protein_seq = seq_record.seq.translate()
+                # Crear un nuevo SeqRecord con la secuencia de proteínas
+                protein_record = SeqRecord(protein_seq, id=seq_record.id, description="")
+                yield protein_record
                 break
     SeqIO.write(selected_seqs_gen(), fasta_name, "fasta")
 

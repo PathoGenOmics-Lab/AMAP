@@ -17,6 +17,48 @@ from Bio.SeqRecord import SeqRecord
 from collections import defaultdict
 from typing import Tuple, Dict
 
+from Bio import SeqIO
+
+
+def extract_amino_acid_sequence_with_stop_codon(start, end, orientation):
+
+    start = start - 1
+    global SEQ
+    fasta_file = SEQ 
+    # Carga la secuencia fasta
+    for seq_record in SeqIO.parse(fasta_file, "fasta"):
+        sequence = seq_record.seq
+    seq = sequence[start:end]
+    if orientation == "-":
+        seq = seq.reverse_complement()
+    # Traduce la subsecuencia a una secuencia de aminoácidos utilizando la tabla de codones bacterianos
+    amino_acid_sequence = seq.translate(table="Bacterial", to_stop=False)
+    print (amino_acid_sequence)
+
+    if orientation == "+":
+        for i in range(end, len(sequence), 3):
+            next_codon = sequence[i:i+3]
+            next_amino_acid = next_codon.translate(table="Bacterial", to_stop=False)
+            amino_acid_sequence += next_amino_acid
+#   
+            if next_amino_acid == "*":
+                stop_codon_index = i + 3 # Índice después del codón de parada
+                return amino_acid_sequence, (start, stop_codon_index)
+    else: # orientation == "reverse"
+        for i in range(start, -1, -3):
+            next_codon = sequence[i-3:i]
+            next_codon =next_codon.reverse_complement()
+            print(start, i-3,i)
+            next_amino_acid = next_codon.translate(table="Bacterial", to_stop=False)
+            amino_acid_sequence =   amino_acid_sequence + next_amino_acid
+            print(amino_acid_sequence)
+#   
+            if next_amino_acid == "*":
+                stop_codon_index = i - 3 # Índice antes del codón de parada (en la secuencia revertida)
+                return amino_acid_sequence, (stop_codon_index, end)
+
+
+
 def get_seq(chck_rds, fasta_file: str, fasta_name: str):
     '''Extracts a sequence from a fasta file, translates it, and writes it to a new fasta file.'''
     def selected_seqs_gen():
@@ -39,7 +81,6 @@ def run_blast(in_query: str, in_subject: str, outfmt: str) -> str:
     cline = NcbitblastnCommandline(query=in_query, db=in_subject, outfmt=outfmt, seg="no")
     out, _ = cline()
     return out
-
 
 def run_blast_tab(in_query: str, in_subject: str): 
     '''Runs blastn with the given parameters and returns the output in tabular format.'''
@@ -73,7 +114,6 @@ def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
         if (xml_record := blast_records.get(tab['qseqid'])) and any(tab['sseqid'] in alignment.hit_def for alignment in xml_record.alignments)
     ]
     return pd.DataFrame(combined_results)
-
 
 def count_cases(genes):
     '''Counts the number of genes in each case and the number of Rv genes.'''
@@ -122,7 +162,17 @@ def process_element_with_blastn(element: Tuple, prefix: str) -> Dict:
             matches = exact_matches / float(blast_result.qlen) * 100 # Calculate match percentage            
             if matches >= 80: # Filter results with matches >= 80
                 # Append result to the dictionary
-                blast_results[blast_result.qseqid].append((blast_result.sstart, blast_result.send, blast_result.qlen))
+                
+                start = min(int(blast_result.sstart), int(blast_result.send))
+                end = max(int(blast_result.sstart), int(blast_result.send))
+                lengg = int(blast_result.send) - int(blast_result.sstart)
+                orientation = "+" if lengg >= 0 else "-"
+                #print(blast_result.qseqid,blast_result.xml_data.alignments[0].hsps[0].sbjct[-1])
+                if blast_result.xml_data.alignments[0].hsps[0].sbjct[-1] == '*':
+                    blast_results[blast_result.qseqid].append((blast_result.sstart, blast_result.send, blast_result.qlen))
+                else:
+                    print(blast_result.qseqid,blast_result.xml_data.alignments[0].hsps[0].sbjct[-1], orientation)
+                    extract_amino_acid_sequence_with_stop_codon(start, end, orientation)
 
     return blast_results
 
@@ -321,7 +371,7 @@ def main(prefix):
                                                 non_matching_gen.append(elemento)
                                 lista_set = set()
                                 lista_res = process_non_matching_elements_modified(non_matching_gen, lista_coordenadas, prefix)
-#
+
                                 for element in lista_res:
                                     write_ele = False
                                     original_coord = element[0].split("_")[1].split("-")
@@ -336,15 +386,15 @@ def main(prefix):
                                     
                                     if write_ele: 
                                         coord = (int(element[1]),int(element[2]))
-#
+
                                         if tuple(coord) not in lista_set:
                                             towrite =  [str(item) for item in element]
                                             enter.write("\t".join(towrite)+"\n")
-#
+
                                             lista_set.add(tuple(coord))
                                 for bakta in non_matching_bak:
                                     if bakta not in no_bak:
-#
+
                                         wr = bakta[2].split(";")
                                         num = wr[1].split(",")
                                         to_write = wr[0]+"\t"+num[0]+"\t"+num[1]+"\t"+wr[2]
@@ -354,7 +404,10 @@ def main(prefix):
                             lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas, prefix) 
 
 if __name__ == "__main__":
+    
     args = parse_argparse() 
+    global SEQ
+    SEQ = f"{args.prefix}.fna"
     directory_path = os.path.dirname(args.prefix)
     os.chdir(directory_path)
     main(args.prefix)               

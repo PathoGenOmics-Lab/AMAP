@@ -29,9 +29,17 @@ def process_json(json_file):
             GName = d['GName']
             locus = d['locus']
 
-            components = [item.split('_')[0] for item in locus.split()]
+            lista = []
+            lista2=[]
+            for i in locus.split(" "):
+                if i.split("_")[1] not in lista2:
+                    elemento = i.split("_")[0]
+                    lista2.append(i.split("_")[1])
 
-            counts = {pattern: components.count(pattern) for pattern in ['L5', 'L6', 'L9', 'A1', 'A2', 'A3', 'A4']}
+                    lista.append(elemento)
+
+            counts = {pattern: lista.count(pattern) for pattern in ['L5', 'L6', 'L9', 'A1', 'A2', 'A3', 'A4']}
+            
             counts['gene_id'] = gene_id
             counts['gene_len'] = gene_len
             counts['dupli'] = dupli
@@ -50,8 +58,6 @@ def process_json(json_file):
         df = pd.concat(df_list, ignore_index=True)
 
         return df
-
-
 
 def main():
     args = parse_args()

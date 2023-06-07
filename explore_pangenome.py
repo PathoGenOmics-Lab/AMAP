@@ -21,6 +21,14 @@ def process_json(json_file):
         gene_len = d['geneLen']
         count = d['count']
         dupli = d['dupli']
+        dup_detail= d['dup_detail']
+        ann = d['ann']
+        msa = d['msa']
+        divers= d['divers']
+        event = d['event']
+        GName = d['GName']
+        locus = d['locus']
+        print(locus)
 
 def main():
     args = parse_args()

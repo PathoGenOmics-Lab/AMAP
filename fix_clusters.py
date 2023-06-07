@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os
 import pandas as pd
 from Bio import SeqIO
 from Bio.Blast import NCBIXML
-from Bio.Blast.Applications import NcbiblastnCommandline
+from Bio.Blast.Applications import NcbitblastnCommandline
 from concurrent.futures import ThreadPoolExecutor
 import subprocess
 from tempfile import NamedTemporaryFile
@@ -13,13 +12,60 @@ import re
 import argparse
 import glob
 from functools import partial
+import os
+from Bio.SeqRecord import SeqRecord
+from collections import defaultdict
+from typing import Tuple, Dict
+
+from Bio import SeqIO
+
+
+def extract_amino_acid_sequence_with_stop_codon(start, end, orientation):
+
+    start = start - 1
+    global SEQ
+    fasta_file = SEQ 
+    # Carga la secuencia fasta
+    for seq_record in SeqIO.parse(fasta_file, "fasta"):
+        sequence = seq_record.seq
+    seq = sequence[start:end]
+    if orientation == "-":
+        seq = seq.reverse_complement()
+    # Traduce la subsecuencia a una secuencia de aminoácidos utilizando la tabla de codones bacterianos
+    amino_acid_sequence = seq.translate(table="Bacterial", to_stop=False)
+
+    if orientation == "+":
+        for i in range(end, len(sequence), 3):
+            next_codon = sequence[i:i+3]
+            next_amino_acid = next_codon.translate(table="Bacterial", to_stop=False)
+            amino_acid_sequence += next_amino_acid
+#   
+            if next_amino_acid == "*":
+                stop_codon_index = i + 3 # Índice después del codón de parada
+                return len(amino_acid_sequence), (start, stop_codon_index)
+    else: # orientation == "reverse"
+        for i in range(start, -1, -3):
+            next_codon = sequence[i-3:i]
+            next_codon = next_codon.reverse_complement()
+            next_amino_acid = next_codon.translate(table="Bacterial", to_stop=False)
+            amino_acid_sequence =   amino_acid_sequence + next_amino_acid
+#   
+            if next_amino_acid == "*":
+                stop_codon_index = i - 3 # Índice antes del codón de parada (en la secuencia revertida)
+                return len(amino_acid_sequence), (end, stop_codon_index)
+
+
 
 def get_seq(chck_rds, fasta_file: str, fasta_name: str):
-    '''Extracts a sequence from a fasta file and writes it to a new fasta file.'''
+    '''Extracts a sequence from a fasta file, translates it, and writes it to a new fasta file.'''
     def selected_seqs_gen():
         for seq_record in SeqIO.parse(fasta_file, "fasta"):
             if chck_rds in seq_record.id:
-                yield seq_record
+                # Traducir la secuencia de nucleótidos a proteínas
+                protein_seq = seq_record.seq.translate()
+                # Crear un nuevo SeqRecord con la secuencia de proteínas
+                protein_record = SeqRecord(protein_seq, id=seq_record.id, description="")
+                yield protein_record
                 break
     SeqIO.write(selected_seqs_gen(), fasta_name, "fasta")
 
@@ -29,7 +75,7 @@ def create_database(fasta: str, basename: str) -> None:
 
 def run_blast(in_query: str, in_subject: str, outfmt: str) -> str:
     '''Runs blastn with the given parameters and returns the output.'''
-    cline = NcbiblastnCommandline(query=in_query, db=in_subject, outfmt=outfmt, dust="no")
+    cline = NcbitblastnCommandline(query=in_query, db=in_subject, outfmt=outfmt, seg="no")
     out, _ = cline()
     return out
 
@@ -64,9 +110,7 @@ def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
         for tab in tab_data
         if (xml_record := blast_records.get(tab['qseqid'])) and any(tab['sseqid'] in alignment.hit_def for alignment in xml_record.alignments)
     ]
-
     return pd.DataFrame(combined_results)
-
 
 def count_cases(genes):
     '''Counts the number of genes in each case and the number of Rv genes.'''
@@ -92,22 +136,49 @@ def match_elements(l_bak, l_gen):
     matching_elements = [(bak, gen) for bak in l_bak for gen in l_gen if bak[1] == gen[1]]
     return non_matching_bak, non_matching_gen, matching_elements
 
-def process_element_with_blastn(element: tuple, prefix:str) -> dict:
-    name = prefix.split('/')[-1]+"database"
-    pid = os.getpid()  # Get current process ID
-    with NamedTemporaryFile(suffix=f".{pid}.fasta", delete=False) as query_file:  # Create a temporary file with the process ID
-        get_seq(element[0], "/storage/PGO/results/mtb/proj_anc2023/bakta/last_step/nt_correctedH37Rv.fa", query_file.name)  # Assuming get_seq is a defined function in your code
-        blast_out = blastn(query_file.name, name)  # Run blastn
-        os.remove(query_file.name)  # Remove the temporary file
+def process_element_with_blastn(element: Tuple, prefix: str) -> Dict:
+    '''Processes a single element using blastn and returns results'''
+    name = prefix.split('/')[-1] + "database" # Get the database name
+    pid = os.getpid() # Get current process ID
 
-    blast_results = {}
-    for blast_result in blast_out.itertuples(index=False):
-        if float(blast_result.pident) > 90:  # Filter results with pident > 90
-            matches = blast_result.xml_data.alignments[0].hsps[0].match.count('|') / float(blast_result.qlen) * 100
-            if matches >= 80:  # Filter results with matches >= 80
-                if blast_result.qseqid not in blast_results:
-                    blast_results[blast_result.qseqid] = []
-                blast_results[blast_result.qseqid].append((blast_result.sstart, blast_result.send, blast_result.qlen))
+    # Create a temporary file with the process ID
+    with NamedTemporaryFile(suffix=f".{pid}.fasta") as query_file:
+        # Write query sequence to temporary file
+        get_seq(element[0], "/storage/PGO/results/mtb/proj_anc2023/bakta/last_step/nt_correctedH37Rv.fa", query_file.name)        
+        blast_out = blastn(query_file.name, name) # Run blastn
+
+    blast_results = defaultdict(list) # Initialize dictionary to store results
+    
+    for blast_result in blast_out.itertuples(index=False): # Process blast results
+        # Filter results with pident (percentage of identity) > 90
+        if float(blast_result.pident) > 70:
+            # Get sequence alignment and matching sequence
+            query = blast_result.xml_data.alignments[0].hsps[0].query
+            matching = blast_result.xml_data.alignments[0].hsps[0].match            
+            exact_matches = sum(1 for a, b in zip(query, matching) if a == b) # Compute exact matches            
+            matches = exact_matches / float(blast_result.qlen) * 100 # Calculate match percentage            
+            if matches >= 80: # Filter results with matches >= 80
+                # Append result to the dictionary
+                
+                start = min(int(blast_result.sstart), int(blast_result.send))
+                end = max(int(blast_result.sstart), int(blast_result.send))
+                lengg = int(blast_result.send) - int(blast_result.sstart)
+                orientation = "+" if lengg >= 0 else "-"
+                #print(blast_result.qseqid,blast_result.xml_data.alignments[0].hsps[0].sbjct[-1])
+                if blast_result.xml_data.alignments[0].hsps[0].match[-1] == '*':
+                    blast_results[blast_result.qseqid].append((blast_result.sstart, blast_result.send, blast_result.qlen))
+                else:
+                    if blast_result.xml_data.alignments[0].hsps[0].sbjct[-1] != '*':
+                        blast_results[blast_result.qseqid].append((blast_result.sstart, blast_result.send, blast_result.qlen))
+                    else:
+                        longitud, coordenadas = extract_amino_acid_sequence_with_stop_codon(start, end, orientation)
+                        if longitud > blast_result.qlen:
+                            calculo = (blast_result.qlen/longitud) *100
+                        else:
+                            calculo = (longitud/blast_result.qlen) *100
+                            print(calculo)
+                        if calculo >= 80:
+                            blast_results[blast_result.qseqid].append((blast_result.sstart, coordenadas[0], coordenadas[0]))
 
     return blast_results
 
@@ -131,7 +202,6 @@ def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords
     return bakta_coords
 
 def cluster1_genes(line: str, coord_list: set, file_writer, prefix) -> set:
-    
     line_elements = line.strip("\n").split(":")
     genes = line_elements[1].split(".")
     for element in genes:
@@ -148,16 +218,11 @@ def cluster1_genes(line: str, coord_list: set, file_writer, prefix) -> set:
 
 def process_non_matching_elements_modified(non_matching_gen, bakta_coords, prefix):
     lista = []
-
-
 #    Aquí 'prefix' se fija como un argumento para todas las llamadas a 'process_element_with_blastn'.
     fixed_process_element_with_blastn = partial(process_element_with_blastn, prefix=prefix)
 
     with ThreadPoolExecutor() as executor:
         results = list(executor.map(fixed_process_element_with_blastn, non_matching_gen))
-
-    #with ThreadPoolExecutor() as executor:
-    #    results = list(executor.map(process_element_with_blastn, non_matching_gen, prefix))
     
     for result in results:        
         for qseqid, coords_list in result.items():
@@ -171,9 +236,8 @@ def process_non_matching_elements_modified(non_matching_gen, bakta_coords, prefi
                 if f_coord not in bakta_coords:
                     lista.append([qseqid, ordered_coords[0], ordered_coords[1],lenn])
                     bakta_coords.add(f_coord)
-                    break  # Sal del bucle una vez que encuentres una coincidencia que no se haya utilizado todav�a
+                    break  # Sal del bucle una vez que encuentres una coincidencia que no se haya utilizado todavia
     return lista
-
 
 def process_line(line:str, prefix: str) -> list:
     '''Process a line from the cluster file and returns a list of matching elements.'''
@@ -205,6 +269,15 @@ def process_line(line:str, prefix: str) -> list:
                 break  # Sal del bucle una vez que encuentres una coincidencia que no se haya utilizado todav�a
     return matching_dict
 
+def process_coordinates_and_write(element_info, rv_element, coordinates_list, output, cluster):
+    """Process coordinates and write to output if the coordinates are not in the list."""
+    element_info_split = element_info[2].split(";")
+    real_coordinates = tuple(map(int, element_info_split[1].split(",")))
+    if real_coordinates not in coordinates_list:
+        coordinates_list.add(real_coordinates)
+        output.write(f"{element_info[0]}\t{real_coordinates[0]}\t{real_coordinates[1]}\t{element_info_split[2]}\t{rv_element}.{cluster}\n")
+    return coordinates_list
+
 def parse_argparse():
     '''Parse the command line arguments.'''
     parser = argparse.ArgumentParser(description='')
@@ -219,9 +292,6 @@ def main(prefix):
     with open(f"{prefix}.cleancoord.tsv", "w") as enter:
         with open(f"{prefix}.clusters", "r") as in_file:
             lista_coordenadas = set()
-            #lista_coordenadas.add((1164572,1165123))
-            #lista_coordenadas.add((3378001,3378243))
-
             for line in in_file:
 
                 if "Cluster -1" in line:
@@ -240,24 +310,15 @@ def main(prefix):
                     if "case4" not in line:
                         if diff == 0:
                             matching_dict = process_line(l[1], prefix)
-                            for g_element, rv_element in matching_dict.items():
-                                el = process_element(g_element)
-                                el_split = el[2].split(";")
-
-                                real_coord = tuple(map(int, el_split[1].split(",")))
-                                if real_coord not in lista_coordenadas:
-                                    lista_coordenadas.add(real_coord)
-                                    enter.write(f"{el[0]}\t{real_coord[0]}\t{real_coord[1]}\t{el_split[2]}\t{rv_element}.{cluster}\n")
+                            for gene_element, rv_element in matching_dict.items():
+                                processed_element = process_element(gene_element)
+                                lista_coordenadas = process_coordinates_and_write(processed_element, rv_element, lista_coordenadas, enter, cluster)
                         else:                            
                             for bak, gen in matching_elements:
                                 if bak[1] == gen[1]:
-                                    bak_split = bak[2].split(";")
-                                    real_coord = tuple(map(int, bak_split[1].split(",")))
-                                    if real_coord not in lista_coordenadas:
-                                        lista_coordenadas.add(real_coord)
-                                        enter.write(f"{bak[0]}\t{real_coord[0]}\t{real_coord[1]}\t{bak_split[2]}\t{gen[0]}.{cluster}\n")
+                                    lista_coordenadas = process_coordinates_and_write(bak, gen[0], lista_coordenadas, enter, cluster)
 
-                            lista_coordenadas = process_non_matching_genes(non_matching_gen, enter, lista_coordenadas, prefix)
+                        lista_coordenadas = process_non_matching_genes(non_matching_gen, enter, lista_coordenadas, prefix)
 
                     if "case4" in line:
                         if diff < 0 or diff == 0:
@@ -289,7 +350,7 @@ def main(prefix):
 
                                     for el in non_matching_bak:
                                         diff_bk = el[1] - original_len
-                                        if diff_rv == 0 or long > el[1] or (diff_bk < 450 and diff_rv < diff_bk):
+                                        if diff_rv == 0 or long > el[1] or (diff_bk < 150 and diff_rv < diff_bk):
                                             write_ele = True
                                             if el not in no_bak:
                                                 no_bak.append(el)
@@ -325,7 +386,7 @@ def main(prefix):
                                     diff_rv = long - original_len
                                     for el in non_matching_bak:
                                         diff_bk = el[1] - original_len
-                                        if (long > el[1]) or (diff_bk < 450 and diff_rv < diff_bk):
+                                        if (long > el[1]) or (diff_bk < 150 and diff_rv < diff_bk):
                                             write_ele = True
                                             no_bak.append(el)
                                     
@@ -349,7 +410,10 @@ def main(prefix):
                             lista_coordenadas = process_non_matching_genes(l_gen, enter, lista_coordenadas, prefix) 
 
 if __name__ == "__main__":
+    
     args = parse_argparse() 
+    global SEQ
+    SEQ = f"{args.prefix}.fna"
     directory_path = os.path.dirname(args.prefix)
     os.chdir(directory_path)
     main(args.prefix)               

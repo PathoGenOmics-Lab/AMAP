@@ -14,7 +14,13 @@ def parse_args():
 def process_json(json_file):
     with open(json_file, 'r') as json_in:
         json_data = json.load(json_in)
-        print(json_data)
+        # Iterar sobre la lista de diccionarios
+    for d in json_in:
+        # Acceder a los campos que necesites
+        gene_id = d['geneId']
+        gene_len = d['geneLen']
+        count = d['count']
+        dupli = d['dupli']
 
 def main():
     args = parse_args()

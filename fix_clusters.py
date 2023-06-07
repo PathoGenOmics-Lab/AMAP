@@ -162,16 +162,11 @@ def cluster1_genes(line: str, coord_list: set, file_writer, prefix) -> set:
 
 def process_non_matching_elements_modified(non_matching_gen, bakta_coords, prefix):
     lista = []
-
-
 #    Aquí 'prefix' se fija como un argumento para todas las llamadas a 'process_element_with_blastn'.
     fixed_process_element_with_blastn = partial(process_element_with_blastn, prefix=prefix)
 
     with ThreadPoolExecutor() as executor:
         results = list(executor.map(fixed_process_element_with_blastn, non_matching_gen))
-
-    #with ThreadPoolExecutor() as executor:
-    #    results = list(executor.map(process_element_with_blastn, non_matching_gen, prefix))
     
     for result in results:        
         for qseqid, coords_list in result.items():
@@ -185,7 +180,7 @@ def process_non_matching_elements_modified(non_matching_gen, bakta_coords, prefi
                 if f_coord not in bakta_coords:
                     lista.append([qseqid, ordered_coords[0], ordered_coords[1],lenn])
                     bakta_coords.add(f_coord)
-                    break  # Sal del bucle una vez que encuentres una coincidencia que no se haya utilizado todav�a
+                    break  # Sal del bucle una vez que encuentres una coincidencia que no se haya utilizado todavia
     return lista
 
 def process_line(line:str, prefix: str) -> list:

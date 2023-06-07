@@ -32,6 +32,7 @@ def process_json(json_file):
 
 def main():
     args = parse_args()
+    process_json(args.input)
 
 
 if __name__ == '__main__':

@@ -33,7 +33,6 @@ def extract_amino_acid_sequence_with_stop_codon(start, end, orientation):
         seq = seq.reverse_complement()
     # Traduce la subsecuencia a una secuencia de aminoácidos utilizando la tabla de codones bacterianos
     amino_acid_sequence = seq.translate(table="Bacterial", to_stop=False)
-    print (amino_acid_sequence)
 
     if orientation == "+":
         for i in range(end, len(sequence), 3):
@@ -43,19 +42,17 @@ def extract_amino_acid_sequence_with_stop_codon(start, end, orientation):
 #   
             if next_amino_acid == "*":
                 stop_codon_index = i + 3 # Índice después del codón de parada
-                return amino_acid_sequence, (start, stop_codon_index)
+                return len(amino_acid_sequence), (start, stop_codon_index)
     else: # orientation == "reverse"
         for i in range(start, -1, -3):
             next_codon = sequence[i-3:i]
-            next_codon =next_codon.reverse_complement()
-            print(start, i-3,i)
+            next_codon = next_codon.reverse_complement()
             next_amino_acid = next_codon.translate(table="Bacterial", to_stop=False)
             amino_acid_sequence =   amino_acid_sequence + next_amino_acid
-            print(amino_acid_sequence)
 #   
             if next_amino_acid == "*":
                 stop_codon_index = i - 3 # Índice antes del codón de parada (en la secuencia revertida)
-                return amino_acid_sequence, (stop_codon_index, end)
+                return len(amino_acid_sequence), (end, stop_codon_index)
 
 
 
@@ -168,11 +165,20 @@ def process_element_with_blastn(element: Tuple, prefix: str) -> Dict:
                 lengg = int(blast_result.send) - int(blast_result.sstart)
                 orientation = "+" if lengg >= 0 else "-"
                 #print(blast_result.qseqid,blast_result.xml_data.alignments[0].hsps[0].sbjct[-1])
-                if blast_result.xml_data.alignments[0].hsps[0].sbjct[-1] == '*':
+                if blast_result.xml_data.alignments[0].hsps[0].match[-1] == '*':
                     blast_results[blast_result.qseqid].append((blast_result.sstart, blast_result.send, blast_result.qlen))
                 else:
-                    print(blast_result.qseqid,blast_result.xml_data.alignments[0].hsps[0].sbjct[-1], orientation)
-                    extract_amino_acid_sequence_with_stop_codon(start, end, orientation)
+                    if blast_result.xml_data.alignments[0].hsps[0].sbjct[-1] != '*':
+                        blast_results[blast_result.qseqid].append((blast_result.sstart, blast_result.send, blast_result.qlen))
+                    else:
+                        longitud, coordenadas = extract_amino_acid_sequence_with_stop_codon(start, end, orientation)
+                        if longitud > blast_result.qlen:
+                            calculo = (blast_result.qlen/longitud) *100
+                        else:
+                            calculo = (longitud/blast_result.qlen) *100
+                            print(calculo)
+                        if calculo >= 80:
+                            blast_results[blast_result.qseqid].append((blast_result.sstart, coordenadas[0], coordenadas[0]))
 
     return blast_results
 

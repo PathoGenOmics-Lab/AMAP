@@ -11,9 +11,14 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+def process_json(json_file):
+    with open(json_file, 'r') as json_in:
+        json_data = json.load(json_in)
+        print(json_data)
+
 def main():
     args = parse_args()
-    
+
 
 if __name__ == '__main__':
     main()

@@ -3,6 +3,8 @@ rule download_bakta_db:
         directory(config['workdir'] + "/db_dir")
     conda:
         "../envs/bakta.yaml"
-    run:
+    shell:
+        """
         if not config.get('db_dir'):
-            shell("bakta_db download --output {output} --type {config['db_type']}")
+            bakta_db download --output {output} --type {config['db_type']}
+        """

@@ -1,8 +1,8 @@
 # Carga el archivo de configuración
-configfile: "../configs/config.yaml"
+configfile: "configs/config.yaml"
 
 # Incluye el archivo dwn_bakta.smk
-include: "dwn_bakta.smk"
+include: "rules/dwn_bakta.smk"
 
 # La regla 'all' define las salidas finales del flujo de trabajo.
 rule all:

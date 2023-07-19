@@ -1,0 +1,4 @@
+db_dir: "/home/ruizro/bakta/salida/db2/db/"
+seq_dir: "/storage/PGO/results/mtb/proj_anc2023/bakta/sequences/"
+output_dir: "/storage/PGO/results/mtb/proj_anc2023/bakta/res/"
+proteins_file: "sequence.gb"

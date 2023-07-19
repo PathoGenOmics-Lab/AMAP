@@ -1,5 +1,5 @@
-db_type: "light"
-db_dir: "/home/ruizro/bakta/salida/db2/db/"
+
+db_type: "light" # o "full"
 seq_dir: "/storage/PGO/results/mtb/proj_anc2023/bakta/sequences/"
 workdir: "/mnt/c/Users/pauru/OneDrive/documentos_paula/GitHub/AMAP/res"
 proteins_file: "sequence.gb"

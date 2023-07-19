@@ -1,10 +1,23 @@
-# Carga el archivo de configuración
-configfile: "configs/config.yaml"
+import yaml
 
-# Incluye el archivo dwn_bakta.smk
-include: "rules/dwn_bakta.smk"
+aa = "configs/config.yaml"
 
-# La regla 'all' define las salidas finales del flujo de trabajo.
-rule all:
-    input:
-        config['workdir'] + "/db_dir"
+# Carga el archivo YAML de configuración
+with open(aa, "r") as f:
+    config = yaml.safe_load(f)
+
+# Crear una regla de Snakemake
+rule download_bakta_db:
+    output:
+        config["workdir"] + "/bakta_db.sqlite"
+    params:
+        type = config.get("db_type", "light"),
+        db_dir = config.get("db_dir", "None")  # obtén db_dir desde el archivo de configuración, establece por defecto a "None" (string)
+    conda:
+        "envs/bakta.yaml"
+    shell:   # usa la directiva shell en lugar de script para ejecutar comandos de shell
+        """
+        if [ "{params.db_dir}" == "None" ]; then  # usa params.db_dir en lugar de "db_dir" en config
+            bakta_db download --output {output} --type {params.type}  # remueve las comillas aquí
+        fi
+        """

@@ -1,7 +1,10 @@
+# Carga el archivo de configuración
 configfile: "../configs/config.yaml"
 
-include: "rules.smk"
+# Incluye el archivo dwn_bakta.smk
+include: "dwn_bakta.smk"
 
+# La regla 'all' define las salidas finales del flujo de trabajo.
 rule all:
     input:
-        expand(config['output_dir'] + "{sample}/", sample=config['samples'])
+        config['workdir'] + "/db_dir"

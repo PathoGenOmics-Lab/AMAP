@@ -1,0 +1,7 @@
+configfile: "../configs/config.yaml"
+
+include: "rules.smk"
+
+rule all:
+    input:
+        expand(config['output_dir'] + "{sample}/", sample=config['samples'])

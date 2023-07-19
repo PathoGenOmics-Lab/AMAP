@@ -1,1 +1,1 @@
-# mtb-annotation
+# AMAP: Assisted MTBC annotator pipeline

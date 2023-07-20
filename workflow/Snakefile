@@ -1,9 +1,9 @@
 import yaml
 
-aa = "configs/config.yaml"
+file_config = "configs/config.yaml"
 
 # Carga el archivo YAML de configuración
-with open(aa, "r") as f:
+with open(file_config, "r") as f:
     config = yaml.safe_load(f)
 
 # Crear una regla de Snakemake

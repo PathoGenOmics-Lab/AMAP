@@ -1,6 +1,0 @@
-fasta_dir: "/mnt/c/Users/pauru/OneDrive/documentos_paula/GitHub/AMAP/workflow/fasta"
-db_type: "light" # o "full"
-workdir: "/mnt/c/Users/pauru/OneDrive/documentos_paula/GitHub/AMAP/res"
-output_dir: "/mnt/c/Users/pauru/OneDrive/documentos_paula/GitHub/AMAP/bakta"
-proteins: "/mnt/c/Users/pauru/OneDrive/documentos_paula/GitHub/AMAP/workflow/sequence.gb"
-db_dir : "/mnt/c/Users/pauru/OneDrive/documentos_paula/GitHub/AMAP/res"

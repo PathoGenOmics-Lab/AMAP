@@ -1,62 +1,48 @@
 import os
-import glob
-import yaml
 
-file_config = "configs/config.yaml"
+configfile: "config.yaml"
 
-# Carga el archivo YAML de configuración
-with open(file_config, "r") as f:
-    config = yaml.safe_load(f)
+FASTA_DIR = config["fasta_dir"]
+DB_FALLBACK = "db_fallback"
 
-# Si no se especifica db_dir en el archivo de configuración, usará la base de datos descargada por la regla download_bakta_db
-db_fallback = os.path.join(config["workdir"], "bakta_db")
-db_dir = config.get("db_dir", db_fallback)
-db_dir = os.path.join(config["db_dir"], "bakta_db/db-light")
-print(f"DB Dir: {db_dir}") # Imprime db_dir
+def get_db_path():
+    db_type = config.get("db_type", "light")
+    if "db" in config:
+        return config["db"]
+    else:
+        return os.path.join(DB_FALLBACK, "db-" + db_type)
 
-fasta_dir = config['fasta_dir']
-fasta_files = glob.glob(os.path.join(fasta_dir, '*.fasta'))
-samples = [os.path.basename(f).rstrip('.fasta') for f in fasta_files]
-print(f"Samples: {samples}") # Imprime samples
-print(f"fasta_dir: {fasta_dir}") # Imprime fasta_dir
-proteins_file = config['proteins']
-print(f"Proteins File: {proteins_file}") # Imprime proteins_file
+rule all:
+    input:
+        expand("output/{fasta}.bakta", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
 
-# Crear una regla de Snakemake
 rule download_bakta_db:
     output:
-        directory(db_fallback)  # Marcar la salida como un directorio
+        directory(DB_FALLBACK)
     params:
-        type = config.get("db_type", "light")
+        type=config.get("db_type", "light")
     conda:
         "envs/bakta.yaml"
     shell:
         """
-        if [ ! -d "{output}" ]; then  # Cambiar -f por -d ya que ahora es un directorio
+        if [ ! -d "{output}" ]; then
             bakta_db download --output {output} --type {params.type}
         fi
         """
 
 rule run_bakta:
     input:
-        fasta = os.path.join(fasta_dir, "{sample}.fasta"),
-        proteins = proteins_file
+        fasta=lambda wildcards: os.path.join(FASTA_DIR, f"{wildcards.fasta}.fasta"),
+        proteins=config["proteins"]
     output:
-        directory(os.path.join(config["workdir"], "{sample}"))
+        directory("output/{fasta}.bakta")
     params:
-        db = db_dir,
-        prefix = "{sample}",
-        locus_tag = "{sample}"
+        db=get_db_path(),
+        prefix=lambda wildcards: wildcards.fasta,
+        locus_tag=lambda wildcards: wildcards.fasta
     conda:
-        "../envs/bakta.yaml"
+        "envs/bakta.yaml"
     shell:
         """
-        echo "FASTA file: {input.fasta}"
-        echo "Proteins file: {input.proteins}"
-        bakta --db {params.db} --verbose --output {output} --prefix {params.prefix} --locus_tag {params.locus_tag} {input.fasta} --proteins {input.proteins}
+        bakta --db {params.db} --verbose --output {output} --prefix {params.prefix} --locus-tag {params.locus_tag} --proteins {input.proteins} {input.fasta}
         """
-
-# Regla global
-rule all:
-    input:
-        expand(os.path.join(config["workdir"], "{sample}"), sample=samples)

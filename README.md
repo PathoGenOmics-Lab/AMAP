@@ -1,7 +1,15 @@
 # AMAP: Assisted MTBC annotator pipeline
 
+Execute pipeline:  
+``
+snakemake --use-conda -c8
+``
 
 ## DAG (Directed Acyclic Graph)
+
+<p align="center">
+  <img src="https://github.com/PathoGenOmics-Lab/AMAP/blob/main/images/dag.png" alt="DAGPLOT" width="400">
+</p>
 
 
 ### Generate Rule graph

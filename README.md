@@ -1,6 +1,12 @@
 # AMAP: Assisted MTBC annotator pipeline
 
-Execute pipeline:  
+AMAP is a bioinformatics pipeline for processing and annotating _Mycobacterium tuberculosis_ complex (MTBC) data.
+
+## Installation
+
+You can easily install the AMAP pipeline using [snakemake](https://snakemake.readthedocs.io/en/stable/), a workflow management system that aims to reduce the complexity of creating workflows by providing a fast and comfortable execution environment. 
+
+To install and execute the pipeline, use the following command:
 ``
 snakemake --use-conda -c8
 ``

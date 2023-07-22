@@ -12,6 +12,9 @@ def get_db_path():
     else:
         return os.path.join(DB_FALLBACK, "db-" + db_type)
 
+def needs_db_download():
+    return "db" not in config
+
 rule all:
     input:
         expand("output/{fasta}.bakta", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
@@ -25,15 +28,14 @@ rule download_bakta_db:
         "envs/bakta.yaml"
     shell:
         """
-        if [ ! -d "{output}" ]; then
-            bakta_db download --output {output} --type {params.type}
-        fi
+        bakta_db download --output {output} --type {params.type}
         """
 
 rule run_bakta:
     input:
         fasta=lambda wildcards: os.path.join(FASTA_DIR, f"{wildcards.fasta}.fasta"),
-        proteins=config["proteins"]
+        proteins=config["proteins"],
+        db_download=rules.download_bakta_db.output if needs_db_download() else None
     output:
         directory("output/{fasta}.bakta")
     params:

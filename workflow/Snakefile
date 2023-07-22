@@ -17,7 +17,7 @@ def needs_db_download():
 
 rule all:
     input:
-        expand("output/{fasta}.bakta", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
+        expand("output/{fasta}.bakta_script_out/{fasta}_classifiedcases.tsv", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
 
 rule download_bakta_db:
     output:
@@ -47,4 +47,18 @@ rule run_bakta:
     shell:
         """
         bakta --db {params.db} --verbose --output {output} --prefix {params.prefix} --locus-tag {params.locus_tag} --proteins {input.proteins} {input.fasta}
+        """
+
+rule run_my_script:
+    input:
+        tsv_file="output/{fasta}.bakta/{fasta}.tsv",
+        ref_multifa=config["ref_multifa"],
+        bakta_dir="output/{fasta}.bakta"
+    output:
+        "output/{fasta}.bakta_script_out/{fasta}_classifiedcases.tsv"
+    conda:
+        "envs/chk_cases.yaml"
+    shell:
+        """
+        python scripts/classify_cases.py -t {input.tsv_file} -r {input.ref_multifa} -n {wildcards.fasta}
         """

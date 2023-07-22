@@ -7,8 +7,3 @@ dependencies:
   - biopython
   - pandas
   - blast
-  - argparse
-  - os
-  - multiprocessing
-  - io
-  - typing

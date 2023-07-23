@@ -3,7 +3,13 @@ import os
 configfile: "config.yaml"
 
 FASTA_DIR = config["fasta_dir"]
-DB_FALLBACK = "db_fallback"
+DB_FALLBACK = "out/downloads/db_fallback"
+FILES = {
+    "nt_correctedH37Rv.fa": "https://zenodo.org/record/8024447/files/nt_correctedH37Rv.fa",
+    "new_refH37Rv.fasta": "https://zenodo.org/record/8024447/files/new_refH37Rv.fasta",
+    "bad.bakta.fa": "https://zenodo.org/record/8024447/files/bad.bakta.fa",
+    "sequence.gb": "https://zenodo.org/record/8024447/files/sequence.gb"
+}
 
 def get_db_path():
     db_type = config.get("db_type", "light")
@@ -17,7 +23,17 @@ def needs_db_download():
 
 rule all:
     input:
-        expand("out/AMAP/{fasta}.bakta/{fasta}_classifiedcases.tsv", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
+        expand("out/downloads/reference/{file}", file=FILES.keys()) +
+        expand("out/AMAP/{fasta}.AMAP/{fasta}_classifiedcases.tsv", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
+
+rule download_reference:
+    output:
+        file="out/downloads/reference/{file}"
+
+    params:
+        url=lambda wildcards: FILES[wildcards.file]
+    shell:
+        "wget -O {output.file} {params.url}"
 
 rule download_bakta_db:
     output:
@@ -34,7 +50,7 @@ rule download_bakta_db:
 rule run_bakta:
     input:
         fasta=lambda wildcards: os.path.join(FASTA_DIR, f"{wildcards.fasta}.fasta"),
-        proteins=config["proteins"],
+        proteins="out/downloads/reference/sequence.gb",
         db_download=rules.download_bakta_db.output if needs_db_download() else None
     output:
         directory("out/bakta_output/{fasta}.bakta")
@@ -51,13 +67,13 @@ rule run_bakta:
 
 rule classify_cases:
     input:
-        ref_multifa=config["ref_multifa"],
+        ref_multifa="out/downloads/reference/nt_correctedH37Rv.fa",
         bakta_dir="out/bakta_output/{fasta}.bakta"
     output:
-        "out/AMAP/{fasta}.bakta/{fasta}_classifiedcases.tsv"
+        "out/AMAP/{fasta}.AMAP/{fasta}_classifiedcases.tsv"
     conda:
         "envs/chk_cases.yaml"
     shell:
         """
-        python scripts/classify_cases.py -f {wildcards.fasta} -r {input.ref_multifa} -n {wildcards.fasta}
+        python scripts/classify_cases.py -f {wildcards.fasta} -r {input.ref_multifa} -p out/AMAP/{wildcards.fasta}.AMAP/
         """

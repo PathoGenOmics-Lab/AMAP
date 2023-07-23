@@ -5,16 +5,43 @@ AMAP is a bioinformatics pipeline for processing and annotating _Mycobacterium t
 ## Installation
 
 You can easily install the AMAP pipeline using [snakemake](https://snakemake.readthedocs.io/en/stable/), a workflow management system that aims to reduce the complexity of creating workflows by providing a fast and comfortable execution environment. 
+### Snakemake installation
+For further directions go to [snakemake documentation](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html):
 
-To install and execute the pipeline, use the following command:
+1. First you will need to have mamba installed:  
 ``
-snakemake --use-conda -c8
+conda install -n base -c conda-forge mamba
+``  
+2. Activate conda:  
 ``
+conda activate base
+``  
+3. Install snakemake:  
+``
+mamba create -c conda-forge -c bioconda -n snakemake snakemake
+``  
+### Execute AMAP in Snakemake
+1. Activate snakemake:  
+   ``
+   conda activate snakemake
+   ``
+2. Clone AMAP into your system:  
+   ``
+   git clone https://github.com/PathoGenOmics-Lab/AMAP.git
+   ``
+3. Go to workflow directory:  
+   ``
+   cd AMAP/workflow
+   ``  
+4. To install and execute the pipeline, use the following command:  
+   ``
+   snakemake --use-conda -c8
+   ``
 
 ## DAG (Directed Acyclic Graph)
 
 <p align="center">
-  <img src="https://github.com/PathoGenOmics-Lab/AMAP/blob/main/images/dag.png" alt="DAGPLOT" width="400">
+  <img src="https://github.com/PathoGenOmics-Lab/AMAP/blob/main/images/dag.png" alt="DAGPLOT" width="900">
 </p>
 
 

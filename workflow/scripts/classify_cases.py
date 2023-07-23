@@ -130,15 +130,17 @@ def main():
     parser = argparse.ArgumentParser(description="Clasifica los registros de Bakta y BLAST y genera los archivos fasta respectivos.")
     parser.add_argument('-f', '--fasta', help="Ruta al archivo Bakta TSV que contiene los genomas a procesar.")
     parser.add_argument('-r', '--reference_multi_fa', help="Ruta al archivo multi-fasta de referencia para crear la base de datos de BLAST.")
-    parser.add_argument('-n', '--blast_db_multi', help="Nombre de la base de datos de BLAST a crear.")
+    parser.add_argument('-p', '--path', help="")
     args = parser.parse_args()
     current = os.getcwd()
-    path = "out/AMAP/" + args.fasta + ".bakta/"
+    path = args.path
+    #path = "out/AMAP/" + args.fasta + ".AMAP/"
     Path(path).mkdir(parents=True, exist_ok=True)
     os.chdir(path)
-    create_database(args.reference_multi_fa, args.blast_db_multi)
+    blast_db_multi= args.fasta
+    create_database(args.reference_multi_fa, blast_db_multi)
 
-    process_genome (args.fasta, args.blast_db_multi, current)
+    process_genome (args.fasta, blast_db_multi, current)
 
 if __name__ == "__main__":
     main()

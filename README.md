@@ -11,32 +11,32 @@ For further directions go to [snakemake documentation](https://snakemake.readthe
 1. First you will need to have mamba installed:  
 ``
 conda install -n base -c conda-forge mamba
-``  
+``
 2. Activate conda:  
 ``
 conda activate base
-``  
+``
 3. Install snakemake:  
 ``
 mamba create -c conda-forge -c bioconda -n snakemake snakemake
-``  
+`` 
 ### Execute AMAP in Snakemake
 1. Activate snakemake:  
-   ``
+   ```
    conda activate snakemake
-   ``
+   ```
 2. Clone AMAP into your system:  
-   ``
+   ```
    git clone https://github.com/PathoGenOmics-Lab/AMAP.git
-   ``
+   ```
 3. Go to workflow directory:  
-   ``
+   ```
    cd AMAP/workflow
-   ``  
+   ```  
 4. To install and execute the pipeline, use the following command:  
-   ``
+   ```
    snakemake --use-conda -c8
-   ``
+   ```
 
 ## DAG (Directed Acyclic Graph)
 

@@ -24,8 +24,7 @@ def needs_db_download():
 
 rule all:
     input:
-        expand("out/downloads/reference/blast_{fasta_file}.blastdb", fasta_file=FASTA_FILES.keys()) +
-        expand("out/AMAP/{fasta}.AMAP/{fasta}_classifiedcases.tsv", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
+        expand("out/AMAP/{fasta}.AMAP/{fasta}_case1.final.tsv", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
 
 rule download_reference:
     output:
@@ -94,15 +93,15 @@ rule classify_cases:
 rule validate_case1:
     input:
         case1 = "out/AMAP/{fasta}.AMAP/{fasta}_case1.bakta.fa",
-        ref_fasta = "out/downloads/reference/new_refH37Rv.fasta",
-        ref_bad = "out/downloads/reference/bad.bakta.fa"
+        ref_fasta = "out/downloads/reference/blast_new_refH37Rv.fasta.blastdb",
+        ref_bad = "out/downloads/reference/blast_bad.bakta.fa.blastdb"
     output:
         "out/AMAP/{fasta}.AMAP/{fasta}_case1.final.tsv"
     conda:
         "envs/chk_cases.yaml"
     shell:
         """
-        python scripts/fc.py -n {wildcards.fasta} -p out/AMAP/{wildcards.fasta}.AMAP/ -b {input.ref_bad}/bad.bakta.fa -b {input.ref_fasta}/new_refH37Rv.fasta
+        python scripts/fc.py -n {wildcards.fasta} -p out/AMAP/{wildcards.fasta}.AMAP/ -b {input.ref_bad}/bad.bakta.fa -r {input.ref_fasta}/new_refH37Rv.fasta
         """
 
 ruleorder: blast_database > download_reference

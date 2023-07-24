@@ -24,7 +24,7 @@ def needs_db_download():
 
 rule all:
     input:
-        expand("out/AMAP/{fasta}.AMAP/{fasta}_case1.final.tsv", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
+        expand("out/AMAP/{fasta}.AMAP/{fasta}.clusters", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
 
 rule download_reference:
     output:
@@ -101,7 +101,39 @@ rule validate_case1:
         "envs/chk_cases.yaml"
     shell:
         """
-        python scripts/fc.py -n {wildcards.fasta} -p out/AMAP/{wildcards.fasta}.AMAP/ -b {input.ref_bad}/bad.bakta.fa -r {input.ref_fasta}/new_refH37Rv.fasta
+        python scripts/validate_case1.py -n {wildcards.fasta} -p out/AMAP/{wildcards.fasta}.AMAP/ -b {input.ref_bad}/bad.bakta.fa -r {input.ref_fasta}/new_refH37Rv.fasta
+        """
+
+rule bakta_multifa:
+    input:
+        path = "out/AMAP/{fasta}.AMAP/",
+        case1_fix = "out/AMAP/{fasta}.AMAP/{fasta}_case1.final.tsv",
+        case1 = "out/AMAP/{fasta}.AMAP/{fasta}_case1.bakta.fa",
+        case2 = "out/AMAP/{fasta}.AMAP/{fasta}_case2.bakta.fa",
+        case3 = "out/AMAP/{fasta}.AMAP/{fasta}_case3.bakta.fa",
+        case4 = "out/AMAP/{fasta}.AMAP/{fasta}_case4.bakta.fa"
+
+    output:
+        "out/AMAP/{fasta}.AMAP/{fasta}-complete.fa"
+    conda:
+        "envs/chk_cases.yaml"
+    shell:
+        """
+        python scripts/generate_casesmultifa.py -n {wildcards.fasta} -p {input.path} -p2 out/bakta_output/{wildcards.fasta}.bakta/
+        """
+
+rule H37Rv_clusters:
+    input:
+        path = "out/AMAP/{fasta}.AMAP/",
+        multifa_bakta = "out/AMAP/{fasta}.AMAP/{fasta}-complete.fa",
+        multifa_h37rv = "out/downloads/reference/nt_correctedH37Rv.fa"
+    output:
+        "out/AMAP/{fasta}.AMAP/{fasta}.clusters"
+    conda:
+        "envs/chk_cases.yaml"
+    shell:
+        """
+        python scripts/clusters.py -n {wildcards.fasta} -f {input.multifa_h37rv} -p {input.path}
         """
 
 ruleorder: blast_database > download_reference

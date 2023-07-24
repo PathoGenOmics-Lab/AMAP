@@ -84,19 +84,36 @@ def classify_bakta_records(bakta_records, blast_records, output_file='classified
     merged_df.to_csv(output_file + '_blastres.tsv', sep='\t', index=False)
     
     # Clasificar cada id
+    def is_case1(row):
+        return row['qseqid'] == -1
+    
+    def is_case2(row):
+        return (row['qlen'] == row['slen'] and 
+                row['mismatch'] == 0 and 
+                row['gapopen'] == 0 and 
+                row['qlen'] == row['length'] and 
+                row['qcovhsp'] == 100)
+    
+    def is_case3(row):
+        return row['qlen'] == row['slen']
+    
+    def is_case4(row, in_case3):
+        return not in_case3 and (row['qlen'] > row['slen'] or row['qlen'] < row['slen'])
+    
     for id in bakta_df['id']:
         in_case3 = False
         for _, row in merged_df[merged_df['id'] == id].iterrows():
-            if row['qseqid'] == -1:
+            if is_case1(row):
                 case1.add(id)
-            elif row['qlen'] == row['slen'] and row['mismatch'] == 0 and row['gapopen'] == 0 and row['qlen'] == row['length'] and row['qcovhsp'] == 100:
+            elif is_case2(row):
                 case2.add(id)
                 break
-            elif row['qlen'] == row['slen']:
+            elif is_case3(row):
                 case3.add(id)
                 in_case3 = True
-            elif not in_case3 and (row['qlen'] > row['slen'] or row['qlen'] < row['slen']):
+            elif is_case4(row, in_case3):
                 case4.add(id)
+
 
     # Eliminar los elementos de case4 que también están en case3
     case3 = case3 - case4

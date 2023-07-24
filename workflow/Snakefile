@@ -101,7 +101,7 @@ rule validate_case1:
         "envs/chk_cases.yaml"
     shell:
         """
-        python scripts/fc.py -n {wildcards.fasta} -p out/AMAP/{wildcards.fasta}.AMAP/ -b {input.ref_bad}/bad.bakta.fa -r {input.ref_fasta}/new_refH37Rv.fasta
+        python scripts/validate_case1.py -n {wildcards.fasta} -p out/AMAP/{wildcards.fasta}.AMAP/ -b {input.ref_bad}/bad.bakta.fa -r {input.ref_fasta}/new_refH37Rv.fasta
         """
 
 ruleorder: blast_database > download_reference

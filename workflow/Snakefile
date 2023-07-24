@@ -82,7 +82,8 @@ rule classify_cases:
         bakta_dir="out/bakta_output/{fasta}.bakta",
         ref_blast = "out/downloads/reference/blast_nt_correctedH37Rv.fa.blastdb"
     output:
-        "out/AMAP/{fasta}.AMAP/{fasta}_classifiedcases.tsv"
+        "out/AMAP/{fasta}.AMAP/{fasta}_classifiedcases.tsv",
+        "out/AMAP/{fasta}.AMAP/{fasta}_case1.bakta.fa"
     conda:
         "envs/chk_cases.yaml"
     shell:

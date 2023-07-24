@@ -1,11 +1,10 @@
-# AMAP: Assisted MTBC annotator pipeline
-
+# AMAP: Assisted MTBC annotator pipeline  
 AMAP is a bioinformatics pipeline for processing and annotating _Mycobacterium tuberculosis_ complex (MTBC) data.
 
-## Installation
+## Installation  
+You can easily install the AMAP pipeline using [snakemake](https://snakemake.readthedocs.io/en/stable/), a workflow management system that aims to reduce the complexity of creating workflows by providing a fast and comfortable execution environment.
 
-You can easily install the AMAP pipeline using [snakemake](https://snakemake.readthedocs.io/en/stable/), a workflow management system that aims to reduce the complexity of creating workflows by providing a fast and comfortable execution environment. 
-### Snakemake installation
+### Snakemake installation  
 For further directions go to [snakemake documentation](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html):
 
 1. First you will need to have mamba installed:  
@@ -20,7 +19,7 @@ conda activate base
 ``
 mamba create -c conda-forge -c bioconda -n snakemake snakemake
 `` 
-### Execute AMAP in Snakemake
+### Execute AMAP in Snakemake  
 1. Activate snakemake:  
    ```
    conda activate snakemake
@@ -33,7 +32,12 @@ mamba create -c conda-forge -c bioconda -n snakemake snakemake
    ```
    cd AMAP/workflow
    ```  
-4. To install and execute the pipeline, use the following command:  
+4. Modify config file with your paths:
+   ```
+   fasta_dir: myawesome/path/with/fastas
+   output_dir: whereI/store/the/results
+   ```  
+5. To install and execute the pipeline, use the following command:  
    ```
    snakemake --use-conda -c8
    ```
@@ -44,29 +48,23 @@ mamba create -c conda-forge -c bioconda -n snakemake snakemake
   <img src="https://github.com/PathoGenOmics-Lab/AMAP/blob/main/images/dag.png" alt="DAGPLOT" width="900">
 </p>
 
-
-### Generate Rule graph
-
+### Generate Rule graph  
 ``
 snakemake --rulegraph | dot -Tpng > rulegraph.png
-``
-
-### Generate DAG (Directed Acyclic Graph)
-
+``  
+### Generate DAG (Directed Acyclic Graph)  
 ``
 snakemake --dag | dot -Tpng > dag.png
-``
-
-### Generate Filegraph
-
+``  
+### Generate Filegraph  
 ``
 snakemake --filegraph | dot -Tpng > filegraph.png
 ``
 
 ---
-<h3 id="contributors" align="center">
+<h2 id="contributors" align="center">
 ✨ Contributors
-</h3>
+</h2>
 
 AMAP is developed with ❤️ by:
 <p align="center">
@@ -113,4 +111,16 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 <!-- prettier-ignore-end -->
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
----
+---  
+
+<h2 id="contributors" align="center">
+💻 Software Used
+</h2>
+<div align="justify">
+
+1. [Snakemake](https://github.com/snakemake/snakemake):  
+    >Mölder F, Jablonski KP, Letcher B et al. Sustainable data analysis with Snakemake [version 1; peer review: 1 approved, 1 approved with reservations]. F1000Research 2021, 10:33 (https://doi.org/10.12688/f1000research.29032.1)
+      
+2. [Bakta](https://github.com/oschwengers/bakta):  
+    >Schwengers O., Jelonek L., Dieckmann M. A., Beyvers S., Blom J., Goesmann A. (2021). Bakta: rapid and standardized annotation of bacterial genomes via alignment-free sequence identification. Microbial Genomics, 7(11). https://doi.org/10.1099/mgen.0.000685
+      

@@ -10,6 +10,7 @@ FILES = {
     "bad.bakta.fa": "https://zenodo.org/record/8024447/files/bad.bakta.fa",
     "sequence.gb": "https://zenodo.org/record/8024447/files/sequence.gb"
 }
+FASTA_FILES = {f: url for f, url in FILES.items() if not f.endswith(".gb")}
 
 def get_db_path():
     db_type = config.get("db_type", "light")
@@ -23,17 +24,27 @@ def needs_db_download():
 
 rule all:
     input:
-        expand("out/downloads/reference/{file}", file=FILES.keys()) +
-        expand("out/AMAP/{fasta}.AMAP/{fasta}_classifiedcases.tsv", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
+        expand("out/AMAP/{fasta}.AMAP/{fasta}_case1.final.tsv", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
 
 rule download_reference:
     output:
         file="out/downloads/reference/{file}"
-
     params:
         url=lambda wildcards: FILES[wildcards.file]
     shell:
         "wget -O {output.file} {params.url}"
+
+rule blast_database:
+    input:
+        ref_multifa="out/downloads/reference/{fasta_file}"
+    output:
+        directory("out/downloads/reference/blast_{fasta_file}.blastdb")
+    params:
+        basename="out/downloads/reference/blast_{fasta_file}.blastdb/{fasta_file}"
+    shell:
+        """
+        makeblastdb -in {input.ref_multifa} -dbtype nucl -out {params.basename}
+        """
 
 rule download_bakta_db:
     output:
@@ -64,27 +75,33 @@ rule run_bakta:
         """
         bakta --db {params.db} --verbose --output {output} --prefix {params.prefix} --locus-tag {params.locus_tag} --proteins {input.proteins} {input.fasta}
         """
-rule create_ntH37Rvdatabase:
-    input:
-        ref_multifa="out/downloads/reference/nt_correctedH37Rv.fa"  # Asegúrate de que esta ruta sea correcta
-    output:
-        directory("out/downloads/reference/ntH3Rv.blastdb")  # Asegúrate de que esta ruta sea correcta
-    params:
-        basename="out/downloads/reference/ntH3Rv.blastdb/ntH3Rv"  # Asegúrate de que este parámetro sea correcto
-    shell:
-        """
-        makeblastdb -in {input} -dbtype nucl -out {params.basename}
-        """
 
 rule classify_cases:
     input:
         bakta_dir="out/bakta_output/{fasta}.bakta",
-        ref_blast = "out/downloads/reference/ntH3Rv.blastdb"
+        ref_blast = "out/downloads/reference/blast_nt_correctedH37Rv.fa.blastdb"
     output:
-        "out/AMAP/{fasta}.AMAP/{fasta}_classifiedcases.tsv"
+        "out/AMAP/{fasta}.AMAP/{fasta}_classifiedcases.tsv",
+        "out/AMAP/{fasta}.AMAP/{fasta}_case1.bakta.fa"
     conda:
         "envs/chk_cases.yaml"
     shell:
         """
-        python scripts/classify_cases.py -f {wildcards.fasta} -p out/AMAP/{wildcards.fasta}.AMAP/ -b {input.ref_blast}/ntH3Rv
+        python scripts/classify_cases.py -f {wildcards.fasta} -p out/AMAP/{wildcards.fasta}.AMAP/ -b {input.ref_blast}/nt_correctedH37Rv.fa
         """
+
+rule validate_case1:
+    input:
+        case1 = "out/AMAP/{fasta}.AMAP/{fasta}_case1.bakta.fa",
+        ref_fasta = "out/downloads/reference/blast_new_refH37Rv.fasta.blastdb",
+        ref_bad = "out/downloads/reference/blast_bad.bakta.fa.blastdb"
+    output:
+        "out/AMAP/{fasta}.AMAP/{fasta}_case1.final.tsv"
+    conda:
+        "envs/chk_cases.yaml"
+    shell:
+        """
+        python scripts/fc.py -n {wildcards.fasta} -p out/AMAP/{wildcards.fasta}.AMAP/ -b {input.ref_bad}/bad.bakta.fa -r {input.ref_fasta}/new_refH37Rv.fasta
+        """
+
+ruleorder: blast_database > download_reference

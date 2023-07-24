@@ -24,7 +24,7 @@ def needs_db_download():
 
 rule all:
     input:
-        expand("out/AMAP/{fasta}.AMAP/{fasta}-complete.fa", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
+        expand("out/AMAP/{fasta}.AMAP/{fasta}.clusters", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
 
 rule download_reference:
     output:
@@ -120,6 +120,20 @@ rule bakta_multifa:
     shell:
         """
         python scripts/generate_casesmultifa.py -n {wildcards.fasta} -p {input.path} -p2 out/bakta_output/{wildcards.fasta}.bakta/
+        """
+
+rule H37Rv_clusters:
+    input:
+        path = "out/AMAP/{fasta}.AMAP/",
+        multifa_bakta = "out/AMAP/{fasta}.AMAP/{fasta}-complete.fa",
+        multifa_h37rv = "out/downloads/reference/nt_correctedH37Rv.fa"
+    output:
+        "out/AMAP/{fasta}.AMAP/{fasta}.clusters"
+    conda:
+        "envs/chk_cases.yaml"
+    shell:
+        """
+        python scripts/clusters.py -n {wildcards.fasta} -f {input.multifa_h37rv} -p {input.path}
         """
 
 ruleorder: blast_database > download_reference

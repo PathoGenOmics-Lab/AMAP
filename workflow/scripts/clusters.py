@@ -5,6 +5,7 @@ from sourmash.minhash import MinHash
 from sklearn.cluster import DBSCAN
 import numpy as np
 import argparse
+import os
 
 def calculate_jaccard_similarity_matrix(bakta_file, h37rv_file):
     k = 21
@@ -67,7 +68,10 @@ def main(prefix, h37rv_file):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Procesar archivos con prefijo variable.")
-    parser.add_argument("input_prefix", help="El prefijo del archivo a procesar.")
+    parser.add_argument('-n', dest="input_prefix", help="Fasta name")
+    parser.add_argument('-p', dest="path", help="Ruta al archivo Bakta multi-fasta.")
+    parser.add_argument('-f', dest="h37rv_file", help="Ruta al archivo Bakta multi-fasta.")
     args = parser.parse_args()
+    os.chdir(args.path)
     h37rv_file = "nt_correctedH37Rv.fa"
     main(args.input_prefix, h37rv_file)

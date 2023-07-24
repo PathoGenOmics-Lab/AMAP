@@ -11,12 +11,10 @@ from io import StringIO
 from typing import List, Any, Tuple
 from pathlib import Path
 
-def get_seq(chck_rds: list, fasta_file: str, fasta_name: str) -> List[Tuple[str, int]]:
-    chck_rds_set = set(chck_rds)  # Convert the list to a set for faster searching
-    selected_seqs = [seq_record for seq_record in SeqIO.parse(fasta_file, "fasta") if seq_record.id in chck_rds_set] # Use list comprehension for faster, more readable code
+def get_seq(chck_rds: list, fasta_file: str, fasta_name: str):
+    chck_rds_set = set(chck_rds)  # Faster searching
+    selected_seqs = [seq_record for seq_record in SeqIO.parse(fasta_file, "fasta") if seq_record.id in chck_rds_set]
     SeqIO.write(selected_seqs, fasta_name, "fasta") # Write the selected sequences to a fasta file
-    seq_lengths = [(seq_record.id, len(seq_record.seq)) for seq_record in selected_seqs] # Use list comprehension to create the list of sequence lengths
-    return seq_lengths
 
 def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
     # Create a BLASTN command line with the specified parameters and output format 6.
@@ -113,7 +111,6 @@ def classify_bakta_records(bakta_records, blast_records, output_file='classified
                 in_case3 = True
             elif is_case4(row, in_case3):
                 case4.add(id)
-
 
     # Eliminar los elementos de case4 que también están en case3
     case3 = case3 - case4

@@ -33,7 +33,12 @@ mamba create -c conda-forge -c bioconda -n snakemake snakemake
    ```
    cd AMAP/workflow
    ```  
-4. To install and execute the pipeline, use the following command:  
+4. Modify config file with your paths:
+   ```
+   fasta_dir: myawesome/path/with/fastas
+   output_dir: whereI/store/the/results
+   ```  
+5. To install and execute the pipeline, use the following command:  
    ```
    snakemake --use-conda -c8
    ```
@@ -44,21 +49,15 @@ mamba create -c conda-forge -c bioconda -n snakemake snakemake
   <img src="https://github.com/PathoGenOmics-Lab/AMAP/blob/main/images/dag.png" alt="DAGPLOT" width="900">
 </p>
 
-
-### Generate Rule graph
-
+### Generate Rule graph  
 ``
 snakemake --rulegraph | dot -Tpng > rulegraph.png
-``
-
-### Generate DAG (Directed Acyclic Graph)
-
+``  
+### Generate DAG (Directed Acyclic Graph)  
 ``
 snakemake --dag | dot -Tpng > dag.png
-``
-
-### Generate Filegraph
-
+``  
+### Generate Filegraph  
 ``
 snakemake --filegraph | dot -Tpng > filegraph.png
 ``

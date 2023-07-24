@@ -4,7 +4,6 @@
 import argparse
 import os
 from Bio import SeqIO
-from Bio.Blast import NCBIXML
 from Bio.Blast.Applications import NcbiblastnCommandline
 import pandas as pd
 from io import StringIO

@@ -3,7 +3,6 @@
 
 import argparse
 import os
-import multiprocessing
 from Bio import SeqIO
 from Bio.Blast import NCBIXML
 from Bio.Blast.Applications import NcbiblastnCommandline
@@ -18,9 +17,6 @@ def get_seq(chck_rds: list, fasta_file: str, fasta_name: str) -> List[Tuple[str,
     SeqIO.write(selected_seqs, fasta_name, "fasta") # Write the selected sequences to a fasta file
     seq_lengths = [(seq_record.id, len(seq_record.seq)) for seq_record in selected_seqs] # Use list comprehension to create the list of sequence lengths
     return seq_lengths
-
-def create_database(fasta: str, basename: str) -> None:
-    os.system(f'makeblastdb -in {fasta} -dbtype nucl -out {basename}')
 
 def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
     # Create a BLASTN command line with the specified parameters and output format 6.
@@ -129,18 +125,14 @@ def process_genome(name, blast_db_multi: str, current) -> None:
 def main():
     parser = argparse.ArgumentParser(description="Clasifica los registros de Bakta y BLAST y genera los archivos fasta respectivos.")
     parser.add_argument('-f', '--fasta', help="Ruta al archivo Bakta TSV que contiene los genomas a procesar.")
-    #parser.add_argument('-r', '--reference_multi_fa', help="Ruta al archivo multi-fasta de referencia para crear la base de datos de BLAST.")
     parser.add_argument('-p', '--path', help="")
     parser.add_argument('-b', '--blast', help="")
     args = parser.parse_args()
-    print(args.blast)
     current = os.getcwd()
     path = args.path
-    #path = "out/AMAP/" + args.fasta + ".AMAP/"
     Path(path).mkdir(parents=True, exist_ok=True)
     os.chdir(path)
     blast_db_multi= args.blast
-    #create_database(current+"/"+args.reference_multi_fa, blast_db_multi)
 
     process_genome(args.fasta, current+"/"+blast_db_multi, current)
 

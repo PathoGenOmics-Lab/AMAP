@@ -197,22 +197,23 @@ def main():
     parser.add_argument('-b', dest="badbakta", help="Ruta al archivo Bakta multi-fasta.")
     parser.add_argument('-r', dest="reference", help="Ruta al archivo Bakta multi-fasta.")
     args = parser.parse_args()
-    os.chdir(args.path)
+    current = os.getcwd()
     caso1h37rv = args.badbakta
     referencia = args.reference
-    create_database(referencia, "ref_fasta")
-    create_database(caso1h37rv, "ref_case1")
+    print(referencia)
+    ref_fasta = referencia.split("/")[-1]
+    ref_case1 = caso1h37rv.split("/")[-1]
 
     name = args.name
     os.chdir(args.path)
     caso1anot = name + "_case1.bakta.fa"
     case1bakta_records = SeqIO.parse(caso1anot, "fasta")
-    blast1 = blastn(caso1anot, "ref_case1")
+    blast1 = blastn(caso1anot, current + "/" + caso1h37rv)
 
     lista_resultados, lista_111, lista_122 = process_blast1_results(blast1, case1bakta_records)
 
     get_seq(lista_122, caso1anot, "case112.fasta")
-    blast112 = blastn("case112.fasta", "ref_fasta")
+    blast112 = blastn("case112.fasta", current + "/" + referencia)
 
     lista_1121 = []
     lista_resultados_112, lista_1122 = process_blast112_results(blast112, lista_1121, lista_122)

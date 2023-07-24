@@ -147,10 +147,11 @@ def process_genome(name, blast_db_multi: str, current) -> None:
         get_seq(case, f"{name}_bakta.multifa", f"{name}_case{case_num}.bakta.fa")
 
 def main():
-    parser = argparse.ArgumentParser(description="Clasifica los registros de Bakta y BLAST y genera los archivos fasta respectivos.")
-    parser.add_argument('-f', '--fasta', help="Ruta al archivo Bakta TSV que contiene los genomas a procesar.")
-    parser.add_argument('-p', '--path', help="")
-    parser.add_argument('-b', '--blast', help="")
+    parser = argparse.ArgumentParser(description="Classifies Bakta and BLAST records and generates the respective fasta files.")
+    parser.add_argument('-f', '--fasta', help="Path to the Bakta TSV file containing genomes to process.")
+    parser.add_argument('-p', '--path', help="Path to working directory to genome of interest.")
+    parser.add_argument('-b', '--blast', help="Blast path database.")
+
     args = parser.parse_args()
     current = os.getcwd()
     path = args.path

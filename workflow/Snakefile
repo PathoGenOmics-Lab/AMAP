@@ -64,16 +64,27 @@ rule run_bakta:
         """
         bakta --db {params.db} --verbose --output {output} --prefix {params.prefix} --locus-tag {params.locus_tag} --proteins {input.proteins} {input.fasta}
         """
+rule create_ntH37Rvdatabase:
+    input:
+        ref_multifa="out/downloads/reference/nt_correctedH37Rv.fa"  # Asegúrate de que esta ruta sea correcta
+    output:
+        directory("out/downloads/reference/ntH3Rv.blastdb")  # Asegúrate de que esta ruta sea correcta
+    params:
+        basename="out/downloads/reference/ntH3Rv.blastdb/ntH3Rv"  # Asegúrate de que este parámetro sea correcto
+    shell:
+        """
+        makeblastdb -in {input} -dbtype nucl -out {params.basename}
+        """
 
 rule classify_cases:
     input:
-        ref_multifa="out/downloads/reference/nt_correctedH37Rv.fa",
-        bakta_dir="out/bakta_output/{fasta}.bakta"
+        bakta_dir="out/bakta_output/{fasta}.bakta",
+        ref_blast = "out/downloads/reference/ntH3Rv.blastdb"
     output:
         "out/AMAP/{fasta}.AMAP/{fasta}_classifiedcases.tsv"
     conda:
         "envs/chk_cases.yaml"
     shell:
         """
-        python scripts/classify_cases.py -f {wildcards.fasta} -r {input.ref_multifa} -p out/AMAP/{wildcards.fasta}.AMAP/
+        python scripts/classify_cases.py -f {wildcards.fasta} -p out/AMAP/{wildcards.fasta}.AMAP/ -b {input.ref_blast}/ntH3Rv
         """

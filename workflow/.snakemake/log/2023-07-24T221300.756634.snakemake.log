@@ -1,0 +1,28 @@
+Building DAG of jobs...
+Your conda installation is not configured to use strict channel priorities. This is however crucial for having robust and correct environments (for details, see https://conda-forge.org/docs/user/tipsandtricks.html). Please consider to configure strict priorities by executing 'conda config --set channel_priority strict'.
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job              count    min threads    max threads
+-------------  -------  -------------  -------------
+all                  1              1              1
+bakta_multifa        2              1              1
+total                3              1              1
+
+Select jobs to execute...
+
+[Mon Jul 24 22:13:03 2023]
+rule bakta_multifa:
+    input: out/AMAP/G48951_L2.AMAP, out/AMAP/G48951_L2.AMAP/G48951_L2_case1.final.tsv, out/AMAP/G48951_L2.AMAP/G48951_L2_case1.bakta.fa, out/AMAP/G48951_L2.AMAP/G48951_L2_case2.bakta.fa, out/AMAP/G48951_L2.AMAP/G48951_L2_case3.bakta.fa, out/AMAP/G48951_L2.AMAP/G48951_L2_case4.bakta.fa
+    output: out/AMAP/G48951_L2.AMAP/G48951_L2-complete.fa
+    jobid: 13
+    reason: Missing output files: out/AMAP/G48951_L2.AMAP/G48951_L2-complete.fa
+    wildcards: fasta=G48951_L2
+    resources: tmpdir=/tmp
+
+RuleException in rule bakta_multifa in file /mnt/c/Users/pauru/OneDrive/documentos_paula/GitHub/AMAP/workflow/Snakefile, line 107:
+NameError: The name 'fasta' is unknown in this context. Did you mean 'wildcards.fasta'?, when formatting the following:
+
+        python scripts/generate_casesmultifa.py -n {wildcards.fasta} -p {input.path} -p2 out/AMAP/{fasta}.bakta/
+        

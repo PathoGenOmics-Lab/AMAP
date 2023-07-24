@@ -1,11 +1,10 @@
-# AMAP: Assisted MTBC annotator pipeline
-
+# AMAP: Assisted MTBC annotator pipeline  
 AMAP is a bioinformatics pipeline for processing and annotating _Mycobacterium tuberculosis_ complex (MTBC) data.
 
-## Installation
+## Installation  
+You can easily install the AMAP pipeline using [snakemake](https://snakemake.readthedocs.io/en/stable/), a workflow management system that aims to reduce the complexity of creating workflows by providing a fast and comfortable execution environment.
 
-You can easily install the AMAP pipeline using [snakemake](https://snakemake.readthedocs.io/en/stable/), a workflow management system that aims to reduce the complexity of creating workflows by providing a fast and comfortable execution environment. 
-### Snakemake installation
+### Snakemake installation  
 For further directions go to [snakemake documentation](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html):
 
 1. First you will need to have mamba installed:  
@@ -20,7 +19,7 @@ conda activate base
 ``
 mamba create -c conda-forge -c bioconda -n snakemake snakemake
 `` 
-### Execute AMAP in Snakemake
+### Execute AMAP in Snakemake  
 1. Activate snakemake:  
    ```
    conda activate snakemake

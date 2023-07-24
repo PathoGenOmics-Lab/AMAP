@@ -63,9 +63,9 @@ snakemake --filegraph | dot -Tpng > filegraph.png
 ``
 
 ---
-<h3 id="contributors" align="center">
+<h2 id="contributors" align="center">
 ✨ Contributors
-</h3>
+</h2>
 
 AMAP is developed with ❤️ by:
 <p align="center">
@@ -112,4 +112,20 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 <!-- prettier-ignore-end -->
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
----
+---  
+
+<h2 id="contributors" align="justify">
+Software credits
+</h2>
+<div align="justify">
+
+1. [Snakemake](https://snakemake.github.io/):
+    - [Github Repository](https://github.com/snakemake/snakemake)
+    - Citation: 
+      >Mölder F, Jablonski KP, Letcher B et al. Sustainable data analysis with Snakemake [version 1; peer review: 1 approved, 1 approved with reservations]. F1000Research 2021, 10:33 (https://doi.org/10.12688/f1000research.29032.1)
+      
+2. [Bakta](https://bakta.computational.bio/): 
+    - [Github Repository](https://github.com/oschwengers/bakta)
+    - Citation:
+      >Schwengers O., Jelonek L., Dieckmann M. A., Beyvers S., Blom J., Goesmann A. (2021). Bakta: rapid and standardized annotation of bacterial genomes via alignment-free sequence identification. Microbial Genomics, 7(11). https://doi.org/10.1099/mgen.0.000685
+      

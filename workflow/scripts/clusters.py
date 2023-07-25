@@ -73,5 +73,5 @@ if __name__ == "__main__":
     parser.add_argument('-f', dest="h37rv_file", help="Ruta al archivo Bakta multi-fasta.")
     args = parser.parse_args()
     os.chdir(args.path)
-    h37rv_file = "nt_correctedH37Rv.fa"
+    h37rv_file = args.h37rv_file
     main(args.input_prefix, h37rv_file)

@@ -124,7 +124,6 @@ rule bakta_multifa:
 
 rule H37Rv_clusters:
     input:
-        path = "out/AMAP/{fasta}.AMAP/",
         multifa_bakta = "out/AMAP/{fasta}.AMAP/{fasta}-complete.fa",
         multifa_h37rv = "out/downloads/reference/nt_correctedH37Rv.fa"
     output:
@@ -133,7 +132,7 @@ rule H37Rv_clusters:
         "envs/chk_cases.yaml"
     shell:
         """
-        python scripts/clusters.py -n {wildcards.fasta} -f {input.multifa_h37rv} -p {input.path}
+        python scripts/clusters.py -n {wildcards.fasta} -f {input.multifa_h37rv} -p out/AMAP/{wildcards.fasta}.AMAP/
         """
 
 ruleorder: blast_database > download_reference

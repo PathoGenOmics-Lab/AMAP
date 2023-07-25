@@ -1,7 +1,0 @@
-Building DAG of jobs...
-MissingInputException in rule bakta_multifa in file /mnt/c/Users/pauru/OneDrive/documentos_paula/GitHub/AMAP/workflow/Snakefile, line 107:
-Missing input files for rule bakta_multifa:
-    output: out/AMAP/G48931_L5.AMAP/G48931_L5-complete.fa
-    wildcards: fasta=G48931_L5
-    affected files:
-        out/AMAP/G48931_L5.bakta

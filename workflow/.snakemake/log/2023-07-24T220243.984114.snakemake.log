@@ -1,8 +1,0 @@
-Building DAG of jobs...
-InputFunctionException in rule download_reference in file /mnt/c/Users/pauru/OneDrive/documentos_paula/GitHub/AMAP/workflow/Snakefile, line 29:
-Error:
-  KeyError: 'G48931_L5_case1.bakta.fa'
-Wildcards:
-  file=G48931_L5_case1.bakta.fa
-Traceback:
-  File "/mnt/c/Users/pauru/OneDrive/documentos_paula/GitHub/AMAP/workflow/Snakefile", line 33, in <lambda>

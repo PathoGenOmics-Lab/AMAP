@@ -1,6 +1,0 @@
-Building DAG of jobs...
-MissingInputException in rule all in file /mnt/c/Users/pauru/OneDrive/documentos_paula/GitHub/AMAP/workflow/Snakefile, line 25:
-Missing input files for rule all:
-    affected files:
-        out/AMAP/G48951_L2.AMAP/G48951_L2_-complete.fa
-        out/AMAP/G48931_L5.AMAP/G48931_L5_-complete.fa

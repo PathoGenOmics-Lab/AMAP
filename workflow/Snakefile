@@ -39,6 +39,8 @@ rule blast_database:
         ref_multifa="out/downloads/reference/{fasta_file}"
     output:
         directory("out/downloads/reference/blast_{fasta_file}.blastdb")
+    conda:
+        "envs/chk_cases.yaml"
     params:
         basename="out/downloads/reference/blast_{fasta_file}.blastdb/{fasta_file}"
     shell:
@@ -82,7 +84,10 @@ rule classify_cases:
         ref_blast = "out/downloads/reference/blast_nt_correctedH37Rv.fa.blastdb"
     output:
         "out/AMAP/{fasta}.AMAP/{fasta}_classifiedcases.tsv",
-        "out/AMAP/{fasta}.AMAP/{fasta}_case1.bakta.fa"
+        "out/AMAP/{fasta}.AMAP/{fasta}_case1.bakta.fa",
+        "out/AMAP/{fasta}.AMAP/{fasta}_case2.bakta.fa",
+        "out/AMAP/{fasta}.AMAP/{fasta}_case3.bakta.fa",
+        "out/AMAP/{fasta}.AMAP/{fasta}_case4.bakta.fa"
     conda:
         "envs/chk_cases.yaml"
     shell:
@@ -106,7 +111,6 @@ rule validate_case1:
 
 rule bakta_multifa:
     input:
-        path = "out/AMAP/{fasta}.AMAP/",
         case1_fix = "out/AMAP/{fasta}.AMAP/{fasta}_case1.final.tsv",
         case1 = "out/AMAP/{fasta}.AMAP/{fasta}_case1.bakta.fa",
         case2 = "out/AMAP/{fasta}.AMAP/{fasta}_case2.bakta.fa",
@@ -119,7 +123,7 @@ rule bakta_multifa:
         "envs/chk_cases.yaml"
     shell:
         """
-        python scripts/generate_casesmultifa.py -n {wildcards.fasta} -p {input.path} -p2 out/bakta_output/{wildcards.fasta}.bakta/
+        python scripts/generate_casesmultifa.py -n {wildcards.fasta} -p "out/AMAP/{wildcards.fasta}.AMAP/" -p2 out/bakta_output/{wildcards.fasta}.bakta/
         """
 
 rule H37Rv_clusters:
@@ -134,6 +138,5 @@ rule H37Rv_clusters:
         """
         python scripts/clusters.py -n {wildcards.fasta} -f {input.multifa_h37rv} -p out/AMAP/{wildcards.fasta}.AMAP/
         """
-
 
 ruleorder: blast_database > download_reference

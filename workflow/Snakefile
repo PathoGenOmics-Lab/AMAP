@@ -135,4 +135,5 @@ rule H37Rv_clusters:
         python scripts/clusters.py -n {wildcards.fasta} -f {input.multifa_h37rv} -p out/AMAP/{wildcards.fasta}.AMAP/
         """
 
+
 ruleorder: blast_database > download_reference

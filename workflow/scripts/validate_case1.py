@@ -200,7 +200,6 @@ def main():
     current = os.getcwd()
     caso1h37rv = args.badbakta
     referencia = args.reference
-    print(referencia)
     ref_fasta = referencia.split("/")[-1]
     ref_case1 = caso1h37rv.split("/")[-1]
 
@@ -245,11 +244,9 @@ def main():
     for qseqid, entry in highest_percentage.items():
         updated_entry = "\t".join([qseqid, entry["sseqid"], str(entry["matches"]), str(entry["slen"]), str(entry["qlen"]), str(entry["numb"]), entry["category"]])
         updated_list.append(updated_entry)
-    print(updated_list)
     with open(name+"_case1.final.tsv","w") as salida1:
         for i in updated_list:
             sentencia = name+"\t"+i
-            print(sentencia)
             data = i.split("\t")
             sentencia = data[0]+"\t"+data[6].strip("\n")+"\t0\t0\tNA\n"
             salida1.write(sentencia)

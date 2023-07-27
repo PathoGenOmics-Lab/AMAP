@@ -16,12 +16,10 @@ jobs:
         run: |
           ls ${{ github.workspace }}
       - run: echo "🍏 This job's status is ${{ job.status }}."
-      - name: Change to workflow directory
-        run: cd workflow
       - name: Testing
         uses: snakemake/snakemake-github-action@v1
         with:
-          directory: '.'
-          snakefile: 'Snakefile'  # Now that we're in the correct directory, we can just refer to the snakefile without the 'workflow/' prefix.
+          directory: 'workflow'
+          snakefile: 'Snakefile'
           args: '--cores 1 --use-conda --conda-cleanup-pkgs cache'
           stagein: '' # additional preliminary commands to run (can be multiline)

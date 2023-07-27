@@ -1,3 +1,4 @@
+[![Run AMAP pipeline](https://github.com/PathoGenOmics-Lab/AMAP/actions/workflows/run_pipeline.yml/badge.svg)](https://github.com/PathoGenOmics-Lab/AMAP/actions/workflows/run_pipeline.yml)
 # AMAP: Assisted MTBC annotator pipeline  
 AMAP is a bioinformatics pipeline for processing and annotating _Mycobacterium tuberculosis_ complex (MTBC) data.
 

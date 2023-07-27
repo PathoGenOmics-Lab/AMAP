@@ -19,7 +19,7 @@ jobs:
       - name: Testing
         uses: snakemake/snakemake-github-action@v1
         with:
-          directory: 'workflow'
-          snakefile: 'Snakefile'
+          directory: '.'
+          snakefile: 'workflow/Snakefile'
           args: '--cores 1 --use-conda --conda-cleanup-pkgs cache'
           stagein: '' # additional preliminary commands to run (can be multiline)

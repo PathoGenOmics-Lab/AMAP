@@ -1,5 +1,4 @@
-[![Run AMAP pipeline](https://github.com/PathoGenOmics-Lab/AMAP/actions/workflows/run_pipeline.yml/badge.svg)](https://github.com/PathoGenOmics-Lab/AMAP/actions/workflows/run_pipeline.yml) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-brightgreen.svg)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE) ![GitHub followers](https://img.shields.io/github/followers/PathoGenOmics-Lab) ![GitHub Repo stars](https://img.shields.io/github/stars/PathoGenOmics-Lab/AMAP) ![GitHub watchers](https://img.shields.io/github/watchers/PathoGenOmics-Lab/AMAP)
- ![Static Badge](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-blue) ![Twitter Follow](https://img.shields.io/twitter/follow/paururo)
+[![Run AMAP pipeline](https://github.com/PathoGenOmics-Lab/AMAP/actions/workflows/run_pipeline.yml/badge.svg)](https://github.com/PathoGenOmics-Lab/AMAP/actions/workflows/run_pipeline.yml) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-brightgreen.svg)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE) ![GitHub followers](https://img.shields.io/github/followers/PathoGenOmics-Lab) ![GitHub Repo stars](https://img.shields.io/github/stars/PathoGenOmics-Lab/AMAP) ![Static Badge](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-blue) ![Twitter Follow](https://img.shields.io/twitter/follow/paururo)
 
 
 

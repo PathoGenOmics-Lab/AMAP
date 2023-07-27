@@ -1,8 +1,8 @@
-name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+name: Run AMAP pipeline
+run-name: ${{ github.actor }} is testing out AMAP 🚀
 on: [push]
 jobs:
-  Explore-GitHub-Actions:
+  Run-AMAP-pipeline:
     runs-on: ubuntu-latest
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
@@ -16,3 +16,10 @@ jobs:
         run: |
           ls ${{ github.workspace }}
       - run: echo "🍏 This job's status is ${{ job.status }}."
+      - name: Testing
+        uses: snakemake/snakemake-github-action@v1
+        with:
+          directory: '.'
+          snakefile: 'workflow/Snakefile'
+          args: '--cores 1 --use-conda --conda-cleanup-pkgs cache'
+          stagein: '' # additional preliminary commands to run (can be multiline)

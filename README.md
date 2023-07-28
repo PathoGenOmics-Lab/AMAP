@@ -1,10 +1,13 @@
 [![Run AMAP pipeline](https://github.com/PathoGenOmics-Lab/AMAP/actions/workflows/run_pipeline.yml/badge.svg)](https://github.com/PathoGenOmics-Lab/AMAP/actions/workflows/run_pipeline.yml) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-brightgreen.svg)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE) ![GitHub followers](https://img.shields.io/github/followers/PathoGenOmics-Lab) ![GitHub Repo stars](https://img.shields.io/github/stars/PathoGenOmics-Lab/AMAP) ![Static Badge](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-blue) [![Twitter Follow](https://img.shields.io/twitter/follow/paururo)](https://twitter.com/intent/follow?screen_name=paururo)
 
-
-
 # AMAP: Assisted MTBC annotator pipeline  
-AMAP is a bioinformatics pipeline for processing and annotating _Mycobacterium tuberculosis_ complex (MTBC) data.
 
+__Paula Ruiz-Rodriguez<sup>1</sup>__ 
+__and Mireia Coscolla<sup>1</sup>__
+<br>
+<sub> 1. I<sup>2</sup>SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Valencia, Spain </sub>  
+
+AMAP is a bioinformatics pipeline for processing and annotating _Mycobacterium tuberculosis_ complex (MTBC) data.
 ## Installation  
 You can easily install the AMAP pipeline using [snakemake](https://snakemake.readthedocs.io/en/stable/), a workflow management system that aims to reduce the complexity of creating workflows by providing a fast and comfortable execution environment.
 

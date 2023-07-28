@@ -29,4 +29,5 @@ jobs:
           stagein: '' # additional preliminary commands to run (can be multiline)
       - name: Create DAG image
         run: |
+          mkdir -p .snakemake/log
           snakemake --dag | dot -Tpng > images/dag.png

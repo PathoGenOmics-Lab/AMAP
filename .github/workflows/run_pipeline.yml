@@ -1,6 +1,9 @@
 name: Run AMAP pipeline
 run-name: ${{ github.actor }} is testing out AMAP 🚀
-on: [push]
+on:
+  push:
+    branches:
+      - main
 jobs:
   Run-AMAP-pipeline:
     runs-on: ubuntu-latest

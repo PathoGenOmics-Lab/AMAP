@@ -1,6 +1,6 @@
 import os
 
-configfile: "config.yaml"
+configfile: "workflow/config.yaml"
 
 FASTA_DIR = config["fasta_dir"]
 DB_FALLBACK = "out/downloads/db_fallback"

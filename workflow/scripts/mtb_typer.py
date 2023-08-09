@@ -24,3 +24,23 @@ def arguments():
     parser.add_argument('-r', '--ref', help='Fasta reference', required=True)
     
     return parser.parse_args()
+
+def generate_kmers(sequence, k):
+    """
+    Generate all k-mers from a given sequence and their starting positions.
+
+    Parameters:
+    - sequence (str): The sequence from which k-mers are to be generated.
+    - k (int): The length of k-mers to be generated.
+
+    Returns:
+    - dict: A dictionary with k-mers as keys and their starting positions in the sequence as values.
+
+    Example:
+    >>> generate_kmers("ACGTA", 3)
+    {'ACG': 0, 'CGT': 1, 'GTA': 2}
+    """
+    kmers = {}
+    for i in range(len(sequence) - k + 1):
+        kmers[sequence[i:i+k]] = i
+    return kmers

@@ -224,3 +224,14 @@ def rename_fasta_based_on_lineages(fasta_path, genome_name, identified_lineages)
         records[0].id = new_id
         records[0].description = ""  # Clear the description to ensure only the ID is written
         SeqIO.write(records, new_file_path, "fasta")
+
+def main():
+    args = arguments()
+    k = 21
+
+    ref_seq = get_ref(args.ref_fasta)
+    reference_positions, markers_lineage = get_positions(args.tsv_pos)
+    markers_kmers = generate_markerkmer(reference_positions, ref_seq, markers_lineage, k)
+    argg = (args.input, markers_kmers, k)
+    genome_name, identified_lineages = analyze_genome(argg)
+    rename_fasta_based_on_lineages(args.input, genome_name, identified_lineages)

@@ -150,7 +150,14 @@ def generate_markerkmer(reference_positions, ref_seq, markers_lineage, k):
 
     Note:
     Positions near the sequence edges are ignored.
-
+    
+    Example:
+    >>> reference_positions = {2: 'A', 25: 'G'}
+    >>> ref_seq = "ATCGTACGTAGCTAGCTAGCTGACTG"
+    >>> markers_lineage = {2: 'lineageA', 25: 'lineageB'}
+    >>> k = 5
+    >>> generate_markerkmer(reference_positions, ref_seq, markers_lineage, k)
+    {'ATAGT': (2, 'lineageA'), 'TAGGT': (25, 'lineageB')}
     """
     
     markers_kmers = {}

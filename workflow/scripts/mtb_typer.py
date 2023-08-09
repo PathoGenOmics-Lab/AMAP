@@ -11,7 +11,7 @@ def arguments():
     Define and parse command line arguments.
 
     Returns:
-        argparse.Namespace: Parsed arguments.
+    - argparse.Namespace: Parsed arguments.
     """
 
     parser = argparse.ArgumentParser(

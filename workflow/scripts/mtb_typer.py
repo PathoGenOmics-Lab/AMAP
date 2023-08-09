@@ -181,7 +181,10 @@ def analyze_genome(args):
         - k (int): Length of the k-mers.
 
     Returns:
-    - tuple: A tuple containing the genome name and a set of identified unique lineages.
+    - tuple: 
+        1. genome_name (str): The name of the genome.
+        2. identified_lineages (set): A set of identified unique lineages. 
+           If the FASTA file does not exist, this set will be empty.
 
     Note:
     - If the FASTA file is not found or no markers are matched, the result will reflect this accordingly.

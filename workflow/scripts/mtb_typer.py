@@ -215,7 +215,7 @@ def rename_fasta_based_on_lineages(fasta_path, genome_name, identified_lineages)
     lineages_str = ";".join(sorted(identified_lineages))
 
     # Construct the new ID and filename
-    new_id = f"{lineages_str}+_+{genome_name}"
+    new_id = f"{lineages_str}_{genome_name}"
     new_file_path = os.path.join(os.path.dirname(fasta_path), new_id + ".fasta")
 
     # Read the original FASTA, change the ID, and write to the new file

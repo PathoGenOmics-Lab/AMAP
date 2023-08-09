@@ -212,7 +212,7 @@ def rename_fasta_based_on_lineages(fasta_path, genome_name, identified_lineages)
     """
 
     # Convert identified lineages set to a string separated by pipes
-    lineages_str = "|".join(sorted(identified_lineages))
+    lineages_str = ";".join(sorted(identified_lineages))
 
     # Construct the new ID and filename
     new_id = f"{lineages_str}+_+{genome_name}"

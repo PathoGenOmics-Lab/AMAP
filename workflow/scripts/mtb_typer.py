@@ -168,3 +168,36 @@ def generate_markerkmer(reference_positions, ref_seq, markers_lineage, k):
             markers_kmers[kmer] = pos, markers_lineage[pos]
             
     return markers_kmers
+
+def analyze_genome(args):
+    """
+    Analyzes a genome's sequence and matches it against known marker k-mers.
+
+    Parameters:
+    - args (tuple):
+        - genome_name (str): Name of the genome being analyzed.
+        - fasta_path (str): Path to the FASTA file containing the genome sequence.
+        - markers_kmers (dict): Dictionary containing marker k-mers as keys and their associated data (position and lineage) as values.
+        - k (int): Length of the k-mers.
+
+    Returns:
+    - list: A list of strings detailing the analysis results. Each string corresponds to a matched marker 
+            or a notification that no matches were found.
+
+    Note:
+    - If the FASTA file is not found or if no markers are matched, appropriate logs are generated.
+    """
+    genome_name, fasta_path, markers_kmers, k = args
+    result = []
+    print(f"Analyzing genome {genome_name} ({fasta_path})")
+    genome_seq = get_ref(fasta_path)
+    matched_markers = find_markers(genome_seq, markers_kmers, k)
+
+    if not matched_markers:
+        result.append(f"{genome_name}\t\t\t\t\t\n")
+    else:
+        for kmer, (position, ref_position, lineage) in matched_markers.items():
+            snp_position = position + k // 2
+            result.append(f"{genome_name}\t{kmer}\t{position}\t{snp_position}\t{ref_position}\t{lineage}\n")
+
+    return result

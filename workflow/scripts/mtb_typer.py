@@ -5,6 +5,7 @@ import argparse
 import csv
 import argparse
 from Bio import SeqIO
+import os
 
 def arguments():
     """
@@ -199,3 +200,27 @@ def analyze_genome(args):
         identified_lineages.add(lineage)
 
     return genome_name, identified_lineages
+
+def rename_fasta_based_on_lineages(fasta_path, genome_name, identified_lineages):
+    """
+    Renames the given FASTA file and its sequence ID based on the identified lineages.
+
+    Parameters:
+    - fasta_path (str): The path to the input FASTA file.
+    - genome_name (str): The name of the genome.
+    - identified_lineages (set): A set of identified lineages for the genome.
+    """
+
+    # Convert identified lineages set to a string separated by pipes
+    lineages_str = "|".join(sorted(identified_lineages))
+
+    # Construct the new ID and filename
+    new_id = f"{lineages_str}+_+{genome_name}"
+    new_file_path = os.path.join(os.path.dirname(fasta_path), new_id + ".fasta")
+
+    # Read the original FASTA, change the ID, and write to the new file
+    records = list(SeqIO.parse(fasta_path, "fasta"))
+    if records:
+        records[0].id = new_id
+        records[0].description = ""  # Clear the description to ensure only the ID is written
+        SeqIO.write(records, new_file_path, "fasta")

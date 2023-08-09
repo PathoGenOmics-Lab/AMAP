@@ -66,3 +66,38 @@ def find_markers(genome_sequence, markers_kmers, k):
             matched_markers[marker_kmer] = genome_kmers[marker_kmer], ref_position, lineage
             
     return matched_markers
+
+def get_positions(in_filepos):
+    """
+    Extract reference positions, alternative bases, and lineage information from a TSV file.
+
+    Parameters:
+    - in_filepos (str): Path to the input TSV file. The file should have columns: position, alt_base, and lineage. 
+                        The first row is expected to be a header and is skipped.
+
+    Returns:
+    - tuple: Two dictionaries:
+        1. reference_positions: Mapping from positions to alternative bases.
+        2. markers_lineage: Mapping from positions to lineage information.
+
+    Example file format:
+    position    alt_base    lineage
+    123         A           lineageA
+    456         C           lineageB
+    ...         ...         ...
+    """
+    
+    reference_positions = {}
+    markers_lineage = {}
+    
+    with open(in_filepos) as tsvfile:
+        tsvreader = csv.reader(tsvfile, delimiter="\t")
+        next(tsvreader)  # Skip the header line
+        for row in tsvreader:
+            pos = int(row[0])
+            alt_base = row[1]
+            lineage = row[2]
+            reference_positions[pos] = alt_base
+            markers_lineage[pos] = lineage
+            
+    return reference_positions, markers_lineage

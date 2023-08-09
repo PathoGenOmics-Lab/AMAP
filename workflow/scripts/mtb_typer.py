@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import csv
+import argparse
+from Bio import SeqIO
 
 def arguments():
     """

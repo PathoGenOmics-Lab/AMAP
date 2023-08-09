@@ -90,14 +90,15 @@ def get_positions(in_filepos):
     reference_positions = {}
     markers_lineage = {}
     
-    with open(in_filepos) as tsvfile:
-        tsvreader = csv.reader(tsvfile, delimiter="\t")
-        next(tsvreader)  # Skip the header line
-        for row in tsvreader:
-            pos = int(row[0])
-            alt_base = row[1]
-            lineage = row[2]
-            reference_positions[pos] = alt_base
-            markers_lineage[pos] = lineage
+    try:
+        with open(in_filepos, 'r') as tsvfile:
+            tsvreader = csv.DictReader(tsvfile, delimiter="\t")
+            for row in tsvreader:
+                pos = int(row['position'])
+                reference_positions[pos] = row['alt_base']
+                markers_lineage[pos] = row['lineage']
+    except (IOError, KeyError) as e:
+        print(f"Error reading the file or processing its contents: {e}")
+        return {}, {}
             
     return reference_positions, markers_lineage

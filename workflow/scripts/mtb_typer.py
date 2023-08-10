@@ -181,7 +181,7 @@ def analyze_genome(args):
 
     return genome_name, identified_lineages
 
-def rename_fasta_based_on_lineages(fasta_path, genome_name, identified_lineages):
+def rename_fasta_based_on_lineages(fasta_path, genome_name, identified_lineages, output_directory):
     '''
     Renames the given FASTA file and its sequence ID based on the identified lineages.
 
@@ -193,14 +193,13 @@ def rename_fasta_based_on_lineages(fasta_path, genome_name, identified_lineages)
     
     # Remove the extension from genome_name for filename
     filename_without_extension = os.path.splitext(genome_name)[0]
-
+    filename_without_extension = filename_without_extension.split('/')[-1]
     # Convert identified lineages set to a string separated by pipes
     lineages_str = ';'.join(sorted(identified_lineages))
 
     # Construct the new filename
     new_file_name = f'{lineages_str}_{filename_without_extension}.fasta'
-    new_file_path = os.path.join(os.path.dirname(fasta_path), new_file_name)
-
+    new_file_path = os.path.join(output_directory, new_file_name)
     # Read the original FASTA, change the ID by appending the lineage, and write to the new file
     records = list(SeqIO.parse(fasta_path, 'fasta'))
     if records:
@@ -225,19 +224,23 @@ def arguments():
     parser.add_argument('-i', '--input', help='Input file in fasta format', required=True)
     parser.add_argument('-t', '--snp', help='Marker file', required=True)
     parser.add_argument('-r', '--ref', help='Fasta reference', required=True)
+    parser.add_argument('-o', '--output', required=True, help='Path to the output directory.')
     
     return parser.parse_args()
 
 def main():
     args = arguments()
     k = 21
-
+    output_directory = args.output
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+    #os.chdir(output_directory)
     ref_seq = get_ref(args.ref)
     reference_positions, markers_lineage = get_positions(args.snp)
     markers_kmers = generate_markerkmer(reference_positions, ref_seq, markers_lineage, k)
     argg = (args.input, markers_kmers, k)
     genome_name, identified_lineages = analyze_genome(argg)
-    rename_fasta_based_on_lineages(args.input, genome_name, identified_lineages)
+    rename_fasta_based_on_lineages(args.input, genome_name, identified_lineages, output_directory)
 
 if __name__ == '__main__':
     main()

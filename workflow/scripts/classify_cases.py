@@ -37,8 +37,12 @@ def extract_sequence(row, unique_seq):
     return SeqIO.SeqRecord(seq, id=locus_gene, description="")
 
 def get_gff(name: str, current):
-    
-    with open(current+"/out/bakta_output/" + name + ".bakta/" + name + '.tsv', 'r') as f:
+    print(name)
+    filename = os.path.basename(name).split(".")[0]
+    print(filename)
+    name = filename.split("_")[1]
+    print(current+"/out/bakta_output/" + name + ".bakta/" + filename + '.tsv')
+    with open(current+"/out/bakta_output/" + name + ".bakta/" + filename + '.tsv', 'r') as f:
         lines = f.readlines()
         header_row = next((i for i, line in enumerate(lines) if line.startswith('#Sequence')), None)
     df = pd.read_csv(StringIO(''.join(lines)), sep='\t', header=None, skiprows=header_row, comment='#')
@@ -49,7 +53,7 @@ def get_gff(name: str, current):
     filtered_df['Locus-Gene'] = filtered_df['Locus Tag'] + '-' + filtered_df['Gene']
     filtered_df.to_csv(name + '_bakta.coord', sep='\t', index=False)
 
-    sequences = SeqIO.to_dict(SeqIO.parse(current+"/out/bakta_output/" + name + ".bakta/" + name + '.fna', "fasta"))
+    sequences = SeqIO.to_dict(SeqIO.parse(current+"/out/bakta_output/" + name + ".bakta/" + filename + '.fna', "fasta"))
     unique_seq = list(sequences.values())[0].seq
 
     extracted_sequences = filtered_df.apply(extract_sequence, axis=1, args=(unique_seq,))
@@ -139,6 +143,8 @@ def classify_bakta_records(bakta_records, blast_records, output_file='classified
 
 def process_genome(name, blast_db_multi: str, current) -> None:
     get_gff(name, current)
+    filename = os.path.basename(name).split(".")[0]
+    name = filename.split("_")[1]
     bakta_records = SeqIO.parse(f"{name}_bakta.multifa", "fasta")
     blast_records = blastn(f"{name}_bakta.multifa", blast_db_multi)
     cases = classify_bakta_records(bakta_records, blast_records, name)
@@ -157,7 +163,7 @@ def main():
     Path(path).mkdir(parents=True, exist_ok=True)
     os.chdir(path)
     blast_db_multi = args.blast
-
+    print(args)
     process_genome(args.fasta, current + "/" + blast_db_multi, current)
 
 if __name__ == "__main__":

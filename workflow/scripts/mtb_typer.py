@@ -191,7 +191,9 @@ def rename_fasta_based_on_lineages(fasta_path, genome_name, identified_lineages)
     - genome_name (str): The name of the genome.
     - identified_lineages (set): A set of identified lineages for the genome.
     """
-
+    # Remove the extension from genome_name
+    genome_name = os.path.splitext(genome_name)[0]
+    
     # Convert identified lineages set to a string separated by pipes
     lineages_str = ";".join(sorted(identified_lineages))
 

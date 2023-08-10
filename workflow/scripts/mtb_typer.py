@@ -229,8 +229,8 @@ def main():
     args = arguments()
     k = 21
 
-    ref_seq = get_ref(args.ref_fasta)
-    reference_positions, markers_lineage = get_positions(args.tsv_pos)
+    ref_seq = get_ref(args.ref)
+    reference_positions, markers_lineage = get_positions(args.snp)
     print(reference_positions)
     markers_kmers = generate_markerkmer(reference_positions, ref_seq, markers_lineage, k)
     argg = (args.input, markers_kmers, k)

@@ -1,6 +1,6 @@
 import os
-
-configfile: "workflow/config.yaml"
+import glob
+configfile: "config.yaml"
 
 FASTA_DIR = config["fasta_dir"]
 DB_FALLBACK = "out/downloads/db_fallback"
@@ -8,10 +8,11 @@ FILES = {
     "nt_correctedH37Rv.fa": "https://zenodo.org/record/8024447/files/nt_correctedH37Rv.fa",
     "new_refH37Rv.fasta": "https://zenodo.org/record/8024447/files/new_refH37Rv.fasta",
     "bad.bakta.fa": "https://zenodo.org/record/8024447/files/bad.bakta.fa",
-    "sequence.gb": "https://zenodo.org/record/8024447/files/sequence.gb"
+    "sequence.gb": "https://zenodo.org/record/8024447/files/sequence.gb",
+    "snps_lineages.tsv": "https://zenodo.org/record/8232692/files/snps_lineages.tsv",
+    "MTB_ancestor_reference.fasta": "https://zenodo.org/record/3497110/files/MTB_ancestor_reference.fasta"
 }
-FASTA_FILES = {f: url for f, url in FILES.items() if not f.endswith(".gb")}
-
+FASTA_FILES = {f: url for f, url in FILES.items() if f.endswith(".fasta") or f.endswith(".tsv")}
 def get_db_path():
     db_type = config.get("db_type", "light")
     if "db" in config:
@@ -24,6 +25,7 @@ def needs_db_download():
 
 rule all:
     input:
+        #expand("out/mtb_typer/{fasta}/", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')]),
         expand("out/AMAP/{fasta}.AMAP/{fasta}.clusters", fasta=[os.path.splitext(f)[0] for f in os.listdir(FASTA_DIR) if f.endswith('.fasta')])
 
 rule download_reference:
@@ -59,29 +61,60 @@ rule download_bakta_db:
         """
         bakta_db download --output {output} --type {params.type}
         """
+rule mtb_typer:
+    input:
+        MTB_ancestor_reference="out/downloads/reference/MTB_ancestor_reference.fasta",
+        snps_lineages="out/downloads/reference/snps_lineages.tsv",
+        fasta=lambda wildcards: os.path.join(FASTA_DIR, f"{wildcards.fasta}.fasta")
+    output:
+        directory("out/mtb_typer/{fasta}")
+    shell:
+        """
+        python scripts/mtb_typer.py -i {input.fasta} -r {input.MTB_ancestor_reference} -t {input.snps_lineages} -o 'out/mtb_typer/{wildcards.fasta}'
+        """
 
+def get_fasta_from_directory(wildcards):
+    fasta_files = glob.glob(f"out/mtb_typer/{wildcards.fasta}/*.fasta")
+    if fasta_files:
+        return fasta_files[0]
+    else:
+        raise ValueError(f"No FASTA file found in out/mtb_typer/{wildcards.fasta}/")
+def get_fasta_prefix(wildcards):
+    fasta_path = get_fasta_from_directory(wildcards)
+    return os.path.splitext(os.path.basename(fasta_path))[0]
+    
 rule run_bakta:
     input:
-        fasta=lambda wildcards: os.path.join(FASTA_DIR, f"{wildcards.fasta}.fasta"),
+        mtb_typer= "out/mtb_typer/{fasta}",
         proteins="out/downloads/reference/sequence.gb",
         db_download=rules.download_bakta_db.output if needs_db_download() else None
     output:
         directory("out/bakta_output/{fasta}.bakta")
     params:
-        db=get_db_path(),
-        prefix=lambda wildcards: wildcards.fasta,
-        locus_tag=lambda wildcards: wildcards.fasta
+        db=get_db_path()
     conda:
         "envs/bakta.yaml"
     shell:
         """
-        bakta --db {params.db} --verbose --output {output} --prefix {params.prefix} --locus-tag {params.locus_tag} --proteins {input.proteins} {input.fasta}
+        echo "Running bakta on {input.mtb_typer}"
+        # Obtener el nombre del archivo fasta usando glob
+        fasta_file=$(ls out/mtb_typer/{wildcards.fasta}/*.fasta | head -1)
+        if [ ! -f "$fasta_file" ]; then
+            echo "No FASTA file found in out/mtb_typer/{wildcards.fasta}/"
+            exit 1
+        fi
+        
+        # Obtener el prefijo del archivo FASTA para usarlo como prefix y locus_tag
+        prefix=$(basename $fasta_file .fasta)
+        
+        bakta --db {params.db} --verbose --output {output} --prefix $prefix --locus-tag $prefix --proteins {input.proteins} $fasta_file
         """
+
 
 rule classify_cases:
     input:
         bakta_dir="out/bakta_output/{fasta}.bakta",
-        ref_blast = "out/downloads/reference/blast_nt_correctedH37Rv.fa.blastdb"
+        ref_blast = "out/downloads/reference/blast_nt_correctedH37Rv.fa.blastdb",
     output:
         "out/AMAP/{fasta}.AMAP/{fasta}_classifiedcases.tsv",
         "out/AMAP/{fasta}.AMAP/{fasta}_case1.bakta.fa",
@@ -92,7 +125,12 @@ rule classify_cases:
         "envs/chk_cases.yaml"
     shell:
         """
-        python scripts/classify_cases.py -f {wildcards.fasta} -p out/AMAP/{wildcards.fasta}.AMAP/ -b {input.ref_blast}/nt_correctedH37Rv.fa
+        fasta_file=$(ls out/mtb_typer/{wildcards.fasta}/*.fasta | head -1)
+        if [ ! -f "$fasta_file" ]; then
+            echo "No FASTA file found in out/mtb_typer/{wildcards.fasta}/"
+            exit 1
+        fi        
+        python scripts/classify_cases.py -f $fasta_file -p out/AMAP/{wildcards.fasta}.AMAP/ -b {input.ref_blast}/nt_correctedH37Rv.fa
         """
 
 rule validate_case1:
@@ -116,14 +154,18 @@ rule bakta_multifa:
         case2 = "out/AMAP/{fasta}.AMAP/{fasta}_case2.bakta.fa",
         case3 = "out/AMAP/{fasta}.AMAP/{fasta}_case3.bakta.fa",
         case4 = "out/AMAP/{fasta}.AMAP/{fasta}_case4.bakta.fa"
-
     output:
         "out/AMAP/{fasta}.AMAP/{fasta}-complete.fa"
     conda:
         "envs/chk_cases.yaml"
     shell:
         """
-        python scripts/generate_casesmultifa.py -n {wildcards.fasta} -p "out/AMAP/{wildcards.fasta}.AMAP/" -p2 out/bakta_output/{wildcards.fasta}.bakta/
+        fasta_file=$(ls out/mtb_typer/{wildcards.fasta}/*.fasta | head -1)
+        if [ ! -f "$fasta_file" ]; then
+            echo "No FASTA file found in out/mtb_typer/{wildcards.fasta}/"
+            exit 1
+        fi
+        python scripts/generate_casesmultifa.py -n $fasta_file -p "out/AMAP/{wildcards.fasta}.AMAP/" -p2 out/bakta_output/{wildcards.fasta}.bakta/
         """
 
 rule H37Rv_clusters:
@@ -140,3 +182,4 @@ rule H37Rv_clusters:
         """
 
 ruleorder: blast_database > download_reference
+ruleorder: mtb_typer > bakta_multifa

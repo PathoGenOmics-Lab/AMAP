@@ -3,7 +3,7 @@ from Bio import SeqIO
 import os
 
 def main(tsv, path2):
-    input_prefix = tsv
+    input_prefix =  os.path.basename(tsv).split(".")[0]
     
     lista_tsv_original = []
     with open(path2+f"{input_prefix}.tsv", "r") as infile:
@@ -13,15 +13,16 @@ def main(tsv, path2):
                 lista_tsv_original.append(l)
 
     stay_cse1 = []
-    with open(f"{input_prefix}_case1.final.tsv", "r") as infile:
+    input_prefix2 = input_prefix.split("_")[1]
+    with open(f"{input_prefix2}_case1.final.tsv", "r") as infile:
         for line in infile:
             if "remove" not in line:
                 l = line.strip("\n").split("\t")[0].split("-")[0]
                 stay_cse1.append(l)
 
-    with open(f"{input_prefix}-complete.fa", "w") as o_file:
+    with open(f"{input_prefix2}-complete.fa", "w") as o_file:
         for case_number in range(1, 5):
-            for registro in SeqIO.parse(f"{input_prefix}_case{case_number}.bakta.fa", "fasta"):
+            for registro in SeqIO.parse(f"{input_prefix2}_case{case_number}.bakta.fa", "fasta"):
                 nombre_secuencia = registro.id
                 secuencia = str(registro.seq)
 

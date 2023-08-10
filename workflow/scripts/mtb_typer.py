@@ -7,9 +7,8 @@ import argparse
 from Bio import SeqIO
 import os
 
-
 def generate_kmers(sequence, k):
-    """
+    '''
     Generate all k-mers from a given sequence and their starting positions.
 
     Parameters:
@@ -20,16 +19,16 @@ def generate_kmers(sequence, k):
     - dict: A dictionary with k-mers as keys and their starting positions in the sequence as values.
 
     Example:
-    >>> generate_kmers("ACGTA", 3)
+    >>> generate_kmers('ACGTA', 3)
     {'ACG': 0, 'CGT': 1, 'GTA': 2}
-    """
+    '''
     kmers = {}
     for i in range(len(sequence) - k + 1):
         kmers[sequence[i:i+k]] = i
     return kmers
 
 def find_markers(genome_sequence, markers_kmers, k):
-    """
+    '''
     Find positions of marker k-mers within a genome sequence.
 
     Parameters:
@@ -39,7 +38,7 @@ def find_markers(genome_sequence, markers_kmers, k):
 
     Returns:
     - dict: Marker k-mers found in the genome and their respective positions and lineage.
-    """
+    '''
     
     genome_kmers = generate_kmers(genome_sequence, k)
     matched_markers = {}
@@ -51,7 +50,7 @@ def find_markers(genome_sequence, markers_kmers, k):
     return matched_markers
 
 def get_positions(in_filepos):
-    """
+    '''
     Extract reference positions, alternative bases, and lineage information from a TSV file.
 
     Parameters:
@@ -68,26 +67,26 @@ def get_positions(in_filepos):
     123         A           lineageA
     456         C           lineageB
     ...         ...         ...
-    """
+    '''
     
     reference_positions = {}
     markers_lineage = {}
     
     try:
         with open(in_filepos, 'r') as tsvfile:
-            tsvreader = csv.DictReader(tsvfile, delimiter="\t")
+            tsvreader = csv.DictReader(tsvfile, delimiter='\t')
             for row in tsvreader:
                 pos = int(row['position'])
                 reference_positions[pos] = row['alt_base']
                 markers_lineage[pos] = row['lineage']
     except (IOError, KeyError) as e:
-        print(f"Error reading the file or processing its contents: {e}")
+        print(f'Error reading the file or processing its contents: {e}')
         return {}, {}
             
     return reference_positions, markers_lineage
 
 def get_ref(fasta_file):
-    """
+    '''
     Extracts the sequence from a given FASTA file and returns it in uppercase.
 
     Parameters:
@@ -101,25 +100,25 @@ def get_ref(fasta_file):
     - ValueError: If the file cannot be read as a FASTA file or contains multiple records.
 
     Example:
-    >>> seq = get_ref("path_to_file.fasta")
+    >>> seq = get_ref('path_to_file.fasta')
     >>> print(seq)
-    "ATCGAAGT..."
+    'ATCGAAGT...'
 
     Note:
     This function expects the FASTA file to contain a single sequence record.
-    """
+    '''
     
     try:
-        ref_seq_record = SeqIO.read(fasta_file, "fasta")
+        ref_seq_record = SeqIO.read(fasta_file, 'fasta')
         ref_seq = str(ref_seq_record.seq).upper()
         return ref_seq
     except FileNotFoundError:
-        raise FileNotFoundError(f"The file {fasta_file} was not found.")
+        raise FileNotFoundError(f'The file {fasta_file} was not found.')
     except ValueError:
-        raise ValueError(f"The file {fasta_file} either contains multiple sequence records or cannot be read as a FASTA file.")
+        raise ValueError(f'The file {fasta_file} either contains multiple sequence records or cannot be read as a FASTA file.')
 
 def generate_markerkmer(reference_positions, ref_seq, markers_lineage, k):
-    """
+    '''
     Generate k-mers centered on specified positions with alternative bases.
 
     Parameters:
@@ -136,12 +135,12 @@ def generate_markerkmer(reference_positions, ref_seq, markers_lineage, k):
     
     Example:
     >>> reference_positions = {2: 'A', 25: 'G'}
-    >>> ref_seq = "ATCGTACGTAGCTAGCTAGCTGACTG"
+    >>> ref_seq = 'ATCGTACGTAGCTAGCTAGCTGACTG'
     >>> markers_lineage = {2: 'lineageA', 25: 'lineageB'}
     >>> k = 5
     >>> generate_markerkmer(reference_positions, ref_seq, markers_lineage, k)
     {'ATAGT': (2, 'lineageA'), 'TAGGT': (25, 'lineageB')}
-    """
+    '''
     
     markers_kmers = {}
     for pos, alt_base in reference_positions.items():
@@ -153,7 +152,7 @@ def generate_markerkmer(reference_positions, ref_seq, markers_lineage, k):
     return markers_kmers
 
 def analyze_genome(args):
-    """
+    '''
     Analyzes a genome sequence and matches it against known marker k-mers.
 
     Parameters:
@@ -171,7 +170,7 @@ def analyze_genome(args):
 
     Note:
     - If the FASTA file is not found or no markers are matched, the result will reflect this accordingly.
-    """
+    '''
     genome_name, markers_kmers, k = args
     genome_seq = get_ref(genome_name)
     matched_markers = find_markers(genome_seq, markers_kmers, k)
@@ -183,40 +182,40 @@ def analyze_genome(args):
     return genome_name, identified_lineages
 
 def rename_fasta_based_on_lineages(fasta_path, genome_name, identified_lineages):
-    """
+    '''
     Renames the given FASTA file and its sequence ID based on the identified lineages.
 
     Parameters:
     - fasta_path (str): The path to the input FASTA file.
     - genome_name (str): The name of the genome.
     - identified_lineages (set): A set of identified lineages for the genome.
-    """
+    '''
     
     # Remove the extension from genome_name for filename
     filename_without_extension = os.path.splitext(genome_name)[0]
 
     # Convert identified lineages set to a string separated by pipes
-    lineages_str = ";".join(sorted(identified_lineages))
+    lineages_str = ';'.join(sorted(identified_lineages))
 
     # Construct the new filename
-    new_file_name = f"{lineages_str}_{filename_without_extension}.fasta"
+    new_file_name = f'{lineages_str}_{filename_without_extension}.fasta'
     new_file_path = os.path.join(os.path.dirname(fasta_path), new_file_name)
 
     # Read the original FASTA, change the ID by appending the lineage, and write to the new file
-    records = list(SeqIO.parse(fasta_path, "fasta"))
+    records = list(SeqIO.parse(fasta_path, 'fasta'))
     if records:
         original_id = records[0].id
-        records[0].id = f"{lineages_str}_{original_id}"
-        records[0].description = ""  # Clear the description to ensure only the ID is written
-        SeqIO.write(records, new_file_path, "fasta")
+        records[0].id = f'{lineages_str}_{original_id}'
+        records[0].description = ''  # Clear the description to ensure only the ID is written
+        SeqIO.write(records, new_file_path, 'fasta')
 
 def arguments():
-    """
+    '''
     Define and parse command line arguments.
 
     Returns:
     - argparse.Namespace: Parsed arguments.
-    """
+    '''
 
     parser = argparse.ArgumentParser(
         prog='mtbtyper',
@@ -240,5 +239,5 @@ def main():
     genome_name, identified_lineages = analyze_genome(argg)
     rename_fasta_based_on_lineages(args.input, genome_name, identified_lineages)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

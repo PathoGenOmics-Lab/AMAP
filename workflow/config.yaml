@@ -1,4 +1,4 @@
-fasta_dir: "workflow/fasta"
+fasta_dir: "fasta"
 proteins: "/mnt/c/Users/pauru/OneDrive/documentos_paula/GitHub/AMAP/workflow/sequence.gb"
 output: "/mnt/c/Users/pauru/OneDrive/documentos_paula/GitHub/AMAP/res"
 ref_multifa : "/mnt/c/Users/pauru/OneDrive/documentos_paula/GitHub/AMAP/workflow/nt_correctedH37Rv.fa"

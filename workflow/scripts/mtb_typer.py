@@ -7,6 +7,7 @@ import argparse
 from Bio import SeqIO
 import os
 
+
 def generate_kmers(sequence, k):
     """
     Generate all k-mers from a given sequence and their starting positions.
@@ -171,9 +172,8 @@ def analyze_genome(args):
     Note:
     - If the FASTA file is not found or no markers are matched, the result will reflect this accordingly.
     """
-    genome_name, fasta_path, markers_kmers, k = args
-
-    genome_seq = get_ref(fasta_path)
+    genome_name, markers_kmers, k = args
+    genome_seq = get_ref(genome_name)
     matched_markers = find_markers(genome_seq, markers_kmers, k)
 
     identified_lineages = set()
@@ -231,7 +231,6 @@ def main():
 
     ref_seq = get_ref(args.ref)
     reference_positions, markers_lineage = get_positions(args.snp)
-    print(reference_positions)
     markers_kmers = generate_markerkmer(reference_positions, ref_seq, markers_lineage, k)
     argg = (args.input, markers_kmers, k)
     genome_name, identified_lineages = analyze_genome(argg)

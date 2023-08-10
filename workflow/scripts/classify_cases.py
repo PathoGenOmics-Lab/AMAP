@@ -41,7 +41,6 @@ def get_gff(name: str, current):
     filename = os.path.basename(name).split(".")[0]
     print(filename)
     name = filename.split("_")[1]
-    print(current+"/out/bakta_output/" + name + ".bakta/" + filename + '.tsv')
     with open(current+"/out/bakta_output/" + name + ".bakta/" + filename + '.tsv', 'r') as f:
         lines = f.readlines()
         header_row = next((i for i, line in enumerate(lines) if line.startswith('#Sequence')), None)

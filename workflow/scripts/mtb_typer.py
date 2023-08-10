@@ -7,25 +7,6 @@ import argparse
 from Bio import SeqIO
 import os
 
-def arguments():
-    """
-    Define and parse command line arguments.
-
-    Returns:
-    - argparse.Namespace: Parsed arguments.
-    """
-
-    parser = argparse.ArgumentParser(
-        prog='mtbtyper',
-        description='A package to use k-mers to predict the _Mycobacterium tuberculosis_ complex species'
-    )
-    
-    parser.add_argument('-i', '--input', help='Input file in fasta format', required=True)
-    parser.add_argument('-t', '--snp', help='Marker file', required=True)
-    parser.add_argument('-r', '--ref', help='Fasta reference', required=True)
-    
-    return parser.parse_args()
-
 def generate_kmers(sequence, k):
     """
     Generate all k-mers from a given sequence and their starting positions.
@@ -225,12 +206,32 @@ def rename_fasta_based_on_lineages(fasta_path, genome_name, identified_lineages)
         records[0].description = ""  # Clear the description to ensure only the ID is written
         SeqIO.write(records, new_file_path, "fasta")
 
+def arguments():
+    """
+    Define and parse command line arguments.
+
+    Returns:
+    - argparse.Namespace: Parsed arguments.
+    """
+
+    parser = argparse.ArgumentParser(
+        prog='mtbtyper',
+        description='A package to use k-mers to predict the _Mycobacterium tuberculosis_ complex species'
+    )
+    
+    parser.add_argument('-i', '--input', help='Input file in fasta format', required=True)
+    parser.add_argument('-t', '--snp', help='Marker file', required=True)
+    parser.add_argument('-r', '--ref', help='Fasta reference', required=True)
+    
+    return parser.parse_args()
+
 def main():
     args = arguments()
     k = 21
 
     ref_seq = get_ref(args.ref_fasta)
     reference_positions, markers_lineage = get_positions(args.tsv_pos)
+    print(reference_positions)
     markers_kmers = generate_markerkmer(reference_positions, ref_seq, markers_lineage, k)
     argg = (args.input, markers_kmers, k)
     genome_name, identified_lineages = analyze_genome(argg)

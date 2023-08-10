@@ -235,3 +235,6 @@ def main():
     argg = (args.input, markers_kmers, k)
     genome_name, identified_lineages = analyze_genome(argg)
     rename_fasta_based_on_lineages(args.input, genome_name, identified_lineages)
+
+if __name__ == "__main__":
+    main()

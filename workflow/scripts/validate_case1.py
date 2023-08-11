@@ -189,14 +189,16 @@ def process_blast112_results(blast112: pd.DataFrame, lista_1121: List[str], list
 
     return lista_resultados, lista_1122
 
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Process multi-fasta files.")
+    parser.add_argument('--name', help="Fasta name")
+    parser.add_argument('--input-path', help="Path to Bakta multi-fasta.")
+    parser.add_argument('--bad-bakta-path', help="Path to Bakta multi-fasta for bad cases.")
+    parser.add_argument('--reference-path', help="Path to Bakta multi-fasta for reference.")
+    return parser.parse_args()
 
 def main():
-    parser = argparse.ArgumentParser(description="")
-    parser.add_argument('-n', dest="name", help="Fasta name")
-    parser.add_argument('-p', dest="path", help="Ruta al archivo Bakta multi-fasta.")
-    parser.add_argument('-b', dest="badbakta", help="Ruta al archivo Bakta multi-fasta.")
-    parser.add_argument('-r', dest="reference", help="Ruta al archivo Bakta multi-fasta.")
-    args = parser.parse_args()
+    args = parse_arguments()
     current = os.getcwd()
     caso1h37rv = args.badbakta
     referencia = args.reference

@@ -48,7 +48,6 @@ def cluster_records(bakta_file, h37rv_file, eps=0.95, min_samples=1):
     return labels, all_records
 
 def main(prefix, h37rv_file):
-    print(prefix)
     bakta_file = f"{prefix}-complete.fa"
     labels = cluster_records(bakta_file, h37rv_file)
 

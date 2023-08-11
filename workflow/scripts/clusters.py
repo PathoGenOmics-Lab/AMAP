@@ -8,6 +8,19 @@ import argparse
 import os
 
 def calculate_jaccard_similarity_matrix(bakta_file, h37rv_file):
+    """
+    Compute the Jaccard similarity matrix for sequences from two FASTA files.
+
+    Parameters:
+    - bakta_file (str): Path to the first FASTA file.
+    - h37rv_file (str): Path to the second FASTA file.
+
+    Returns:
+    - np.ndarray: Jaccard similarity matrix for the combined sequences.
+    - list: All sequences from both files.
+
+    Note: Requires SeqIO (BioPython), MinHash (sourmash), and numpy.
+    """
     k = 21
     n = 500
 

@@ -76,6 +76,18 @@ def cluster_records(bakta_file, h37rv_file, eps=0.95, min_samples=1):
     return labels, all_records
 
 def main(prefix, h37rv_file):
+    """
+    Generate clusters for sequences and save them to a file based on their Jaccard similarity.
+
+    Parameters:
+    - prefix (str): Prefix to generate the bakta file path (`{prefix}-complete.fa`).
+    - h37rv_file (str): Path to the FASTA file of h37rv sequences.
+
+    Output:
+    - Writes the clusters to `{prefix}.clusters` file.
+
+    Note: Uses SeqIO for FASTA file operations.
+    """
     bakta_file = f"{prefix}-complete.fa"
     labels = cluster_records(bakta_file, h37rv_file)
 

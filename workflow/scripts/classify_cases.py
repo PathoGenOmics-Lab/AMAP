@@ -37,9 +37,7 @@ def extract_sequence(row, unique_seq):
     return SeqIO.SeqRecord(seq, id=locus_gene, description="")
 
 def get_gff(name: str, current):
-    print(name)
     filename = os.path.basename(name).split(".")[0]
-    print(filename)
     name = filename.split("_")[1]
     with open(current+"/out/bakta_output/" + name + ".bakta/" + filename + '.tsv', 'r') as f:
         lines = f.readlines()

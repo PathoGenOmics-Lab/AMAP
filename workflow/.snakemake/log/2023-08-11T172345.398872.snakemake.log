@@ -1,0 +1,147 @@
+Building DAG of jobs...
+Your conda installation is not configured to use strict channel priorities. This is however crucial for having robust and correct environments (for details, see https://conda-forge.org/docs/user/tipsandtricks.html). Please consider to configure strict priorities by executing 'conda config --set channel_priority strict'.
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job stats:
+job               count    min threads    max threads
+--------------  -------  -------------  -------------
+H37Rv_clusters        2              1              1
+all                   1              1              1
+bakta_multifa         2              1              1
+classify_cases        2              1              1
+validate_case1        2              1              1
+total                 9              1              1
+
+Select jobs to execute...
+
+[Fri Aug 11 17:23:47 2023]
+rule classify_cases:
+    input: out/bakta_output/G48931.bakta, out/downloads/reference/blast_nt_correctedH37Rv.fa.blastdb
+    output: out/AMAP/G48931.AMAP/G48931_classifiedcases.tsv, out/AMAP/G48931.AMAP/G48931_case1.bakta.fa, out/AMAP/G48931.AMAP/G48931_case2.bakta.fa, out/AMAP/G48931.AMAP/G48931_case3.bakta.fa, out/AMAP/G48931.AMAP/G48931_case4.bakta.fa
+    jobid: 4
+    reason: Missing output files: out/AMAP/G48931.AMAP/G48931_case3.bakta.fa, out/AMAP/G48931.AMAP/G48931_case1.bakta.fa, out/AMAP/G48931.AMAP/G48931_case2.bakta.fa, out/AMAP/G48931.AMAP/G48931_case4.bakta.fa
+    wildcards: fasta=G48931
+    resources: tmpdir=/tmp
+
+Activating conda environment: .snakemake/conda/fe82b7ca97c5c4c4d5e30a115bc7b591_
+
+[Fri Aug 11 17:23:47 2023]
+rule classify_cases:
+    input: out/bakta_output/G48951.bakta, out/downloads/reference/blast_nt_correctedH37Rv.fa.blastdb
+    output: out/AMAP/G48951.AMAP/G48951_classifiedcases.tsv, out/AMAP/G48951.AMAP/G48951_case1.bakta.fa, out/AMAP/G48951.AMAP/G48951_case2.bakta.fa, out/AMAP/G48951.AMAP/G48951_case3.bakta.fa, out/AMAP/G48951.AMAP/G48951_case4.bakta.fa
+    jobid: 20
+    reason: Missing output files: out/AMAP/G48951.AMAP/G48951_case3.bakta.fa, out/AMAP/G48951.AMAP/G48951_case4.bakta.fa, out/AMAP/G48951.AMAP/G48951_case1.bakta.fa, out/AMAP/G48951.AMAP/G48951_case2.bakta.fa
+    wildcards: fasta=G48951
+    resources: tmpdir=/tmp
+
+Activating conda environment: .snakemake/conda/fe82b7ca97c5c4c4d5e30a115bc7b591_
+[Fri Aug 11 17:23:59 2023]
+Finished job 4.
+1 of 9 steps (11%) done
+Select jobs to execute...
+
+[Fri Aug 11 17:23:59 2023]
+rule validate_case1:
+    input: out/AMAP/G48931.AMAP/G48931_case1.bakta.fa, out/downloads/reference/blast_new_refH37Rv.fasta.blastdb, out/downloads/reference/blast_bad.bakta.fa.blastdb
+    output: out/AMAP/G48931.AMAP/G48931_case1.final.tsv
+    jobid: 3
+    reason: Missing output files: out/AMAP/G48931.AMAP/G48931_case1.final.tsv; Input files updated by another job: out/AMAP/G48931.AMAP/G48931_case1.bakta.fa
+    wildcards: fasta=G48931
+    resources: tmpdir=/tmp
+
+Activating conda environment: .snakemake/conda/fe82b7ca97c5c4c4d5e30a115bc7b591_
+[Fri Aug 11 17:23:59 2023]
+Finished job 20.
+2 of 9 steps (22%) done
+Select jobs to execute...
+
+[Fri Aug 11 17:23:59 2023]
+rule validate_case1:
+    input: out/AMAP/G48951.AMAP/G48951_case1.bakta.fa, out/downloads/reference/blast_new_refH37Rv.fasta.blastdb, out/downloads/reference/blast_bad.bakta.fa.blastdb
+    output: out/AMAP/G48951.AMAP/G48951_case1.final.tsv
+    jobid: 19
+    reason: Missing output files: out/AMAP/G48951.AMAP/G48951_case1.final.tsv; Input files updated by another job: out/AMAP/G48951.AMAP/G48951_case1.bakta.fa
+    wildcards: fasta=G48951
+    resources: tmpdir=/tmp
+
+Activating conda environment: .snakemake/conda/fe82b7ca97c5c4c4d5e30a115bc7b591_
+[Fri Aug 11 17:24:11 2023]
+Finished job 19.
+3 of 9 steps (33%) done
+Select jobs to execute...
+
+[Fri Aug 11 17:24:11 2023]
+rule bakta_multifa:
+    input: out/AMAP/G48951.AMAP/G48951_case1.final.tsv, out/AMAP/G48951.AMAP/G48951_case1.bakta.fa, out/AMAP/G48951.AMAP/G48951_case2.bakta.fa, out/AMAP/G48951.AMAP/G48951_case3.bakta.fa, out/AMAP/G48951.AMAP/G48951_case4.bakta.fa
+    output: out/AMAP/G48951.AMAP/G48951-complete.fa
+    jobid: 18
+    reason: Missing output files: out/AMAP/G48951.AMAP/G48951-complete.fa; Input files updated by another job: out/AMAP/G48951.AMAP/G48951_case3.bakta.fa, out/AMAP/G48951.AMAP/G48951_case4.bakta.fa, out/AMAP/G48951.AMAP/G48951_case1.bakta.fa, out/AMAP/G48951.AMAP/G48951_case2.bakta.fa, out/AMAP/G48951.AMAP/G48951_case1.final.tsv
+    wildcards: fasta=G48951
+    resources: tmpdir=/tmp
+
+Activating conda environment: .snakemake/conda/fe82b7ca97c5c4c4d5e30a115bc7b591_
+[Fri Aug 11 17:24:12 2023]
+Finished job 3.
+4 of 9 steps (44%) done
+Select jobs to execute...
+
+[Fri Aug 11 17:24:12 2023]
+rule bakta_multifa:
+    input: out/AMAP/G48931.AMAP/G48931_case1.final.tsv, out/AMAP/G48931.AMAP/G48931_case1.bakta.fa, out/AMAP/G48931.AMAP/G48931_case2.bakta.fa, out/AMAP/G48931.AMAP/G48931_case3.bakta.fa, out/AMAP/G48931.AMAP/G48931_case4.bakta.fa
+    output: out/AMAP/G48931.AMAP/G48931-complete.fa
+    jobid: 2
+    reason: Missing output files: out/AMAP/G48931.AMAP/G48931-complete.fa; Input files updated by another job: out/AMAP/G48931.AMAP/G48931_case1.final.tsv, out/AMAP/G48931.AMAP/G48931_case3.bakta.fa, out/AMAP/G48931.AMAP/G48931_case1.bakta.fa, out/AMAP/G48931.AMAP/G48931_case2.bakta.fa, out/AMAP/G48931.AMAP/G48931_case4.bakta.fa
+    wildcards: fasta=G48931
+    resources: tmpdir=/tmp
+
+Activating conda environment: .snakemake/conda/fe82b7ca97c5c4c4d5e30a115bc7b591_
+[Fri Aug 11 17:24:16 2023]
+Finished job 18.
+5 of 9 steps (56%) done
+Select jobs to execute...
+
+[Fri Aug 11 17:24:16 2023]
+rule H37Rv_clusters:
+    input: out/AMAP/G48951.AMAP/G48951-complete.fa, out/downloads/reference/nt_correctedH37Rv.fa
+    output: out/AMAP/G48951.AMAP/G48951.clusters
+    jobid: 17
+    reason: Missing output files: out/AMAP/G48951.AMAP/G48951.clusters; Input files updated by another job: out/AMAP/G48951.AMAP/G48951-complete.fa
+    wildcards: fasta=G48951
+    resources: tmpdir=/tmp
+
+Activating conda environment: .snakemake/conda/fe82b7ca97c5c4c4d5e30a115bc7b591_
+[Fri Aug 11 17:24:16 2023]
+Finished job 2.
+6 of 9 steps (67%) done
+Select jobs to execute...
+
+[Fri Aug 11 17:24:16 2023]
+rule H37Rv_clusters:
+    input: out/AMAP/G48931.AMAP/G48931-complete.fa, out/downloads/reference/nt_correctedH37Rv.fa
+    output: out/AMAP/G48931.AMAP/G48931.clusters
+    jobid: 1
+    reason: Missing output files: out/AMAP/G48931.AMAP/G48931.clusters; Input files updated by another job: out/AMAP/G48931.AMAP/G48931-complete.fa
+    wildcards: fasta=G48931
+    resources: tmpdir=/tmp
+
+Activating conda environment: .snakemake/conda/fe82b7ca97c5c4c4d5e30a115bc7b591_
+[Fri Aug 11 17:29:07 2023]
+Finished job 17.
+7 of 9 steps (78%) done
+[Fri Aug 11 17:29:09 2023]
+Finished job 1.
+8 of 9 steps (89%) done
+Select jobs to execute...
+
+[Fri Aug 11 17:29:09 2023]
+localrule all:
+    input: out/AMAP/G48931.AMAP/G48931.clusters, out/AMAP/G48951.AMAP/G48951.clusters
+    jobid: 0
+    reason: Input files updated by another job: out/AMAP/G48951.AMAP/G48951.clusters, out/AMAP/G48931.AMAP/G48931.clusters
+    resources: tmpdir=/tmp
+
+[Fri Aug 11 17:29:09 2023]
+Finished job 0.
+9 of 9 steps (100%) done
+Complete log: .snakemake/log/2023-08-11T172345.398872.snakemake.log

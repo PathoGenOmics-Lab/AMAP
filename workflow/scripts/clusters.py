@@ -48,9 +48,6 @@ def calculate_jaccard_similarity_matrix(bakta_file, h37rv_file):
 
     return similarity_matrix, all_records
 
-#def cluster_records(bakta_file, h37rv_file, eps=0.2, min_samples=2):
-#def cluster_records(bakta_file, h37rv_file, eps=0.5, min_samples=1):
-#def cluster_records(bakta_file, h37rv_file, eps=0.7, min_samples=1):
 def cluster_records(bakta_file, h37rv_file, eps=0.95, min_samples=1):
     """
     Cluster sequences from two FASTA files based on Jaccard similarity.
@@ -114,4 +111,4 @@ if __name__ == "__main__":
     current = os.getcwd()
     os.chdir(args.path)
     h37rv_file = args.h37rv_file
-    main(args.input_prefix, current+"/"+h37rv_file)
+    main(args.input_prefix, current + "/" + h37rv_file)

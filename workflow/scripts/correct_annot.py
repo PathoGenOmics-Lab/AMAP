@@ -273,3 +273,10 @@ def parse_rv_elements(rv_elements):
     return [(element, abs(int(matches[0]) - int(matches[1])))
             for element in rv_elements
             for matches in re.findall(r'(\d+)-(\d+)', element)]
+
+def find_matching_rv_element(g_length, rv_elements_parsed, used_rv_elements):
+    for rv_element, rv_length in rv_elements_parsed:
+        if rv_element not in used_rv_elements and g_length == rv_length:
+            used_rv_elements.add(rv_element)
+            return rv_element
+    return None

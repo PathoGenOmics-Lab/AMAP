@@ -426,3 +426,17 @@ def process_non_matching_elements(lista_res, non_matching_bak, lista_coordenadas
                 lista_set.add(coord)
                 break
     return remove
+
+def write_remaining_elements(non_matching_bak, output_file, lista_coordenadas, non_matching_gen, remove):
+    unique_gen_ids = set(e[0] for e in non_matching_gen)
+    rv = "_".join(unique_gen_ids)
+
+    for bakta in non_matching_bak:
+        if bakta[2] not in remove:
+            wr = bakta[2].split(";")
+            num = wr[1].split(",")
+            coord = (int(num[0]), int(num[1]))
+
+            if coord not in lista_coordenadas:
+                output_file.write(f"{wr[0]}\t{num[0]}\t{num[1]}\t{wr[2]}\t{rv}\n")
+                lista_coordenadas.add(coord)

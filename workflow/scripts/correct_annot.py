@@ -307,3 +307,17 @@ def process_line(line: str, prefix: str) -> dict:
             matching_dict[g_element] = rv_element
 
     return matching_dict
+
+def handle_diff_zero(l, prefix, lista_coordenadas, output_file):
+    matching_dict = process_line(l[1], prefix)
+    for gene_element, rv_element in matching_dict.items():
+        processed_element = process_element(gene_element)
+        lista_coordenadas = process_coordinates_and_write(processed_element, rv_element, lista_coordenadas, output_file)
+    return lista_coordenadas
+
+def handle_diff_non_zero(matching_elements, lista_coordenadas, output_file):
+    for bak, gen in matching_elements:
+        if bak[1] == gen[1]:
+
+            lista_coordenadas = process_coordinates_and_write(bak, gen[0], lista_coordenadas, output_file)
+    return lista_coordenadas

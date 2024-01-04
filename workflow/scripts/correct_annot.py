@@ -199,3 +199,15 @@ def process_blast_results(blast_out):
         if is_valid:
             blast_results[blast_result.qseqid].append(result)
     return blast_results
+
+def translate_sequence(sequence, start, end, step):
+    amino_acid_sequence = ""
+    for i in range(start, end, step):
+        next_codon = sequence[i:i+3]
+        if step < 0:
+            next_codon = next_codon.reverse_complement()
+        next_amino_acid = next_codon.translate(table="Bacterial", to_stop=False)
+        amino_acid_sequence += next_amino_acid
+        if next_amino_acid == "*":
+            return amino_acid_sequence, i
+    return amino_acid_sequence, i

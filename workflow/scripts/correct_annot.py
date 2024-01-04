@@ -211,3 +211,25 @@ def translate_sequence(sequence, start, end, step):
         if next_amino_acid == "*":
             return amino_acid_sequence, i
     return amino_acid_sequence, i
+
+def extract_amino_acid_sequence_with_stop_codon(start, end, orientation):
+    start = start - 1
+    global SEQ
+    fasta_file = SEQ
+    with open(SEQ, "r") as fasta_file:
+        sequence = [seq_record.seq for seq_record in SeqIO.parse(fasta_file, "fasta")][0]
+    
+    seq = sequence[start:end]
+    if orientation == "-":
+        seq = seq.reverse_complement()
+    
+    amino_acid_sequence = seq.translate(table="Bacterial", to_stop=False)
+
+    if orientation == "+":
+        step = 3
+        aa_seq, stop_codon_index = translate_sequence(sequence, end, len(sequence), step)
+    else: # orientation == "-"
+        step = -3
+        aa_seq, stop_codon_index = translate_sequence(sequence, start, -1, step)
+        
+    return len(amino_acid_sequence + aa_seq), (start, stop_codon_index + step)

@@ -35,3 +35,6 @@ def run_blast_xml(in_query: str, in_subject: str):
 def parse_tab_data(blastn_out_tab: str) -> list:
     columns = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qcovs', 'qcovhsp', 'qlen', 'slen']
     return [dict(zip(columns, line.split("\t"))) for line in blastn_out_tab.strip().split("\n") if line]
+
+def parse_xml_data(blastn_out_xml: str) -> dict:
+    return {record.query: record for record in NCBIXML.parse(StringIO(blastn_out_xml)) if blastn_out_xml.strip()}

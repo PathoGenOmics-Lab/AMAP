@@ -250,3 +250,14 @@ def process_element(element):
         return [element.split(";")[0], length, element]
     else:
         return [element.split("_")[0], int(element.split("_")[1].split("-")[1]) - int(element.split("_")[1].split("-")[0]), element]
+    
+def process_coordinates_and_write(element_info, rv_element, coordinates_list, output):
+    """Process coordinates and write to output if the coordinates are not in the list."""
+    element_info_split = element_info[2].split(";")
+    real_coordinates = tuple(map(int, element_info_split[1].split(",")))
+
+    if real_coordinates not in coordinates_list:
+
+        coordinates_list.add(real_coordinates)
+        output.write(f"{element_info[0]}\t{real_coordinates[0]}\t{real_coordinates[1]}\t{element_info_split[2]}\t{rv_element}\n")
+    return coordinates_list

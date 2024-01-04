@@ -160,9 +160,10 @@ def process_element_with_blastn(element: Tuple, prefix: str) -> Dict:
     '''Processes a single element using blastn and returns results'''
     name = os.path.basename(prefix) + "database"
     pid = os.getpid()
-
+    global FA
     with NamedTemporaryFile(suffix=f".{pid}.fasta") as query_file:
-        get_seq(element[0], "/storage/PGO/results/mtb/proj_anc2023/bakta/last_step/nt_correctedH37Rv.fa", query_file.name)        
+        #get_seq(element[0], "/storage/PGO/results/mtb/proj_anc2023/bakta/last_step/nt_correctedH37Rv.fa", query_file.name)        
+        get_seq(element[0], FA, query_file.name) 
         blast_out = blastn(query_file.name, name)
 
     return process_blast_results(blast_out)
@@ -497,8 +498,9 @@ def main(prefix: str):
 if __name__ == "__main__":
     
     args = parse_argparse() 
-    global SEQ
+    global SEQ, FA
     SEQ = f"{args.prefix}.fna"
+    FA = "nt_correctedH37Rv.fa"
     create_database(f"{args.prefix}.fna", f"{args.prefix}database")
     directory_path = os.path.dirname(args.prefix)
     os.chdir(directory_path)

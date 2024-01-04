@@ -325,7 +325,7 @@ def handle_diff_non_zero(matching_elements, lista_coordenadas, output_file):
 def process_non_matching_elements_modified(non_matching_gen, bakta_coords, prefix):
     lista = []
     fixed_process_element_with_blastn = partial(process_element_with_blastn, prefix=prefix)
-    num_workers = 4  # Ajusta esto seg�n tus necesidades
+    num_workers = 4
     
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
         futures = {executor.submit(fixed_process_element_with_blastn, gen): gen for gen in non_matching_gen}
@@ -356,3 +356,4 @@ def process_matching_elements(matching_elements, non_matching_gen, lista_coorden
             elif gen not in non_matching_gen:
                 non_matching_gen.append(gen)
     return lista_set
+

@@ -242,3 +242,11 @@ def count_cases(genes):
     rvs = genes.count("Rv")
     diff = rvs - sum(counts.values())
     return rvs, g_genes, diff, counts["case1"], counts["case2"], counts["case3"], counts["case4"]
+
+def process_element(element):
+    '''Processes an element from the cluster file and returns the element name, length and the element itself.'''
+    if "case" in element:
+        length = int(element.split(";")[1].split(",")[1]) - int(element.split(";")[1].split(",")[0])
+        return [element.split(";")[0], length, element]
+    else:
+        return [element.split("_")[0], int(element.split("_")[1].split("-")[1]) - int(element.split("_")[1].split("-")[0]), element]

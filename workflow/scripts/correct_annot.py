@@ -268,3 +268,8 @@ def match_elements(l_bak, l_gen):
     non_matching_gen = [gen for gen in l_gen if not any(gen[1] == bak[1] for bak in l_bak)]
     matching_elements = [(bak, gen) for bak in l_bak for gen in l_gen if bak[1] == gen[1]]
     return non_matching_bak, non_matching_gen, matching_elements
+
+def parse_rv_elements(rv_elements):
+    return [(element, abs(int(matches[0]) - int(matches[1])))
+            for element in rv_elements
+            for matches in re.findall(r'(\d+)-(\d+)', element)]

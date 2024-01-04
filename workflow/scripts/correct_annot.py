@@ -138,3 +138,20 @@ def process_gene(gene_data, bakta_coords, file_writer):
     for coords in coordinates_list:
         if process_coordinates(coords, bakta_coords, file_writer, gene_id):
             break
+
+def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords: set, prefix) -> set:
+    fixed_process_element_with_blastn = partial(process_element_with_blastn, prefix=prefix)
+    num_workers = 4 
+
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
+        futures = {executor.submit(fixed_process_element_with_blastn, gen): gen for gen in non_matching_gen}
+        
+        for future in as_completed(futures):
+            try:
+                result = future.result()
+                for gene_data in result.items():
+                    process_gene(gene_data, bakta_coords, file_writer)
+            except Exception as e:
+                print(f"Exception occurred: {e}")
+
+    return bakta_coords

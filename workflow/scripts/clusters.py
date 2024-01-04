@@ -8,6 +8,19 @@ import argparse
 import os
 
 def calculate_jaccard_similarity_matrix(bakta_file, h37rv_file):
+    """
+    Compute the Jaccard similarity matrix for sequences from two FASTA files.
+
+    Parameters:
+    - bakta_file (str): Path to the first FASTA file.
+    - h37rv_file (str): Path to the second FASTA file.
+
+    Returns:
+    - np.ndarray: Jaccard similarity matrix for the combined sequences.
+    - list: All sequences from both files.
+
+    Note: Requires SeqIO (BioPython), MinHash (sourmash), and numpy.
+    """
     k = 21
     n = 500
 
@@ -35,10 +48,22 @@ def calculate_jaccard_similarity_matrix(bakta_file, h37rv_file):
 
     return similarity_matrix, all_records
 
-#def cluster_records(bakta_file, h37rv_file, eps=0.2, min_samples=2):
-#def cluster_records(bakta_file, h37rv_file, eps=0.5, min_samples=1):
-#def cluster_records(bakta_file, h37rv_file, eps=0.7, min_samples=1):
 def cluster_records(bakta_file, h37rv_file, eps=0.95, min_samples=1):
+    """
+    Cluster sequences from two FASTA files based on Jaccard similarity.
+
+    Parameters:
+    - bakta_file (str): Path to first FASTA file.
+    - h37rv_file (str): Path to second FASTA file.
+    - eps (float): The maximum distance between two samples for them to be considered as in the same cluster.
+    - min_samples (int): The number of samples in a neighborhood for a point to be considered as a core point.
+
+    Returns:
+    - ndarray: Cluster labels for each sequence.
+    - list: All sequences from both files.
+
+    Note: Uses DBSCAN clustering and requires scikit-learn.
+    """
     similarity_matrix, all_records = calculate_jaccard_similarity_matrix(bakta_file, h37rv_file)
     distance_matrix = 1 - similarity_matrix
 
@@ -48,7 +73,18 @@ def cluster_records(bakta_file, h37rv_file, eps=0.95, min_samples=1):
     return labels, all_records
 
 def main(prefix, h37rv_file):
-    print(prefix)
+    """
+    Generate clusters for sequences and save them to a file based on their Jaccard similarity.
+
+    Parameters:
+    - prefix (str): Prefix to generate the bakta file path (`{prefix}-complete.fa`).
+    - h37rv_file (str): Path to the FASTA file of h37rv sequences.
+
+    Output:
+    - Writes the clusters to `{prefix}.clusters` file.
+
+    Note: Uses SeqIO for FASTA file operations.
+    """
     bakta_file = f"{prefix}-complete.fa"
     labels = cluster_records(bakta_file, h37rv_file)
 
@@ -75,4 +111,4 @@ if __name__ == "__main__":
     current = os.getcwd()
     os.chdir(args.path)
     h37rv_file = args.h37rv_file
-    main(args.input_prefix, current+"/"+h37rv_file)
+    main(args.input_prefix, current + "/" + h37rv_file)

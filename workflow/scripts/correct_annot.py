@@ -183,3 +183,19 @@ def is_valid_alignment(alignment, start, end, qlen):
         if calculo >= 80:
             return True, (start, coordenadas[0], coordenadas[0])
     return False, None
+
+def process_blast_results(blast_out):
+    blast_results = defaultdict(list)
+    for blast_result in blast_out.itertuples(index=False):
+        pident = float(blast_result.pident)
+        if pident <= 70:
+            continue
+        alignment = blast_result.xml_data.alignments[0].hsps[0]
+        matches = calculate_matches(alignment, blast_result.qlen)
+        if matches < 80:
+            continue
+        start, end = map(int, (blast_result.sstart, blast_result.send))
+        is_valid, result = is_valid_alignment(alignment, start, end, blast_result.qlen)
+        if is_valid:
+            blast_results[blast_result.qseqid].append(result)
+    return blast_results

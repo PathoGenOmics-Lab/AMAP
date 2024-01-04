@@ -384,3 +384,13 @@ def nocase4(params):
 
     lista_coordenadas = process_non_matching_genes(non_matching_gen, output_file, lista_coordenadas, prefix)
     return lista_coordenadas
+
+def add_to_list_and_coords(qseqid, coords, lista, bakta_coords):
+    lengg = int(coords[1]) - int(coords[0])
+    start_coord, end_coord = min(int(coords[0]), int(coords[1])), max(int(coords[0]), int(coords[1]))
+    f_coord = (start_coord, end_coord)
+    lenn = "-" if lengg < 0 else "+"
+    le=end_coord-start_coord
+    if le > 100:
+        if f_coord not in bakta_coords:
+            lista.append([qseqid, start_coord, end_coord, lenn])

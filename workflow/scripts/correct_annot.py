@@ -166,3 +166,7 @@ def process_element_with_blastn(element: Tuple, prefix: str) -> Dict:
         blast_out = blastn(query_file.name, name)
 
     return process_blast_results(blast_out)
+
+def calculate_matches(alignment, qlen):
+    exact_matches = sum(a == b for a, b in zip(alignment.query, alignment.match))
+    return (exact_matches / float(qlen)) * 100

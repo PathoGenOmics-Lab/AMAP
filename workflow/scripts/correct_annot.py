@@ -440,3 +440,10 @@ def write_remaining_elements(non_matching_bak, output_file, lista_coordenadas, n
             if coord not in lista_coordenadas:
                 output_file.write(f"{wr[0]}\t{num[0]}\t{num[1]}\t{wr[2]}\t{rv}\n")
                 lista_coordenadas.add(coord)
+
+def main2(non_matching_gen, matching_elements, lista_coordenadas, output_file, cluster, prefix, non_matching_bak):
+    if len(matching_elements) != 0:
+        process_matching_elements(matching_elements, non_matching_gen, lista_coordenadas, output_file, cluster)
+    lista_res = process_non_matching_elements_modified(non_matching_gen, lista_coordenadas, prefix)
+    remove = process_non_matching_elements(lista_res, non_matching_bak, lista_coordenadas, output_file)    
+    write_remaining_elements(non_matching_bak, output_file,lista_coordenadas,non_matching_gen,remove)

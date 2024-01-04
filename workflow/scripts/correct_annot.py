@@ -120,3 +120,15 @@ def cluster_1_genes(line, coordinates_set, output_file, prefix):
             coordinates_set = process_non_case_genes(gene, coordinates_set, output_file, prefix)
     coordinates_set = set(sorted(coordinates_set))
     return coordinates_set
+
+def process_coordinates(coords, bakta_coords, file_writer, gene_id):
+    ordered_coords = (min(int(coords[0]), int(coords[1])), max(int(coords[0]), int(coords[1])))
+    noorder_len = int(coords[1]) - int(coords[0])
+    len_difference = ordered_coords[1] - ordered_coords[0]
+    length_indicator = "+" if noorder_len >= 0 else "-"
+    if len_difference > 100:
+        if ordered_coords not in bakta_coords:
+            file_writer.write(f"{gene_id}\t{ordered_coords[0]}\t{ordered_coords[1]}\t{length_indicator}\n")
+            bakta_coords.add(ordered_coords)
+            return True
+    return False

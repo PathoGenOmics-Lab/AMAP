@@ -321,3 +321,38 @@ def handle_diff_non_zero(matching_elements, lista_coordenadas, output_file):
 
             lista_coordenadas = process_coordinates_and_write(bak, gen[0], lista_coordenadas, output_file)
     return lista_coordenadas
+
+def process_non_matching_elements_modified(non_matching_gen, bakta_coords, prefix):
+    lista = []
+    fixed_process_element_with_blastn = partial(process_element_with_blastn, prefix=prefix)
+    num_workers = 4  # Ajusta esto seg�n tus necesidades
+    
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
+        futures = {executor.submit(fixed_process_element_with_blastn, gen): gen for gen in non_matching_gen}
+        
+        for future in as_completed(futures):
+            try:
+                result = future.result()
+                for qseqid, coords_list in result.items():
+                    for coords in coords_list:
+                        add_to_list_and_coords(qseqid, coords, lista, bakta_coords)
+            except Exception as e:
+                print(f"Exception occurred: {e}")
+
+    return lista
+
+def process_matching_elements(matching_elements, non_matching_gen, lista_coordenadas, output_file, cluster):
+    lista_set = set()
+    for matching_element in matching_elements:
+
+        bak, gen = matching_element
+        if bak[1] == gen[1]:
+            real_coord = tuple(map(int, bak[2].split(";")[1].split(",")))
+            if real_coord not in lista_coordenadas:
+                aaa, aa = bak[2].split(";")[2], bak[2].split(";")[1].split(",")
+                output_file.write(f"{bak[0]}\t{aa[0]}\t{aa[1]}\t{aaa}\t{gen[0]}.{cluster}\n")
+                lista_coordenadas.add(real_coord)
+                lista_set.add(real_coord)
+            elif gen not in non_matching_gen:
+                non_matching_gen.append(gen)
+    return lista_set

@@ -90,3 +90,7 @@ def clean_up_files(prefix: str):
             print(f'Successfully removed file {f}')
         except OSError as e:
             print(f'Failed to remove file {f}. Reason: {e}')
+
+def create_database(fasta: str, basename: str) -> None:
+    '''Creates a blast database from a fasta file.'''
+    subprocess.run(['makeblastdb', '-in', fasta, '-dbtype', 'nucl', '-out', basename])

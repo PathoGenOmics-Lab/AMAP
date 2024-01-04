@@ -493,3 +493,23 @@ def main(prefix: str):
 
                         non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
                         lista_coordenadas = process_non_matching_genes(l_gen, output_file, lista_coordenadas, prefix) 
+
+if __name__ == "__main__":
+    
+    args = parse_argparse() 
+    global SEQ
+    SEQ = f"{args.prefix}.fna"
+    create_database(f"{args.prefix}.fna", f"{args.prefix}database")
+    directory_path = os.path.dirname(args.prefix)
+    os.chdir(directory_path)
+    main(args.prefix)               
+
+    # All files under '/mypath/' that match '*database*'
+    file_pattern = f"{args.prefix}*database*" 
+    files = glob.glob(file_pattern) # Use glob to match the pattern
+    for f in files: # Loop over the matched files
+        try:
+            os.remove(f)  # Try to remove the file
+            print(f'Successfully removed file {f}')
+        except Exception as e:  # Catch any exceptions (like the file not existing)
+            print(f'Failed to remove file {f}. Reason: {e}')

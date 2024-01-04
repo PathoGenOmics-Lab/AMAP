@@ -447,3 +447,49 @@ def main2(non_matching_gen, matching_elements, lista_coordenadas, output_file, c
     lista_res = process_non_matching_elements_modified(non_matching_gen, lista_coordenadas, prefix)
     remove = process_non_matching_elements(lista_res, non_matching_bak, lista_coordenadas, output_file)    
     write_remaining_elements(non_matching_bak, output_file,lista_coordenadas,non_matching_gen,remove)
+
+def main(prefix: str):
+    # Process clusters and write cleaned coordinates
+    with open(f"{prefix}.cleancoord.tsv", "w") as output_file, \
+         open(f"{prefix}.clusters", "r") as input_file:
+         
+        lista_coordenadas = set()
+        for line in input_file:
+            print(line)
+            # Add additional processing logic here, if needed
+            if "Cluster -1" in line:
+                print(line)
+                lista_coordenadas = cluster_1_genes(line, lista_coordenadas, output_file, prefix)
+            else:
+            #if "Cluster -1" not in line:
+                
+                l = line.strip("\n").split(":")
+                cluster = l[0]
+                rvs, g_genes, diff, case1, case2, case3, case4 = count_cases(l[1])  # print(cluster,case1,case2,case3,case4,diff,rvs)
+                
+                elements = l[1].split(".")
+                
+                l_bak = [process_element(element) for element in elements if "case" in element]
+                l_gen = [process_element(element) for element in elements if "case" not in element]
+                non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
+                
+                if "case4" not in line:
+                    params = {
+                            'l': l,
+                            'lista_coordenadas': lista_coordenadas,
+                            'diff': diff,
+                            'prefix': prefix,
+                            'matching_elements': matching_elements,
+                            'non_matching_gen': non_matching_gen,
+                            'output_file': output_file,
+                            'cluster': cluster,
+                            }
+                    lista_coordenadas = nocase4(params)
+                if "case4" in line:
+                    if diff < 0 or diff == 0:
+                        
+                        main2(non_matching_gen, matching_elements, lista_coordenadas, output_file, cluster, prefix, non_matching_bak)
+                    else:
+
+                        non_matching_bak, non_matching_gen, matching_elements = match_elements(l_bak, l_gen)
+                        lista_coordenadas = process_non_matching_genes(l_gen, output_file, lista_coordenadas, prefix) 

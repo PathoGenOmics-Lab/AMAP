@@ -394,3 +394,16 @@ def add_to_list_and_coords(qseqid, coords, lista, bakta_coords):
     if le > 100:
         if f_coord not in bakta_coords:
             lista.append([qseqid, start_coord, end_coord, lenn])
+
+def process_element2(element, non_matching_bak):
+    list_remove=[]
+    original_coord = element[0].split("_")[1].split("-")
+    original_len = int(original_coord[1]) - int(original_coord[0])
+    long = int(element[2]) - int(element[1])
+    diff_rv = long - original_len
+    
+    write_ele = any(should_write_element(el, diff_rv, long, original_len) for el in non_matching_bak)
+    if write_ele:
+        for elementt in non_matching_bak:
+            list_remove.append(elementt[2])
+    return write_ele, long,list_remove

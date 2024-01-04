@@ -155,3 +155,14 @@ def process_non_matching_genes(non_matching_gen: list, file_writer, bakta_coords
                 print(f"Exception occurred: {e}")
 
     return bakta_coords
+
+def process_element_with_blastn(element: Tuple, prefix: str) -> Dict:
+    '''Processes a single element using blastn and returns results'''
+    name = os.path.basename(prefix) + "database"
+    pid = os.getpid()
+
+    with NamedTemporaryFile(suffix=f".{pid}.fasta") as query_file:
+        get_seq(element[0], "/storage/PGO/results/mtb/proj_anc2023/bakta/last_step/nt_correctedH37Rv.fa", query_file.name)        
+        blast_out = blastn(query_file.name, name)
+
+    return process_blast_results(blast_out)

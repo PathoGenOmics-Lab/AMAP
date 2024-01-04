@@ -357,3 +357,13 @@ def process_matching_elements(matching_elements, non_matching_gen, lista_coorden
                 non_matching_gen.append(gen)
     return lista_set
 
+def should_write_element(el, diff_rv, long, original_len):
+    no_bak=[]
+    diff_bk = el[1] - original_len
+
+    should_write =  long > el[1] or (diff_bk < 150 and diff_rv < diff_bk)
+    
+    if should_write and el not in no_bak:
+        no_bak.append(el)
+
+    return should_write

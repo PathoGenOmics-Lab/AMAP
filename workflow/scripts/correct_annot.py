@@ -27,3 +27,7 @@ def run_blast(in_query: str, in_subject: str, outfmt: str) -> str:
 def run_blast_tab(in_query: str, in_subject: str): 
     '''Runs blastn with the given parameters and returns the output in tabular format.'''
     return run_blast(in_query, in_subject, '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qcovs qcovhsp qlen slen')
+
+def run_blast_xml(in_query: str, in_subject: str): 
+    '''Runs blastn with the given parameters and returns the output in xml format.'''
+    return run_blast(in_query, in_subject, '5')

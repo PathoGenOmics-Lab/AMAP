@@ -233,3 +233,12 @@ def extract_amino_acid_sequence_with_stop_codon(start, end, orientation):
         aa_seq, stop_codon_index = translate_sequence(sequence, start, -1, step)
         
     return len(amino_acid_sequence + aa_seq), (start, stop_codon_index + step)
+
+def count_cases(genes):
+    '''Counts the number of genes in each case and the number of Rv genes.'''
+    g_genes = genes.split(".")
+    cases = ["case1", "case2", "case3", "case4"]
+    counts = {case: genes.count(case) for case in cases}
+    rvs = genes.count("Rv")
+    diff = rvs - sum(counts.values())
+    return rvs, g_genes, diff, counts["case1"], counts["case2"], counts["case3"], counts["case4"]

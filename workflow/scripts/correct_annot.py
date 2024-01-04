@@ -38,3 +38,26 @@ def parse_tab_data(blastn_out_tab: str) -> list:
 
 def parse_xml_data(blastn_out_xml: str) -> dict:
     return {record.query: record for record in NCBIXML.parse(StringIO(blastn_out_xml)) if blastn_out_xml.strip()}
+
+def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
+    '''Runs blastn with the given parameters and returns the output in a pandas DataFrame.'''
+    
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future_tab = executor.submit(run_blast_tab, in_query, in_subject)
+        future_xml = executor.submit(run_blast_xml, in_query, in_subject)
+        
+        blastn_out_tab = future_tab.result()
+        blastn_out_xml = future_xml.result()
+
+    tab_data = parse_tab_data(blastn_out_tab)
+    blast_records = parse_xml_data(blastn_out_xml)
+
+    combined_data = []
+    for tab in tab_data:
+        xml_record = blast_records.get(tab['qseqid'])
+        if xml_record and any(tab['sseqid'] in alignment.hit_def for alignment in xml_record.alignments):
+            combined_data.append({**tab,
+                                  "xml_data": xml_record,
+                                  "subject_name": xml_record.descriptions[0].title.split()[1] if xml_record.descriptions else None})
+    
+    return pd.DataFrame(combined_data)

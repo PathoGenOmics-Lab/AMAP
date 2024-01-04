@@ -102,3 +102,10 @@ def process_case_genes(gene, coordinates_set, output_file):
     output_file.write(to_write + "\n")
     coordinates_set.add((start, end))
     return coordinates_set
+
+def process_non_case_genes(gene, coordinates_set, output_file, prefix):
+    gen_name, gen_range = gene.split("_")
+    start, end = map(int, gen_range.split("-"))
+    gene_details = [gen_name, abs(end - start), gene]
+    return process_non_matching_genes([gene_details], output_file, coordinates_set, prefix)
+

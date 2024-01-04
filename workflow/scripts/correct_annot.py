@@ -280,3 +280,30 @@ def find_matching_rv_element(g_length, rv_elements_parsed, used_rv_elements):
             used_rv_elements.add(rv_element)
             return rv_element
     return None
+
+def process_line(line: str, prefix: str) -> dict:
+    '''Process a line from the cluster file and returns a dictionary of matching elements.'''
+    name = prefix.split('/')[-1] + "_"
+    line_parts = line.split(".")
+    g_elements = [part for part in line_parts if name in part]
+    rv_elements = [part for part in line_parts if "Rv" in part]
+    rv_elements_parsed = parse_rv_elements(rv_elements)
+
+    matching_dict = {}
+    used_rv_elements = set()
+
+    for g_element in g_elements:
+        try:
+            process_element  
+        except NameError:
+            raise NameError("The function 'process_element' is not defined.")
+
+        el = process_element(g_element)
+        g_start, g_end = map(int, el[2].split(";")[1].split(","))
+        g_length = abs(g_end - g_start)
+
+        rv_element = find_matching_rv_element(g_length, rv_elements_parsed, used_rv_elements)
+        if rv_element:
+            matching_dict[g_element] = rv_element
+
+    return matching_dict

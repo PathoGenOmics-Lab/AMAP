@@ -72,3 +72,10 @@ def get_seq(chck_rds, fasta_file: str, fasta_name: str):
                 yield protein_record
                 break
     SeqIO.write(selected_seqs_gen(), fasta_name, "fasta")
+
+def parse_argparse() -> argparse.Namespace:
+    '''Parse the command line arguments and return the parsed arguments.'''
+    parser = argparse.ArgumentParser(description='A description of your script.')
+    parser.add_argument('-p', '--prefix', required=True, help='Path to the prefix of the files')
+    args = parser.parse_args()
+    return args

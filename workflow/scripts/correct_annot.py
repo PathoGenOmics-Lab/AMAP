@@ -94,3 +94,11 @@ def clean_up_files(prefix: str):
 def create_database(fasta: str, basename: str) -> None:
     '''Creates a blast database from a fasta file.'''
     subprocess.run(['makeblastdb', '-in', fasta, '-dbtype', 'nucl', '-out', basename])
+
+def process_case_genes(gene, coordinates_set, output_file):
+    gene_info = gene.split(";")
+    start, end = map(int, gene_info[1].split(","))
+    to_write = f"{gene_info[0]}\t{start}\t{end}\t{gene_info[2]}"
+    output_file.write(to_write + "\n")
+    coordinates_set.add((start, end))
+    return coordinates_set

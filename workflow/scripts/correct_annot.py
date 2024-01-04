@@ -407,3 +407,22 @@ def process_element2(element, non_matching_bak):
         for elementt in non_matching_bak:
             list_remove.append(elementt[2])
     return write_ele, long,list_remove
+
+def process_non_matching_elements(lista_res, non_matching_bak, lista_coordenadas, output_file):
+    no_bak = []
+    lista_set = set()
+    wrote = False
+    remove = []
+    for element in lista_res:
+        
+        write_ele, long, remove = process_element2(element, non_matching_bak)
+        if write_ele:
+
+            coord = (int(element[1]), int(element[2]))
+            if coord not in lista_set:
+                wrote = True
+                output_file.write("\t".join(map(str, element)) + "\n")
+                lista_coordenadas.add(coord)
+                lista_set.add(coord)
+                break
+    return remove

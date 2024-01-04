@@ -261,3 +261,10 @@ def process_coordinates_and_write(element_info, rv_element, coordinates_list, ou
         coordinates_list.add(real_coordinates)
         output.write(f"{element_info[0]}\t{real_coordinates[0]}\t{real_coordinates[1]}\t{element_info_split[2]}\t{rv_element}\n")
     return coordinates_list
+
+def match_elements(l_bak, l_gen):
+    '''Matches the elements from the cluster file with the elements from the blastn output.'''
+    non_matching_bak = [bak for bak in l_bak if not any(bak[1] == gen[1] for gen in l_gen)]
+    non_matching_gen = [gen for gen in l_gen if not any(gen[1] == bak[1] for bak in l_bak)]
+    matching_elements = [(bak, gen) for bak in l_bak for gen in l_gen if bak[1] == gen[1]]
+    return non_matching_bak, non_matching_gen, matching_elements

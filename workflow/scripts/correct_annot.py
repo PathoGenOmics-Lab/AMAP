@@ -170,3 +170,16 @@ def process_element_with_blastn(element: Tuple, prefix: str) -> Dict:
 def calculate_matches(alignment, qlen):
     exact_matches = sum(a == b for a, b in zip(alignment.query, alignment.match))
     return (exact_matches / float(qlen)) * 100
+
+def is_valid_alignment(alignment, start, end, qlen):
+    orientation = "+" if end - start >= 0 else "-"
+
+    #if alignment.match[-1] == '*' or alignment.sbjct[-1] != '*':
+    if alignment.match[-1] == '*':
+        return True, (start, end, qlen)
+    else:
+        longitud, coordenadas = extract_amino_acid_sequence_with_stop_codon(start, end, orientation)
+        calculo = (min(int(longitud), int(qlen)) / max(int(longitud), int(qlen))) * 100
+        if calculo >= 80:
+            return True, (start, coordenadas[0], coordenadas[0])
+    return False, None

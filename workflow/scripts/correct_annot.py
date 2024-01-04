@@ -31,3 +31,7 @@ def run_blast_tab(in_query: str, in_subject: str):
 def run_blast_xml(in_query: str, in_subject: str): 
     '''Runs blastn with the given parameters and returns the output in xml format.'''
     return run_blast(in_query, in_subject, '5')
+
+def parse_tab_data(blastn_out_tab: str) -> list:
+    columns = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qcovs', 'qcovhsp', 'qlen', 'slen']
+    return [dict(zip(columns, line.split("\t"))) for line in blastn_out_tab.strip().split("\n") if line]

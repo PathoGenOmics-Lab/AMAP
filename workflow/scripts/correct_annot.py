@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 import pandas as pd
 from Bio import SeqIO
 from Bio.Blast import NCBIXML
@@ -16,3 +17,9 @@ from Bio.SeqRecord import SeqRecord
 from collections import defaultdict
 from typing import Tuple, Dict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+def run_blast(in_query: str, in_subject: str, outfmt: str) -> str:
+    '''Runs blastn with the given parameters and returns the output.'''
+    cline = NcbitblastnCommandline(query=in_query, db=in_subject, outfmt=outfmt, seg="no")
+    out, _ = cline()
+    return out

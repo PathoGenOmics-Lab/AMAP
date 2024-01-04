@@ -112,15 +112,11 @@ def process_non_case_genes(gene, coordinates_set, output_file, prefix):
 def cluster_1_genes(line, coordinates_set, output_file, prefix):
     _, gene_data = line.strip().split(":")
     genes = gene_data.split(".")
-    
     for gene in genes:
         if "case" in gene:
             if "case1" in gene:
                 coordinates_set = process_case_genes(gene, coordinates_set, output_file)
         else:
             coordinates_set = process_non_case_genes(gene, coordinates_set, output_file, prefix)
-    
-    # Ordenar el conjunto de coordenadas
     coordinates_set = set(sorted(coordinates_set))
-    
     return coordinates_set

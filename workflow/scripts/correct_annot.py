@@ -79,3 +79,14 @@ def parse_argparse() -> argparse.Namespace:
     parser.add_argument('-p', '--prefix', required = True, help = 'Path to the prefix of the files')
     args = parser.parse_args()
     return args
+
+def clean_up_files(prefix: str):
+    '''Remove all files matching the pattern '*database*' under the given prefix.'''
+    file_pattern = f"{prefix}*database*"
+    files = glob.glob(file_pattern)
+    for f in files:
+        try:
+            os.remove(f)
+            print(f'Successfully removed file {f}')
+        except OSError as e:
+            print(f'Failed to remove file {f}. Reason: {e}')

@@ -61,3 +61,14 @@ def blastn(in_query: str, in_subject: str) -> pd.DataFrame:
                                   "subject_name": xml_record.descriptions[0].title.split()[1] if xml_record.descriptions else None})
     
     return pd.DataFrame(combined_data)
+
+def get_seq(chck_rds, fasta_file: str, fasta_name: str):
+    '''Extracts a sequence from a fasta file, translates it, and writes it to a new fasta file.'''
+    def selected_seqs_gen():
+        for seq_record in SeqIO.parse(fasta_file, "fasta"):
+            if chck_rds in seq_record.id:
+                protein_seq = seq_record.seq.translate()
+                protein_record = SeqRecord(protein_seq, id = seq_record.id, description = "")
+                yield protein_record
+                break
+    SeqIO.write(selected_seqs_gen(), fasta_name, "fasta")

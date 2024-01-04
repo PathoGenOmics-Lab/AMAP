@@ -132,3 +132,9 @@ def process_coordinates(coords, bakta_coords, file_writer, gene_id):
             bakta_coords.add(ordered_coords)
             return True
     return False
+
+def process_gene(gene_data, bakta_coords, file_writer):
+    gene_id, coordinates_list = gene_data
+    for coords in coordinates_list:
+        if process_coordinates(coords, bakta_coords, file_writer, gene_id):
+            break

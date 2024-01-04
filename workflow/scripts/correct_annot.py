@@ -367,3 +367,20 @@ def should_write_element(el, diff_rv, long, original_len):
         no_bak.append(el)
 
     return should_write
+
+def nocase4(params):
+    l = params['l']
+    lista_coordenadas = params['lista_coordenadas']
+    diff = params['diff']
+    prefix = params['prefix']
+    matching_elements = params['matching_elements']
+    non_matching_gen = params['non_matching_gen']
+    output_file = params['output_file']
+
+    if diff == 0:
+        lista_coordenadas = handle_diff_zero(l, prefix, lista_coordenadas, output_file)
+    else:                            
+        lista_coordenadas = handle_diff_non_zero(matching_elements, lista_coordenadas, output_file)
+
+    lista_coordenadas = process_non_matching_genes(non_matching_gen, output_file, lista_coordenadas, prefix)
+    return lista_coordenadas

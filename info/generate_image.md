@@ -15,10 +15,10 @@ From: ubuntu:20.04
 
 2. Generate .sif image
 ```
-sudo singularity build mi_imagen.sif try.def
+sudo singularity build AMAP.sif AMAP.def
 ```
 
 3. Try the image
 ```
-singularity exec mi_imagen.sif python3 -c "import numpy; print(numpy.__version__)"
+singularity exec AMAP.sif python3 -c "import numpy; print(numpy.__version__)"
 ```

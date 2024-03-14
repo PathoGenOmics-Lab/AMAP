@@ -1,7 +1,8 @@
-FROM ubuntu:22.04
+FROM continuumio/miniconda3
 
-RUN apt-get update && apt-get install -y git python3 python3-pip build-essential && \
-    pip3 install numpy pandas scikit-learn && \
+RUN apt-get update && \
+    apt-get install -y git build-essential zlib1g-dev && \
+    conda install -c conda-forge -c bioconda bakta && \
     git clone https://github.com/lh3/miniprot && \
     cd miniprot && \
     make && \

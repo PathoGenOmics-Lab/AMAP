@@ -19,7 +19,7 @@ sudo service docker start
 ```
 3. Build docker image
 ```
-docker run -it amap /bin/bash
+docker build -t amap .
 ```
 4. Use docker image
 ```
@@ -28,27 +28,23 @@ docker run -it amap /bin/bash
 
 Para subir tu imagen de Docker a Docker Hub, sigue estos pasos:
 
-    Inicia Sesión en Docker Hub:
-        Abre la terminal y ejecuta docker login.
-        Ingresa tu nombre de usuario y contraseña de Docker Hub.
+Inicia Sesión en Docker Hub:
+Abre la terminal y ejecuta docker login.
+Ingresa tu nombre de usuario y contraseña de Docker Hub.
 
-    Etiqueta tu Imagen:
-        Antes de subir, etiqueta tu imagen localmente con tu nombre de usuario de Docker Hub y el nombre de la imagen. Por ejemplo:
+Etiqueta tu Imagen:
+Antes de subir, etiqueta tu imagen localmente con tu nombre de usuario de Docker Hub y el nombre de la imagen. Por ejemplo:
 
-        bash
-
-    docker tag amap tu_usuario/amap:latest
-
-    Reemplaza tu_usuario con tu nombre de usuario en Docker Hub.
+```
+docker tag amap tu_usuario/amap:latest
+```
 
 Sube la Imagen:
 
-    Usa el siguiente comando para subir tu imagen a Docker Hub:
-
-    bash
-
-        docker push tu_usuario/amap:latest
-
-        De nuevo, reemplaza tu_usuario con tu nombre de usuario en Docker Hub.
+Usa el siguiente comando para subir tu imagen a Docker Hub:
+```
+docker push tu_usuario/amap:latest
+```
+De nuevo, reemplaza tu_usuario con tu nombre de usuario en Docker Hub.
 
 Una vez que la imagen se haya subido correctamente, podrás verla y gestionarla en tu repositorio de Docker Hub.

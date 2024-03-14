@@ -29,7 +29,7 @@ docker run -it amap /bin/bash
 Para subir tu imagen de Docker a Docker Hub, sigue estos pasos:
 
 Inicia Sesión en Docker Hub:
-Abre la terminal y ejecuta docker login.
+Abre la terminal y ejecuta `docker login`.
 Ingresa tu nombre de usuario y contraseña de Docker Hub.
 
 Etiqueta tu Imagen:

@@ -9,6 +9,24 @@ RUN apt-get update && \
     cd miniprot && \
     make && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* 
 
-ENV PATH="${PATH}:/miniprot"
+
+RUN mkdir -p /data/bakta_db && \
+    bakta_db download --output /data/bakta_db --type light
+
+# Crear directorio para los archivos
+RUN mkdir -p /reference
+
+# Descargar archivos
+RUN wget -P /reference https://zenodo.org/record/8024447/files/nt_correctedH37Rv.fa && \
+    wget -P /reference https://zenodo.org/record/8024447/files/new_refH37Rv.fasta && \
+    wget -P /reference https://zenodo.org/record/8024447/files/bad.bakta.fa && \
+    wget -P /reference https://zenodo.org/record/8024447/files/sequence.gb && \
+    wget -P /reference https://zenodo.org/record/8232692/files/snps_lineages.tsv && \
+    wget -P /reference https://zenodo.org/record/3497110/files/MTB_ancestor_reference.fasta
+
+ENV PATH="${PATH}:/miniprot:/data"
+
+
+ENV PATH="${PATH}:/miniprot:/data/bakta_db:/reference"

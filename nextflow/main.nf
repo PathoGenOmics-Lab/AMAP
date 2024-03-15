@@ -1,21 +1,43 @@
 #!/usr/bin/env nextflow
 
-params.input = 'data/*.txt' // Valor por defecto
+nextflow.enable.dsl=2
 
+Channel
+    .fromPath( params.tsv )
+    .splitCsv( header: true, sep: '\t' )
+    .map { row -> tuple( row.sampleId, file(row.fasta)) }
+    .set { sample_fasta }
 
-process myProcess {
+process mtb_typer {
+    publishDir "results/mtb_typer", mode: 'copy'
     input:
-    path file
+    tuple val(sampleId), val(fasta)
     output:
-    stdout
+    path "${sampleId}-mtb_typer.txt"
+    script:
+    """
+    echo "Procesando muestra: $sampleId con Fasta: $fasta"
+    python3 ${workflow.launchDir}/mtb_typer.py -i $fasta -t "/reference/snps_lineages.tsv" -r "/reference/MTB_ancestor_reference.fasta"
+    """
+}
+
+process bakta_annotator {
+    input:
+    path tsvFile
 
     script:
     """
-    cat ${file}
-    bakta --version
+    read -r fastafile prefix < <(awk -F '\\t' 'NR == 1 {print \$1, \$2}' $tsvFile)
+    echo "\$prefix\t\$fastafile"
+
+    bakta --db /data/bakta_db/db-light --skip-trna --output "\$prefix" --prefix "\$prefix" --locus-tag "\$prefix" --proteins /reference/sequence.gb "\$fastafile"
     """
 }
 
 workflow {
-    myProcess(file(params.input)) | view
+    mtb_typer(sample_fasta)
+        .set { result_mtb_typer }
+    columnData = bakta_annotator(result_mtb_typer)
+
+
 }

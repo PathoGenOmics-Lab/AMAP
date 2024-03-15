@@ -2,15 +2,13 @@ FROM continuumio/miniconda3
 
 RUN apt-get update && \
     apt-get install -y git build-essential zlib1g-dev && \
-    conda install mamba -c conda-forge && \
-    mamba install python=3.10 -c conda-forge && \
-    mamba install -c bioconda -c conda-forge bakta=1.9.3 && \
+    conda install -c conda-forge python=3.9 && \
+    conda install -c bioconda -c conda-forge bakta=1.9.3 && \
     git clone https://github.com/lh3/miniprot && \
     cd miniprot && \
     make && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* 
-
+    rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /data/bakta_db && \
     bakta_db download --output /data/bakta_db --type light

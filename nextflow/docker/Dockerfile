@@ -26,7 +26,4 @@ RUN wget -P /reference https://zenodo.org/record/8024447/files/nt_correctedH37Rv
     wget -P /reference https://zenodo.org/record/8232692/files/snps_lineages.tsv && \
     wget -P /reference https://zenodo.org/record/3497110/files/MTB_ancestor_reference.fasta
 
-ENV PATH="${PATH}:/miniprot:/data"
-
-
 ENV PATH="${PATH}:/miniprot:/data/bakta_db:/reference"

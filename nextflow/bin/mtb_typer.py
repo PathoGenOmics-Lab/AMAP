@@ -224,3 +224,28 @@ def arguments():
     parser.add_argument('-t', '--snp', help='Marker file', required=True)
     parser.add_argument('-r', '--ref', help='Fasta reference', required=True)
     #parser.add_argument('-o', '--output', required=True, help='Path to the output directory.')
+
+def main():
+    args = arguments()
+    k = 21
+    #output_directory = args.output
+    #if not os.path.exists(output_directory):
+    #    os.makedirs(output_directory)
+    #os.chdir(output_directory)
+    ref_seq = get_ref(args.ref)
+    reference_positions, markers_lineage = get_positions(args.snp)
+    markers_kmers = generate_markerkmer(reference_positions, ref_seq, markers_lineage, k)
+    argg = (args.input, markers_kmers, k)
+    genome_name, identified_lineages = analyze_genome(argg)
+    
+    lineages_str = ';'.join(sorted(identified_lineages))
+    filename_without_extension = os.path.splitext(genome_name)[0]
+    filename_without_extension = filename_without_extension.split('/')[-1]
+    new_file_name = f'{lineages_str}_{filename_without_extension}'
+    
+    with open(filename_without_extension + '-mtb_typer.txt', 'w') as f:
+        f.write(args.input+"\t"+new_file_name + '\n')
+    #rename_fasta_based_on_lineages(args.input, genome_name, identified_lineages, output_directory)
+
+if __name__ == '__main__':
+    main()

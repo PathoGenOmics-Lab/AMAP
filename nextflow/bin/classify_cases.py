@@ -148,3 +148,32 @@ def process_cases(bakta_df, miniprot_df, base_name=None):
         case1.to_csv(base_name + "-case1.tsv", sep='\t', index=False)
 
     return case4, case1
+
+def get_non_overlapping_rows(miniprot_df, bakta_df, base_name=None):
+    """
+    Identifies rows in miniprot_df that do not overlap with any row in bakta_df.
+
+    Args:
+    miniprot_df (pandas.DataFrame): DataFrame containing 'Start' and 'End' columns to compare.
+    bakta_df (pandas.DataFrame): DataFrame containing 'Start' and 'End' columns to compare against.
+    base_name (str, optional): Base name for saving the non-overlapping rows to a TSV file. Default is None.
+
+    Returns:
+    no_solapan_con_bakta (pandas.DataFrame): DataFrame containing rows from miniprot_df that do not overlap with bakta_df.
+    """
+    # Initialize a column to flag overlap
+    miniprot_df['Solapa'] = False
+
+    # Check for overlap for each row
+    for index, row in miniprot_df.iterrows():
+        solapa = ((bakta_df['Start'] <= row['End']) & (bakta_df['End'] >= row['Start'])).any()
+        miniprot_df.at[index, 'Solapa'] = solapa
+
+    # Select rows that do not overlap
+    no_solapan_con_bakta = miniprot_df[miniprot_df['Solapa'] == False]
+
+    # Optionally save the result
+    if base_name:
+        no_solapan_con_bakta.to_csv(base_name + "-rvmissing.tsv", sep='\t', index=False)
+
+    return no_solapan_con_bakta

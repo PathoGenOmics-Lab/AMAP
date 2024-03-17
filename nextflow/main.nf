@@ -55,3 +55,17 @@ process BAKTA_ANNOTATOR {
     bakta --db /data/bakta_db/db-light --skip-trna --output "\$prefix" --prefix "\$prefix" --locus-tag "\$prefix" --proteins /reference/sequence.gb "\$fastafile"
     """
 }
+
+process MINIPROT_H37RV {
+    publishDir "results/miniprot_reference", mode: 'copy'
+    input:
+    tuple val(sampleId), path(tsvFile)
+    output:
+    tuple val(sampleId), path("${sampleId}.paf")
+    script:
+    """
+    read -r fastafile prefix < <(awk -F '\\t' 'NR == 1 {print \$1, \$2}' $tsvFile)
+
+    miniprot --outs=0.95 -Iut16 -S "\$fastafile" /reference/aa_H37Rv.translated.fas > ${sampleId}.paf
+    """
+}

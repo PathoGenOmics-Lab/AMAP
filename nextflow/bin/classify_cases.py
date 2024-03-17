@@ -76,3 +76,32 @@ def read_to_pandaMiniprot(miniprot):
     filtered_miniprot = last_miniprot.groupby('Prot Id').apply(custom_filter).reset_index(drop=True)
     
     return filtered_miniprot
+
+def process_case2_and_case3(bakta_df, miniprot_df, base_name=None):
+    """
+    Merge two dataframes and separate into case_2 and case3 based on a calculated difference.
+
+    Args:
+    bakta_df (pandas.DataFrame): DataFrame containing 'Start', 'End', and 'Length_nt' columns.
+    miniprot_df (pandas.DataFrame): DataFrame containing 'Start', 'End', and 'Num nt' columns.
+    base_name (str, optional): Base name for saving the case data to TSV files. Default is None.
+
+    Returns:
+    tuple: Two DataFrames corresponding to case_2 and case3.
+    """
+    # Merge DataFrames on 'Start' and 'End'
+    case2 = pd.merge(bakta_df, miniprot_df, on=['Start', 'End'])
+    case2['Diferencia'] = (case2['Length_nt'] - case2['Num nt']) + 1
+
+    # Create case_2 where 'Diferencia' is 0
+    case_2 = case2[case2['Diferencia'] == 0]
+
+    # Create case3 where 'Diferencia' is not 0
+    case3 = case2[case2['Diferencia'] != 0]
+
+    # Optionally save the results
+    if base_name:
+        case3.to_csv(base_name + "-case3.tsv", sep='\t', index=False)
+        case_2.to_csv(base_name + "-case2.tsv", sep='\t', index=False)
+
+    return case_2, case3

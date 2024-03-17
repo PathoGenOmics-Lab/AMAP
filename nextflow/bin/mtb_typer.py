@@ -83,3 +83,35 @@ def get_positions(in_filepos):
         return {}, {}
             
     return reference_positions, markers_lineage
+
+def get_ref(fasta_file):
+    '''
+    Extracts the sequence from a given FASTA file and returns it in uppercase.
+
+    Parameters:
+    - fasta_file (str): Path to the input FASTA file.
+
+    Returns:
+    - str: The sequence from the FASTA file, converted to uppercase.
+
+    Raises:
+    - FileNotFoundError: If the provided FASTA file cannot be found.
+    - ValueError: If the file cannot be read as a FASTA file or contains multiple records.
+
+    Example:
+    >>> seq = get_ref('path_to_file.fasta')
+    >>> print(seq)
+    'ATCGAAGT...'
+
+    Note:
+    This function expects the FASTA file to contain a single sequence record.
+    '''
+    
+    try:
+        ref_seq_record = SeqIO.read(fasta_file, 'fasta')
+        ref_seq = str(ref_seq_record.seq).upper()
+        return ref_seq
+    except FileNotFoundError:
+        raise FileNotFoundError(f'The file {fasta_file} was not found.')
+    except ValueError:
+        raise ValueError(f'The file {fasta_file} either contains multiple sequence records or cannot be read as a FASTA file.')

@@ -105,3 +105,46 @@ def process_case2_and_case3(bakta_df, miniprot_df, base_name=None):
         case_2.to_csv(base_name + "-case2.tsv", sep='\t', index=False)
 
     return case_2, case3
+
+def process_cases(bakta_df, miniprot_df, base_name=None):
+    """
+    Process and separate data into case1 and case4 based on overlap conditions.
+
+    Args:
+    bakta_df (pandas.DataFrame): DataFrame to be processed.
+    miniprot_df (pandas.DataFrame): DataFrame to compare against for overlaps.
+    base_name (str, optional): Base name for saving the case data to TSV files. Default is None.
+
+    Returns:
+    tuple: Two DataFrames corresponding to case4 and case1.
+    """
+    # Calculate length for bakta_df
+    bakta_df['Length_nt'] = bakta_df['End'] - bakta_df['Start']
+
+    # Merge DataFrames on common columns
+    case2 = pd.merge(bakta_df, miniprot_df, on=['Start', 'End'], how='inner')
+
+    # Identify rows not in case2
+    common_columns = [col for col in bakta_df.columns if col in case2.columns]
+    merged_indicator = bakta_df.merge(case2, on=common_columns, how='left', indicator=True)
+    rows_not_in_case2 = merged_indicator[merged_indicator['_merge'] == 'left_only'].drop('_merge', axis=1)
+    rows_not_in_case2 = rows_not_in_case2[["Locus Tag", "Start", "End", "Strand", 'Length_nt']]
+
+    # Check for overlaps
+    rows_not_in_case2['Solapa'] = False
+    for index, row in rows_not_in_case2.iterrows():
+        solapa = ((miniprot_df['Start'] <= row['End']) & (miniprot_df['End'] >= row['Start'])).any()
+        rows_not_in_case2.at[index, 'Solapa'] = solapa
+
+    # Separate into case4 and case1
+    case4 = rows_not_in_case2[rows_not_in_case2['Solapa'] == True]
+    case1 = rows_not_in_case2[rows_not_in_case2['Solapa'] == False]
+    case1 = case1[["Locus Tag", "Start", "End", "Strand", 'Length_nt']]
+    case4 = case4[["Locus Tag", "Start", "End", "Strand", 'Length_nt']]
+
+    # Optionally save the results
+    if base_name:
+        case4.to_csv(base_name + "-case4.tsv", sep='\t', index=False)
+        case1.to_csv(base_name + "-case1.tsv", sep='\t', index=False)
+
+    return case4, case1

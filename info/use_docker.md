@@ -36,14 +36,14 @@ Etiqueta tu Imagen:
 Antes de subir, etiqueta tu imagen localmente con tu nombre de usuario de Docker Hub y el nombre de la imagen. Por ejemplo:
 
 ```
-docker tag amap tu_usuario/amap:latest
+docker tag amap paururo/amap:latest
 ```
 
 Sube la Imagen:
 
 Usa el siguiente comando para subir tu imagen a Docker Hub:
 ```
-docker push tu_usuario/amap:latest
+docker push paururo/amap:latest
 ```
 De nuevo, reemplaza tu_usuario con tu nombre de usuario en Docker Hub.
 

@@ -19,10 +19,10 @@ log.info """\
       y==/        y==/        y==/    
     ,=,-<=`.    ,=,-<=`.    ,=,-<=`.  
  ,-'-'   `-=_,-'-'   `-=_,-'-'   `-=_,
-
+    fastas: ${params.tsv}
  """
 
- Channel
+Channel
     .fromPath(params.tsv)
     .splitCsv(header: true, sep: '\t')
     .map { row -> tuple(row.sampleId, file(row.fasta)) }
@@ -56,28 +56,18 @@ process BAKTA_ANNOTATOR {
     """
 }
 
-process MINIPROT_H37RV {
+process MINIPROT {
     publishDir "results/miniprot_reference", mode: 'copy'
     input:
-    tuple val(sampleId), path(tsvFile)
+    tuple val(sampleId), path(tsvFile), path(annotator)
     output:
-    tuple val(sampleId), path("${sampleId}.paf")
+    tuple val(sampleId), path("${sampleId}.paf"), path("${sampleId}-badbakta.paf"), path("${annotator}-H37Rv.paf")
     script:
     """
     read -r fastafile prefix < <(awk -F '\\t' 'NR == 1 {print \$1, \$2}' $tsvFile)
 
     miniprot --outs=0.95 -Iut16 -S "\$fastafile" /reference/aa_H37Rv.translated.fas > ${sampleId}.paf
-    """
-}
-
-process MINIPROT_BAKTA_H37RV {
-    publishDir "results/miniprot_bakta_to_reference", mode: 'copy'
-    input:
-    tuple val(sampleId), path(annotator)
-    output:
-    path("${annotator}-H37Rv.paf")
-    script:
-    """
+    miniprot --outs=0.95 -Iut16 -S "\$fastafile" /reference/bad.bakta.translated.fas > ${sampleId}-badbakta.paf
     sed -i '/^[^>]/ s/\$/*/g' ${annotator}/${annotator}.faa
     miniprot --outs=0.95 -Iut16 -S /reference/new_refH37Rv.fasta  ${annotator}/${annotator}.faa > ${annotator}-H37Rv.paf
     """
@@ -88,12 +78,12 @@ process TYPE_CASES {
     publishDir "results/type_cases/cases", pattern: "*case*.tsv", mode: 'copy'
     publishDir "results/type_cases/cases", pattern: "*rvmissing.tsv", mode: 'copy'
     input:
-    tuple val(sampleId), path(annotator), path(miniprot)
+    tuple val(sampleId), path(annotator), path(miniprot), path(badbakta), path(cds)
     output:
     path "*"
     script:
     """
-    python3 ${workflow.launchDir}/bin/classify_cases.py -b ${annotator}/${annotator}.tsv -p ${miniprot}
+    python3 ${workflow.launchDir}/bin/classify_cases.py -b ${annotator}/${annotator}.tsv -p ${miniprot} -bb ${badbakta} -c ${cds}
     """
 }
 
@@ -115,10 +105,9 @@ workflow {
         .set { result_mtb_typer }
     BAKTA_ANNOTATOR(result_mtb_typer)
         .set { result_bakta_annotator } 
-    MINIPROT_H37RV(result_mtb_typer)
+    MINIPROT(result_mtb_typer.join(result_bakta_annotator))
         .set { result_miniprot_reference }
     TYPE_CASES(result_bakta_annotator.join(result_miniprot_reference))
         .set { result_cases }
-    MINIPROT_BAKTA_H37RV(result_bakta_annotator)
     REPORT_CASES(result_cases.collect())
 }

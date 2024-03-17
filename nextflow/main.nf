@@ -82,3 +82,17 @@ process MINIPROT_BAKTA_H37RV {
     miniprot --outs=0.95 -Iut16 -S /reference/new_refH37Rv.fasta  ${annotator}/${annotator}.faa > ${annotator}-H37Rv.paf
     """
 }
+
+process TYPE_CASES {
+    publishDir "results/type_cases/summary", pattern: "*summary.tsv", mode: 'copy'
+    publishDir "results/type_cases/cases", pattern: "*case*.tsv", mode: 'copy'
+    publishDir "results/type_cases/cases", pattern: "*rvmissing.tsv", mode: 'copy'
+    input:
+    tuple val(sampleId), path(annotator), path(miniprot)
+    output:
+    path "*"
+    script:
+    """
+    python3 ${workflow.launchDir}/bin/classify_cases.py -b ${annotator}/${annotator}.tsv -p ${miniprot}
+    """
+}

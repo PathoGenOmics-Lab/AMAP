@@ -6,6 +6,7 @@ From: continuumio/miniconda3
     apt-get install -y git build-essential zlib1g-dev && \
     conda install -c conda-forge python=3.9 && \
     conda install -c bioconda -c conda-forge bakta=1.9.3 && \
+    conda install -c bioconda -c conda-forge trnascan-se=2.0.12
     git clone https://github.com/lh3/miniprot && \
     cd miniprot && \
     make && \

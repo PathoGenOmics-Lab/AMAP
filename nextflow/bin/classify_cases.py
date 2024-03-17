@@ -205,3 +205,22 @@ def create_and_save_summary(base_name, data_frames, case_types):
 
     # Save the summary DataFrame to a TSV file
     summary_df.to_csv(base_name + "-summary.tsv", sep='\t', index=False)
+
+def main():
+    parser = argparse.ArgumentParser(description="Classifies Bakta and BLAST records and generates the respective fasta files.")
+    parser.add_argument('-b', '--bakta', help="Path to the Bakta TSV file containing genomes to process.")
+    parser.add_argument('-p', '--miniprot', help="Path to the miniprot output")
+    args = parser.parse_args()
+
+    bakta_df = read_to_pandaBakta(args.bakta)
+    miniprot_df = read_to_pandaMiniprot(args.miniprot)
+
+    base_name = os.path.basename(args.bakta).split('.')[0]
+
+    case_2, case3 = process_case2_and_case3(bakta_df, miniprot_df, base_name="your_base_name")
+    case4, case1 = process_cases(bakta_df, miniprot_df, base_name)
+    no_solapan_con_bakta = get_non_overlapping_rows(miniprot_df, bakta_df, base_name)
+    create_and_save_summary(base_name, [case_2, case3, case4, case1, no_solapan_con_bakta, bakta_df], ["case2", "case3", "case4", "case1", "missingRvs", "CDS"])
+
+if __name__ == "__main__":
+    main()

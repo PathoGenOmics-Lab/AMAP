@@ -21,3 +21,9 @@ log.info """\
  ,-'-'   `-=_,-'-'   `-=_,-'-'   `-=_,
 
  """
+
+ Channel
+    .fromPath(params.tsv)
+    .splitCsv(header: true, sep: '\t')
+    .map { row -> tuple(row.sampleId, file(row.fasta)) }
+    .set { sample_fasta }

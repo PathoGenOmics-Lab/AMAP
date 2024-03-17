@@ -69,3 +69,16 @@ process MINIPROT_H37RV {
     miniprot --outs=0.95 -Iut16 -S "\$fastafile" /reference/aa_H37Rv.translated.fas > ${sampleId}.paf
     """
 }
+
+process MINIPROT_BAKTA_H37RV {
+    publishDir "results/miniprot_bakta_to_reference", mode: 'copy'
+    input:
+    tuple val(sampleId), path(annotator)
+    output:
+    path("${annotator}-H37Rv.paf")
+    script:
+    """
+    sed -i '/^[^>]/ s/\$/*/g' ${annotator}/${annotator}.faa
+    miniprot --outs=0.95 -Iut16 -S /reference/new_refH37Rv.fasta  ${annotator}/${annotator}.faa > ${annotator}-H37Rv.paf
+    """
+}

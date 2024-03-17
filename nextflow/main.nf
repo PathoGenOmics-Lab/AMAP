@@ -109,3 +109,16 @@ process REPORT_CASES {
     Rscript ${workflow.launchDir}/bin/plot_cases.R input_summary.txt
     """
 }
+
+workflow {
+    MTB_TYPER(sample_fasta)
+        .set { result_mtb_typer }
+    BAKTA_ANNOTATOR(result_mtb_typer)
+        .set { result_bakta_annotator } 
+    MINIPROT_H37RV(result_mtb_typer)
+        .set { result_miniprot_reference }
+    TYPE_CASES(result_bakta_annotator.join(result_miniprot_reference))
+        .set { result_cases }
+    MINIPROT_BAKTA_H37RV(result_bakta_annotator)
+    REPORT_CASES(result_cases.collect())
+}

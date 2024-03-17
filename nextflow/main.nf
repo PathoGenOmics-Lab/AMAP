@@ -40,3 +40,18 @@ process MTB_TYPER {
     python3 ${workflow.launchDir}/mtb_typer.py -i $fasta -t "/reference/snps_lineages.tsv" -r "/reference/MTB_ancestor_reference.fasta"
     """
 }
+
+process BAKTA_ANNOTATOR {
+    publishDir "results/bakta_annotation", mode: 'copy'
+    input:
+    tuple val(sampleId), path(tsvFile)
+    output:
+    tuple val(sampleId), path("*")
+    script:
+    """
+    read -r fastafile prefix < <(awk -F '\\t' 'NR == 1 {print \$1, \$2}' $tsvFile)
+    echo "\$prefix\t\$fastafile"
+
+    bakta --db /data/bakta_db/db-light --skip-trna --output "\$prefix" --prefix "\$prefix" --locus-tag "\$prefix" --proteins /reference/sequence.gb "\$fastafile"
+    """
+}

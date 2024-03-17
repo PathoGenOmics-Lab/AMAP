@@ -177,3 +177,31 @@ def get_non_overlapping_rows(miniprot_df, bakta_df, base_name=None):
         no_solapan_con_bakta.to_csv(base_name + "-rvmissing.tsv", sep='\t', index=False)
 
     return no_solapan_con_bakta
+
+def create_and_save_summary(base_name, data_frames, case_types):
+    """
+    Creates and saves a summary DataFrame as a TSV file based on provided data frames and case types.
+
+    Args:
+    base_name (str): Base name used for identifying the sequence and lineage, and as part of the output file name.
+    data_frames (list of pandas.DataFrame): List of data frames representing different cases or datasets.
+    case_types (list of str): List of case type names corresponding to each data frame.
+
+    Process:
+    - Constructs a summary dictionary with case types, their counts, the base sequence name, and the lineage.
+    - Converts this dictionary into a pandas DataFrame.
+    - Saves the DataFrame to a TSV file named based on the base_name.
+
+    Returns:
+    None: The function doesn't return anything. It saves the summary DataFrame to a file.
+    """
+    summary_data = {
+        "Type": case_types,
+        "Number": [len(df) for df in data_frames],
+        "Sequence": base_name,
+        "Lineage": base_name.split("_")[0]
+    }
+    summary_df = pd.DataFrame(summary_data)
+
+    # Save the summary DataFrame to a TSV file
+    summary_df.to_csv(base_name + "-summary.tsv", sep='\t', index=False)

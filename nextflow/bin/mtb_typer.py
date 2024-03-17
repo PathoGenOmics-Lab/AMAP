@@ -179,3 +179,30 @@ def analyze_genome(args):
         identified_lineages.add(lineage)
 
     return genome_name, identified_lineages
+
+def rename_fasta_based_on_lineages(fasta_path, genome_name, identified_lineages, output_directory):
+    '''
+    Renames the given FASTA file and its sequence ID based on the identified lineages.
+
+    Parameters:
+    - fasta_path (str): The path to the input FASTA file.
+    - genome_name (str): The name of the genome.
+    - identified_lineages (set): A set of identified lineages for the genome.
+    '''
+    
+    # Remove the extension from genome_name for filename
+    filename_without_extension = os.path.splitext(genome_name)[0]
+    filename_without_extension = filename_without_extension.split('/')[-1]
+    # Convert identified lineages set to a string separated by pipes
+    lineages_str = ';'.join(sorted(identified_lineages))
+
+    # Construct the new filename
+    new_file_name = f'{lineages_str}_{filename_without_extension}.fasta'
+    new_file_path = os.path.join(output_directory, new_file_name)
+    # Read the original FASTA, change the ID by appending the lineage, and write to the new file
+    records = list(SeqIO.parse(fasta_path, 'fasta'))
+    if records:
+        original_id = records[0].id
+        records[0].id = f'{lineages_str}_{original_id}'
+        records[0].description = ''  # Clear the description to ensure only the ID is written
+        SeqIO.write(records, new_file_path, 'fasta')

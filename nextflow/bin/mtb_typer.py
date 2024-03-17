@@ -115,3 +115,37 @@ def get_ref(fasta_file):
         raise FileNotFoundError(f'The file {fasta_file} was not found.')
     except ValueError:
         raise ValueError(f'The file {fasta_file} either contains multiple sequence records or cannot be read as a FASTA file.')
+
+def generate_markerkmer(reference_positions, ref_seq, markers_lineage, k):
+    '''
+    Generate k-mers centered on specified positions with alternative bases.
+
+    Parameters:
+    - reference_positions (dict): Positions mapped to alternative bases.
+    - ref_seq (str): The reference sequence.
+    - markers_lineage (dict): Positions mapped to lineage information.
+    - k (int): Length of k-mers (should be odd).
+
+    Returns:
+    - dict: k-mers mapped to their position and lineage.
+
+    Note:
+    Positions near the sequence edges are ignored.
+    
+    Example:
+    >>> reference_positions = {2: 'A', 25: 'G'}
+    >>> ref_seq = 'ATCGTACGTAGCTAGCTAGCTGACTG'
+    >>> markers_lineage = {2: 'lineageA', 25: 'lineageB'}
+    >>> k = 5
+    >>> generate_markerkmer(reference_positions, ref_seq, markers_lineage, k)
+    {'ATAGT': (2, 'lineageA'), 'TAGGT': (25, 'lineageB')}
+    '''
+    
+    markers_kmers = {}
+    for pos, alt_base in reference_positions.items():
+        if pos > k//2 and pos < len(ref_seq) - k//2:
+            kmer = ref_seq[pos - k//2 - 1: pos + k//2].upper()
+            kmer = kmer[:k//2] + alt_base + kmer[k//2 + 1:]
+            markers_kmers[kmer] = pos, markers_lineage[pos]
+            
+    return markers_kmers

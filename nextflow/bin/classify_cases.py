@@ -50,7 +50,7 @@ def custom_filter(group):
     else:
         # Return the entire group unaltered
         return group
-    
+
 def read_to_pandaMiniprot(miniprot):
     """
     Read and process a miniprot data file in TSV format.
@@ -72,10 +72,34 @@ def read_to_pandaMiniprot(miniprot):
     miniprot_df.columns = ["Prot Id", "Prot len", "Prot Start", "ProtStop", "Strand", "fasta Tag", "fasta len", "Start", "End", "Match Nt", "Num nt", "mapping qual", "AS","MS","NP","FS","ST","DA","DO","CG","CS"]
     miniprot_df['Start'] = miniprot_df['Start'] + 1
     last_miniprot = miniprot_df[["Prot Id", "Prot len", "Strand", "Start", "End", "Match Nt", "Num nt"]]
-
+    #filtered_miniprot = last_miniprot
     filtered_miniprot = last_miniprot.groupby('Prot Id').apply(custom_filter).reset_index(drop=True)
     
     return filtered_miniprot
+
+def read_to_pandaBadbakta(miniprot):
+    """
+    Read and process a miniprot data file in TSV format.
+
+    Args:
+    miniprot (str): File path to the miniprot TSV file.
+
+    Process:
+    - Reads the file into a DataFrame, with tab-separated values and no header.
+    - Assigns specific column names for ease of data handling.
+    - Adjusts the 'Start' column by adding 1 to each value.
+    - Selects a subset of columns for the final DataFrame.
+    - Applies a custom filter function on groups of data, grouped by 'Prot Id'.
+
+    Returns:
+    pandas.DataFrame: Contains processed and filtered data, with columns such as 'Prot Id', 'Prot len', 'Strand', etc.
+    """
+    miniprot_df = pd.read_csv(miniprot, sep='\t', header=None)
+    miniprot_df.columns = ["Prot Id", "Prot len", "Prot Start", "ProtStop", "Strand", "fasta Tag", "fasta len", "Start", "End", "Match Nt", "Num nt", "mapping qual", "AS","MS","NP","FS","ST","DA","DO","CG","CS"]
+    miniprot_df['Start'] = miniprot_df['Start'] + 1
+    last_miniprot = miniprot_df[["Prot Id", "Prot len", "Strand", "Start", "End", "Match Nt", "Num nt"]]
+    
+    return last_miniprot
 
 def process_case2_and_case3(bakta_df, miniprot_df, base_name=None):
     """
@@ -98,7 +122,8 @@ def process_case2_and_case3(bakta_df, miniprot_df, base_name=None):
 
     # Create case3 where 'Diferencia' is not 0
     case3 = case2[case2['Diferencia'] != 0]
-
+    
+    case_2 = case_2[["Locus Tag", "Start", "End", "Strand_x", 'Length_nt']].drop_duplicates()
     # Optionally save the results
     if base_name:
         case3.to_csv(base_name + "-case3.tsv", sep='\t', index=False)
@@ -149,6 +174,7 @@ def process_cases(bakta_df, miniprot_df, base_name=None):
 
     return case4, case1
 
+
 def get_non_overlapping_rows(miniprot_df, bakta_df, base_name=None):
     """
     Identifies rows in miniprot_df that do not overlap with any row in bakta_df.
@@ -171,7 +197,7 @@ def get_non_overlapping_rows(miniprot_df, bakta_df, base_name=None):
 
     # Select rows that do not overlap
     no_solapan_con_bakta = miniprot_df[miniprot_df['Solapa'] == False]
-
+    no_solapan_con_bakta = no_solapan_con_bakta[~((no_solapan_con_bakta['Match Nt'] == 0) & (no_solapan_con_bakta['Num nt'] == 0))]
     # Optionally save the result
     if base_name:
         no_solapan_con_bakta.to_csv(base_name + "-rvmissing.tsv", sep='\t', index=False)
@@ -210,17 +236,69 @@ def main():
     parser = argparse.ArgumentParser(description="Classifies Bakta and BLAST records and generates the respective fasta files.")
     parser.add_argument('-b', '--bakta', help="Path to the Bakta TSV file containing genomes to process.")
     parser.add_argument('-p', '--miniprot', help="Path to the miniprot output")
+    parser.add_argument('-bb', '--badbakta', help="Path to the miniprot badbakta output")
+    parser.add_argument('-c', '--cds', help="Path to the bakta to reference")
     args = parser.parse_args()
 
     bakta_df = read_to_pandaBakta(args.bakta)
     miniprot_df = read_to_pandaMiniprot(args.miniprot)
-
+    
     base_name = os.path.basename(args.bakta).split('.')[0]
 
-    case_2, case3 = process_case2_and_case3(bakta_df, miniprot_df, base_name="your_base_name")
+    case_2, case3 = process_case2_and_case3(bakta_df, miniprot_df, base_name)
     case4, case1 = process_cases(bakta_df, miniprot_df, base_name)
     no_solapan_con_bakta = get_non_overlapping_rows(miniprot_df, bakta_df, base_name)
-    create_and_save_summary(base_name, [case_2, case3, case4, case1, no_solapan_con_bakta, bakta_df], ["case2", "case3", "case4", "case1", "missingRvs", "CDS"])
+    bakta_df_bad = read_to_pandaBadbakta(args.badbakta)
+
+    def calculate_overlap_length(row1, df2):
+        """
+        Calculate the total length of overlaps between row1 in df1 and all rows in df2.
+        """
+        def overlap_length(start1, end1, start2, end2):
+            return max(0, min(end1, end2) - max(start1, start2))
+
+        total_overlap_length = df2.apply(lambda row2: overlap_length(row1['Start'], row1['End'], row2['Start'], row2['End']), axis=1)
+    
+        return total_overlap_length.sum()
+
+
+    # Assuming 'case1' and 'bakta_df_bad' are your DataFrames
+    # Calculate overlap length for all rows in 'case1'
+    case1['Overlap_Length'] = case1.apply(lambda row: calculate_overlap_length(row, bakta_df_bad), axis=1)
+    case1['Overlap_Percentage'] = (case1['Overlap_Length'] / case1['Length_nt']) * 100
+    # Filter for non-exact overlaps
+
+    # Filter for Overlap_Percentage >= 80
+    case1_remove = case1[case1['Overlap_Percentage'] >= 80]
+
+    # Filter for Overlap_Percentage < 80
+    case1_check = case1[case1['Overlap_Percentage'] < 80]
+
+    locus_toref = read_to_pandaBadbakta(args.cds)
+    #print(locus_toref)
+
+    locus_tags = case1_check['Locus Tag'].tolist()
+
+    # Filter df_other for rows where 'Prot Id' matches any value in locus_tags
+    matching_rows = locus_toref[locus_toref['Prot Id'].isin(locus_tags)]
+
+    print("Matching Rows in df_other based on Locus Tags from case1_check:")
+    
+    matching_rows['match_per'] = 100 - ( (matching_rows['Num nt'] - matching_rows['Match Nt']) / matching_rows['Num nt']) * 100
+    matching_rows['match_per'] = matching_rows['match_per'].fillna(0)
+    #print(matching_rows)
+    case1_remove_too = matching_rows[matching_rows['match_per'] >= 80]
+    case1_keep = matching_rows[matching_rows['match_per'] < 80]
+    locus_case1_remove_too = case1_remove_too['Prot Id'].tolist()
+    locus_case1_keep = case1_keep['Prot Id'].tolist()
+    case1_remove2 = case1_check[case1_check['Locus Tag'].isin(locus_case1_remove_too)]
+    case1_keep2 = case1_check[case1_check['Locus Tag'].isin(locus_case1_keep)]
+    print("final_case1_remove")
+    final_case1_remove= pd.concat([case1_remove, case1_remove2])
+    print(final_case1_remove)
+    print("final_case1_keep")
+    print(case1_keep2)
+    create_and_save_summary(base_name, [case_2, case3, case4, case1, no_solapan_con_bakta, bakta_df,final_case1_remove, case1_keep2], ["case2", "case3", "case4", "case1", "missingRvs", "CDS","case1_remove","case1_keep"])
 
 if __name__ == "__main__":
     main()

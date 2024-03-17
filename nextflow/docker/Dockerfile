@@ -28,7 +28,7 @@ RUN apt-get update && \
     gdown --id 1ZvlTVwp3RVPqZPgIaTONg1IQEm6c98P8 -O /reference/new_refH37Rv.fasta && \
     gdown --id 1_wWCduMeJW4PHV084K8X3BzivaSAmbo8 -O /reference/nt_correctedH37Rv.fa && \
     gdown --id 1l0MnOZUWM6t7gYjWgfbt-1SuXOEMi7MQ -O /reference/sequence.gb && \
-    gdown --id 1C7BcWzpLnbFwMA-uTyiD_FSi-LkVSHAj -O /reference/snps_lineages.tsv
-
+    gdown --id 1C7BcWzpLnbFwMA-uTyiD_FSi-LkVSHAj -O /reference/snps_lineages.tsv && \
+    gdown --id 1lDrQPe7S4FJmgejsKyov5jcVbckLqxj9 -O /reference/bad.bakta.translated.fas
 
 ENV PATH="${PATH}:/miniprot:/data/bakta_db:/reference"

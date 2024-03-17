@@ -27,3 +27,26 @@ def read_to_pandaBakta(bakta):
     bakta_cds['Length_nt'] = bakta_cds['End'] - bakta_cds['Start']
     last_bakta = bakta_cds[["Locus Tag", "Start", "End", "Strand", 'Length_nt']]
     return last_bakta
+
+def custom_filter(group):
+    """
+    Apply a custom filter to a pandas group.
+
+    Process:
+    - Checks if any row in the group has a 'Num nt' - 'Match Nt' difference equal to 0.
+    - If such rows exist, filters and retains only those rows.
+    - If no such rows exist, returns the entire group unaltered.
+
+    Args:
+    group (pandas.DataFrame): A DataFrame group from a GroupBy operation.
+
+    Returns:
+    pandas.DataFrame: The filtered or unaltered group based on the condition.
+    """
+    # Check if any row meets the condition ('Num nt' - 'Match Nt' == 0)
+    if any(group['Num nt'] - group['Match Nt'] == 0):
+        # Return only rows where the condition is met
+        return group[group['Num nt'] - group['Match Nt'] == 0]
+    else:
+        # Return the entire group unaltered
+        return group

@@ -1,4 +1,5 @@
-![Nextflow](https://img.shields.io/badge/Nextflow-v23.10.1-%2312e6a6?labelColor=%238a8a8a&link=https%3A%2F%2Fgithub.com%2Fnextflow-io%2Fnextflow%2Freleases%2Ftag%2Fv23.10.1)[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-brightgreen.svg)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE) ![GitHub followers](https://img.shields.io/github/followers/PathoGenOmics-Lab) ![GitHub Repo stars](https://img.shields.io/github/stars/PathoGenOmics-Lab/AMAP) ![Static Badge](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-blue) [![Twitter Follow](https://img.shields.io/twitter/follow/paururo)](https://twitter.com/intent/follow?screen_name=paururo)
+![Nextflow](https://img.shields.io/badge/Nextflow-v23.10.1-%2335ccae?labelColor=%238a8a8a&link=https%3A%2F%2Fgithub.com%2Fnextflow-io%2Fnextflow%2Freleases%2Ftag%2Fv23.10.1) 
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-brightgreen.svg)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE) ![GitHub followers](https://img.shields.io/github/followers/PathoGenOmics-Lab) ![GitHub Repo stars](https://img.shields.io/github/stars/PathoGenOmics-Lab/AMAP) ![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-blue) [![Twitter Follow](https://img.shields.io/twitter/follow/paururo)](https://twitter.com/intent/follow?screen_name=paururo)
 
 # AMAP: Assisted MTBC annotator pipeline  
 
@@ -29,8 +30,8 @@ flowchart TB
     end
     v0 --> v3
     v3 --> v4
-    v3 --> v6
     v4 --> v6
+    v3 --> v6
     v4 --> v8
     v6 --> v8
     v8 --> v10
@@ -60,7 +61,7 @@ AMAP is developed with ❤️ by:
   </p>
 </p>
 
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification ([emoji key](https://allcontributors.org/docs/en/emoji-key)). Contributions of any kind welcome!
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification ([emoji key](https://allcontributors.org/docs/en/emoji-key)).
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
@@ -93,7 +94,9 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 </h2>
 <div align="justify">
 
-1. [Nextflow](https://github.com/nextflow-io/nextflow):  
-    >P. Di Tommaso, et al. Nextflow enables reproducible computational workflows. Nature Biotechnology 35, 316–319 (2017) doi:10.1038/nbt.3820
-2. [Bakta](https://github.com/oschwengers/bakta):  
-    >Schwengers O., Jelonek L., Dieckmann M. A., Beyvers S., Blom J., Goesmann A. (2021). Bakta: rapid and standardized annotation of bacterial genomes via alignment-free sequence identification. Microbial Genomics, 7(11). https://doi.org/10.1099/mgen.0.000685
+1. [Nextflow](https://github.com/nextflow-io/nextflow) v23.10.1:  
+    >Di Tommaso, P., Chatzou, M., Floden, E. W., Barja, P. P., Palumbo, E., & Notredame, C. (2017). Nextflow enables reproducible computational workflows. Nature biotechnology, 35(4), 316–319. https://doi.org/10.1038/nbt.3820
+2. [Bakta](https://github.com/oschwengers/bakta) v1.9.3:  
+    >Schwengers, O., Jelonek, L., Dieckmann, M. A., Beyvers, S., Blom, J., & Goesmann, A. (2021). Bakta: rapid and standardized annotation of bacterial genomes via alignment-free sequence identification. Microbial genomics, 7(11), 000685. https://doi.org/10.1099/mgen.0.000685
+3. [miniprot](https://github.com/lh3/miniprot) v0.13:
+    >Li H. (2023). Protein-to-genome alignment with miniprot. Bioinformatics (Oxford, England), 39(1), btad014. https://doi.org/10.1093/bioinformatics/btad014

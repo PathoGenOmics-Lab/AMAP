@@ -1,4 +1,4 @@
-[![Run AMAP pipeline](https://github.com/PathoGenOmics-Lab/AMAP/actions/workflows/run_pipeline.yml/badge.svg)](https://github.com/PathoGenOmics-Lab/AMAP/actions/workflows/run_pipeline.yml) [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-brightgreen.svg)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE) ![GitHub followers](https://img.shields.io/github/followers/PathoGenOmics-Lab) ![GitHub Repo stars](https://img.shields.io/github/stars/PathoGenOmics-Lab/AMAP) ![Static Badge](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-blue) [![Twitter Follow](https://img.shields.io/twitter/follow/paururo)](https://twitter.com/intent/follow?screen_name=paururo)
+![Nextflow](https://img.shields.io/badge/Nextflow-v23.10.1-%2312e6a6?style=plastic&labelColor=%238a8a8a&link=https%3A%2F%2Fgithub.com%2Fnextflow-io%2Fnextflow%2Freleases%2Ftag%2Fv23.10.1)[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-brightgreen.svg)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE) ![GitHub followers](https://img.shields.io/github/followers/PathoGenOmics-Lab) ![GitHub Repo stars](https://img.shields.io/github/stars/PathoGenOmics-Lab/AMAP) ![Static Badge](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-blue) [![Twitter Follow](https://img.shields.io/twitter/follow/paururo)](https://twitter.com/intent/follow?screen_name=paururo)
 
 # AMAP: Assisted MTBC annotator pipeline  
 
@@ -17,7 +17,7 @@ AMAP is a bioinformatics pipeline in nextflow for processing, annotating and cor
 %%{init: { 'theme': 'forest' } }%%
 flowchart TB
     subgraph " "
-    v0["Channel.fromPath"]
+    v0["Fasta Paths"]
     end
     v3([MTB_TYPER])
     v4([BAKTA_ANNOTATOR])
@@ -25,23 +25,15 @@ flowchart TB
     v8([TYPE_CASES])
     v10([REPORT_CASES])
     subgraph " "
-    v11[" "]
+    v11["Results"]
     end
-    v1(( ))
-    v5(( ))
-    v7(( ))
-    v9(( ))
-    v0 --> v1
-    v1 --> v3
+    v0 --> v3
     v3 --> v4
-    v3 --> v5
-    v4 --> v5
-    v4 --> v7
-    v5 --> v6
-    v6 --> v7
-    v7 --> v8
-    v8 --> v9
-    v9 --> v10
+    v3 --> v6
+    v4 --> v6
+    v4 --> v8
+    v6 --> v8
+    v8 --> v10
     v10 --> v11
 ```
 ---
@@ -103,7 +95,5 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 
 1. [Nextflow](https://github.com/nextflow-io/nextflow):  
     >P. Di Tommaso, et al. Nextflow enables reproducible computational workflows. Nature Biotechnology 35, 316–319 (2017) doi:10.1038/nbt.3820
-      
 2. [Bakta](https://github.com/oschwengers/bakta):  
     >Schwengers O., Jelonek L., Dieckmann M. A., Beyvers S., Blom J., Goesmann A. (2021). Bakta: rapid and standardized annotation of bacterial genomes via alignment-free sequence identification. Microbial Genomics, 7(11). https://doi.org/10.1099/mgen.0.000685
-      

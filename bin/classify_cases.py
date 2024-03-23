@@ -300,5 +300,38 @@ def main():
     print(case1_keep2)
     create_and_save_summary(base_name, [case_2, case3, case4, case1, no_solapan_con_bakta, bakta_df,final_case1_remove, case1_keep2], ["case2", "case3", "case4", "case1", "missingRvs", "CDS","case1_remove","case1_keep"])
 
+
+    def check_overlaps(df1, df2):
+        """
+        Check for overlaps between 'Start' and 'End' ranges in two dataframes.
+    
+        Args:
+        df1, df2 (pandas.DataFrame): DataFrames to compare
+
+        Returns:
+        pandas.DataFrame: DataFrame with overlapping rows
+        """
+        overlaps = []
+
+        for _, row1 in df1.iterrows():
+         for _, row2 in df2.iterrows():
+                if row1['End'] >= row2['Start'] and row1['Start'] <= row2['End']:
+                    overlaps.append(row1.to_dict())
+                    break  # Assumes you want to record a row1 once it overlaps with any row2
+
+        return pd.DataFrame(overlaps)
+
+# Assuming you have multiple DataFrames in a list, for example:
+    dataframes = [case_2, case3, case4, case1, no_solapan_con_bakta, bakta_df,final_case1_remove, case1_keep2]  # Replace with your actual DataFrame list
+
+# Comparing DataFrames two by two
+    for i in range(len(dataframes)-1):
+        df1 = dataframes[i]
+        df2 = dataframes[i+1]
+        overlap_df = check_overlaps(df1, df2)
+        print(f"Overlaps between DataFrame {i} and DataFrame {i+1}:")
+        print(overlap_df)
+
+
 if __name__ == "__main__":
     main()

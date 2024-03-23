@@ -1,12 +1,10 @@
-<h0 id="badges" align="center">
-
 ![AMAP](https://img.shields.io/badge/AMAP-v0.1.0-green?style=plastic)
 ![Nextflow](https://img.shields.io/badge/Nextflow-v23.10.1-%2335ccae?style=plastic)
 [![License: GPL v3](https://img.shields.io/badge/License%3A-GPL%20v3-orange?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE)
 ![Docker Image](https://img.shields.io/badge/Docker%20Image-AMAP-blue?style=plastic&logo=docker)
 ![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-%23c9ac02?style=plastic)
-[![Twitter Follow](https://img.shields.io/twitter/follow/paururo)](https://twitter.com/intent/follow?screen_name=paururo)
-</h0>
+![PGO](https://img.shields.io/badge/PathoGenOmics-Lab-yellow?style=plastic&labelColor=red)
+
 
 <h0 id="contributors" align="justify">
 

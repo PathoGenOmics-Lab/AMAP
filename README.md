@@ -94,13 +94,15 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 </h2>
 <div align="justify">
 
-1. [Nextflow](https://github.com/nextflow-io/nextflow) v23.10.1.
-2. [Bakta](https://github.com/oschwengers/bakta) v1.9.3.
-3. [miniprot](https://github.com/lh3/miniprot) v0.13.
-4. [Python](https://www.python.org/) v3.9.
-5. [R](https://www.R-project.org/) v4.3.3.
-6. [pandas](https://github.com/pandas-dev/pandas) v2.2.1.
-7. [intervaltree](https://github.com/chaimleib/intervaltree) v3.1.0.
-8. [plotly.py](https://github.com/plotly/plotly.py) v5.20.0.
-9. [ggplot2](https://ggplot2.tidyverse.org/index.html) v3.5.0.
-10. [dplyr](https://dplyr.tidyverse.org/) v1.1.4.
+| Software          | Version |
+|-------------------|---------|
+| [Nextflow](https://github.com/nextflow-io/nextflow)     | v23.10.1 |
+| [Bakta](https://github.com/oschwengers/bakta)           | v1.9.3   |
+| [miniprot](https://github.com/lh3/miniprot)             | v0.13    |
+| [Python](https://www.python.org/)                        | v3.9     |
+| [R](https://www.R-project.org/)                          | v4.3.3   |
+| [pandas](https://github.com/pandas-dev/pandas)           | v2.2.1   |
+| [intervaltree](https://github.com/chaimleib/intervaltree) | v3.1.0 |
+| [plotly.py](https://github.com/plotly/plotly.py)         | v5.20.0  |
+| [ggplot2](https://ggplot2.tidyverse.org/index.html)      | v3.5.0   |
+| [dplyr](https://dplyr.tidyverse.org/)                    | v1.1.4   |

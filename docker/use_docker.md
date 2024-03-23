@@ -26,25 +26,25 @@ docker build -t amap .
 docker run -it amap /bin/bash
 ```
 
-Para subir tu imagen de Docker a Docker Hub, sigue estos pasos:
+To upload your Docker image to Docker Hub, follow these steps:
 
-Inicia Sesión en Docker Hub:
-Abre la terminal y ejecuta `docker login`.
-Ingresa tu nombre de usuario y contraseña de Docker Hub.
+Log in to Docker Hub:
+Open the terminal and run docker login.
+Enter your Docker Hub username and password.
 
-Etiqueta tu Imagen:
-Antes de subir, etiqueta tu imagen localmente con tu nombre de usuario de Docker Hub y el nombre de la imagen. Por ejemplo:
+Tag Your Image:
+Before uploading, tag your local image with your Docker Hub username and the name of the image. For example:
 
 ```
 docker tag amap paururo/amap:latest
 ```
 
-Sube la Imagen:
+Upload the Image:
 
-Usa el siguiente comando para subir tu imagen a Docker Hub:
+Use the following command to upload your image to Docker Hub:
 ```
 docker push paururo/amap:latest
 ```
-De nuevo, reemplaza tu_usuario con tu nombre de usuario en Docker Hub.
+Again, replace with your username on Docker Hub.
 
-Una vez que la imagen se haya subido correctamente, podrás verla y gestionarla en tu repositorio de Docker Hub.
+Once the image has been successfully uploaded, you will be able to view and manage it in your Docker Hub repository.

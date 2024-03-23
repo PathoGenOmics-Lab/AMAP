@@ -17,25 +17,39 @@ AMAP is a bioinformatics pipeline in nextflow for processing, annotating and cor
 ```mermaid
 %%{init: { 'theme': 'forest' } }%%
 flowchart TB
-    subgraph " "
-    v0["Fasta Paths"]
+    subgraph "INPUT"
+    v0["Genomes"]
     end
-    v3([MTB_TYPER])
-    v4([BAKTA_ANNOTATOR])
+    v3([MTB TYPER])
+    v4([BAKTA ANNOTATOR])
     v6([MINIPROT])
-    v8([TYPE_CASES])
-    v10([REPORT_CASES])
-    subgraph " "
-    v11["Results"]
+    v8([TYPE CASES])
+    v14([FIX ANNOTATION])
+    subgraph "RESULTS"
+    v12["OG Bakta 
+    annotation"]
+    v10["Report cases"]
+    v13["Corrected 
+    annotation"]
+    v15["Lineage Typing"]
+    v16["Final Stats"]
     end
-    v0 --> v3
     v3 --> v4
+    v0 --> v3
+    v4 --> v12
     v4 --> v6
     v3 --> v6
     v4 --> v8
     v6 --> v8
     v8 --> v10
-    v10 --> v11
+    v8 --> v14
+    v14 --> v13
+    v3 --> v15
+    v12 --> v16
+    v10 --> v16
+    v13 --> v16
+    v15 --> v16
+    
 ```
 ---
 <h2 id="contributors" align="center">

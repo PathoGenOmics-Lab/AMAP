@@ -7,67 +7,43 @@ __and Mireia Coscolla<sup>1</sup>__
 <br>
 <sub> 1. I<sup>2</sup>SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Valencia, Spain </sub>  
 
-AMAP is a bioinformatics pipeline for processing and annotating _Mycobacterium tuberculosis_ complex (MTBC) data.
+AMAP is a bioinformatics pipeline in nextflow for processing, annotating and correct annotations of _Mycobacterium tuberculosis_ complex (MTBC) genomes.
 ## Installation  
-You can easily install the AMAP pipeline using [snakemake](https://snakemake.readthedocs.io/en/stable/), a workflow management system that aims to reduce the complexity of creating workflows by providing a fast and comfortable execution environment.
 
-### Snakemake installation  
-For further directions go to [snakemake documentation](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html):
+## Run AMAP in Nextflow  
 
-1. First you will need to have mamba installed:  
-``
-conda install -n base -c conda-forge mamba
-``
-2. Activate conda:  
-``
-conda activate base
-``
-3. Install snakemake:  
-``
-mamba create -c conda-forge -c bioconda -n snakemake snakemake
-`` 
-### Execute AMAP in Snakemake  
-1. Activate snakemake:  
-   ```
-   conda activate snakemake
-   ```
-2. Clone AMAP into your system:  
-   ```
-   git clone https://github.com/PathoGenOmics-Lab/AMAP.git
-   ```
-3. Go to workflow directory:  
-   ```
-   cd AMAP/workflow
-   ```  
-4. Modify config file with your paths:
-   ```
-   fasta_dir: myawesome/path/with/fastas
-   output_dir: whereI/store/the/results
-   ```  
-5. To install and execute the pipeline, use the following command:  
-   ```
-   snakemake --use-conda -c8
-   ```
-
-## DAG (Directed Acyclic Graph)
-
-<p align="center">
-  <img src="https://github.com/PathoGenOmics-Lab/AMAP/blob/main/images/dag.png" alt="DAGPLOT" width="900">
-</p>
-
-### Generate Rule graph  
-``
-snakemake --rulegraph | dot -Tpng > rulegraph.png
-``  
-### Generate DAG (Directed Acyclic Graph)  
-``
-snakemake --dag | dot -Tpng > dag.png
-``  
-### Generate Filegraph  
-``
-snakemake --filegraph | dot -Tpng > filegraph.png
-``
-
+## AMAP flowchart
+```mermaid
+%%{init: { 'theme': 'forest' } }%%
+flowchart TB
+    subgraph " "
+    v0["Channel.fromPath"]
+    end
+    v3([MTB_TYPER])
+    v4([BAKTA_ANNOTATOR])
+    v6([MINIPROT])
+    v8([TYPE_CASES])
+    v10([REPORT_CASES])
+    subgraph " "
+    v11[" "]
+    end
+    v1(( ))
+    v5(( ))
+    v7(( ))
+    v9(( ))
+    v0 --> v1
+    v1 --> v3
+    v3 --> v4
+    v3 --> v5
+    v4 --> v5
+    v4 --> v7
+    v5 --> v6
+    v6 --> v7
+    v7 --> v8
+    v8 --> v9
+    v9 --> v10
+    v10 --> v11
+```
 ---
 <h2 id="contributors" align="center">
 ✨ Contributors
@@ -125,8 +101,8 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 </h2>
 <div align="justify">
 
-1. [Snakemake](https://github.com/snakemake/snakemake):  
-    >Mölder F, Jablonski KP, Letcher B et al. Sustainable data analysis with Snakemake [version 1; peer review: 1 approved, 1 approved with reservations]. F1000Research 2021, 10:33 (https://doi.org/10.12688/f1000research.29032.1)
+1. [Nextflow](https://github.com/nextflow-io/nextflow):  
+    >P. Di Tommaso, et al. Nextflow enables reproducible computational workflows. Nature Biotechnology 35, 316–319 (2017) doi:10.1038/nbt.3820
       
 2. [Bakta](https://github.com/oschwengers/bakta):  
     >Schwengers O., Jelonek L., Dieckmann M. A., Beyvers S., Blom J., Goesmann A. (2021). Bakta: rapid and standardized annotation of bacterial genomes via alignment-free sequence identification. Microbial Genomics, 7(11). https://doi.org/10.1099/mgen.0.000685

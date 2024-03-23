@@ -92,17 +92,20 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 💻 Software Used
 </h2>
 
-| Software          | Version | Type   |
-|-------------------|---------|--------|
-| [Nextflow](https://github.com/nextflow-io/nextflow)     | v23.10.1 | Nextflow  |
-| [Bakta](https://github.com/oschwengers/bakta)           | v1.9.3   | Other  |
-| [miniprot](https://github.com/lh3/miniprot)             | v0.13    | Other  |
-| [Python](https://www.python.org/)                        | v3.9     | Python |
-| [R](https://www.R-project.org/)                          | v4.3.3   | R      |
-| [pandas](https://github.com/pandas-dev/pandas)           | v2.2.1   | Python |
-| [intervaltree](https://github.com/chaimleib/intervaltree) | v3.1.0 | Python  |
-| [plotly.py](https://github.com/plotly/plotly.py)         | v5.20.0  | Python |
-| [ggplot2](https://ggplot2.tidyverse.org/index.html)      | v3.5.0   | R      |
-| [dplyr](https://dplyr.tidyverse.org/)                    | v1.1.4   | R      |
+| Software          | Version | Type   | Usage                 |
+|-------------------|---------|--------|-----------------------|
+| [Nextflow](https://github.com/nextflow-io/nextflow)     | v23.10.1 | Other  | Workflow Management   |
+| [Bakta](https://github.com/oschwengers/bakta)           | v1.9.3   | Other  | Annotation Tools  |
+| [miniprot](https://github.com/lh3/miniprot)             | v0.13    | Other  | Mapping Tools  |
+| [Python](https://www.python.org/)                        | v3.9     | Python | Programming Language  |
+| [R](https://www.R-project.org/)                          | v4.3.3   | R      | Statistical Computing |
+| [pandas](https://github.com/pandas-dev/pandas)           | v2.2.1   | Python | Data Analysis         |
+| [intervaltree](https://github.com/chaimleib/intervaltree) | v3.1.0 | Other  | Data Structures       |
+| [plotly.py](https://github.com/plotly/plotly.py)         | v5.20.0  | Python | Data Visualization    |
+| [ggplot2](https://ggplot2.tidyverse.org/index.html)      | v3.5.0   | R      | Data Visualization    |
+| [dplyr](https://dplyr.tidyverse.org/)                    | v1.1.4   | R      | Data Manipulation     |
+| [Singularity](https://sylabs.io/singularity/)           | v3.11.1   | Other  | Containerization      |
+| [Docker](https://www.docker.com/)                        | v25.0.4   | Other  | Containerization      |
+
 
 <div align="justify">

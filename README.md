@@ -3,10 +3,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License%3A-GPL%20v3-orange?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE)
 ![Docker Image](https://img.shields.io/badge/Docker%20Image-AMAP-blue?style=plastic&logo=docker)
 ![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-%23c9ac02?style=plastic)
-![PGO](https://img.shields.io/badge/PathoGenOmics-Lab-yellow?style=plastic&labelColor=red)
-
-
-<h0 id="contributors" align="justify">
+![PGO](https://img.shields.io/badge/PathoGenOmics-Lab-grey?style=plastic&labelColor=red)
 
 # AMAP: Assisted MTBC annotator pipeline  
 
@@ -15,7 +12,7 @@ __and Mireia Coscolla<sup>1</sup>__
 <br>
 <sub> 1. I<sup>2</sup>SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Valencia, Spain </sub>  
 
-AMAP is a bioinformatics pipeline in nextflow for processing, annotating and correct annotations of _Mycobacterium tuberculosis_ complex (MTBC) genomes.
+AMAP is a bioinformatics pipeline written in nextflow for processing, annotating and correct annotations of _Mycobacterium tuberculosis_ complex (MTBC) genomes.
 ## Installation  
 
 ## Run AMAP in Nextflow  

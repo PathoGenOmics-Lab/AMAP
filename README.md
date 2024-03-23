@@ -42,33 +42,27 @@ flowchart TB
 ✨ Contributors
 </h2>
 
-AMAP is developed with ❤️ by:
-<p align="center">
-  <p align="center">
-    <a href="https://github.com/paururo">
-      <img src="https://avatars.githubusercontent.com/u/50167687?v=4&s=100" width="100px;" alt=""/>
-    </a> 
-  </p>
-  <p align="center">
-    <p align="center">
-      <a href="https://github.com/paururo">
-      Paula Ruiz-Rodriguez
-      </a>
-    </p>
-    <p align="center">
-      <small>Institute for Integrative Systems Biology</small></br>
-    </p>         
-  </p>
-</p>
-
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification ([emoji key](https://allcontributors.org/docs/en/emoji-key)).
-
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
 <div align="center">
+AMAP is developed with ❤️ by:
 <table>
   <tr>
+    <td align="center">
+      <a href="https://github.com/paururo">
+        <img src="https://avatars.githubusercontent.com/u/50167687?v=4&s=100" width="100px;" alt=""/>
+        <br />
+        <sub><b>Paula Ruiz-Rodriguez</b></sub>
+      </a>
+      <br />
+      <a href="" title="Code">💻</a>
+      <a href="" title="Research">🔬</a>
+      <a href="" title="Ideas">🤔</a>
+      <a href="" title="Data">🔣</a>
+      <a href="" title="Desing">🎨</a>
+      <a href="" title="Tool">🔧</a>
+    </td> 
     <td align="center">
       <a href="https://github.com/mireiacoscolla">
         <img src="https://avatars.githubusercontent.com/u/29301737?v=4&s=100" width="100px;" alt=""/>
@@ -79,9 +73,13 @@ This project follows the [all-contributors](https://github.com/all-contributors/
       <a href="https://www.uv.es/instituto-biologia-integrativa-sistemas-i2sysbio/es/investigacion/proyectos/proyectos-actuales/mol-tb-host-1286169137294/ProjecteInves.html?id=1286289780236" title="Funding/Grant Finders">🔍</a>
       <a href="" title="Ideas">🤔</a>
       <a href="" title="Mentoring">🧑‍🏫</a>
+      <a href="" title="Research">🔬</a>
+      <a href="" title="User Testing">📓</a>
     </td> 
   </tr>
 </table>
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification ([emoji key](https://allcontributors.org/docs/en/emoji-key)).
 
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
@@ -94,18 +92,18 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 
 | Software          | Version | Type   | Usage                 |
 |-------------------|---------|--------|-----------------------|
-| [Nextflow](https://github.com/nextflow-io/nextflow)     | v23.10.1 | Other  | Workflow Management   |
-| [Bakta](https://github.com/oschwengers/bakta)           | v1.9.3   | Other  | Annotation Tools  |
-| [miniprot](https://github.com/lh3/miniprot)             | v0.13    | Other  | Mapping Tools  |
-| [Python](https://www.python.org/)                        | v3.9     | Python | Programming Language  |
-| [R](https://www.R-project.org/)                          | v4.3.3   | R      | Statistical Computing |
-| [pandas](https://github.com/pandas-dev/pandas)           | v2.2.1   | Python | Data Analysis         |
-| [intervaltree](https://github.com/chaimleib/intervaltree) | v3.1.0 | Other  | Data Structures       |
-| [plotly.py](https://github.com/plotly/plotly.py)         | v5.20.0  | Python | Data Visualization    |
-| [ggplot2](https://ggplot2.tidyverse.org/index.html)      | v3.5.0   | R      | Data Visualization    |
-| [dplyr](https://dplyr.tidyverse.org/)                    | v1.1.4   | R      | Data Manipulation     |
-| [Singularity](https://sylabs.io/singularity/)           | v3.11.1   | Other  | Containerization      |
-| [Docker](https://www.docker.com/)                        | v25.0.4   | Other  | Containerization      |
+| [Nextflow](https://github.com/nextflow-io/nextflow)     | 23.10.1 | Other  | Workflow Management   |
+| [Bakta](https://github.com/oschwengers/bakta)           | 1.9.3   | Other  | Annotation Tools  |
+| [miniprot](https://github.com/lh3/miniprot)             | 0.13    | Other  | Mapping Tools  |
+| [Python](https://www.python.org/)                        | 3.9     | Python | Programming Language  |
+| [R](https://www.R-project.org/)                          | 4.3.3   | R      | Statistical Computing |
+| [pandas](https://github.com/pandas-dev/pandas)           | 2.2.1   | Python | Data Analysis         |
+| [intervaltree](https://github.com/chaimleib/intervaltree) | 3.1.0 | Other  | Data Structures       |
+| [plotly.py](https://github.com/plotly/plotly.py)         | 5.20.0  | Python | Data Visualization    |
+| [ggplot2](https://ggplot2.tidyverse.org/index.html)      | 3.5.0   | R      | Data Visualization    |
+| [dplyr](https://dplyr.tidyverse.org/)                    | 1.1.4   | R      | Data Manipulation     |
+| [Singularity](https://sylabs.io/singularity/)           | 3.11.1   | Other  | Containerization      |
+| [Docker](https://www.docker.com/)                        | 25.0.4   | Other  | Containerization      |
 
 
 <div align="justify">

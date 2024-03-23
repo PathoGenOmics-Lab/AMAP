@@ -2,7 +2,8 @@ FROM continuumio/miniconda3
 
 RUN apt-get update && \
     apt-get install -y git build-essential zlib1g-dev r-base && \
-    conda install -c conda-forge python=3.9 pandas && \
+    conda install -c conda-forge python=3.9 pandas plotly && \
+    pip install intervaltree  && \
     conda install -c bioconda -c conda-forge bakta=1.9.3 && \
     git clone https://github.com/lh3/miniprot && \
     cd miniprot && \
@@ -14,10 +15,8 @@ RUN apt-get update && \
 RUN mkdir -p /data/bakta_db && \
     bakta_db download --output /data/bakta_db --type light
 
-# Crear directorio para los archivos
 RUN mkdir -p /reference
 
-# Descargar archivos
 RUN wget -P /reference https://zenodo.org/record/3497110/files/MTB_ancestor_reference.fasta
 
 RUN apt-get update && \

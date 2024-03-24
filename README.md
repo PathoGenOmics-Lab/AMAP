@@ -45,6 +45,18 @@ To set up your environment with Nextflow and Singularity, follow these straightf
 These steps ensure that you have a robust setup for running reproducible data analysis workflows using Nextflow, Conda, and Singularity.
 
 ### Running AMAP
+Nextflow facilitates the direct execution of pipelines from GitHub repositories. This approach simplifies the process and does not require cloning the repository locally.
+
+To run the AMAP pipeline hosted on GitHub by PathoGenOmics-Lab, follow these simple steps:
+
+1. **Prepare Your Environment**:
+   Ensure that Nextflow and Singularity are installed and properly configured in your Conda environment as previously detailed.
+
+2. **Run the Pipeline**:
+   Execute the AMAP pipeline directly from GitHub with Nextflow. Replace `[parameters]` with the specific parameters needed for your analysis.
+   ```bash
+   nextflow run PathoGenOmics-Lab/AMAP --tsv test_file.tsv
+   ```
 
 ## AMAP flowchart
 ```mermaid

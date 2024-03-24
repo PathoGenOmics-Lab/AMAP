@@ -58,15 +58,15 @@ To run the AMAP pipeline hosted on GitHub by PathoGenOmics-Lab, follow these sim
    nextflow run PathoGenOmics-Lab/AMAP --tsv test_file.tsv
    ```
 
+## 
+
+## Parameters
+
+## Inputs
+
+## Outputs
+
 ## AMAP Workflow
-
-### Parameters
-
-### Inputs
-
-### Outputs
-
-### Flow chart steps of AMAP
 ```mermaid
 %%{init: { 'theme': 'forest' } }%%
 flowchart TB
@@ -103,7 +103,7 @@ flowchart TB
     v13 --> v16
     v15 --> v16
 ```
-### AMAP Algorithm
+## AMAP Algorithm
 
 ## Citation
 >Ruiz-Rodriguez, P., & Coscolla, M. (2024). AMAP (Version 0.1.0) [Computer software]. https://doi.org/10.5281/zenodo.1234

@@ -12,7 +12,7 @@ __and Mireia Coscolla<sup>1</sup>__
 <br>
 <sub> 1. I<sup>2</sup>SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Valencia, Spain </sub>  
 
-AMAP is a bioinformatics pipeline written in nextflow for processing, annotating and correct annotations of _Mycobacterium tuberculosis_ complex (MTBC) genomes.
+AMAP is a bioinformatics pipeline written in Nextflow for processing, annotating and correct annotations of _Mycobacterium tuberculosis_ complex (MTBC) genomes.
 ## First Steps for Using AMAP
 
 **Why Choose Nextflow with Conda and Singularity?** 
@@ -43,6 +43,8 @@ To set up your environment with Nextflow and Singularity, follow these straightf
    singularity --version
    ```
 These steps ensure that you have a robust setup for running reproducible data analysis workflows using Nextflow, Conda, and Singularity.
+
+### Running AMAP
 
 ## AMAP flowchart
 ```mermaid
@@ -80,6 +82,19 @@ flowchart TB
     v10 --> v16
     v13 --> v16
     v15 --> v16
+```
+## Citation
+>Ruiz-Rodriguez, P., & Coscolla, M. (2024). AMAP (Version 0.1.0) [Computer software]. https://doi.org/10.5281/zenodo.1234
+```bibtex
+@software{Ruiz-Rodriguez_AMAP_2023,
+  author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},
+  doi = {10.5281/zenodo.1234},
+  license = {GPL-3.0},
+  month = jul,
+  title = {{AMAP}},
+  url = {https://github.com/PathoGenOmics-Lab/AMAP},
+  version = {0.1.0},
+  year = {2024}}
 ```
 ---
 <h2 id="contributors" align="center">

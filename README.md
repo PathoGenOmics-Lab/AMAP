@@ -58,8 +58,6 @@ To run the AMAP pipeline hosted on GitHub by PathoGenOmics-Lab, follow these sim
    nextflow run PathoGenOmics-Lab/AMAP --tsv test_file.tsv
    ```
 
-## 
-
 ## Parameters
 
 ## Inputs

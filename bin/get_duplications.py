@@ -16,3 +16,17 @@ def read_and_create(p_file):
     df_filtered = df.loc[df['same_seq'] == False]
     df_final_filtered = df_filtered.loc[(df_filtered['p_query'] >= 80) | (df_filtered['p_subject'] >= 80)]
     return df_final_filtered
+
+def group_related_pairs(df):
+    G = nx.Graph()
+
+    for idx, row in df.iterrows():
+        G.add_edge(row['qseqid'], row['sseqid'])
+
+    components = list(nx.connected_components(G))
+    df_groups = pd.DataFrame(columns=['Group', 'Members'])
+
+    for i, component in enumerate(components):
+        df_groups = df_groups.append({'Group': i, 'Members': list(component)}, ignore_index=True)
+    df_groups['Length'] = df_groups['Members'].apply(lambda x: len(x))
+    return df_groups

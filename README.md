@@ -13,9 +13,36 @@ __and Mireia Coscolla<sup>1</sup>__
 <sub> 1. I<sup>2</sup>SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Valencia, Spain </sub>  
 
 AMAP is a bioinformatics pipeline written in nextflow for processing, annotating and correct annotations of _Mycobacterium tuberculosis_ complex (MTBC) genomes.
-## Installation  
+## First Steps for Using Nextflow with Conda and Singularity
 
-## Run AMAP in Nextflow  
+**Why Choose Nextflow with Conda and Singularity?** 
+Nextflow excels in managing complex workflows, offering reproducibility, scalability, and portability. It's particularly effective for bioinformatics and data analysis tasks. Nextflow's support for containerization with Docker and Singularity ensures consistent and isolated execution environments. Conda complements this by simplifying the package management process.
+
+### Installation Guide
+
+To set up your environment with Nextflow and Singularity, follow these straightforward steps:
+
+1. **Install Nextflow Using Conda**:
+   Begin by downloading Miniconda, a lightweight version of Conda, which simplifies package management. You can find it at [Miniconda's official site](https://docs.conda.io/en/latest/miniconda.html).
+2. **Create and Activate a Conda Environment**:
+   Organize your packages and dependencies in an isolated environment to avoid conflicts.
+   ```bash
+   conda create -n nextflow-env
+   conda activate nextflow-env
+3. **Install Nextflow in Conda Environment**:
+   With the Conda environment ready, install Nextflow seamlessly.
+  ```bash
+    conda install -c bioconda nextflow
+  ```
+4. **Install Singularity**:
+   To handle containerization, install Singularity following the detailed instructions in the Singularity Installation Guide.
+5. **Verify Installation**:
+   Confirm that Nextflow and Singularity are correctly installed and ready to use.
+  ```bash
+    nextflow -version
+    singularity --version
+  ```
+These steps ensure that you have a robust setup for running reproducible data analysis workflows using Nextflow, Conda, and Singularity.
 
 ## AMAP flowchart
 ```mermaid

@@ -1,9 +1,9 @@
-![AMAP](https://img.shields.io/badge/AMAP-v0.1.0-green?style=plastic)
-![Nextflow](https://img.shields.io/badge/Nextflow-v23.10.1-%2335ccae?style=plastic)
+[![PGO](https://img.shields.io/badge/PathoGenOmics-Lab-grey?style=plastic&labelColor=red)](https://github.com/PathoGenOmics-Lab)
+[![AMAP](https://img.shields.io/badge/AMAP-v0.1.0-green?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP)
+[![Nextflow](https://img.shields.io/badge/Nextflow-%E2%89%A5%20v23.10.1-%2330ba91?style=plastic)](https://github.com/nextflow-io/nextflow/releases/tag/v23.10.1)
 [![License: GPL v3](https://img.shields.io/badge/License%3A-GPL%20v3-orange?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE)
-![Docker Image](https://img.shields.io/badge/Docker%20Image-AMAP-blue?style=plastic&logo=docker)
-![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-%23c9ac02?style=plastic)
-![PGO](https://img.shields.io/badge/PathoGenOmics-Lab-grey?style=plastic&labelColor=red)
+[![Docker Image](https://img.shields.io/badge/Docker%20Image-AMAP-blue?style=plastic&logo=docker)](https://hub.docker.com/repository/docker/paururo/amap/general)
+[![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-%23c9ac02?style=plastic)](https://doi.org/10.5281/zenodo.8024447)
 
 # AMAP: Assisted MTBC annotator pipeline  
 
@@ -56,7 +56,8 @@ flowchart TB
 ```
 ---
 <h2 id="contributors" align="center">
-✨ Contributors
+
+✨ [Contributors]((https://github.com/PathoGenOmics-Lab/AMAP/graphs/contributors))
 </h2>
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->

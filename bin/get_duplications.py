@@ -30,3 +30,14 @@ def group_related_pairs(df):
         df_groups = df_groups.append({'Group': i, 'Members': list(component)}, ignore_index=True)
     df_groups['Length'] = df_groups['Members'].apply(lambda x: len(x))
     return df_groups
+
+def main():
+    parser = argparse.ArgumentParser(description="Read blast and generate cluster of duplications")
+    parser.add_argument("file", help="Blastp output")
+    args = parser.parse_args()
+    df = read_and_create(args.file)
+    df_with_groups = group_related_pairs(df)
+    df_with_groups.to_csv(args.file + "_groups.tsv", sep='\t', index=False)
+
+if __name__ == "__main__":
+    main()

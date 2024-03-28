@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 process REPORT_CASES {
     publishDir "results/type_cases/report_cases", pattern: "*.png", mode: 'copy'
     input:

@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 process TYPE_CASES {
     publishDir "results/type_cases/summary", pattern: "*summary.tsv", mode: 'copy'
     publishDir "results/type_cases/cases", pattern: "*case*.tsv", mode: 'copy'

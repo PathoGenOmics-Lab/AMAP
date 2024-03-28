@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 process MTB_TYPER {
     publishDir "results/mtb_typer", mode: 'copy'
     input:

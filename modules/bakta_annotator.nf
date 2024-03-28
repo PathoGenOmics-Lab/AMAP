@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 process BAKTA_ANNOTATOR {
     publishDir "results/bakta_annotation", mode: 'copy'
     input:

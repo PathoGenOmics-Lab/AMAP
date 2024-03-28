@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 process MINIPROT {
     publishDir "results/miniprot_reference", mode: 'copy'
     input:

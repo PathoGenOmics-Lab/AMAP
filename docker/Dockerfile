@@ -15,19 +15,14 @@ RUN apt-get update && \
 RUN mkdir -p /data/bakta_db && \
     bakta_db download --output /data/bakta_db --type light
 
-RUN mkdir -p /reference
-
-RUN wget -P /reference https://zenodo.org/record/3497110/files/MTB_ancestor_reference.fasta
-
-RUN apt-get update && \
-    apt-get install -y python3-pip && \
-    pip install gdown && \
-    gdown --id 1sNUuEkgq9Et4sRP3nr-xsMktx1G5rOjn -O /reference/bad.bakta.fa && \
-    gdown --id 1ibHC4VgZnIbu7EsVZ-VFmcUMCt1ACKuc -O /reference/aa_H37Rv.translated.fas && \
-    gdown --id 1ZvlTVwp3RVPqZPgIaTONg1IQEm6c98P8 -O /reference/new_refH37Rv.fasta && \
-    gdown --id 1_wWCduMeJW4PHV084K8X3BzivaSAmbo8 -O /reference/nt_correctedH37Rv.fa && \
-    gdown --id 1l0MnOZUWM6t7gYjWgfbt-1SuXOEMi7MQ -O /reference/sequence.gb && \
-    gdown --id 1C7BcWzpLnbFwMA-uTyiD_FSi-LkVSHAj -O /reference/snps_lineages.tsv && \
-    gdown --id 1lDrQPe7S4FJmgejsKyov5jcVbckLqxj9 -O /reference/bad.bakta.translated.fas
+RUN mkdir -p /reference && \
+    wget -P /reference https://zenodo.org/record/3497110/files/MTB_ancestor_reference.fasta && \
+    wget -O /reference/aa_H37Rv.translated.fas 'https://docs.google.com/uc?export=download&id=1ibHC4VgZnIbu7EsVZ-VFmcUMCt1ACKuc'  && \
+    wget -O /reference/bad.bakta.fa 'https://docs.google.com/uc?export=download&id=1sNUuEkgq9Et4sRP3nr-xsMktx1G5rOjn' && \
+    wget -O /reference/bad.bakta.translated.fas 'https://docs.google.com/uc?export=download&id=1lDrQPe7S4FJmgejsKyov5jcVbckLqxj9' && \
+    wget -O /reference/new_refH37Rv.fasta 'https://docs.google.com/uc?export=download&id=1ZvlTVwp3RVPqZPgIaTONg1IQEm6c98P8' && \
+    wget -O /reference/nt_correctedH37Rv.fa 'https://docs.google.com/uc?export=download&id=1_wWCduMeJW4PHV084K8X3BzivaSAmbo8' && \
+    wget -O /reference/sequence.gb 'https://docs.google.com/uc?export=download&id=1l0MnOZUWM6t7gYjWgfbt-1SuXOEMi7MQ' && \
+    wget -O /reference/snps_lineages.tsv 'https://docs.google.com/uc?export=download&id=1C7BcWzpLnbFwMA-uTyiD_FSi-LkVSHAj'
 
 ENV PATH="${PATH}:/miniprot:/data/bakta_db:/reference"

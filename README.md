@@ -35,7 +35,7 @@ To set up your environment with Nextflow and Singularity, follow these straightf
    conda install -c bioconda nextflow
    ```
 4. **Install Singularity**:
-   To handle containerization, install Singularity following the detailed instructions in the Singularity Installation Guide.
+   To handle containerization, install Singularity following the detailed instructions in the [Singularity Installation Guide](https://docs.sylabs.io/guides/4.1/user-guide/quick_start.html).
 5. **Verify Installation**:
    Confirm that Nextflow and Singularity are correctly installed and ready to use.
    ```bash

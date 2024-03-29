@@ -20,7 +20,7 @@ log.info """\
     ,=,-<=`.    ,=,-<=`.    ,=,-<=`.  
  ,-'-'   `-=_,-'-'   `-=_,-'-'   `-=_,
     fastas: ${params.tsv}
-    output: ${params.output}
+    output: ${params.outdir}
  """
 
 Channel
@@ -30,7 +30,8 @@ Channel
     .set { sample_fasta }
 
 process MTB_TYPER {
-    publishDir "${params.output}/mtb_typer", mode: 'copy'
+    tag "$sampleId"
+    publishDir "${params.outdir}/mtb_typer", mode: 'copy'
     input:
     tuple val(sampleId), val(fasta)
     output:
@@ -43,7 +44,8 @@ process MTB_TYPER {
 }
 
 process BAKTA_ANNOTATOR {
-    publishDir "${params.output}/bakta_annotation", mode: 'copy'
+    tag "$sampleId"
+    publishDir "${params.outdir}/bakta_annotation", mode: 'copy'
     input:
     tuple val(sampleId), path(tsvFile)
     output:
@@ -58,7 +60,8 @@ process BAKTA_ANNOTATOR {
 }
 
 process MINIPROT {
-    publishDir "${params.output}/miniprot_reference", mode: 'copy'
+    tag "$sampleId"
+    publishDir "${params.outdir}/miniprot_reference", mode: 'copy'
     input:
     tuple val(sampleId), path(tsvFile), path(annotator)
     output:
@@ -75,9 +78,10 @@ process MINIPROT {
 }
 
 process TYPE_CASES {
-    publishDir "${params.output}/type_cases/summary", pattern: "*summary.tsv", mode: 'copy'
-    publishDir "${params.output}/type_cases/cases", pattern: "*case*.tsv", mode: 'copy'
-    publishDir "${params.output}/type_cases/cases", pattern: "*rvmissing.tsv", mode: 'copy'
+    tag "$sampleId"
+    publishDir "${params.outdir}/type_cases/summary", pattern: "*summary.tsv", mode: 'copy'
+    publishDir "${params.outdir}/type_cases/cases", pattern: "*case*.tsv", mode: 'copy'
+    publishDir "${params.outdir}/type_cases/cases", pattern: "*rvmissing.tsv", mode: 'copy'
     input:
     tuple val(sampleId), path(annotator), path(miniprot), path(badbakta), path(cds)
     output:
@@ -89,7 +93,7 @@ process TYPE_CASES {
 }
 
 process REPORT_CASES {
-    publishDir "${params.output}/type_cases/report_cases", pattern: "*.png", mode: 'copy'
+    publishDir "${params.outdir}/type_cases/report_cases", pattern: "*.png", mode: 'copy'
     input:
     path summaries
     output:

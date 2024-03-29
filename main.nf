@@ -20,6 +20,7 @@ log.info """\
     ,=,-<=`.    ,=,-<=`.    ,=,-<=`.  
  ,-'-'   `-=_,-'-'   `-=_,-'-'   `-=_,
     fastas: ${params.tsv}
+    output: ${params.output}
  """
 
 Channel
@@ -29,7 +30,7 @@ Channel
     .set { sample_fasta }
 
 process MTB_TYPER {
-    publishDir "results/mtb_typer", mode: 'copy'
+    publishDir "${params.output}/mtb_typer", mode: 'copy'
     input:
     tuple val(sampleId), val(fasta)
     output:
@@ -37,12 +38,12 @@ process MTB_TYPER {
     script:
     """
     echo "Procesando muestra: $sampleId con Fasta: $fasta"
-    python3 ${workflow.launchDir}/mtb_typer.py -i $fasta -t "/reference/snps_lineages.tsv" -r "/reference/MTB_ancestor_reference.fasta"
+    python3 ${workflow.launchDir}/bin/mtb_typer.py -i $fasta -t "/reference/snps_lineages.tsv" -r "/reference/MTB_ancestor_reference.fasta"
     """
 }
 
 process BAKTA_ANNOTATOR {
-    publishDir "results/bakta_annotation", mode: 'copy'
+    publishDir "${params.output}/bakta_annotation", mode: 'copy'
     input:
     tuple val(sampleId), path(tsvFile)
     output:
@@ -57,7 +58,7 @@ process BAKTA_ANNOTATOR {
 }
 
 process MINIPROT {
-    publishDir "results/miniprot_reference", mode: 'copy'
+    publishDir "${params.output}/miniprot_reference", mode: 'copy'
     input:
     tuple val(sampleId), path(tsvFile), path(annotator)
     output:
@@ -74,9 +75,9 @@ process MINIPROT {
 }
 
 process TYPE_CASES {
-    publishDir "results/type_cases/summary", pattern: "*summary.tsv", mode: 'copy'
-    publishDir "results/type_cases/cases", pattern: "*case*.tsv", mode: 'copy'
-    publishDir "results/type_cases/cases", pattern: "*rvmissing.tsv", mode: 'copy'
+    publishDir "${params.output}/type_cases/summary", pattern: "*summary.tsv", mode: 'copy'
+    publishDir "${params.output}/type_cases/cases", pattern: "*case*.tsv", mode: 'copy'
+    publishDir "${params.output}/type_cases/cases", pattern: "*rvmissing.tsv", mode: 'copy'
     input:
     tuple val(sampleId), path(annotator), path(miniprot), path(badbakta), path(cds)
     output:
@@ -88,7 +89,7 @@ process TYPE_CASES {
 }
 
 process REPORT_CASES {
-    publishDir "results/type_cases/report_cases", pattern: "*.png", mode: 'copy'
+    publishDir "${params.output}/type_cases/report_cases", pattern: "*.png", mode: 'copy'
     input:
     path summaries
     output:

@@ -99,3 +99,4 @@ def main():
             file.write(f">{id}\n{amino_acid_seq}\n")
 if __name__ == "__main__":
     main()
+    #python3 check_cds.py H37Rv.fasta _ancestor_corrected.tsv

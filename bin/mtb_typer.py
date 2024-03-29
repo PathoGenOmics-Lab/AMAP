@@ -224,7 +224,7 @@ def arguments():
     parser.add_argument('-t', '--snp', help='Marker file', required=True)
     parser.add_argument('-r', '--ref', help='Fasta reference', required=True)
     #parser.add_argument('-o', '--output', required=True, help='Path to the output directory.')
-
+    return parser.parse_args()
 def main():
     args = arguments()
     k = 21

@@ -1,3 +1,8 @@
+
+<p align="center">
+  <img src=".github/AMAP.png" title="AMAP logo" style="width:700px; height: auto;">
+</p>
+
 [![PGO](https://img.shields.io/badge/PathoGenOmics-Lab-grey?style=plastic&labelColor=red)](https://github.com/PathoGenOmics-Lab)
 [![AMAP](https://img.shields.io/badge/AMAP-v0.1.0-green?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP)
 [![Nextflow](https://img.shields.io/badge/Nextflow-%E2%89%A5%20v23.10.1-%2330ba91?style=plastic)](https://github.com/nextflow-io/nextflow/releases/tag/v23.10.1)

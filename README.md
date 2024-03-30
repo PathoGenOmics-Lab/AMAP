@@ -185,5 +185,6 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 | [Singularity](https://sylabs.io/singularity/)             | 3.11.1  | Other  | Containerization                |
 | [Docker](https://www.docker.com/)                         | 25.0.4  | Other  | Containerization                |
 | [Conda](https://docs.conda.io/en/latest/)                 | 24.1.2  | Other  | Package/Environment Management  |
+| [eggnog-mapper](https://github.com/eggnogdb/eggnog-mapper)| 2.1.12  | Other  | Annotation Tools                |
 
 <div align="justify">

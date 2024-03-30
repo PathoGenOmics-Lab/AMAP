@@ -1,8 +1,3 @@
-
-<p align="center">
-  <img src=".github/AMAP.png" title="AMAP logo" style="width:700px; height: auto;">
-</p>
-
 [![PGO](https://img.shields.io/badge/PathoGenOmics-Lab-grey?style=plastic&labelColor=red)](https://github.com/PathoGenOmics-Lab)
 [![AMAP](https://img.shields.io/badge/AMAP-v0.1.0-green?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP)
 [![Nextflow](https://img.shields.io/badge/Nextflow-%E2%89%A5%20v23.10.1-%2330ba91?style=plastic)](https://github.com/nextflow-io/nextflow/releases/tag/v23.10.1)
@@ -11,11 +6,14 @@
 [![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-%23c9ac02?style=plastic)](https://doi.org/10.5281/zenodo.8024447)
 
 # AMAP: Assisted MTBC annotator pipeline  
-
 __Paula Ruiz-Rodriguez<sup>1</sup>__ 
 __and Mireia Coscolla<sup>1</sup>__
 <br>
 <sub> 1. I<sup>2</sup>SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Valencia, Spain </sub>  
+
+<p align="center">
+  <img src=".github/AMAP.png" title="AMAP logo" style="width:650px; height: auto;">
+</p>
 
 AMAP is a bioinformatics pipeline written in Nextflow for processing, annotating and correct annotations of _Mycobacterium tuberculosis_ complex (MTBC) genomes.
 ## First Steps for Using AMAP

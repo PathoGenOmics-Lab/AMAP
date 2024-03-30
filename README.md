@@ -69,7 +69,7 @@ To run the AMAP pipeline hosted on GitHub by PathoGenOmics-Lab, follow these sim
 
 ## AMAP Workflow
 ```mermaid
-%%{init: { 'theme': 'forest' } }%%
+%%{init: { 'theme': 'dark' } }%%
 flowchart TB
     subgraph "INPUT"
     v0["Genomes"]

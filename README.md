@@ -5,13 +5,11 @@
 [![Docker Image](https://img.shields.io/badge/Docker%20Image-AMAP-blue?style=plastic&logo=docker)](https://hub.docker.com/repository/docker/paururo/amap/general)
 [![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-%23c9ac02?style=plastic)](https://doi.org/10.5281/zenodo.8024447)
 
-# AMAP: Assisted MTBC annotator pipeline  
-
 <p align="center">
   <img src=".github/AMAP.png" title="AMAP logo" style="width:700px; height: auto;">
 </p>
 
-
+# AMAP: Assisted MTBC annotator pipeline  
 
 __Paula Ruiz-Rodriguez<sup>1</sup>__ 
 __and Mireia Coscolla<sup>1</sup>__

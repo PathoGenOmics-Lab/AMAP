@@ -19,8 +19,9 @@ log.info """\
       y==/        y==/        y==/    
     ,=,-<=`.    ,=,-<=`.    ,=,-<=`.  
  ,-'-'   `-=_,-'-'   `-=_,-'-'   `-=_,
-    fastas: ${params.tsv}
-    output: ${params.outdir}
+    fastas:     ${params.tsv}
+    output:     ${params.outdir}
+    eggnog_db:  ${params.eggnog_db}
  """
 
 Channel
@@ -42,6 +43,24 @@ process MTB_TYPER {
     python3 ${workflow.launchDir}/bin/mtb_typer.py -i $fasta -t "/reference/snps_lineages.tsv" -r "/reference/MTB_ancestor_reference.fasta"
     """
 }
+
+process EGGNOG_DB {
+    input:
+    path params.eggnog_db
+
+    output:
+    file "eggnog_db.log"
+
+    script:
+    """
+    mkdir -p ${params.eggnog_db}
+    if [ ! -f ${params.eggnog_db}/eggnog.db ]; then
+        download_eggnog_data.py -D -y --data_dir ${params.eggnog_db}
+    fi
+    echo "eggNOG DB setup complete" > eggnog_db.log
+    """
+}
+
 
 process BAKTA_ANNOTATOR {
     tag "$sampleId"

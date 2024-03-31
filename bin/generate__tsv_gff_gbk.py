@@ -18,15 +18,41 @@ def filter_bakta(bakta_pd):
     bakta_pd_rest = bakta_pd[bakta_pd['Type'] != 'cds']
     return bakta_pd_cds, bakta_pd_rest
 
-def main():
-    parser = argparse.ArgumentParser(description="")
-    parser.add_argument("egg_nog", help="EggnogTsvFile")
-    parser.add_argument("correctedtsv", help="CorrectedTsvFile")
-    parser.add_argument("bakta", help="BaktaTsvFile")
-    parser.add_argument("myco", help="MycobrowserTsvFile")
-    parser.add_argument("fasta", help="FastaFile")
-    args = parser.parse_args()
-    base_name = args.correctedtsv.replace('_corrected.tsv','')
+def tsv_to_gbk(tsv_file, fasta_file, gbk_file, molecule_type='DNA'):
+    secuencias = SeqIO.to_dict(SeqIO.parse(fasta_file, "fasta"))
+    with open(tsv_file, 'r') as tsv:
+        tsv_reader = csv.reader(tsv, delimiter='\t')
+        print(tsv_reader)
+        next(tsv_reader, None) 
+        
+        for record in secuencias.values():
+            record.annotations['molecule_type'] = molecule_type
+            for row in tsv_reader:
+                if row[0].startswith('#'):
+                    continue
+                seq_id, feature_type, start, end, strand, locus_tag, gene, product, db_xrefs = row
+                if seq_id not in secuencias:
+                    continue 
+                start, end = int(start) - 1, int(end)
+                strand = 1 if strand == '+' else -1 if strand == '-' else 0
+                qualifiers = {
+                    'locus_tag': [locus_tag],
+                    'gene': [gene],
+                    'product': [product],
+                    'db_xref': db_xrefs.split(', ')
+                }
+                if feature_type.lower() == 'cds':
+                    sequence = secuencias[seq_id].seq[start:end]
+                    if strand == -1:
+                        sequence = sequence.reverse_complement()
+                    qualifiers['translation'] = [str(sequence.translate(to_stop=True))]
+                feature = SeqFeature(FeatureLocation(start, end, strand=strand), type=feature_type, qualifiers=qualifiers)
+                secuencias[seq_id].features.append(feature)
+            tsv.seek(0) 
+        with open(gbk_file, 'w') as gbk:
+            SeqIO.write(secuencias.values(), gbk, 'genbank')
+
+def columns():
     name_eggnog = [
     "query", "seed_ortholog", "evalue", "score", "eggNOG_OGs", "max_annot_lvl",
     "COG_category", "Description", "Preferred_name", "GOs", "EC", "KEGG_ko",
@@ -40,8 +66,27 @@ def main():
         "Sequence Id","Type", "Start","Stop","Strand","Locus Tag", "Gene","Product","DbXrefs"
     ]
     name_myco = [
-        "Refseq_ID", "Mycobrowser_Version", "Feature", "Start", "Stop", "Score", "Strand", "Frame", "Locus", "Name", "Function", "Product", "Comments", "UniProt_AC", "Is_Pseudogene", "Functional_Category", "Protein Data Bank", "PFAM", "UniProt", "Gene Ontology", "Enzyme Classification", "Drug Resistance Mutations", "InterPro", "UniProtKB/TrEMBL", "SWISS-MODEL", "Orthologues M. leprae", "Orthologues M. marinum", "Orthologues M. smegmatis", "Orthologues M. bovis", "Orthologues M. lepromatosis", "Orthologues M. tuberculosis", "Orthologues M. abscessus", "Orthologues M. haemophilum", "Orthologues M. orygis"
+        "Refseq_ID", "Mycobrowser_Version", "Feature", "Start", "Stop", "Score", 
+        "Strand", "Frame", "Locus", "Name", "Function", "Product", "Comments", "UniProt_AC", 
+        "Is_Pseudogene", "Functional_Category", "Protein Data Bank", "PFAM", "UniProt", 
+        "Gene Ontology", "Enzyme Classification", "Drug Resistance Mutations", "InterPro", 
+        "UniProtKB/TrEMBL", "SWISS-MODEL", "Orthologues M. leprae", "Orthologues M. marinum", 
+        "Orthologues M. smegmatis", "Orthologues M. bovis", "Orthologues M. lepromatosis", 
+        "Orthologues M. tuberculosis", "Orthologues M. abscessus", "Orthologues M. haemophilum", 
+        "Orthologues M. orygis"
     ]
+    return name_eggnog, name_correctedtsv, name_bakta, name_myco
+def main():
+    parser = argparse.ArgumentParser(description="")
+    parser.add_argument("egg_nog", help="EggnogTsvFile")
+    parser.add_argument("correctedtsv", help="CorrectedTsvFile")
+    parser.add_argument("bakta", help="BaktaTsvFile")
+    parser.add_argument("myco", help="MycobrowserTsvFile")
+    parser.add_argument("fasta", help="FastaFile")
+    args = parser.parse_args()
+    base_name = args.correctedtsv.replace('_corrected.tsv','')
+
+    name_eggnog, name_correctedtsv, name_bakta, name_myco = columns()
 
     eggnog_pd = read_pandas(args.egg_nog, name_eggnog)
     eggnog_pd['simple_id'] = eggnog_pd['query'].str.split(';').str[0]
@@ -51,52 +96,33 @@ def main():
     bakta_pd_cds, bakta_pd_rest = filter_bakta(baktatsv_pd)
     myco_pd = read_pandas(args.myco, name_myco)
 
-
-    # Unir tsv y egg usando una unión externa izquierda
     merged_df = pd.merge(correctedtsv_pd, eggnog_pd, on='simple_id', how='left')
-
-    # Unir el resultado con bakta usando una unión externa izquierda
-    # Aquí necesitas especificar los nombres de las columnas de ID si son diferentes
     merged_df = pd.merge(merged_df, bakta_pd_cds, left_on='simple_id', right_on='Locus Tag', how='left')
-
     merged_df = merged_df.drop(columns=['query'])
-
-    # Mostrar las primeras filas del DataFrame combinado
     merged_df.drop_duplicates(subset='simple_id', inplace=True)
-
     merged_df.reset_index(drop=True, inplace=True)
-
 
     merged_df['Locus'] = correctedtsv_pd['rvs'].str.split('_').str[0]
 
     merged_df = pd.merge(merged_df, myco_pd, on='Locus', how='left')
-    merged_df = merged_df.drop(columns=['Start_x'])
-    merged_df = merged_df.drop(columns=['Stop_x'])
-    merged_df = merged_df.drop(columns=['Start_y'])
-    merged_df = merged_df.drop(columns=['Stop_y'])
-    merged_df = merged_df.drop(columns=['Strand_x'])
-    merged_df = merged_df.drop(columns=['Strand_y'])
-    merged_df = merged_df.drop(columns=['Product_y'])
-    merged_df = merged_df.drop(columns=['Sequence Id'])   
-    merged_df = merged_df.drop(columns=['Type'])
-    merged_df = merged_df.drop(columns=['Locus Tag'])
+    columns_to_drop = ['Start_x', 'Stop_x', 'Start_y', 'Stop_y', 'Strand_x', 'Strand_y', 
+                       'Product_y', 'Sequence Id', 'Type', 'Locus Tag']
+    merged_df = merged_df.drop(columns=columns_to_drop)
     merged_df.drop_duplicates(subset='simple_id', inplace=True)
-    merged_df.to_csv(base_name+"-mastertable.tsv", sep='\t', index=False)
+    merged_df.to_csv(base_name + "-mastertable.tsv", sep='\t', index=False)
+
 
     nuevo_df = merged_df[['id','strand','start','end','rvs','Preferred_name', 'Gene', 'Product_x','Description']]
     nuevo_df['Preferred_name'] = nuevo_df['Preferred_name'].replace('-', np.nan)
     nuevo_df['Description'] = nuevo_df['Description'].replace('-', np.nan)
     nuevo_df['Combined_Gene'] = nuevo_df['Preferred_name'] + ';' + nuevo_df['Gene']
     nuevo_df['Combined_Description'] = nuevo_df['Product_x'] + ';' + nuevo_df['Description'] 
-    nuevo_df = nuevo_df.drop(columns=['Gene'])
-    nuevo_df = nuevo_df.drop(columns=['Preferred_name'])
-    nuevo_df = nuevo_df.drop(columns=['Product_x'])
-    nuevo_df = nuevo_df.drop(columns=['Description'])
+    nuevo_df = nuevo_df.drop(columns=['Gene','Preferred_name', 'Product_x', 'Description'])
     nuevo_df['Combined_Gene'] = nuevo_df['Combined_Gene'].str.split(';').str[1]
     nuevo_df['Combined_Description'] = nuevo_df['Combined_Description'].str.split(';').str[1]
     nuevo_df['rvs'] = 'AMAP_ids:' + nuevo_df['rvs'].astype(str)
     nuevos_nombres = {'id': 'Locus Tag', 'strand': 'Strand', 'start': 'Start', 'end':'Stop', 'strand':'Strand', 'Combined_Gene':'Gene', 'Combined_Description':'Product', 'rvs':'DbXrefs'}  # Ajusta según tu necesidad
-    # Renombrar las columnas
+
     nuevo_df.rename(columns=nuevos_nombres, inplace=True)
     nuevo_df['Sequence Id'] = "contig_1"
     nuevo_df['Type'] = "CDS"
@@ -104,36 +130,32 @@ def main():
     nuevo_df = nuevo_df[orden]
     nuevo_df = pd.concat([bakta_pd_rest, nuevo_df], ignore_index=True)
     nuevo_df = nuevo_df.sort_values(by='Start')
+    
     for secuencia in SeqIO.parse(args.fasta, "fasta"):
         nuevo_df['Sequence Id'] = secuencia.id
+    
     lineas_adicionales = [
     "# Annotated with AMAP",
-    "# Software: v1.9.3",
-    "# url: https://github.com/PathoGenOmics-Lab/AMAP"
+    "# Software: v0.1.0",
+    "# URL: https://github.com/PathoGenOmics-Lab/AMAP"
     "\n#Sequence Id\tType\tStart\tStop\tStrand\tLocus Tag\tGene\tProduct\tDbXrefs"
     ]
 
-    # Crear la cadena de cabecera
     cabecera = '\n'.join(lineas_adicionales) + '\n'
 
-    # Guardar el DataFrame en un archivo CSV
-    ruta_archivo = str(base_name+"-mira.tsv")
+    ruta_archivo = str(base_name+"-AMAP.tsv")
     with open(ruta_archivo, 'w') as archivo:
-        # Escribir las líneas adicionales y el encabezado con #
         archivo.write(cabecera)
 
-        # Guardar el DataFrame sin encabezado y sin índice
         nuevo_df.to_csv(archivo, sep='\t', index=False, header=False)
     
     nuevo_df['Attributes'] = nuevo_df.apply(lambda row: f"ID={row['Locus Tag']};Name={row['Gene']};product={row['Product']};Dbxref={row['DbXrefs']}", axis=1)
     nuevo_df = nuevo_df[['Sequence Id', 'Type', 'Start', 'Stop', 'Strand', 'Attributes']]
 
-    # Añadir columnas que faltan con valores '.'
     nuevo_df['Source'] = 'AMAP'
     nuevo_df['Score'] = '.'
     nuevo_df['Phase'] = '.'
 
-    # Reordenar columnas según formato GFF
     ruta_archivo_gff = str(base_name+"-AMAP.gff3")
     nuevo_df = nuevo_df[['Sequence Id', 'Source', 'Type', 'Start', 'Stop', 'Score', 'Strand', 'Phase', 'Attributes']]
     nuevo_df.to_csv(ruta_archivo_gff, sep='\t', index=False, header=False)
@@ -146,53 +168,7 @@ def main():
 
     ruta_archivo_fasta = args.fasta
 
-
-
-    def tsv_to_gbk(tsv_file, fasta_file, gbk_file, molecule_type='DNA'):
-        # Leer las secuencias del archivo FASTA
-        secuencias = SeqIO.to_dict(SeqIO.parse(fasta_file, "fasta"))
-
-        with open(tsv_file, 'r') as tsv:
-            tsv_reader = csv.reader(tsv, delimiter='\t')
-            print(tsv_reader)
-            next(tsv_reader, None)  # Saltar la cabecera si la hay
-            
-            for record in secuencias.values():
-                record.annotations['molecule_type'] = molecule_type
-
-                for row in tsv_reader:
-                    if row[0].startswith('#'):
-                        continue
-                    seq_id, feature_type, start, end, strand, locus_tag, gene, product, db_xrefs = row
-                    if seq_id not in secuencias:
-                        continue  # Saltar si el ID de secuencia no está en el FASTA
-
-                    start, end = int(start) - 1, int(end)
-                    strand = 1 if strand == '+' else -1 if strand == '-' else 0
-
-                    qualifiers = {
-                        'locus_tag': [locus_tag],
-                        'gene': [gene],
-                        'product': [product],
-                        'db_xref': db_xrefs.split(', ')
-                    }
-
-                    if feature_type.lower() == 'cds':
-                        sequence = secuencias[seq_id].seq[start:end]
-                        if strand == -1:
-                            sequence = sequence.reverse_complement()
-                        qualifiers['translation'] = [str(sequence.translate(to_stop=True))]
-
-                    feature = SeqFeature(FeatureLocation(start, end, strand=strand), type=feature_type, qualifiers=qualifiers)
-                    secuencias[seq_id].features.append(feature)
-
-                tsv.seek(0)  # Reiniciar el lector de TSV para la próxima secuencia
-
-            with open(gbk_file, 'w') as gbk:
-                SeqIO.write(secuencias.values(), gbk, 'genbank')
-
-    # Ejemplo de uso
-    tsv_to_gbk(ruta_archivo, ruta_archivo_fasta, 'salida.gbk')
+    tsv_to_gbk(ruta_archivo, ruta_archivo_fasta, base_name + '-AMAP.gbk')
 
 if __name__ == "__main__":
     main()

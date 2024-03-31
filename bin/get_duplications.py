@@ -79,7 +79,6 @@ def plot_network(df, output_filename):
     plt.tight_layout(pad=2.0)  # Add padding around the figure
     plt.savefig(output_filename, format='png', dpi=300)  # Adjust DPI as needed
 
-
 def plot_network2(df, output_filename):
     G = nx.Graph()
 
@@ -115,7 +114,6 @@ def plot_network2(df, output_filename):
     """)
 
     net.show(output_filename, notebook=False)
-
 
 def main():
     parser = argparse.ArgumentParser(description="Read blast and generate cluster of duplications")

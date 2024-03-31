@@ -3,7 +3,7 @@ FROM continuumio/miniconda3
 RUN apt-get update && \
     apt-get install -y git build-essential zlib1g-dev r-base && \
     conda install -c conda-forge python=3.9 pandas plotly biopython python-louvain pyvis && \
-    conda install -c bioconda -c conda-forge blast=2.15.0 && \ 
+    conda install -c bioconda -c conda-forge blast=2.15.0 eggNOG-mapper=2.1.12 && \ 
     pip install intervaltree  && \
     conda install -c bioconda -c conda-forge bakta=1.9.3 && \
     git clone https://github.com/lh3/miniprot && \

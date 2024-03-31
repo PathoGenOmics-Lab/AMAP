@@ -5,7 +5,15 @@ import argparse
 import pandas as pd
 from Bio import SeqIO
 from Bio.Seq import Seq
-import os
+
+__author__ = 'Paula Ruiz-Rodriguez'
+__credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
+__license__ = ['GPL 3']
+__version__ = '0.1.0'
+__maintainer__ = '@paururo'
+__email__ = 'paula.ruiz-rodriguez@uv.es'
+__status__ = 'developing'
+__lab__ = 'PathoGenOmics (I2SysBio)'
 
 def find_next_stop_codon(fasta_seq, start_index, strand):
     """Find the next stop codon in the DNA sequence using Biopython."""

@@ -6,6 +6,15 @@ import csv
 from Bio import SeqIO
 import os
 
+__author__ = 'Paula Ruiz-Rodriguez'
+__credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
+__license__ = ['GPL 3']
+__version__ = '0.1.0'
+__maintainer__ = '@paururo'
+__email__ = 'paula.ruiz-rodriguez@uv.es'
+__status__ = 'finished'
+__lab__ = 'PathoGenOmics (I2SysBio)'
+
 def generate_kmers(sequence, k):
     '''
     Generate all k-mers from a given sequence and their starting positions.

@@ -45,19 +45,19 @@ process MTB_TYPER {
 }
 
 process EGGNOG_DB {
-    input:
-    path params.eggnog_db
-
     output:
     file "eggnog_db.log"
 
     script:
+    // Comprueba si params.eggnog_db es una ruta absoluta. Si no, concatena con workflow.launchDir
+    def eggnog_db_dir = params.eggnog_db.startsWith("/") ? params.eggnog_db : "${workflow.launchDir}/${params.eggnog_db}"
+
     """
-    mkdir -p ${params.eggnog_db}
-    if [ ! -f ${params.eggnog_db}/eggnog.db ]; then
-        download_eggnog_data.py -D -y --data_dir ${params.eggnog_db}
+    mkdir -p ${eggnog_db_dir}
+    if [ ! -f ${eggnog_db_dir}/eggnog.db ]; then
+        download_eggnog_data.py -D -y --data_dir ${eggnog_db_dir}
     fi
-    echo "eggNOG DB setup complete" > eggnog_db.log
+    echo "eggNOG DB setup complete in ${eggnog_db_dir}" > eggnog_db.log
     """
 }
 

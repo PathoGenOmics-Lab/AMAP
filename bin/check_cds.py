@@ -99,10 +99,10 @@ def main():
     annotation_df.to_csv(base_name+'.fixedcds.tsv', sep='\t', index=False)
 
     # Imprimir las secuencias de aminoácidos
-    with open(base_name+'.faa', 'w') as file:
+    with open(base_name + '.faa', 'w') as file:
         for id, amino_acid_seq in cds_amino_acids.items():
             file.write(f">{id}\n{amino_acid_seq}\n")
-    with open(base_name+'.fna', 'w') as file:
+    with open(base_name + '.fna', 'w') as file:
         for id, amino_acid_seq in cds_nts.items():
             file.write(f">{id}\n{amino_acid_seq}\n")
 if __name__ == "__main__":

@@ -5,15 +5,13 @@ import argparse
 import pandas as pd
 import numpy as np
 from Bio import SeqIO
-from BCBio import GFF
 import csv
 from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
-def read_pandas(open_file, name_columns):
 
+def read_pandas(open_file, name_columns):
     df = pd.read_csv(open_file, comment='#',names=name_columns, sep='\t')
     return df
-
 
 def filter_bakta(bakta_pd):
     bakta_pd_cds = bakta_pd[bakta_pd['Type'] == 'cds']
@@ -52,7 +50,7 @@ def main():
     baktatsv_pd = read_pandas(args.bakta, name_bakta)
     bakta_pd_cds, bakta_pd_rest = filter_bakta(baktatsv_pd)
     myco_pd = read_pandas(args.myco, name_myco)
-    print(myco_pd.head())
+
 
     # Unir tsv y egg usando una unión externa izquierda
     merged_df = pd.merge(correctedtsv_pd, eggnog_pd, on='simple_id', how='left')
@@ -66,10 +64,8 @@ def main():
     # Mostrar las primeras filas del DataFrame combinado
     merged_df.drop_duplicates(subset='simple_id', inplace=True)
 
-# Restablecer el índice del DataFrame combinado, si es necesario
     merged_df.reset_index(drop=True, inplace=True)
 
-    
 
     merged_df['Locus'] = correctedtsv_pd['rvs'].str.split('_').str[0]
 
@@ -198,5 +194,6 @@ def main():
     # Ejemplo de uso
     tsv_to_gbk(ruta_archivo, ruta_archivo_fasta, 'salida.gbk')
 
-main()
+if __name__ == "__main__":
+    main()
 #python3 generate_gff.py test3.emapper.annotations _ancestor_corrected.tsv _ancestor.tsv  Mycobacterium_tuberculosis_H37Rv_txt_v4.txt /home/ruizro/test_nextflow/mis_fastas/MTB_ancestor_reference.fasta

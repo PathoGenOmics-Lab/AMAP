@@ -106,7 +106,7 @@ process TYPE_CASES {
     path "*"
     script:
     """
-    python3 ${workflow.launchDir}/bin/classify_cases.py -b ${annotator}/${annotator}.tsv -p ${miniprot} -bb ${badbakta} -c ${cds}
+    python3 ${workflow.launchDir}/bin/classify_cases2.py -b ${annotator}/${annotator}.tsv -p ${miniprot} -bb ${badbakta} -c ${cds}
     """
 }
 

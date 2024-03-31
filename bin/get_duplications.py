@@ -134,3 +134,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    #python3 generate_plot.py resultados_blastp_gaps.txt
+    #blastp -query nt_correctedH37Rv.translated.fas -db base_de_h37rv -out resultados_blastp_gaps.txt -outfmt "6 qseqid sseqid pident length mismatch gaps qstart qend sstart send evalue bitscore qcovs qcovhsp qlen slen nident"
+    #makeblastdb -in nt_correctedH37Rv.fa -dbtype prot -out base_de_h37rv

@@ -9,6 +9,15 @@ import csv
 from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 
+__author__ = 'Paula Ruiz-Rodriguez'
+__credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
+__license__ = ['GPL 3']
+__version__ = '0.1.0'
+__maintainer__ = '@paururo'
+__email__ = 'paula.ruiz-rodriguez@uv.es'
+__status__ = 'developing'
+__lab__ = 'PathoGenOmics (I2SysBio)'
+
 def read_pandas(open_file, name_columns):
     df = pd.read_csv(open_file, comment='#',names=name_columns, sep='\t')
     return df

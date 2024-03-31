@@ -76,6 +76,7 @@ def columns():
         "Orthologues M. orygis"
     ]
     return name_eggnog, name_correctedtsv, name_bakta, name_myco
+
 def main():
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("egg_nog", help="EggnogTsvFile")
@@ -111,7 +112,6 @@ def main():
     merged_df.drop_duplicates(subset='simple_id', inplace=True)
     merged_df.to_csv(base_name + "-mastertable.tsv", sep='\t', index=False)
 
-
     nuevo_df = merged_df[['id','strand','start','end','rvs','Preferred_name', 'Gene', 'Product_x','Description']]
     nuevo_df['Preferred_name'] = nuevo_df['Preferred_name'].replace('-', np.nan)
     nuevo_df['Description'] = nuevo_df['Description'].replace('-', np.nan)
@@ -137,8 +137,8 @@ def main():
     lineas_adicionales = [
     "# Annotated with AMAP",
     "# Software: v0.1.0",
-    "# URL: https://github.com/PathoGenOmics-Lab/AMAP"
-    "\n#Sequence Id\tType\tStart\tStop\tStrand\tLocus Tag\tGene\tProduct\tDbXrefs"
+    "# URL: https://github.com/PathoGenOmics-Lab/AMAP",
+    "#Sequence Id\tType\tStart\tStop\tStrand\tLocus Tag\tGene\tProduct\tDbXrefs"
     ]
 
     cabecera = '\n'.join(lineas_adicionales) + '\n'
@@ -164,7 +164,6 @@ def main():
 
         for secuencia in SeqIO.parse(args.fasta, "fasta"):
             archivo_gff.write(f">{secuencia.id}\n{secuencia.seq}\n")
-    print(nuevo_df.head())
 
     ruta_archivo_fasta = args.fasta
 

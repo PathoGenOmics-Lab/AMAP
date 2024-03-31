@@ -7,6 +7,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 from pyvis.network import Network
+import community as community_louvain
 
 __author__ = 'Paula Ruiz-Rodriguez'
 __credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
@@ -79,6 +80,11 @@ def plot_network(df, output_filename):
     plt.tight_layout(pad=2.0)  # Add padding around the figure
     plt.savefig(output_filename, format='png', dpi=300)  # Adjust DPI as needed
 
+def get_unique_colors(n):
+    """Generate n unique colors in hexadecimal format."""
+    colors = plt.colormaps['hsv'](np.linspace(0, 1, n))
+    return ['#' + ''.join([f'{int(255 * rgb):02x}' for rgb in color[:3]]) for color in colors]
+
 def plot_network2(df, output_filename):
     G = nx.Graph()
 
@@ -86,17 +92,30 @@ def plot_network2(df, output_filename):
     for idx, row in df.iterrows():
         G.add_edge(row['qseqid'], row['sseqid'])
 
+    # Compute the best partition (community detection)
+    partition = community_louvain.best_partition(G)
+
+    # Generate unique colors for each partition
+    n_clusters = len(set(partition.values()))
+    unique_colors = get_unique_colors(n_clusters)
+
     # Create a pyvis network object from the NetworkX graph
-    net = Network(height='1080px', width='100%', bgcolor='#222222', font_color='white')
+    net = Network(height='1080px', width='100%', bgcolor='#FFFFFF', font_color='black')
+
+    # Set colors for each node based on the community
+    for node in G.nodes:
+        color_index = partition[node]
+        net.add_node(node, color=unique_colors[color_index])
+
     net.from_nx(G)
 
-    # Set options (you can adjust these for better visualization)
+    # Set options
     net.set_options("""
     var options = {
       "nodes": {
         "font": {
           "size": 12,
-          "color": "white"
+          "color": "black"
         }
       },
       "edges": {
@@ -132,6 +151,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    #python3 generate_plot.py resultados_blastp_gaps.txt
-    #blastp -query nt_correctedH37Rv.translated.fas -db base_de_h37rv -out resultados_blastp_gaps.txt -outfmt "6 qseqid sseqid pident length mismatch gaps qstart qend sstart send evalue bitscore qcovs qcovhsp qlen slen nident"
-    #makeblastdb -in nt_correctedH37Rv.fa -dbtype prot -out base_de_h37rv

@@ -61,7 +61,6 @@ process EGGNOG_DB {
     """
 }
 
-
 process BAKTA_ANNOTATOR {
     tag "$sampleId"
     publishDir "${params.outdir}/bakta_annotation", mode: 'copy'
@@ -125,6 +124,7 @@ process REPORT_CASES {
 }
 
 workflow {
+    EGGNOG_DB() 
     MTB_TYPER(sample_fasta)
         .set { result_mtb_typer }
     BAKTA_ANNOTATOR(result_mtb_typer)

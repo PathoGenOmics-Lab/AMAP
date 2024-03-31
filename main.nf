@@ -73,7 +73,7 @@ process BAKTA_ANNOTATOR {
     read -r fastafile prefix < <(awk -F '\\t' 'NR == 1 {print \$1, \$2}' $tsvFile)
     echo "\$prefix\t\$fastafile"
 
-    bakta --db /data/bakta_db/db-light --skip-trna --output "\$prefix" --prefix "\$prefix" --locus-tag "\$prefix" --proteins /reference/sequence.gb "\$fastafile"
+    bakta --db /data/bakta_db/db-light --genus "Mycobacterium" --species "Mycobacterium tuberculosis" --output "\$prefix" --prefix "\$prefix" --locus-tag "\$prefix" --proteins /reference/sequence.gb "\$fastafile"
     """
 }
 

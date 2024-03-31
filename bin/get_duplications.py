@@ -7,7 +7,6 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 from pyvis.network import Network
-import networkx as nx
 
 __author__ = 'Paula Ruiz-Rodriguez'
 __credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']

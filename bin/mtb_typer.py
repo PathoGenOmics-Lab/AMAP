@@ -224,7 +224,7 @@ def arguments():
     parser.add_argument('-t', '--snp', help='Marker file', required=True)
     parser.add_argument('-r', '--ref', help='Fasta reference', required=True)
     #parser.add_argument('-o', '--output', required=True, help='Path to the output directory.')
-
+    return parser.parse_args()
 def main():
     args = arguments()
     k = 21
@@ -243,9 +243,16 @@ def main():
     filename_without_extension = filename_without_extension.split('/')[-1]
     new_file_name = f'{lineages_str}_{filename_without_extension}'
     
-    with open(filename_without_extension + '-mtb_typer.txt', 'w') as f:
+    #with open(filename_without_extension + '-mtb_typer.txt', 'w') as f:
+    with open(new_file_name+".", 'w') as f:
         f.write(args.input+"\t"+new_file_name + '\n')
     #rename_fasta_based_on_lineages(args.input, genome_name, identified_lineages, output_directory)
+    records = list(SeqIO.parse(args.input, 'fasta'))
+    if records:
+        original_id = records[0].id
+        records[0].id = new_file_name
+        records[0].description = ''  # Clear the description to ensure only the ID is written
+        SeqIO.write(records, new_file_name+".fasta", 'fasta')
 
 if __name__ == '__main__':
     main()

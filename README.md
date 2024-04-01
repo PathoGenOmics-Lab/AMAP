@@ -6,11 +6,14 @@
 [![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-%23c9ac02?style=plastic)](https://doi.org/10.5281/zenodo.8024447)
 
 # AMAP: Assisted MTBC annotator pipeline  
-
 __Paula Ruiz-Rodriguez<sup>1</sup>__ 
 __and Mireia Coscolla<sup>1</sup>__
 <br>
 <sub> 1. I<sup>2</sup>SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Valencia, Spain </sub>  
+
+<p align="center">
+  <img src=".github/AMAP.png" title="AMAP logo" style="width:650px; height: auto;">
+</p>
 
 AMAP is a bioinformatics pipeline written in Nextflow for processing, annotating and correct annotations of _Mycobacterium tuberculosis_ complex (MTBC) genomes.
 ## First Steps for Using AMAP
@@ -35,7 +38,7 @@ To set up your environment with Nextflow and Singularity, follow these straightf
    conda install -c bioconda nextflow
    ```
 4. **Install Singularity**:
-   To handle containerization, install Singularity following the detailed instructions in the Singularity Installation Guide.
+   To handle containerization, install Singularity following the detailed instructions in the [Singularity Installation Guide](https://docs.sylabs.io/guides/4.1/user-guide/quick_start.html).
 5. **Verify Installation**:
    Confirm that Nextflow and Singularity are correctly installed and ready to use.
    ```bash
@@ -66,7 +69,7 @@ To run the AMAP pipeline hosted on GitHub by PathoGenOmics-Lab, follow these sim
 
 ## AMAP Workflow
 ```mermaid
-%%{init: { 'theme': 'forest' } }%%
+%%{init: { 'theme': 'dark' } }%%
 flowchart TB
     subgraph "INPUT"
     v0["Genomes"]
@@ -170,20 +173,21 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 💻 Software Used
 </h2>
 
-| Software                                                  | Version | Type   | Usage                           |
-|-----------------------------------------------------------|---------|--------|---------------------------------|
-| [Nextflow](https://github.com/nextflow-io/nextflow)       | 23.10.1 | Other  | Workflow Management             |
-| [Bakta](https://github.com/oschwengers/bakta)             | 1.9.3   | Other  | Annotation Tools                |
-| [miniprot](https://github.com/lh3/miniprot)               | 0.13    | Other  | Mapping Tools                   |
-| [Python](https://www.python.org/)                         | 3.9     | Python | Programming Language            |
-| [R](https://www.R-project.org/)                           | 4.3.3   | R      | Statistical Computing           |
-| [pandas](https://github.com/pandas-dev/pandas)            | 2.2.1   | Python | Data Analysis                   |
-| [intervaltree](https://github.com/chaimleib/intervaltree) | 3.1.0   | Other  | Data Structures                 |
-| [plotly.py](https://github.com/plotly/plotly.py)          | 5.20.0  | Python | Data Visualization              |
-| [ggplot2](https://ggplot2.tidyverse.org/index.html)       | 3.5.0   | R      | Data Visualization              |
-| [dplyr](https://dplyr.tidyverse.org/)                     | 1.1.4   | R      | Data Manipulation               |
-| [Singularity](https://sylabs.io/singularity/)             | 3.11.1  | Other  | Containerization                |
-| [Docker](https://www.docker.com/)                         | 25.0.4  | Other  | Containerization                |
-| [Conda](https://docs.conda.io/en/latest/)                 | 24.1.2  | Other  | Package/Environment Management  |
+| Software                                                  | Version | Type     | Usage                           |
+|-----------------------------------------------------------|---------|----------|---------------------------------|
+| [Nextflow](https://github.com/nextflow-io/nextflow)       | 23.10.1 | Nextflow | Workflow Management             |
+| [Bakta](https://github.com/oschwengers/bakta)             | 1.9.3   | Other    | Annotation Tools                |
+| [miniprot](https://github.com/lh3/miniprot)               | 0.13    | Other    | Mapping Tools                   |
+| [Python](https://www.python.org/)                         | 3.9     | Python   | Programming Language            |
+| [R](https://www.R-project.org/)                           | 4.3.3   | R        | Statistical Computing           |
+| [pandas](https://github.com/pandas-dev/pandas)            | 2.2.1   | Python   | Data Analysis                   |
+| [intervaltree](https://github.com/chaimleib/intervaltree) | 3.1.0   | Python   | Data Structures                 |
+| [plotly.py](https://github.com/plotly/plotly.py)          | 5.20.0  | Python   | Data Visualization              |
+| [ggplot2](https://ggplot2.tidyverse.org/index.html)       | 3.5.0   | R        | Data Visualization              |
+| [dplyr](https://dplyr.tidyverse.org/)                     | 1.1.4   | R        | Data Manipulation               |
+| [Singularity](https://sylabs.io/singularity/)             | 3.11.1  | Other    | Containerization                |
+| [Docker](https://www.docker.com/)                         | 25.0.4  | Other    | Containerization                |
+| [Conda](https://docs.conda.io/en/latest/)                 | 24.1.2  | Other    | Package/Environment Management  |
+| [eggnog-mapper](https://github.com/eggnogdb/eggnog-mapper)| 2.1.12  | Python   | Annotation Tools                |
 
 <div align="justify">

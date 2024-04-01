@@ -712,7 +712,107 @@ def main():
         del combined_coordinates_dict[coord]
     #print(combined_coordinates_dict)
     sorted_dict = dict(sorted(combined_coordinates_dict.items(), key=lambda item: item[0]))
-    print(sorted_dict)
 
+
+    all_ids = []
+    lista_2 = []
+    
+    count = 1
+    for (inicio, fin), valor in sorted_dict.items():
+        lista=True
+        # Filtrar las filas que coinciden con el inicio y el fin
+        coincidencias = miniprot_df[(miniprot_df['Start'] == inicio) & (miniprot_df['End'] == fin)]
+        coincidencias2 = bakta_df[(bakta_df['Start'] == inicio) & (bakta_df['End'] == fin)]
+        prot_rv = []
+        prot_strand = []
+        prot_start = []
+        prot_end = []
+        # Iterar sobre las filas coincidentes y recopilar información
+        for _, fila in coincidencias.iterrows():
+            if fila['Prot Id'] not in prot_rv:
+                prot_rv.append(fila['Prot Id'])
+            if fila['Strand'] not in prot_strand:
+                prot_strand.append(fila['Strand'])
+            if fila['Start'] not in prot_start:
+                prot_start.append(fila['Start'])
+            if fila['End'] not in prot_end:
+                prot_end.append(fila['End'])
+        #print([prot_rv,prot_strand,prot_start,prot_end])
+        bakta_rv = []
+        bakta_strand = []
+        bakta_start = []
+        bakta_end = []
+        # Iterar sobre las filas coincidentes y recopilar información
+        for _, fila in coincidencias2.iterrows():
+            if fila['Locus Tag'] not in bakta_rv:
+                bakta_rv.append(fila['Locus Tag'])
+            if fila['Strand'] not in bakta_strand:
+                bakta_strand.append(fila['Strand'])
+            if fila['Start'] not in bakta_start:
+                bakta_start.append(fila['Start'])
+            if fila['End'] not in bakta_end:
+                bakta_end.append(fila['End'])
+        #print([prot_rv,prot_strand,prot_start,prot_end],[bakta_rv,bakta_strand,bakta_start,bakta_end])
+        if len(bakta_rv) != 0:
+            id_clust = bakta_rv[0]
+            strand_clust = bakta_strand[0]
+            start_clust = bakta_start[0]
+            end_clust = bakta_end[0]
+            rv_clust = prot_rv
+        else:
+            if len(prot_rv) < 2:
+                id_clust = base_name+"_"+prot_rv[0]
+                strand_clust = prot_strand[0]
+                start_clust = prot_start[0]
+                end_clust = prot_end[0]
+                rv_clust = prot_rv
+            else:
+                lista=False
+                id_clust = base_name+"_dup_"+str(count)
+                count += 1
+                strand_clust = prot_strand[0]
+                start_clust = prot_start[0]
+                end_clust = prot_end[0]
+                rv_clust = prot_rv
+        joined_rv = ", ".join(rv_clust)
+        if lista:
+            all_ids.append([id_clust, strand_clust, start_clust, end_clust, joined_rv])
+        else:
+            lista_2.append([id_clust, strand_clust, start_clust, end_clust, joined_rv])
+    def extract_last_rv(text):
+        return text.split(', ')[-1].split('_')[0]
+
+# Crear un diccionario para rastrear los grupos y sus dup_id originales
+    group_tracker = {}
+
+    # Lista de salida
+    output_list = []
+
+    # Procesar cada sublista
+    for sublist in lista_2:
+        # Extraer el identificador dup y el último elemento Rv
+        dup_id = sublist[0]
+        last_rv = extract_last_rv(sublist[-1])
+
+        # Verificar si last_rv ya está en el diccionario
+        if last_rv in group_tracker:
+            # Si last_rv ya existe, se utiliza el dup_id existente y se incrementa el contador
+            existing_dup_id, count = group_tracker[last_rv]
+            count += 1
+            group_tracker[last_rv] = (existing_dup_id, count)
+            new_dup_id = f"{existing_dup_id}_{count}"
+        else:
+            # Si last_rv no está en el diccionario, se agrega con el contador en 0
+            group_tracker[last_rv] = (dup_id, 0)
+            new_dup_id = dup_id
+
+        # Agregar a la lista de salida
+        output_list.append([new_dup_id] + sublist[1:])
+
+    # Mostrar la lista de salida (primeras 5 sublistas para evitar una salida demasiado larga)
+    final_list = all_ids + output_list
+    with open(base_name + "_corrected.tsv", 'w') as salida:
+        for line in sorted(final_list, key=lambda x: x[2]):
+            salida.write('\t'.join(map(str, line)) + '\n')
 if __name__ == "__main__":
     main()

@@ -96,13 +96,13 @@ def main():
     annotation_df = read_to_pandas(args.annotation_file)
     cds_amino_acids, cds_nts, annotation_df = extract_and_translate_cds(args.fasta_file, annotation_df)
     
-    annotation_df.to_csv(base_name+'.fixedcds.tsv', sep='\t', index=False)
+    annotation_df.to_csv(base_name+'.AMAP.tsv', sep='\t', index=False)
 
     # Imprimir las secuencias de aminoácidos
-    with open(base_name + '.faa', 'w') as file:
+    with open(base_name + '.AMAP.faa', 'w') as file:
         for id, amino_acid_seq in cds_amino_acids.items():
             file.write(f">{id}\n{amino_acid_seq}\n")
-    with open(base_name + '.fna', 'w') as file:
+    with open(base_name + '.AMAP.fna', 'w') as file:
         for id, amino_acid_seq in cds_nts.items():
             file.write(f">{id}\n{amino_acid_seq}\n")
 if __name__ == "__main__":

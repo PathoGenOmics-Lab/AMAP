@@ -214,6 +214,7 @@ process FINAL_REPORT{
 }
 
 process PASS {
+    tag "$ids"
     input:
     tuple val(ids), path(tsv),path(summaries)
     output:

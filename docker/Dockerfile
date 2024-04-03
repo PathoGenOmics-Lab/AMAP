@@ -10,7 +10,7 @@ RUN apt-get update && \
     git clone https://github.com/lh3/miniprot && \
     cd miniprot && \
     make && \
-    R -e "install.packages(c('ggplot2', 'dplyr'), repos='http://cran.rstudio.com/')" && \
+    R -e "install.packages(c('ggplot2', 'dplyr','rmarkdown'), repos='http://cran.rstudio.com/')" && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

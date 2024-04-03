@@ -31,6 +31,15 @@ colnames(datos_myco)<- c("Lineages","genome","Functional_Category","Count","Perc
 datos_myco$sequences <- with(datos_myco, paste(Lineages, genome, sep = "_"))
 datos_myco$Percentage<-as.numeric(datos_myco$Percentage)
 
+my_myco <- data.frame(
+  lineage = c(rep("L4", 11)),
+  genome = c(rep("H37Rv", 11)),
+  Functional_Category = c("PE/PPE", "cell wall and cell processes", "conserved hypotheticals", "information pathways", "insertion seqs and phages", "intermediary metabolism and respiration", "lipid metabolism", "regulatory proteins", "unknown", "virulence, detoxification, adaptation", ""),
+  count = c(162, 766, 1042, 240, 149, 936, 271, 198, 15, 239, 13),
+  percentage = c(4.018853882411312, 19.00272885140164, 25.8496650955098, 5.953857603572314, 3.696353262217812, 23.220044653932025, 6.722897544033739, 4.9119325229471595, 0.37211610022326963, 5.92904986355743, 0.3225006201935004)
+)
+merged_data <- merge(my_myco, datos_myco, by = "Functional_Category", all = TRUE)
+merged_data$Ratio_Percentage <- (merged_data$Count / merged_data$count) * 100
 ```
 
 # AMAP CDS Results
@@ -117,7 +126,7 @@ ggplotly(p)%>% layout(autosize = F, width = 800, height = 450)
 
 ### Heatmap - Percentage of each category by Genome
 ```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE}
-p<-ggplot(datos_myco, aes(x = Functional_Category, y = sequences, fill = Percentage, color=Lineages)) +
+p<-ggplot(merged_data, aes(x = Functional_Category, y = sequences, fill = Ratio_Percentage, color=Lineages)) +
   geom_tile() +  # Agregar bordes blancos a las celdas
   scale_fill_gradient(low = "blue", high = "red") +  # Gradiente de color
   labs(x = "", y = "Lineages", fill = "Percentage") +
@@ -128,8 +137,5 @@ ggplotly(p)
 ```
 ### Boxplot - Percentages by lineages
 ```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE}
-plot_boxplots(datos_myco, "Lineages", "Functional_Category", "Percentage")
+plot_boxplots(merged_data, "Lineages", "Functional_Category", "Ratio_Percentage")
 ```
-
-
-

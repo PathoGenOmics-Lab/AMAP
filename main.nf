@@ -49,8 +49,8 @@ Channel
 
 process MTB_TYPER { //done
     tag "$sampleId"
-    publishDir "${params.outdir}/mtb_typer/typing", pattern: "*.", mode: 'copy'
-    publishDir "${params.outdir}/mtb_typer/fastas", pattern: "*.fasta", mode: 'copy'
+    publishDir "${params.outdir}/MTB_TYPER/typing", pattern: "*.", mode: 'copy'
+    publishDir "${params.outdir}/MTB_TYPER/fastas", pattern: "*.fasta", mode: 'copy'
     input:
     tuple val(sampleId), val(fasta)
     output:
@@ -64,14 +64,13 @@ process MTB_TYPER { //done
 
 process BAKTA_ANNOTATOR { //done
     tag "$sampleId"
-    publishDir "${params.outdir}/bakta_annotation/", mode: 'copy'
+    publishDir "${params.outdir}/BAKTA/", mode: 'copy'
     input:
     tuple val(sampleId), path(fasta), path(nametag)
     output:
     tuple val(sampleId), path(fasta), path("${sampleId}/${sampleId}.faa"), path("${sampleId}/${sampleId}.tsv"), path("${sampleId}/${sampleId}.gff3"), 
     path("${sampleId}/*hypotheticals*"), path("${sampleId}/${sampleId}.png"), path("${sampleId}/${sampleId}.txt"),
     path("${sampleId}/${sampleId}.gbff")
-    //tuple val(sampleId), path(fasta), path("${sampleId}/${sampleId}.faa"), path("${sampleId}/${sampleId}.tsv")
     script:
     """
     bakta --db /data/bakta_db/db-light --skip-trna --genus "Mycobacterium" --species "Mycobacterium tuberculosis" --output ${sampleId} --prefix ${sampleId} --locus-tag ${sampleId} --proteins /reference/sequence.gb ${fasta}
@@ -94,14 +93,13 @@ process MINIPROT { //done
 
 process TYPE_CASES {
     tag "$sampleId"
-    publishDir "${params.outdir}/type_cases/summary", pattern: "*summary.tsv", mode: 'copy'
-    publishDir "${params.outdir}/type_cases/${sampleId}", pattern: "*case*.tsv", mode: 'copy'
-    publishDir "${params.outdir}/type_cases/${sampleId}", pattern: "*rvmissing.tsv", mode: 'copy'
-    publishDir "${params.outdir}/type_cases/${sampleId}", pattern: "*.html", mode: 'copy'
+    publishDir "${params.outdir}/CDS_CASES/summary", pattern: "*summary.tsv", mode: 'copy'
+    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*case*.tsv", mode: 'copy'
+    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*rvmissing.tsv", mode: 'copy'
+    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*.html", mode: 'copy'
     input:
     tuple val(sampleId), path(miniprot), path(badbakta), path(cds), path(fasta), path(faa), path(tsv)
     output:
-    //tuple val(sampleId), path("${sampleId}_corrected.tsv")
     tuple val(sampleId), path("${sampleId}_corrected.tsv"), path("*summary.tsv"),path("*case*.tsv"), path("*rvmissing.tsv"), path("*.html")
     script:
     """
@@ -112,7 +110,7 @@ process TYPE_CASES {
 process FIX_CDS {
     tag "$sampleId"
     input:
-    tuple val(sampleId), path(corrected_tsv), path(fasta), path(faa), path(tsv)
+    tuple val(sampleId), path(corrected_tsv), path(summary), path(fasta), path(faa), path(tsv)
 
     output:
     tuple val(sampleId), path("${sampleId}.AMAP.tsv"), path("${sampleId}.AMAP.faa"), path("${sampleId}.AMAP.fna"), path(tsv), path(fasta)
@@ -128,7 +126,7 @@ process ANNOT_EGGNOGMAP {
     input:
     tuple val(sampleId), path(fixtsv), path(fixfaa), path(fixfna), path(baktatsv), path(fasta), path(dbMarker)
     output:
-    path("${sampleId}.emapper.annotations")
+    tuple val(sampleId), path("${sampleId}.emapper.annotations")
     script:
     def eggnog_db_dir = params.eggnog_db.startsWith("/") ? params.eggnog_db : "${workflow.launchDir}/${params.eggnog_db}"
     """
@@ -138,7 +136,7 @@ process ANNOT_EGGNOGMAP {
 
 process GET_DUPLICATIONS {
     tag "$sampleId"
-    publishDir "${params.outdir}/duplications", mode: 'copy'
+    publishDir "${params.outdir}/DUPLICATIONS", mode: 'copy'
     input:
     tuple val(sampleId), path(fixtsv), path(fixfaa), path(fixfna), path(baktatsv), path(fasta)
     output:
@@ -154,11 +152,11 @@ process GET_DUPLICATIONS {
 
 process GET_OUTPUTS {
     tag "$sampleId"
-    publishDir "${params.outdir}/AMAP/", mode: 'copy'
+    publishDir "${params.outdir}/AMAP/${sampleId}", mode: 'copy'
     input:
     tuple val(sampleId), path(fixtsv), path(fixfaa), path(fixfna), path(baktatsv), path(fasta), path(emapper)
     output:
-    tuple path("${sampleId}-AMAPmastertable.tsv"),path("${sampleId}-AMAP.tsv"),path("${sampleId}-AMAP.gbk"),path("${sampleId}-AMAP.gff3")
+    tuple val(sampleId),path("${sampleId}-AMAPmastertable.tsv"),path("${sampleId}-AMAP.tsv"),path("${sampleId}-AMAP.gbk"),path("${sampleId}-AMAP.gff3"), path(fixfaa), path(fixfna)
     script:
     """
     sed -i '1d' ${fixtsv}
@@ -166,16 +164,63 @@ process GET_OUTPUTS {
     """
 }
 
-process REPORT_CASES {
-    publishDir "${params.outdir}/type_cases/report_cases", pattern: "*.png", mode: 'copy'
+process COUNT_ANNOT {
+    tag "$sampleId"
+    publishDir "${params.outdir}/AMAP/${sampleId}", mode: 'copy'
     input:
-    tuple val(ids),path (summaries)
+    tuple val(sampleId), path(mastertable)
     output:
-    path "cases.png"
+    path("*.tsv")
+    script:
+    """
+    python3 ${workflow.launchDir}/bin/count_annot.py ${mastertable}
+    """
+}
+
+process REPORT_CASES2 {
+    input:
+    path(summaries)
+    output:
+    tuple path("input_cog.txt"), path("input_MycoBrowser.txt")
+    script:
+    """
+    echo ${summaries} | grep -o "[^ ]*.AMAP.COG\\.tsv" | xargs cat | grep -v '^lineage' > input_cog.txt
+    echo ${summaries} | grep -o "[^ ]*.AMAP.MycoBrowser\\.tsv" | xargs cat | grep -v '^lineage' > input_MycoBrowser.txt
+    """
+}
+process REPORT_CASES1{
+    input:
+    path(summaries)
+    output:
+    path("input_summary.txt")
     script:
     """
     echo ${summaries} | grep -o "[^ ]*-summary\\.tsv" | xargs cat | grep -v '^Type' > input_summary.txt
-    Rscript ${workflow.launchDir}/bin/plot_cases.R input_summary.txt
+    """
+}
+process FINAL_REPORT{
+    publishDir "${params.outdir}/", mode: 'copy'
+    input:
+    tuple val(input_cog), val(input_myco), val(input_summary)
+
+    script:
+    """
+    echo ${input_cog}
+    echo ${input_myco}
+    echo ${input_summary}
+    Rscript -e "rmarkdown::render('${workflow.launchDir}/bin/check.Rmd', output_file='${workflow.launchDir}/${params.outdir}/final_report.html', params=list(cog_summary='${input_cog}', myco_summary='${input_myco}', input_sum='${input_summary}'))"    
+    """
+    
+}
+
+process PASS {
+    input:
+    tuple val(ids), path(tsv),path(summaries)
+    output:
+    path(summaries)
+    script:
+    """
+    echo "Summarizing cases"
     """
 }
 
@@ -190,23 +235,23 @@ workflow {
     MINIPROT(result_bakta_annotator)
         .set {result_miniprot}
     TYPE_CASES(result_miniprot.join(result_bakta_annotator))
-        .map {sampleId, tsv, summary, cases, miss, html -> tuple(sampleId, tsv)}
+        .map {sampleId, tsv, summary, cases, miss, html -> tuple(sampleId, tsv, summary)}
         .set {result_typecases}
     FIX_CDS(result_typecases.join(result_bakta_annotator))
         .set {result_fix}
     GET_DUPLICATIONS(result_fix)
     ANNOT_EGGNOGMAP(result_fix.combine(db_done))
         .set {eggnogres}
-    GET_OUTPUTS(result_fix.combine(eggnogres))
-    //REPORT_CASES(result_fix.collect())
+    GET_OUTPUTS(result_fix.join(eggnogres))
+        .map {sampleId, mastertable, tsv, gbk, gff3, fixfaa, fixfna ->tuple(sampleId, mastertable)}
+        .set {annotation}
+    COUNT_ANNOT(annotation)
+        .set {count_annotation}
+    PASS(result_typecases)
+        .set {result_pass}
+    REPORT_CASES1(result_pass.collect())
+        .set {result_fix1}
+    REPORT_CASES2(count_annotation.collect())
+        .set {result_fix2}
+    FINAL_REPORT(result_fix2.combine(result_fix1))
     }
-    
-    //.map { sampleId, ctsv, summary, case, miss, html -> tuple(sampleId, ctsv) }
-    //MINIPROT(result_mtb_typer.join(result_bakta_annotator))
-    //    .set { result_miniprot_reference }
-    //TYPE_CASES(result_bakta_annotator.join(result_miniprot_reference))
-    //    .set { result_cases }
-    //FIX_CDS(result_cases)
-    //    .set { result_cds }
-    
-    //REPORT_CASES(result_cds.collect())

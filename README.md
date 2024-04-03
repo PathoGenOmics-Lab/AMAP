@@ -89,8 +89,7 @@ flowchart TB
     v16["FINAL RUN 
     REPORT"]
     subgraph "RESULTS"
-    v12["OG Bakta 
-    annotation 
+    v12["OG Bakta annotation 
     /BAKTA"]
     v10["Report cases
     /CDS_CASES"]

@@ -72,21 +72,32 @@ To run the AMAP pipeline hosted on GitHub by PathoGenOmics-Lab, follow these sim
 %%{init: { 'theme': 'dark' } }%%
 flowchart TB
     subgraph "INPUT"
-    v0["Genomes"]
+    v0["GENOMES"]
     end
     v3([MTB TYPER])
     v4([BAKTA ANNOTATOR])
     v6([MINIPROT])
     v8([TYPE CASES])
     v14([FIX ANNOTATION])
+    v20([GET 
+    DUPLICATIONS])
+    v17([EGGNOG DB])
+    v18([EGGNOG 
+    ANNOTATION])
+    v19([FUNCTIONAL
+    ANNOTATION])
+    v16["FINAL RUN 
+    REPORT"]
     subgraph "RESULTS"
-    v12["OG Bakta 
-    annotation"]
-    v10["Report cases"]
-    v13["Corrected 
-    annotation"]
-    v15["Lineage Typing"]
-    v16["Final Stats"]
+    v12["OG Bakta annotation 
+    /BAKTA"]
+    v10["Report cases
+    /CDS_CASES"]
+    v13["Corrected annotation
+    /AMAP"]
+    v15["Lineage Typing
+    /MTB_TYPER"]
+    
     end
     v3 --> v4
     v0 --> v3
@@ -98,11 +109,17 @@ flowchart TB
     v8 --> v10
     v8 --> v14
     v14 --> v13
+    v20 --> v13
+    v19 --> v13
     v3 --> v15
     v12 --> v16
     v10 --> v16
     v13 --> v16
     v15 --> v16
+    v17 --> v18
+    v14 --> v19
+    v18 --> v19
+    v14 --> v20
 ```
 ## AMAP Algorithm
 

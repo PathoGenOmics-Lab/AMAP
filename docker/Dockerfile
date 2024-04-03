@@ -1,7 +1,8 @@
 FROM continuumio/miniconda3
 
 RUN apt-get update && \
-    apt-get install -y git build-essential zlib1g-dev r-base && \
+    apt-get install -y git build-essential zlib1g-dev r-base pandoc && \
+    apt-get install -y libxml2-dev libcurl4-openssl-dev libssl-dev && \
     conda install -c conda-forge python=3.9 pandas plotly biopython python-louvain matplotlib=3.8.3 && \
     conda install -c bioconda -c conda-forge blast=2.15.0 eggNOG-mapper=2.1.12 && \ 
     pip install intervaltree  && \
@@ -10,9 +11,14 @@ RUN apt-get update && \
     git clone https://github.com/lh3/miniprot && \
     cd miniprot && \
     make && \
-    R -e "install.packages(c('ggplot2', 'dplyr'), repos='http://cran.rstudio.com/')" && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+RUN R -e "install.packages('ggplot2', repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('dplyr', repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('rmarkdown', repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('prettydoc', repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('remotes', repos='http://cran.rstudio.com/')"
+RUN R -e "remotes::install_github('ropensci/plotly')"
 
 RUN mkdir -p /data/bakta_db && \
     bakta_db download --output /data/bakta_db --type light

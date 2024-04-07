@@ -186,7 +186,7 @@ def main():
     parser.add_argument("myco", help="MycobrowserTsvFile")
     parser.add_argument("fasta", help="FastaFile")
     args = parser.parse_args()
-    base_name = args.correctedtsv.replace('_corrected.tsv','')
+    base_name = args.correctedtsv.replace('.AMAP.tsv','')
     ruta_archivo_fasta = args.fasta
     ruta_archivo = str(base_name+"-AMAP.tsv")
     ruta_archivo_gff = str(base_name+"-AMAP.gff3")

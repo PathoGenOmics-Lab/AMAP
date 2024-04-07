@@ -66,7 +66,54 @@ To run the AMAP pipeline hosted on GitHub by PathoGenOmics-Lab, follow these sim
 ## Inputs
 
 ## Outputs
-### Network measures of Duplications
+### MTB_TYPER
+MTB typer uses a k-mear aproach to use robust phylogenetic markers:
+- /fastas/*.fasta
+- /typing/*.
+### BAKTA
+All inputs that Bakta software offers to annotate a genome, generates a directory by genome:
+- /genome_name/*.faa
+- /genome_name/*.gbff
+- /genome_name/*.gff3
+- /genome_name/*.hypotheticals.faa
+- /genome_name/*.hypotheticals.tsv
+- /genome_name/*.png
+- /genome_name/*.tsv
+- /genome_name/*.txt
+### CDS_CASES
+- /genome_name/*-case1.tsv:
+- /genome_name/*-case2.tsv:
+- /genome_name/*-case3.tsv:
+- /genome_name/*-case4.tsv:
+- /genome_name/*-rvmissing.tsv:
+- /genome_name/*-single_overlap.html:
+- /genome_name/*-multiple_overlap.html:
+- /summary/*-summary.tsv
+### AMAP
+- /genome_name/*.AMAP.tsv
+- /genome_name/*.AMAP.COG.tsv
+- /genome_name/*.AMAP.faa
+- /genome_name/*.AMAP.fna
+- /genome_name/*.AMAP.MycoBrowser.tsv
+- /genome_name/*.AMAP.gbk
+- /genome_name/*.AMAP.gff3
+- /genome_name/*.AMAPmastertable.tsv
+### DUPLICATIONS
+- /duplications_*
+- /duplications_*_groups.tsv
+- /duplications_*_network.png
+- /duplications_*_interactive.html
+- /duplications_*.AMAP.faa.renamed.dup
+### FINAL REPORT
+- homologous_communities.html
+- homologous_communities.tsv
+### pipeline_info
+- execution_report_*.html
+- execition_timeline_*.html
+- pipeline_dag_*.html
+- execution_trace_*.tsv
+
+#### Network measures of Duplications
 1. Grado de Centralidad (Degree Centrality) [AverageDegree1]: Mide la cantidad de conexiones directas que tiene un nodo. En redes basadas en relaciones pairwise, esta medida es crucial para identificar nodos altamente conectados. En términos simples, es el número promedio de conexiones que tiene cada nodo en la comunidad.
 
 2. Centralidad de Cercanía (Closeness Centrality) [AverageCloseness1]: Calcula la distancia promedio de un nodo a todos los demás en la red, identificando nodos capaces de propagar información eficientemente. Esta métrica mide cuán 'cercanos' están los nodos entre sí en términos de pasos o saltos. Un valor alto indica que los nodos están, en promedio, más cerca unos de otros.

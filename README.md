@@ -66,6 +66,26 @@ To run the AMAP pipeline hosted on GitHub by PathoGenOmics-Lab, follow these sim
 ## Inputs
 
 ## Outputs
+### Network measures of Duplications
+1. Grado de Centralidad (Degree Centrality) [AverageDegree1]: Mide la cantidad de conexiones directas que tiene un nodo. En redes basadas en relaciones pairwise, esta medida es crucial para identificar nodos altamente conectados. En términos simples, es el número promedio de conexiones que tiene cada nodo en la comunidad.
+
+2. Centralidad de Cercanía (Closeness Centrality) [AverageCloseness1]: Calcula la distancia promedio de un nodo a todos los demás en la red, identificando nodos capaces de propagar información eficientemente. Esta métrica mide cuán 'cercanos' están los nodos entre sí en términos de pasos o saltos. Un valor alto indica que los nodos están, en promedio, más cerca unos de otros.
+
+3. Centralidad de Intermediación (Betweenness Centrality) [AverageBetweenness1]: Indica la frecuencia con la que un nodo actúa como puente en el camino más corto entre otros dos nodos, controlando así el flujo de información. Un valor alto puede indicar nodos que actúan como 'puentes' entre diferentes partes de la red.
+
+4. Eigen Centrality [Eigen1]: Valora la cantidad de conexiones de un nodo y la importancia de los nodos conectados, útil para identificar nodos influyentes en redes pairwise.
+
+5. Katz Centrality [Katz1]: Similar a Eigen Centrality, pero considera nodos a mayores distancias con un peso decreciente, útil para identificar nodos influyentes considerando conexiones indirectas.
+
+6. Densidad de la Red [Density1]: Proporción de conexiones posibles que son reales, indicando el grado de interconexión de la red. Una densidad cercana a 1 indica una red muy conectada, mientras que una densidad baja indica una red más dispersa.
+
+7. Coeficiente de Agrupamiento (Clustering Coefficient) [ClusteringCoefficient1]: Mide el grado en que los nodos se agrupan, indicando una estructura de comunidad bien definida. Esta métrica mide el grado en que los nodos en una red tienden a agruparse o formar grupos cerrados. Un valor alto sugiere que si dos nodos están conectados a un tercero, es probable que también estén conectados entre sí.
+
+8. Longitud Promedio del Camino (Average Path Length) [AveragePathLength1]: Distancia promedio entre todos los pares de nodos, con longitudes cortas indicando una "pequeña distancia" entre cualquier par de nodos.  Es el número promedio de pasos a lo largo de los caminos más cortos para todos los pares posibles de nodos. Una longitud de camino promedio baja significa que la mayoría de los nodos pueden ser alcanzados desde otros nodos en unos pocos pasos.
+
+9. Transitividad [transitivity1]: Mide la probabilidad de que los vecinos de un nodo también estén conectados entre sí. Es similar al coeficiente de agrupamiento, pero se aplica a toda la red. Indica la tendencia general de la red a formar triángulos o "tres amigos conectados".
+
+10. Modularidad [modularity]: Evalúa la estructura de las comunidades dentro de una red. Una alta modularidad indica que la red tiene comunidades densamente interconectadas, pero con pocas conexiones entre estas comunidades distintas. Ayuda a identificar cuán bien definidas están las comunidades dentro de la red.
 
 ## AMAP Workflow
 ```mermaid

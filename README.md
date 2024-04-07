@@ -114,25 +114,16 @@ All inputs that Bakta software offers to annotate a genome, generates a director
 - execution_trace_*.tsv
 
 #### Network measures of Duplications
-1. Grado de Centralidad (Degree Centrality) [AverageDegree1]: Mide la cantidad de conexiones directas que tiene un nodo. En redes basadas en relaciones pairwise, esta medida es crucial para identificar nodos altamente conectados. En términos simples, es el número promedio de conexiones que tiene cada nodo en la comunidad.
-
-2. Centralidad de Cercanía (Closeness Centrality) [AverageCloseness1]: Calcula la distancia promedio de un nodo a todos los demás en la red, identificando nodos capaces de propagar información eficientemente. Esta métrica mide cuán 'cercanos' están los nodos entre sí en términos de pasos o saltos. Un valor alto indica que los nodos están, en promedio, más cerca unos de otros.
-
-3. Centralidad de Intermediación (Betweenness Centrality) [AverageBetweenness1]: Indica la frecuencia con la que un nodo actúa como puente en el camino más corto entre otros dos nodos, controlando así el flujo de información. Un valor alto puede indicar nodos que actúan como 'puentes' entre diferentes partes de la red.
-
-4. Eigen Centrality [Eigen1]: Valora la cantidad de conexiones de un nodo y la importancia de los nodos conectados, útil para identificar nodos influyentes en redes pairwise.
-
-5. Katz Centrality [Katz1]: Similar a Eigen Centrality, pero considera nodos a mayores distancias con un peso decreciente, útil para identificar nodos influyentes considerando conexiones indirectas.
-
-6. Densidad de la Red [Density1]: Proporción de conexiones posibles que son reales, indicando el grado de interconexión de la red. Una densidad cercana a 1 indica una red muy conectada, mientras que una densidad baja indica una red más dispersa.
-
-7. Coeficiente de Agrupamiento (Clustering Coefficient) [ClusteringCoefficient1]: Mide el grado en que los nodos se agrupan, indicando una estructura de comunidad bien definida. Esta métrica mide el grado en que los nodos en una red tienden a agruparse o formar grupos cerrados. Un valor alto sugiere que si dos nodos están conectados a un tercero, es probable que también estén conectados entre sí.
-
-8. Longitud Promedio del Camino (Average Path Length) [AveragePathLength1]: Distancia promedio entre todos los pares de nodos, con longitudes cortas indicando una "pequeña distancia" entre cualquier par de nodos.  Es el número promedio de pasos a lo largo de los caminos más cortos para todos los pares posibles de nodos. Una longitud de camino promedio baja significa que la mayoría de los nodos pueden ser alcanzados desde otros nodos en unos pocos pasos.
-
-9. Transitividad [transitivity1]: Mide la probabilidad de que los vecinos de un nodo también estén conectados entre sí. Es similar al coeficiente de agrupamiento, pero se aplica a toda la red. Indica la tendencia general de la red a formar triángulos o "tres amigos conectados".
-
-10. Modularidad [modularity]: Evalúa la estructura de las comunidades dentro de una red. Una alta modularidad indica que la red tiene comunidades densamente interconectadas, pero con pocas conexiones entre estas comunidades distintas. Ayuda a identificar cuán bien definidas están las comunidades dentro de la red.
+1. **Degree Centrality** ``(AverageDegree1-2)``: Measures the number of direct connections a node has. In networks based on pairwise relationships, this measure is crucial for identifying highly connected nodes. Simply put,it is the average number of connections each node in the community has.
+2. **Closeness Centrality** ``(AverageCloseness1-2)``: Calculates the average distance of a node to all others in the network, identifying nodes capable of efficiently propagating information. This metric measures how'close' nodes are to each other in terms of steps or hops. A high value indicates that nodes are, on average, closer to each other.
+3. **Betweenness Centrality** ``(AverageBetweenness1-2)``: Indicates how often a node acts as a bridge on the shortest path between two other nodes, thus controlling the flow of information. A high value may indicate nodesthat act as 'bridges' between different parts of the network.
+4. **Eigen Centrality** ``(Eigen1-2)``: Values the number of connections of a node and the importance of the connected nodes, useful for identifying influential nodes in pairwise networks.
+5. **Katz Centrality** ``(Katz1-2)``: Similar to Eigen Centrality, but it considers nodes at greater distances with diminishing weight, useful for identifying influential nodes considering indirect connections.
+6. **Network Density** ``(Density1-2)``: The ratio of possible connections that are actual, indicating the degree of interconnection of the network. A density close to 1 indicates a highly connected network, while a lowdensity indicates a more dispersed network.
+7. **Clustering Coefficient** ``(ClusteringCoefficient1-2)``: Measures the degree to which nodes cluster together, indicating a well-defined community structure. This metric measures the extent to which nodes in a networktend to cluster or form closed groups. A high value suggests that if two nodes are connected to a third one, they are likely also connected to each other.
+8. **Average Path Length** ``(AveragePathLength1-2)``: The average distance between all pairs of nodes, with short lengths indicating a "small world" distance between any pair of nodes. It is the average number of stepsalong the shortest paths for all possible pairs of nodes. A low average path length means that most nodes can be reached from other nodes in a few steps.
+9. **Transitivity** ``(transitivity1-2)``: Measures the likelihood that the neighbors of a node are also connected to each other. It is similar to the clustering coefficient but applies to the entire network. It indicatesthe general tendency of the network to form triangles or "three connected friends."
+10. **Modularity** ``(modularity1-2)``: Evaluates the community structure within a network. High modularity indicates that the network has densely interconnected communities, but with few connections between these distinct communities. It helps to identify how well defined the communities are within the network.
 
 ## AMAP Workflow
 ```mermaid

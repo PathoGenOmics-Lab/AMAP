@@ -20,7 +20,11 @@ RUN apt-get update && \
 # Instalación de paquetes de R
 RUN R -e "install.packages(c('ggplot2', 'dplyr', 'rmarkdown', 'prettydoc', 'remotes'), repos='http://cran.rstudio.com/')" && \
     R -e "remotes::install_github('ropensci/plotly')"
-
+    
+RUN wget https://github.com/quarto-dev/quarto-cli/releases/download/v1.4.553/quarto-1.4.553-linux-amd64.deb && \
+    dpkg -i quarto-1.4.553-linux-amd64.deb && \
+    rm quarto-1.4.553-linux-amd64.deb
+    
 # Clonar y construir miniprot
 RUN git clone https://github.com/lh3/miniprot && \
     cd miniprot && \

@@ -138,15 +138,16 @@ process GET_DUPLICATIONS {
     tag "$sampleId"
     publishDir "${params.outdir}/DUPLICATIONS", mode: 'copy'
     input:
-    tuple val(sampleId), path(fixtsv), path(fixfaa), path(fixfna), path(baktatsv), path(fasta)
+    tuple val(sampleId), path(fixtsv), path(fixfaa), path(fixfna), path(baktatsv), path(fasta), path(emapper)
     output:
-    path("duplications_*")
+    tuple path("duplications_*"), path("${sampleId}.AMAP.faa.renamed.dup"), path("duplications_${sampleId}_groups.tsv")
     script:
     """
-    makeblastdb -in ${fixfaa} -dbtype prot -out ${sampleId}_faadb
-    blastp -query ${fixfaa} -db ${sampleId}_faadb -out duplications_${sampleId} -outfmt "6 qseqid sseqid pident length mismatch gaps qstart qend sstart send evalue bitscore qcovs qcovhsp qlen slen nident"
+    python3 ${workflow.launchDir}/bin/rename_fastas.py ${emapper} ${fixfaa}
+    diamond blastp --db ${fixfaa}.renamed -q ${fixfaa}.renamed --outfmt 6 qseqid sseqid pident length mismatch gaps qstart qend sstart send evalue bitscore qlen slen nident --no-self-hits --header > duplications_${sampleId}
 
-    python3 ${workflow.launchDir}/bin/get_duplications.py duplications_${sampleId}
+    python3 ${workflow.launchDir}/bin/get_duplicationsv2.py duplications_${sampleId}
+    python3 ${workflow.launchDir}/bin/dup_ex_multifasta.py duplications_${sampleId}_groups.tsv ${sampleId}.AMAP.faa.renamed
     """
 }
 
@@ -214,7 +215,6 @@ process FINAL_REPORT{
 }
 
 process PASS {
-    tag "$ids"
     input:
     tuple val(ids), path(tsv),path(summaries)
     output:
@@ -222,6 +222,23 @@ process PASS {
     script:
     """
     echo "Summarizing cases"
+    """
+}
+
+process ALL_DUP {
+    publishDir "${params.outdir}/finalreport/", mode: 'copy'
+    input:
+    path(fastas)
+    output:
+    tuple path("homologous_communities.tsv"), path("homologous_communities.html")
+    script:
+    """
+    cat *.dup > all_fasta.fa
+    rm *.dup
+    
+    diamond cluster -d all_fasta.fa -o all.diamond --approx-id 30 -M 16G
+    diamond blastp --db all_fasta.fa -q all_fasta.fa --outfmt 6 qseqid sseqid pident length mismatch gaps qstart qend sstart send evalue bitscore qlen slen nident --no-self-hits --header > all.diamond
+    python3 ${workflow.launchDir}/bin/network_genomes.py all.diamond
     """
 }
 
@@ -240,12 +257,14 @@ workflow {
         .set {result_typecases}
     FIX_CDS(result_typecases.join(result_bakta_annotator))
         .set {result_fix}
-    GET_DUPLICATIONS(result_fix)
     ANNOT_EGGNOGMAP(result_fix.combine(db_done))
         .set {eggnogres}
     GET_OUTPUTS(result_fix.join(eggnogres))
         .map {sampleId, mastertable, tsv, gbk, gff3, fixfaa, fixfna ->tuple(sampleId, mastertable)}
         .set {annotation}
+    GET_DUPLICATIONS(result_fix.join(annotation))
+        .map {all, fastas, tsv -> fastas}
+        .set {res_dup}
     COUNT_ANNOT(annotation)
         .set {count_annotation}
     PASS(result_typecases)
@@ -255,4 +274,5 @@ workflow {
     REPORT_CASES2(count_annotation.collect())
         .set {result_fix2}
     FINAL_REPORT(result_fix2.combine(result_fix1))
+    ALL_DUP(res_dup.collect())
     }

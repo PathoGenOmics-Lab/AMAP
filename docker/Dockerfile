@@ -1,5 +1,9 @@
 FROM continuumio/miniconda3
 
+# Establecer variables de entorno para Quarto
+ENV XDG_CACHE_HOME=/tmp/quarto_cache_home
+ENV XDG_DATA_HOME=/tmp/quarto_data_home
+
 # Configurar la variable de entorno para Matplotlib
 ENV MPLCONFIGDIR=/app/matplotlib_config
 ENV PATH="${PATH}:/miniprot:/data/bakta_db:/reference"

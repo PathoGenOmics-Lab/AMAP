@@ -202,16 +202,20 @@ process REPORT_CASES1{
 process FINAL_REPORT{
     publishDir "${params.outdir}/", mode: 'copy'
     input:
-    tuple val(input_cog), val(input_myco), val(input_summary)
-
+    tuple path(input_cog), path(input_myco), path(input_summary)
+    output:
+    path("final_report.html")
     script:
     """
     echo ${input_cog}
     echo ${input_myco}
     echo ${input_summary}
-    Rscript -e "rmarkdown::render('${workflow.launchDir}/bin/check.Rmd', output_file='${workflow.launchDir}/${params.outdir}/final_report.html', params=list(cog_summary='${input_cog}', myco_summary='${input_myco}', input_sum='${input_summary}'))"    
+    WORK_DIR=`pwd`
+    echo \$WORK_DIR
+    Rscript -e "rmarkdown::render('${workflow.launchDir}/bin/check.Rmd', output_file='${workflow.launchDir}/${params.outdir}/final_report2.html', params=list(cog_summary='\$WORK_DIR/${input_cog}', myco_summary='\$WORK_DIR/${input_myco}', input_sum='\$WORK_DIR/${input_summary}'))"    
+    #Rscript -e "rmarkdown::render('${workflow.launchDir}/bin/check_quarto.qmd', output_file='${workflow.launchDir}/${params.outdir}/final_report.html', params=list(cog_summary='${input_cog}', myco_summary='${input_myco}', input_sum='${input_summary}'))"    
+    quarto render /home/paula/AMAP/bin/check_quarto.qmd --to html --output 'final_report.html' -P cog_summary:\$WORK_DIR/${input_cog} -P myco_summary:\$WORK_DIR/${input_myco} -P input_sum:\$WORK_DIR/${input_summary}
     """
-    
 }
 
 process PASS {
@@ -257,6 +261,7 @@ workflow {
         .set {result_typecases}
     FIX_CDS(result_typecases.join(result_bakta_annotator))
         .set {result_fix}
+    
     ANNOT_EGGNOGMAP(result_fix.combine(db_done))
         .set {eggnogres}
     GET_OUTPUTS(result_fix.join(eggnogres))
@@ -265,6 +270,7 @@ workflow {
     GET_DUPLICATIONS(result_fix.join(annotation))
         .map {all, fastas, tsv -> fastas}
         .set {res_dup}
+
     COUNT_ANNOT(annotation)
         .set {count_annotation}
     PASS(result_typecases)
@@ -276,3 +282,4 @@ workflow {
     FINAL_REPORT(result_fix2.combine(result_fix1))
     ALL_DUP(res_dup.collect())
     }
+

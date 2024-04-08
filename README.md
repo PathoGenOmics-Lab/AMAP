@@ -66,6 +66,64 @@ To run the AMAP pipeline hosted on GitHub by PathoGenOmics-Lab, follow these sim
 ## Inputs
 
 ## Outputs
+### MTB_TYPER
+MTB typer uses a k-mear aproach to use robust phylogenetic markers:
+- /fastas/*.fasta
+- /typing/*.
+### BAKTA
+All inputs that Bakta software offers to annotate a genome, generates a directory by genome:
+- /genome_name/*.faa
+- /genome_name/*.gbff
+- /genome_name/*.gff3
+- /genome_name/*.hypotheticals.faa
+- /genome_name/*.hypotheticals.tsv
+- /genome_name/*.png
+- /genome_name/*.tsv
+- /genome_name/*.txt
+### CDS_CASES
+- /genome_name/*-case1.tsv:
+- /genome_name/*-case2.tsv:
+- /genome_name/*-case3.tsv:
+- /genome_name/*-case4.tsv:
+- /genome_name/*-rvmissing.tsv:
+- /genome_name/*-single_overlap.html:
+- /genome_name/*-multiple_overlap.html:
+- /summary/*-summary.tsv
+### AMAP
+- /genome_name/*.AMAP.tsv
+- /genome_name/*.AMAP.COG.tsv
+- /genome_name/*.AMAP.faa
+- /genome_name/*.AMAP.fna
+- /genome_name/*.AMAP.MycoBrowser.tsv
+- /genome_name/*.AMAP.gbk
+- /genome_name/*.AMAP.gff3
+- /genome_name/*.AMAPmastertable.tsv
+### DUPLICATIONS
+- /duplications_*
+- /duplications_*_groups.tsv
+- /duplications_*_network.png
+- /duplications_*_interactive.html
+- /duplications_*.AMAP.faa.renamed.dup
+### FINAL REPORT
+- homologous_communities.html
+- homologous_communities.tsv
+### pipeline_info
+- execution_report_*.html
+- execition_timeline_*.html
+- pipeline_dag_*.html
+- execution_trace_*.tsv
+
+#### Network measures of Duplications
+1. **Degree Centrality** ``(AverageDegree1-2)``: Measures the number of direct connections a node has. In networks based on pairwise relationships, this measure is crucial for identifying highly connected nodes. Simply put,it is the average number of connections each node in the community has.
+2. **Closeness Centrality** ``(AverageCloseness1-2)``: Calculates the average distance of a node to all others in the network, identifying nodes capable of efficiently propagating information. This metric measures how'close' nodes are to each other in terms of steps or hops. A high value indicates that nodes are, on average, closer to each other.
+3. **Betweenness Centrality** ``(AverageBetweenness1-2)``: Indicates how often a node acts as a bridge on the shortest path between two other nodes, thus controlling the flow of information. A high value may indicate nodesthat act as 'bridges' between different parts of the network.
+4. **Eigen Centrality** ``(Eigen1-2)``: Values the number of connections of a node and the importance of the connected nodes, useful for identifying influential nodes in pairwise networks.
+5. **Katz Centrality** ``(Katz1-2)``: Similar to Eigen Centrality, but it considers nodes at greater distances with diminishing weight, useful for identifying influential nodes considering indirect connections.
+6. **Network Density** ``(Density1-2)``: The ratio of possible connections that are actual, indicating the degree of interconnection of the network. A density close to 1 indicates a highly connected network, while a lowdensity indicates a more dispersed network.
+7. **Clustering Coefficient** ``(ClusteringCoefficient1-2)``: Measures the degree to which nodes cluster together, indicating a well-defined community structure. This metric measures the extent to which nodes in a networktend to cluster or form closed groups. A high value suggests that if two nodes are connected to a third one, they are likely also connected to each other.
+8. **Average Path Length** ``(AveragePathLength1-2)``: The average distance between all pairs of nodes, with short lengths indicating a "small world" distance between any pair of nodes. It is the average number of stepsalong the shortest paths for all possible pairs of nodes. A low average path length means that most nodes can be reached from other nodes in a few steps.
+9. **Transitivity** ``(transitivity1-2)``: Measures the likelihood that the neighbors of a node are also connected to each other. It is similar to the clustering coefficient but applies to the entire network. It indicatesthe general tendency of the network to form triangles or "three connected friends."
+10. **Modularity** ``(modularity1-2)``: Evaluates the community structure within a network. High modularity indicates that the network has densely interconnected communities, but with few connections between these distinct communities. It helps to identify how well defined the communities are within the network.
 
 ## AMAP Workflow
 ```mermaid

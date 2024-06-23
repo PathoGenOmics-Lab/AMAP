@@ -24,3 +24,35 @@ script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"
   });
 ```
 
+```{r lib, message=FALSE, warning=FALSE, include=FALSE}
+library(ggplot2)
+library(plotly)
+library(dplyr)
+
+cog_summary <- "input_cog.txt"
+myco_summary <- "input_MycoBrowser.txt"
+input_sum <- "input_summary.txt"
+
+colors <- c("L5"="#995200","L6"="#1eb040","A1"="#d1ae00","A4"="#ff9cdb","A2"="#8ef5c8", "A3"="#73c2ff", "L4"="#ff0000","L1"="#ff3091", "L2"="#001aff", "L3" ="#8a0bd2", "L7"="#fbff00", "L8"="#ff9d00","L9"="#37ff30", "L10"="#8fbda1")
+name <- c("A" = "A - RNA processing and modification", "B" = "B - Chromatin structure and dynamics", "C" = "C - Energy production and conversion", "D" = "D - Cell cycle control, cell division, chromosome partitioning", "E" = "E - Amino acid transport and metabolism", "F" = "F - Nucleotide transport and metabolism", "G" = "G - Carbohydrate transport and metabolism", "H" = "H - Coenzyme transport and metabolism", "I" = "I - Lipid transport and metabolism", "J" = "J - Translation, ribosomal structure and biogenesis", "K" = "K - Transcription", "L" = "L - Replication, recombination and repair", "M" = "M - Cell wall/membrane/envelope biogenesis", "N" = "N - Cell motility", "O" = "O - Posttranslational modification, protein turnover, chaperones", "P" = "P - Inorganic ion transport and metabolism", "Q" = "Q - Secondary metabolites biosynthesis, transport and catabolism", "R" = "R - General function prediction only", "S" = "S - Function unknown", "T" = "T - Signal transduction mechanisms", "U" = "U - Intracellular trafficking, secretion, and vesicular transport", "V" = "V - Defense mechanisms", "W" = "W - Extracellular structures", "X" = "X - Mobilome: prophages, transposons", "Y" = "Y - Nuclear structure", "Z" = "Z - Cytoskeleton", "NaN"="None")
+datos_cog <- read.table(cog_summary, sep = "\t", dec=".")
+colnames(datos_cog)<- c("Lineages","genome","Functional_Category","Count","Percentage")
+datos_cog$sequences <- with(datos_cog, paste(Lineages, genome, sep = "_"))
+datos_cog$Percentage<-as.numeric(datos_cog$Percentage)
+
+datos_myco <- read.table(myco_summary, sep = "\t", dec=".")
+colnames(datos_myco)<- c("Lineages","genome","Functional_Category","Count","Percentage")
+datos_myco$sequences <- with(datos_myco, paste(Lineages, genome, sep = "_"))
+datos_myco$Percentage<-as.numeric(datos_myco$Percentage)
+
+my_myco <- data.frame(
+  lineage = c(rep("L4", 11)),
+  genome = c(rep("H37Rv", 11)),
+  Functional_Category = c("PE/PPE", "cell wall and cell processes", "conserved hypotheticals", "information pathways", "insertion seqs and phages", "intermediary metabolism and respiration", "lipid metabolism", "regulatory proteins", "unknown", "virulence, detoxification, adaptation", ""),
+  count = c(162, 766, 1042, 240, 149, 936, 271, 198, 15, 239, 13),
+  percentage = c(4.018853882411312, 19.00272885140164, 25.8496650955098, 5.953857603572314, 3.696353262217812, 23.220044653932025, 6.722897544033739, 4.9119325229471595, 0.37211610022326963, 5.92904986355743, 0.3225006201935004)
+)
+merged_data <- merge(my_myco, datos_myco, by = "Functional_Category", all = TRUE)
+merged_data$Ratio_Percentage <- (merged_data$Count / merged_data$count) * 100
+```
+

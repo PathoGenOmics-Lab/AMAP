@@ -1,0 +1,783 @@
+---
+title: "Assisted MTBC annotator pipeline"
+author: "AMAP Pipeline"
+date: "`r format(Sys.time(), '%d/%m/%Y')`" 
+output: html_document
+---
+
+```{css zoom-lib-src, echo = FALSE}
+script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"
+```
+
+```{js zoom-jquery, echo = FALSE}
+ $(document).ready(function() {
+    $('body').prepend('<div class=\"zoomDiv\"><img src=\"\" class=\"zoomImg\"></div>');
+    // onClick function for all plots (img's)
+    $('img:not(.zoomImg)').click(function() {
+      $('.zoomImg').attr('src', $(this).attr('src')).css({width: '100%'});
+      $('.zoomDiv').css({opacity: '1', width: 'auto', border: '1px solid white', borderRadius: '5px', position: 'fixed', top: '50%', left: '50%', marginRight: '-50%', transform: 'translate(-50%, -50%)', boxShadow: '0px 0px 50px #888888', zIndex: '50', overflow: 'auto', maxHeight: '100%'});
+    });
+    // onClick function for zoomImg
+    $('img.zoomImg').click(function() {
+      $('.zoomDiv').css({opacity: '0', width: '0%'}); 
+    });
+  });
+```
+
+```{r lib, message=FALSE, warning=FALSE, include=FALSE}
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(ggpubr)
+library(DT)
+library(ggsimplestats)
+
+cog_summary <- "input_cog.txt"
+myco_summary <- "input_MycoBrowser.txt"
+input_sum <- "input_summary.txt"
+
+colors <- c("L5"="#995200","L6"="#1eb040","A1"="#d1ae00","A4"="#ff9cdb","A2"="#8ef5c8", "A3"="#73c2ff", "L4"="#ff0000","L1"="#ff3091", "L2"="#001aff", "L3" ="#8a0bd2", "L7"="#fbff00", "L8"="#ff9d00","L9"="#37ff30", "L10"="#8fbda1")
+name <- c("A" = "A - RNA processing and modification", "B" = "B - Chromatin structure and dynamics", "C" = "C - Energy production and conversion", "D" = "D - Cell cycle control, cell division, chromosome partitioning", "E" = "E - Amino acid transport and metabolism", "F" = "F - Nucleotide transport and metabolism", "G" = "G - Carbohydrate transport and metabolism", "H" = "H - Coenzyme transport and metabolism", "I" = "I - Lipid transport and metabolism", "J" = "J - Translation, ribosomal structure and biogenesis", "K" = "K - Transcription", "L" = "L - Replication, recombination and repair", "M" = "M - Cell wall/membrane/envelope biogenesis", "N" = "N - Cell motility", "O" = "O - Posttranslational modification, protein turnover, chaperones", "P" = "P - Inorganic ion transport and metabolism", "Q" = "Q - Secondary metabolites biosynthesis, transport and catabolism", "R" = "R - General function prediction only", "S" = "S - Function unknown", "T" = "T - Signal transduction mechanisms", "U" = "U - Intracellular trafficking, secretion, and vesicular transport", "V" = "V - Defense mechanisms", "W" = "W - Extracellular structures", "X" = "X - Mobilome: prophages, transposons", "Y" = "Y - Nuclear structure", "Z" = "Z - Cytoskeleton", "NaN"="None")
+datos_cog <- read.table(cog_summary, sep = "\t", dec=".")
+colnames(datos_cog)<- c("Lineages","genome","Functional_Category","Count","Percentage")
+datos_cog$sequences <- with(datos_cog, paste(Lineages, genome, sep = "_"))
+datos_cog$Percentage<-as.numeric(datos_cog$Percentage)
+
+datos_myco <- read.table(myco_summary, sep = "\t", dec=".")
+colnames(datos_myco)<- c("Lineages","genome","Functional_Category","Count","Percentage")
+datos_myco$sequences <- with(datos_myco, paste(Lineages, genome, sep = "_"))
+datos_myco$Percentage<-as.numeric(datos_myco$Percentage)
+
+my_myco <- data.frame(
+  lineage = c(rep("L4", 11)),
+  genome = c(rep("H37Rv", 11)),
+  Functional_Category = c("PE/PPE", "cell wall and cell processes", "conserved hypotheticals", "information pathways", "insertion seqs and phages", "intermediary metabolism and respiration", "lipid metabolism", "regulatory proteins", "unknown", "virulence, detoxification, adaptation", ""),
+  count = c(162, 766, 1042, 240, 149, 936, 271, 198, 15, 239, 13),
+  percentage = c(4.018853882411312, 19.00272885140164, 25.8496650955098, 5.953857603572314, 3.696353262217812, 23.220044653932025, 6.722897544033739, 4.9119325229471595, 0.37211610022326963, 5.92904986355743, 0.3225006201935004)
+)
+merged_data <- merge(my_myco, datos_myco, by = "Functional_Category", all = TRUE)
+merged_data$Ratio_Percentage <- (merged_data$Count / merged_data$count) * 100
+
+generate_statistics_table <- function(data, case_value) {
+  data_filtered <- data %>% filter(V1 == case_value)
+  
+  data_filtered <- data_filtered %>% rename(Lineages = V4)
+  
+  statistics <- data_filtered %>%
+    group_by(Lineages) %>%
+    summarise(
+      Count = n(),
+      Mean = mean(V2, na.rm = TRUE),
+      SD = sd(V2, na.rm = TRUE),
+      Median = median(V2, na.rm = TRUE),
+      IQR = IQR(V2, na.rm = TRUE),
+      Min = min(V2, na.rm = TRUE),
+      Max = max(V2, na.rm = TRUE)
+    )
+  
+  datatable(
+    statistics,
+    extensions = 'Buttons',
+    options = list(
+      dom = 'Bfrtip',
+      buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+      pageLength = 14,
+      initComplete = JS(
+        "function(settings, json) {",
+        "$(document.head).append('<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" />');",
+        "$(this.api().table().header()).css({'background-color': '#3da68d', 'color': '#fff', 'font-size': '16px', 'font-family': 'Roboto'});",
+        "$(this.api().table().body()).css({'font-size': '14px', 'font-family': 'Roboto'});",
+        "}"
+      ),
+      class = 'cell-border stripe'
+    ),
+    class = 'cell-border stripe'
+  )
+}
+```
+
+# AMAP CDS Results {.tabset}
+## CDS Boxplot
+```{r cds_boxplot, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+data <- read.table(input_sum, header = FALSE, sep = "\t", dec=".")
+order_lineages <- rev(c("A4", "A3", "A2", "A1","L10","L9","L6","L5","L4","L3","L2","L7","L1","L8"))
+data$V4 <- factor(data$V4, levels = order_lineages)
+
+counts <- data %>% 
+  group_by(V4, V1) %>% 
+  summarise(n = n(), y_pos = max(V2) + 1)
+
+p <- ggplot(data, aes(x = V4, y = V2, color = V4)) +
+  geom_boxplot(outlier.shape = NA, fill = NA) +
+  geom_point(position = position_jitter(width = 0.2), alpha = 0.2) +
+  geom_text(data = counts, aes(x = V4, y = y_pos, label = n, color = V4), 
+            position = position_dodge(width = 0.75), size = 3) +
+  facet_wrap(~ V1, scales = "free_y", ncol = 4) +
+  ggpubr::theme_pubr() +
+  labs(x = "", y = "Number of CDS") + 
+  scale_color_manual(values = colors) +
+  theme(legend.position = "none", 
+        axis.text.x = element_text(size = 9.5)) 
+
+print(p)
+```
+
+## CDS Violinplot
+```{r cds_violin, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+means <- data %>% 
+  group_by(V4, V1) %>% 
+  summarise(mean_value = mean(V2), y_pos = max(V2) + 1)
+
+p <- ggplot(data, aes(x = V4, y = V2, color = V4)) +
+  geom_violin(fill = NA) +
+  stat_summary(fun = mean, geom = "point", shape = 18, size = 3, color = "black") +
+  stat_summary(fun.data = mean_cl_normal, geom = "errorbar", width = 0.2, color = "black") +
+  geom_text(data = means, aes(x = V4, y = y_pos, label = round(mean_value, 2), color = V4), 
+            position = position_dodge(width = 0.75), size = 3) +
+  facet_wrap(~ V1, scales = "free_y", ncol = 4) +
+  ggpubr::theme_pubr() +
+  labs(x = "", y = "Number of CDS") + 
+  scale_color_manual(values = colors) +
+  theme(legend.position = "none", 
+        axis.text.x = element_text(size = 9.5)) 
+
+print(p)
+```
+
+## CDS Heatmap LogMeanValues
+```{r cds_heatmap, echo=FALSE, fig.align='center', fig.height=5, fig.width=7, message=FALSE, warning=FALSE}
+p <- ggplot(means, aes(x = V4, y = V1, fill = log(mean_value))) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "C", name = "Log Mean Value") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 9.5),
+    axis.text.y = element_text(size = 9.5),
+    legend.position = "right"
+  ) +
+  labs(x = "Lineages", y = "Cases", title = "Heatmap of Log Mean Values")
+print(p)
+```
+
+
+## CDS Table stats {.tabset}
+### CASE 1
+```{r case1_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+generate_statistics_table(data, "case1")
+```
+### CASE 1 KEEP
+```{r case1keep_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+generate_statistics_table(data, "case1_keep")
+```
+### CASE 1 REMOVE
+```{r case1remove_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+generate_statistics_table(data, "case1_remove")
+```
+### CASE 2
+```{r case2_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+generate_statistics_table(data, "case2")
+```
+### CASE 3
+```{r case3_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+generate_statistics_table(data, "case3")
+```
+### CASE 4
+```{r case4_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+generate_statistics_table(data, "case4")
+```
+### ALL CDS
+```{r cds_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+generate_statistics_table(data, "CDS")
+```
+### MISSING RVs
+```{r missing_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+generate_statistics_table(data, "missingRvs")
+```
+
+
+# Annotations of corrected CDS
+## COG Categories by EggNog Mapper {.tabset}
+
+### Plot ALL
+```{r allCOGs, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+datos_cog1 <- datos_cog 
+lvl_cogs <- c("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","S","T","U","V","NaN")
+datos_cog1$Functional_Category <- factor(datos_cog1$Functional_Category, levels = lvl_cogs)
+
+p <- ggplot(datos_cog1, aes(x = Functional_Category, y = Percentage, color = Lineages)) +
+  geom_jitter(alpha = 0.2) +
+  scale_color_manual(values = colors) +
+  labs(x = "Functional Category", y = "Percentage") +
+  theme_pubr() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "top"  
+  )
+
+ggplotly(p)%>% layout(autosize = F, width = 800, height = 400)
+```
+
+### Statistics
+```{r allstatsCOGs, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+statistics <- datos_cog %>%
+  group_by(Lineages, Functional_Category) %>%
+  summarise(
+    Count = n(),
+    Mean_Percentage = mean(Percentage, na.rm = TRUE),
+    SD_Percentage = sd(Percentage, na.rm = TRUE),
+    Median_Percentage = median(Percentage, na.rm = TRUE),
+    IQR_Percentage = IQR(Percentage, na.rm = TRUE)
+  )
+datatable(
+  statistics,
+  rownames = FALSE,
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+    pageLength = 10,
+    initComplete = JS(
+      "function(settings, json) {",
+      "$(document.head).append('<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" />');",
+      "$(this.api().table().header()).css({'background-color': '#3da68d', 'color': '#fff', 'font-size': '16px', 'font-family': 'Roboto'});",
+      "$(this.api().table().body()).css({'font-size': '14px', 'font-family': 'Roboto'});",
+      "}"
+    ),
+    class = 'cell-border stripe'
+  ),
+  class = 'cell-border stripe'
+)
+```
+
+
+### Scatterplot per COG {.tabset}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+create_plotCOG <- function(category, title) {
+  
+  # Filtrar datos por la categoría funcional especificada
+  data_filtered <- datos_cog1 %>% filter(Functional_Category == category)
+  conteos <- data_filtered %>%
+    group_by(Lineages) %>%
+    summarize(N = sum(!is.na(Percentage)), max_value = max(Percentage, na.rm = TRUE), .groups = 'drop')
+  
+  # Crear el gráfico
+  p <- ggplot(data_filtered, aes(x = Lineages, y = Percentage, color = Lineages)) +
+    geom_jitter(alpha = 0.5) +
+    scale_color_manual(values = colors) +
+    labs(x = "", y = "Percentage") +
+    theme_pubr() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      legend.position = "top"
+    ) + 
+    geom_text(data = conteos, aes(label = N, y = max_value * 1.02), 
+              position = position_dodge(width = 0.75), 
+              size = 3, vjust = 0) + 
+    ggtitle(title) + 
+    stat_kwAllPairsDunnTest(hide.ns=TRUE, p.adjust.method = "BH") + 
+    theme(legend.position = "none") +
+    expand_limits(y = max(conteos$max_value) * 1.08) # Aumentar dinámicamente el espacio en el eje y
+  
+  print(p)
+  # ggplotly(p) %>% layout(autosize = F, width = 800, height = 400)
+}
+```
+
+#### A
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("A","A - RNA processing and modification")
+```
+
+#### B
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("B","B - Chromatin structure and dynamics")
+```
+
+#### C
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("C","C - Energy production and conversion")
+```
+
+#### D
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("D","D - Cell cycle control, cell division, chromosome partitioning")
+```
+
+#### E
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("E","E - Amino acid transport and metabolism")
+```
+
+#### F
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("F","F - Nucleotide transport and metabolism")
+```
+
+#### G
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("G","G - Carbohydrate transport and metabolism")
+```
+
+#### H
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("H","H - Coenzyme transport and metabolism")
+```
+
+#### I
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("I","I - Lipid transport and metabolism")
+```
+
+#### J
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("J","J - Translation, ribosomal structure and biogenesis")
+```
+
+#### K
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("K","K - Transcription")
+```
+
+#### L
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("L","L - Replication, recombination and repair")
+```
+
+#### M
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("M","M - Cell wall/membrane/envelope biogenesis")
+```
+
+#### N
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("N","N - Cell motility")
+```
+
+#### O
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("O","O - Posttranslational modification, protein turnover, chaperones")
+```
+
+#### P
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("P","P - Inorganic ion transport and metabolism")
+```
+
+#### Q
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("Q","Q - Secondary metabolites biosynthesis, transport and catabolism")
+```
+
+#### R
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("R","R - General function prediction only")
+```
+
+#### S
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("S","S - Function unknown")
+```
+
+#### T
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("T","T - Signal transduction mechanisms")
+```
+
+#### U
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("U","U - Intracellular trafficking, secretion, and vesicular transport")
+```
+
+#### V
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("V","V - Defense mechanisms")
+```
+
+#### W
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("W","W - Extracellular structures")
+```
+
+#### X
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("X","X - Mobilome: prophages, transposons")
+```
+
+#### Y
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("Y","Y - Nuclear structure")
+```
+
+#### Z
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("Z","Z - Cytoskeleton")
+```
+
+#### NaN
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
+create_plotCOG("NaN","Unknown")
+```
+
+### AnimalvsHuman
+```{r , echo=FALSE, fig.align='center', fig.height=9, fig.width=11, message=FALSE, warning=FALSE}
+
+datos_cog1$Host <- ifelse(substr(datos_cog1$Lineages, 1, 1) == "L", "Human", 
+                              ifelse(substr(datos_cog1$Lineages, 1, 1) == "A", "Animal", NA))
+
+p <- ggplot(datos_cog1, aes(x = Host, y = Percentage)) +
+  geom_boxplot(aes(color = Host), fill = NA, alpha = 1, size = 1) + # Boxplot con contorno coloreado y sin relleno
+  geom_jitter(aes(color = Lineages, shape = Host), width = 0.2, size = 1.5, alpha = 0.4) +  scale_color_manual(values = c("L5"="#995200","L6"="#1eb040","A1"="#d1ae00","A4"="#ff9cdb","A2"="#8ef5c8", "A3"="#73c2ff", "L4"="#ff0000","L1"="#ff3091", "L2"="#001aff", "L3" ="#8a0bd2", "L7"="#fbff00", "L8"="#ff9d00","L9"="#37ff30", "L10"="#8fbda1", "Animal"="black", "Human"="grey")) + 
+  scale_shape_manual(values = c("Human" = 17, "Animal" = 16)) +
+  labs(x = "", y = "Percentage") +
+  theme_pubr() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "top"
+  ) +
+  theme(legend.position = "none") +
+  stat_compare_means(aes(group = Host), method = "wilcox.test", label = "p.format", 
+                     label.y.npc = 'bottom', size = 3) + # Ajuste de la posición de las etiquetas
+  facet_wrap(~Functional_Category, scales = "free_y") # Añadido facet_wrap
+
+print(p)
+```
+
+# Functional Categories by Mycobrowser
+
+## FCatergories percentages {.tabset}
+
+### All Categories
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+datos_myco <- datos_myco %>%
+  mutate(across(where(is.character), ~na_if(., "")))
+
+# Convertir NA en NaN en todas las columnas
+datos_myco <- datos_myco %>%
+  mutate(across(everything(), ~ifelse(is.na(.), NaN, .)))
+
+p <- ggplot(datos_myco, aes(x = Functional_Category, y = Percentage, color = Lineages)) +
+  geom_jitter(alpha = 0.2) +
+  scale_color_manual(values = colors) +
+  labs(x = "", y = "Percentage") +
+  theme_pubr() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1,size = 8),
+    legend.position = "top"  
+  )
+
+ggplotly(p)%>% layout(autosize = F, width = 800, height = 450)
+```
+
+### Split categories {.tabset}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+
+create_plotMyco <- function(category) {
+  
+  # Filtrar datos por la categoría funcional especificada
+  data_filtered <- datos_myco %>% filter(Functional_Category == category)
+  conteos <- data_filtered %>%
+    group_by(Lineages) %>%
+    summarize(N = sum(!is.na(Percentage)), max_value = max(Percentage, na.rm = TRUE), .groups = 'drop')
+  
+  # Crear el gráfico
+  p <- ggplot(data_filtered, aes(x = Lineages, y = Percentage, color = Lineages)) +
+    geom_jitter(alpha = 0.5) +
+    scale_color_manual(values = colors) +
+    labs(x = "", y = "Percentage") +
+    theme_pubr() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      legend.position = "top"
+    ) + 
+    geom_text(data = conteos, aes(label = N, y = max_value * 1.02), 
+              position = position_dodge(width = 0.75), 
+              size = 3, vjust = 0) + 
+    ggtitle(category) + 
+    stat_kwAllPairsDunnTest(hide.ns=TRUE, p.adjust.method = "BH") + 
+    theme(legend.position = "none") +
+    expand_limits(y = max(conteos$max_value) * 1.08) # Aumentar dinámicamente el espacio en el eje y
+  
+  print(p)
+  # ggplotly(p) %>% layout(autosize = F, width = 800, height = 400)
+}
+```
+
+#### PE/PPE
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("PE/PPE")
+```
+
+#### cell wall and cell processes
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("cell wall and cell processes")
+```
+
+#### conserved hypotheticals
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("conserved hypotheticals")
+```
+
+#### information pathways
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("information pathways")
+```
+
+#### insertion seqs and phages
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("insertion seqs and phages")
+```
+
+#### intermediary metabolism and respiration
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("intermediary metabolism and respiration")
+```
+
+#### lipid metabolism
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("lipid metabolism")
+```
+
+#### regulatory proteins
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("regulatory proteins")
+```
+
+#### unknown
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("unknown")
+```
+
+#### virulence, detoxification, adaptation
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("virulence, detoxification, adaptation")
+```
+
+#### NaN
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("NaN")
+```
+
+### Statistics
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+statistics <- datos_myco %>%
+  group_by(Lineages, Functional_Category) %>%
+  summarise(
+    Count = n(),
+    Mean_Percentage = mean(Percentage, na.rm = TRUE),
+    SD_Percentage = sd(Percentage, na.rm = TRUE),
+    Median_Percentage = median(Percentage, na.rm = TRUE),
+    IQR_Percentage = IQR(Percentage, na.rm = TRUE)
+  )
+datatable(
+  statistics,
+  rownames = FALSE,
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+    pageLength = 10,
+    initComplete = JS(
+      "function(settings, json) {",
+      "$(document.head).append('<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" />');",
+      "$(this.api().table().header()).css({'background-color': '#3da68d', 'color': '#fff', 'font-size': '16px', 'font-family': 'Roboto'});",
+      "$(this.api().table().body()).css({'font-size': '14px', 'font-family': 'Roboto'});",
+      "}"
+    ),
+    class = 'cell-border stripe'
+  ),
+  class = 'cell-border stripe'
+)
+```
+
+### AnimalvsHuman
+```{r , echo=FALSE, fig.align='center', fig.height=9, fig.width=11, message=FALSE, warning=FALSE}
+
+datos_myco$Host <- ifelse(substr(datos_myco$Lineages, 1, 1) == "L", "Human", 
+                              ifelse(substr(datos_myco$Lineages, 1, 1) == "A", "Animal", NA))
+
+p <- ggplot(datos_myco, aes(x = Host, y = Percentage)) +
+  geom_boxplot(aes(color = Host), fill = NA, alpha = 1, size = 1) + # Boxplot con contorno coloreado y sin relleno
+  geom_jitter(aes(color = Lineages, shape = Host), width = 0.2, size = 1.5, alpha = 0.4) +  scale_color_manual(values = c("L5"="#995200","L6"="#1eb040","A1"="#d1ae00","A4"="#ff9cdb","A2"="#8ef5c8", "A3"="#73c2ff", "L4"="#ff0000","L1"="#ff3091", "L2"="#001aff", "L3" ="#8a0bd2", "L7"="#fbff00", "L8"="#ff9d00","L9"="#37ff30", "L10"="#8fbda1", "Animal"="black", "Human"="grey")) + 
+  scale_shape_manual(values = c("Human" = 17, "Animal" = 16)) +
+  labs(x = "", y = "Percentage") +
+  theme_pubr() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "top"
+  ) +
+  theme(legend.position = "none") +
+  stat_compare_means(aes(group = Host), method = "wilcox.test", label = "p.format", 
+                     label.y.npc = 'bottom', size = 3) + # Ajuste de la posición de las etiquetas
+  facet_wrap(~Functional_Category, scales = "free_y") # Añadido facet_wrap
+
+print(p)
+```
+
+
+
+## Compared to reference H37Rv {.tabset}
+
+### All Lineages
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+merged_data <- merged_data %>%
+  mutate(across(where(is.character), ~na_if(., "")))
+
+# Convertir NA en NaN en todas las columnas
+merged_data <- merged_data %>%
+  mutate(across(everything(), ~ifelse(is.na(.), NaN, .)))
+
+p <- ggplot(merged_data, aes(x = Functional_Category, y = Ratio_Percentage, color = Lineages)) +
+  geom_jitter(alpha = 0.2) +
+  scale_color_manual(values = colors) +
+  labs(x = "", y = "Ratio_Percentage") +
+  theme_pubr() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1,size = 8),
+    legend.position = "top" 
+  )
+
+ggplotly(p)%>% layout(autosize = F, width = 800, height = 450)
+```
+
+### Split categories {.tabset}
+
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+create_plotMyco <- function(category) {
+  # Filtrar datos por la categoría funcional especificada
+  data_filtered <- merged_data %>% filter(Functional_Category == category)
+  conteos <- data_filtered %>%
+    group_by(Lineages) %>%
+    summarize(N = sum(!is.na(Ratio_Percentage)), max_value = max(Ratio_Percentage, na.rm = TRUE), .groups = 'drop')
+  
+  # Crear el gráfico
+  p <- ggplot(data_filtered, aes(x = Lineages, y = Ratio_Percentage, color = Lineages)) +
+    geom_jitter(alpha = 0.5) +
+    scale_color_manual(values = colors) +
+    labs(x = "", y = "Percentage") +
+    theme_pubr() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      legend.position = "top"
+    ) + 
+    geom_text(data = conteos, aes(label = N, y = max_value * 1.02), 
+              position = position_dodge(width = 0.75), 
+              size = 3, vjust = 0) + 
+    ggtitle(category) + 
+    stat_kwAllPairsDunnTest(hide.ns=TRUE, p.adjust.method = "BH") + 
+    theme(legend.position = "none") +
+    expand_limits(y = max(conteos$max_value) * 1.08) # Aumentar dinámicamente el espacio en el eje y
+  
+  print(p)
+  # ggplotly(p) %>% layout(autosize = F, width = 800, height = 400)
+}
+```
+
+#### PE/PPE
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("PE/PPE")
+```
+
+#### cell wall and cell processes
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("cell wall and cell processes")
+```
+
+#### conserved hypotheticals
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("conserved hypotheticals")
+```
+
+#### information pathways
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("information pathways")
+```
+
+#### insertion seqs and phages
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("insertion seqs and phages")
+```
+
+#### intermediary metabolism and respiration
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("intermediary metabolism and respiration")
+```
+
+#### lipid metabolism
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("lipid metabolism")
+```
+
+#### regulatory proteins
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("regulatory proteins")
+```
+
+#### unknown
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("unknown")
+```
+
+#### virulence, detoxification, adaptation
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("virulence, detoxification, adaptation")
+```
+
+#### NaN
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("NaN")
+```
+
+### Statistics
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+statistics <- merged_data %>%
+  group_by(Lineages, Functional_Category) %>%
+  summarise(
+    Count = n(),
+    Mean_Percentage = mean(Ratio_Percentage, na.rm = TRUE),
+    SD_Percentage = sd(Ratio_Percentage, na.rm = TRUE),
+    Median_Percentage = median(Ratio_Percentage, na.rm = TRUE),
+    IQR_Percentage = IQR(Ratio_Percentage, na.rm = TRUE)
+  )
+datatable(
+  statistics,
+  rownames = FALSE,
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+    pageLength = 10,
+    initComplete = JS(
+      "function(settings, json) {",
+      "$(document.head).append('<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" />');",
+      "$(this.api().table().header()).css({'background-color': '#3da68d', 'color': '#fff', 'font-size': '16px', 'font-family': 'Roboto'});",
+      "$(this.api().table().body()).css({'font-size': '14px', 'font-family': 'Roboto'});",
+      "}"
+    ),
+    class = 'cell-border stripe'
+  ),
+  class = 'cell-border stripe'
+)
+```
+
+### AnimalvsHuman
+```{r , echo=FALSE, fig.align='center', fig.height=9, fig.width=11, message=FALSE, warning=FALSE}
+merged_data$Host <- ifelse(substr(merged_data$Lineages, 1, 1) == "L", "Human", 
+                              ifelse(substr(merged_data$Lineages, 1, 1) == "A", "Animal", NA))
+
+p <- ggplot(merged_data, aes(x = Host, y = Ratio_Percentage)) +
+  geom_boxplot(aes(color = Host), fill = NA, alpha = 1, size = 1) + # Boxplot con contorno coloreado y sin relleno
+  geom_jitter(aes(color = Lineages, shape = Host), width = 0.2, size = 1.5, alpha = 0.4) +  scale_color_manual(values = c("L5"="#995200","L6"="#1eb040","A1"="#d1ae00","A4"="#ff9cdb","A2"="#8ef5c8", "A3"="#73c2ff", "L4"="#ff0000","L1"="#ff3091", "L2"="#001aff", "L3" ="#8a0bd2", "L7"="#fbff00", "L8"="#ff9d00","L9"="#37ff30", "L10"="#8fbda1", "Animal"="black", "Human"="grey")) + 
+  scale_shape_manual(values = c("Human" = 17, "Animal" = 16)) +
+  labs(x = "", y = "Ratio_Percentage") +
+  theme_pubr() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "top"
+  ) +
+  theme(legend.position = "none") +
+  stat_compare_means(aes(group = Host), method = "wilcox.test", label = "p.format", 
+                     label.y.npc = 'bottom', size = 3) + # Ajuste de la posición de las etiquetas
+  facet_wrap(~Functional_Category, scales = "free_y") # Añadido facet_wrap
+
+print(p)
+```

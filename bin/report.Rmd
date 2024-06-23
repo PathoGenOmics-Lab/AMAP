@@ -194,4 +194,60 @@ generate_statistics_table(data, "missingRvs")
 ```
 
 
+# Annotations of corrected CDS
+## COG Categories by EggNog Mapper {.tabset}
+
+### Plot ALL
+```{r allCOGs, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+datos_cog1 <- datos_cog 
+lvl_cogs <- c("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","S","T","U","V","NaN")
+datos_cog1$Functional_Category <- factor(datos_cog1$Functional_Category, levels = lvl_cogs)
+
+p <- ggplot(datos_cog1, aes(x = Functional_Category, y = Percentage, color = Lineages)) +
+  geom_jitter(alpha = 0.2) +
+  scale_color_manual(values = colors) +
+  labs(x = "Functional Category", y = "Percentage") +
+  theme_pubr() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "top"  
+  )
+
+ggplotly(p)%>% layout(autosize = F, width = 800, height = 400)
+```
+
+### Statistics
+
+```{r allstatsCOGs, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+statistics <- datos_cog %>%
+  group_by(Lineages, Functional_Category) %>%
+  summarise(
+    Count = n(),
+    Mean_Percentage = mean(Percentage, na.rm = TRUE),
+    SD_Percentage = sd(Percentage, na.rm = TRUE),
+    Median_Percentage = median(Percentage, na.rm = TRUE),
+    IQR_Percentage = IQR(Percentage, na.rm = TRUE),
+    Min_Percentage = min(Percentage, na.rm = TRUE),
+    Max_Percentage = max(Percentage, na.rm = TRUE)
+  )
+datatable(
+  statistics,
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+    pageLength = 10,
+    initComplete = JS(
+      "function(settings, json) {",
+      "$(document.head).append('<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" />');",
+      "$(this.api().table().header()).css({'background-color': '#3da68d', 'color': '#fff', 'font-size': '16px', 'font-family': 'Roboto'});",
+      "$(this.api().table().body()).css({'font-size': '14px', 'font-family': 'Roboto'});",
+      "}"
+    ),
+    class = 'cell-border stripe'
+  ),
+  class = 'cell-border stripe'
+)
+```
+
 

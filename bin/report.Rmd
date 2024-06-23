@@ -28,6 +28,7 @@ script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"
 library(ggplot2)
 library(plotly)
 library(dplyr)
+library(ggpubr)
 
 cog_summary <- "input_cog.txt"
 myco_summary <- "input_MycoBrowser.txt"
@@ -103,3 +104,11 @@ p <- ggplot(data, aes(x = V4, y = V2, color = V4)) +
 
 print(p)
 ```
+
+## CDS Table stats {.tabset}
+
+### CASE 1
+```{r}
+
+```
+

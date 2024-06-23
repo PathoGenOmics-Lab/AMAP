@@ -143,15 +143,55 @@ p <- ggplot(data, aes(x = V4, y = V2, color = V4)) +
 print(p)
 ```
 
-## CDS Table stats {.tabset}
+## CDS Heatmap LogMeanValues
+```{r cds_heatmap, echo=FALSE, fig.align='center', fig.height=5, fig.width=7, message=FALSE, warning=FALSE}
+p <- ggplot(means, aes(x = V4, y = V1, fill = log(mean_value))) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "C", name = "Log Mean Value") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 9.5),
+    axis.text.y = element_text(size = 9.5),
+    legend.position = "right"
+  ) +
+  labs(x = "Lineages", y = "Cases", title = "Heatmap of Log Mean Values")
+print(p)
+```
 
+
+## CDS Table stats {.tabset}
 ### CASE 1
-```{r}
+```{r case1_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
 generate_statistics_table(data, "case1")
 ```
-
+### CASE 1 KEEP
+```{r case1keep_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+generate_statistics_table(data, "case1_keep")
+```
+### CASE 1 REMOVE
+```{r case1remove_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+generate_statistics_table(data, "case1_remove")
+```
 ### CASE 2
-```{r}
+```{r case2_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
 generate_statistics_table(data, "case2")
 ```
+### CASE 3
+```{r case3_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+generate_statistics_table(data, "case3")
+```
+### CASE 4
+```{r case4_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+generate_statistics_table(data, "case4")
+```
+### ALL CDS
+```{r cds_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+generate_statistics_table(data, "CDS")
+```
+### MISSING RVs
+```{r missing_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+generate_statistics_table(data, "missingRvs")
+```
+
+
 

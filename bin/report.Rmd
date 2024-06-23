@@ -56,3 +56,50 @@ merged_data <- merge(my_myco, datos_myco, by = "Functional_Category", all = TRUE
 merged_data$Ratio_Percentage <- (merged_data$Count / merged_data$count) * 100
 ```
 
+# AMAP CDS Results {.tabset}
+## CDS Boxplot
+```{r cds_boxplot, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+data <- read.table(input_sum, header = FALSE, sep = "\t", dec=".")
+order_lineages <- rev(c("A4", "A3", "A2", "A1","L10","L9","L6","L5","L4","L3","L2","L7","L1","L8"))
+data$V4 <- factor(data$V4, levels = order_lineages)
+
+counts <- data %>% 
+  group_by(V4, V1) %>% 
+  summarise(n = n(), y_pos = max(V2) + 1)
+
+p <- ggplot(data, aes(x = V4, y = V2, color = V4)) +
+  geom_boxplot(outlier.shape = NA, fill = NA) +
+  geom_point(position = position_jitter(width = 0.2), alpha = 0.2) +
+  geom_text(data = counts, aes(x = V4, y = y_pos, label = n, color = V4), 
+            position = position_dodge(width = 0.75), size = 3) +
+  facet_wrap(~ V1, scales = "free_y", ncol = 4) +
+  ggpubr::theme_pubr() +
+  labs(x = "", y = "Number of CDS") + 
+  scale_color_manual(values = colors) +
+  theme(legend.position = "none", 
+        axis.text.x = element_text(size = 9.5)) 
+
+print(p)
+```
+
+## CDS Violinplot
+```{r cds_violin, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+means <- data %>% 
+  group_by(V4, V1) %>% 
+  summarise(mean_value = mean(V2), y_pos = max(V2) + 1)
+
+p <- ggplot(data, aes(x = V4, y = V2, color = V4)) +
+  geom_violin(fill = NA) +
+  stat_summary(fun = mean, geom = "point", shape = 18, size = 3, color = "black") +
+  stat_summary(fun.data = mean_cl_normal, geom = "errorbar", width = 0.2, color = "black") +
+  geom_text(data = means, aes(x = V4, y = y_pos, label = round(mean_value, 2), color = V4), 
+            position = position_dodge(width = 0.75), size = 3) +
+  facet_wrap(~ V1, scales = "free_y", ncol = 4) +
+  ggpubr::theme_pubr() +
+  labs(x = "", y = "Number of CDS") + 
+  scale_color_manual(values = colors) +
+  theme(legend.position = "none", 
+        axis.text.x = element_text(size = 9.5)) 
+
+print(p)
+```

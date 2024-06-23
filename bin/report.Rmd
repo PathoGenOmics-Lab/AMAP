@@ -442,3 +442,156 @@ p <- ggplot(datos_cog1, aes(x = Host, y = Percentage)) +
 print(p)
 ```
 
+# Functional Categories by Mycobrowser
+
+## FCatergories percentages {.tabset}
+
+### All Categories
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+datos_myco <- datos_myco %>%
+  mutate(across(where(is.character), ~na_if(., "")))
+
+# Convertir NA en NaN en todas las columnas
+datos_myco <- datos_myco %>%
+  mutate(across(everything(), ~ifelse(is.na(.), NaN, .)))
+
+p <- ggplot(datos_myco, aes(x = Functional_Category, y = Percentage, color = Lineages)) +
+  geom_jitter(alpha = 0.2) +
+  scale_color_manual(values = colors) +
+  labs(x = "", y = "Percentage") +
+  theme_pubr() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1,size = 8),
+    legend.position = "top"  
+  )
+
+ggplotly(p)%>% layout(autosize = F, width = 800, height = 450)
+```
+
+### Split categories {.tabset}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+
+create_plotMyco <- function(category) {
+  
+  # Filtrar datos por la categoría funcional especificada
+  data_filtered <- datos_myco %>% filter(Functional_Category == category)
+  conteos <- data_filtered %>%
+    group_by(Lineages) %>%
+    summarize(N = sum(!is.na(Percentage)), max_value = max(Percentage, na.rm = TRUE), .groups = 'drop')
+  
+  # Crear el gráfico
+  p <- ggplot(data_filtered, aes(x = Lineages, y = Percentage, color = Lineages)) +
+    geom_jitter(alpha = 0.5) +
+    scale_color_manual(values = colors) +
+    labs(x = "", y = "Percentage") +
+    theme_pubr() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      legend.position = "top"
+    ) + 
+    geom_text(data = conteos, aes(label = N, y = max_value * 1.02), 
+              position = position_dodge(width = 0.75), 
+              size = 3, vjust = 0) + 
+    ggtitle(category) + 
+    stat_kwAllPairsDunnTest(hide.ns=TRUE, p.adjust.method = "BH") + 
+    theme(legend.position = "none") +
+    expand_limits(y = max(conteos$max_value) * 1.08) # Aumentar dinámicamente el espacio en el eje y
+  
+  print(p)
+  # ggplotly(p) %>% layout(autosize = F, width = 800, height = 400)
+}
+```
+
+#### PE/PPE
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("PE/PPE")
+```
+
+#### cell wall and cell processes
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("cell wall and cell processes")
+```
+
+#### conserved hypotheticals
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("conserved hypotheticals")
+```
+
+#### information pathways
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("information pathways")
+```
+
+#### insertion seqs and phages
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("insertion seqs and phages")
+```
+
+#### intermediary metabolism and respiration
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("intermediary metabolism and respiration")
+```
+
+#### lipid metabolism
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("lipid metabolism")
+```
+
+#### regulatory proteins
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("regulatory proteins")
+```
+
+#### unknown
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("unknown")
+```
+
+#### virulence, detoxification, adaptation
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("virulence, detoxification, adaptation")
+```
+
+#### NaN
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("NaN")
+```
+
+## Compared to reference H37Rv {.tabset}
+
+### All Lineages
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+merged_data <- merged_data %>%
+  mutate(across(where(is.character), ~na_if(., "")))
+
+# Convertir NA en NaN en todas las columnas
+merged_data <- merged_data %>%
+  mutate(across(everything(), ~ifelse(is.na(.), NaN, .)))
+
+p <- ggplot(merged_data, aes(x = Functional_Category, y = Ratio_Percentage, color = Lineages)) +
+  geom_jitter(alpha = 0.2) +
+  scale_color_manual(values = colors) +
+  labs(x = "", y = "Ratio_Percentage") +
+  theme_pubr() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1,size = 8),
+    legend.position = "top" 
+  )
+
+ggplotly(p)%>% layout(autosize = F, width = 800, height = 450)
+```
+
+### Split categories {.tabset}
+
+#### PE/PPE
+#### cell wall and cell processes
+#### conserved hypotheticals
+#### information pathways
+#### insertion seqs and phages
+#### intermediary metabolism and respiration
+#### lipid metabolism
+#### regulatory proteins
+#### unknown
+#### virulence, detoxification, adaptation
+#### NaN
+

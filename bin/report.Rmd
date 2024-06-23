@@ -56,6 +56,43 @@ my_myco <- data.frame(
 )
 merged_data <- merge(my_myco, datos_myco, by = "Functional_Category", all = TRUE)
 merged_data$Ratio_Percentage <- (merged_data$Count / merged_data$count) * 100
+
+generate_statistics_table <- function(data, case_value) {
+  data_filtered <- data %>% filter(V1 == case_value)
+  
+  data_filtered <- data_filtered %>% rename(Lineages = V4)
+  
+  statistics <- data_filtered %>%
+    group_by(Lineages) %>%
+    summarise(
+      Count = n(),
+      Mean = mean(V2, na.rm = TRUE),
+      SD = sd(V2, na.rm = TRUE),
+      Median = median(V2, na.rm = TRUE),
+      IQR = IQR(V2, na.rm = TRUE),
+      Min = min(V2, na.rm = TRUE),
+      Max = max(V2, na.rm = TRUE)
+    )
+  
+  datatable(
+    statistics,
+    extensions = 'Buttons',
+    options = list(
+      dom = 'Bfrtip',
+      buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+      pageLength = 14,
+      initComplete = JS(
+        "function(settings, json) {",
+        "$(document.head).append('<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" />');",
+        "$(this.api().table().header()).css({'background-color': '#3da68d', 'color': '#fff', 'font-size': '16px', 'font-family': 'Roboto'});",
+        "$(this.api().table().body()).css({'font-size': '14px', 'font-family': 'Roboto'});",
+        "}"
+      ),
+      class = 'cell-border stripe'
+    ),
+    class = 'cell-border stripe'
+  )
+}
 ```
 
 # AMAP CDS Results {.tabset}
@@ -110,38 +147,11 @@ print(p)
 
 ### CASE 1
 ```{r}
-data_filtered <- data %>% filter(V1 == "case1")
+generate_statistics_table(data, "case1")
+```
 
-data_filtered <- data_filtered %>% rename(Lineages = V4)
-
-statistics <- data_filtered %>%
-  group_by(Lineages) %>%
-  summarise(
-    Count = n(),
-    Mean = mean(V2, na.rm = TRUE),
-    SD = sd(V2, na.rm = TRUE),
-    Median = median(V2, na.rm = TRUE),
-    IQR = IQR(V2, na.rm = TRUE),
-    Min = min(V2, na.rm = TRUE),
-    Max = max(V2, na.rm = TRUE)
-  )
-
-datatable(
-  statistics,
-  extensions = 'Buttons',
-  options = list(
-    dom = 'Bfrtip',
-    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-    pageLength = 14,
-    initComplete = JS(
-      "function(settings, json) {",
-      "$(this.api().table().header()).css({'background-color': '#3da68d', 'color': '#fff', 'font-size': '16px', 'font-family': 'Arial'});",
-      "$(this.api().table().body()).css({'font-size': '14px', 'font-family': 'Arial'});",
-      "}"
-    ),
-    class = 'cell-border stripe'
-  ),
-  class = 'cell-border stripe'
-)
+### CASE 2
+```{r}
+generate_statistics_table(data, "case2")
 ```
 

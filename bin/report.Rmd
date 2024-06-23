@@ -557,6 +557,64 @@ create_plotMyco("virulence, detoxification, adaptation")
 create_plotMyco("NaN")
 ```
 
+### Statistics
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+statistics <- datos_myco %>%
+  group_by(Lineages, Functional_Category) %>%
+  summarise(
+    Count = n(),
+    Mean_Percentage = mean(Percentage, na.rm = TRUE),
+    SD_Percentage = sd(Percentage, na.rm = TRUE),
+    Median_Percentage = median(Percentage, na.rm = TRUE),
+    IQR_Percentage = IQR(Percentage, na.rm = TRUE)
+  )
+datatable(
+  statistics,
+  rownames = FALSE,
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+    pageLength = 10,
+    initComplete = JS(
+      "function(settings, json) {",
+      "$(document.head).append('<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" />');",
+      "$(this.api().table().header()).css({'background-color': '#3da68d', 'color': '#fff', 'font-size': '16px', 'font-family': 'Roboto'});",
+      "$(this.api().table().body()).css({'font-size': '14px', 'font-family': 'Roboto'});",
+      "}"
+    ),
+    class = 'cell-border stripe'
+  ),
+  class = 'cell-border stripe'
+)
+```
+
+### AnimalvsHuman
+```{r , echo=FALSE, fig.align='center', fig.height=9, fig.width=11, message=FALSE, warning=FALSE}
+
+datos_myco$Host <- ifelse(substr(datos_myco$Lineages, 1, 1) == "L", "Human", 
+                              ifelse(substr(datos_myco$Lineages, 1, 1) == "A", "Animal", NA))
+
+p <- ggplot(datos_myco, aes(x = Host, y = Percentage)) +
+  geom_boxplot(aes(color = Host), fill = NA, alpha = 1, size = 1) + # Boxplot con contorno coloreado y sin relleno
+  geom_jitter(aes(color = Lineages, shape = Host), width = 0.2, size = 1.5, alpha = 0.4) +  scale_color_manual(values = c("L5"="#995200","L6"="#1eb040","A1"="#d1ae00","A4"="#ff9cdb","A2"="#8ef5c8", "A3"="#73c2ff", "L4"="#ff0000","L1"="#ff3091", "L2"="#001aff", "L3" ="#8a0bd2", "L7"="#fbff00", "L8"="#ff9d00","L9"="#37ff30", "L10"="#8fbda1", "Animal"="black", "Human"="grey")) + 
+  scale_shape_manual(values = c("Human" = 17, "Animal" = 16)) +
+  labs(x = "", y = "Percentage") +
+  theme_pubr() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "top"
+  ) +
+  theme(legend.position = "none") +
+  stat_compare_means(aes(group = Host), method = "wilcox.test", label = "p.format", 
+                     label.y.npc = 'bottom', size = 3) + # Ajuste de la posición de las etiquetas
+  facet_wrap(~Functional_Category, scales = "free_y") # Añadido facet_wrap
+
+print(p)
+```
+
+
+
 ## Compared to reference H37Rv {.tabset}
 
 ### All Lineages
@@ -583,15 +641,143 @@ ggplotly(p)%>% layout(autosize = F, width = 800, height = 450)
 
 ### Split categories {.tabset}
 
-#### PE/PPE
-#### cell wall and cell processes
-#### conserved hypotheticals
-#### information pathways
-#### insertion seqs and phages
-#### intermediary metabolism and respiration
-#### lipid metabolism
-#### regulatory proteins
-#### unknown
-#### virulence, detoxification, adaptation
-#### NaN
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+create_plotMyco <- function(category) {
+  # Filtrar datos por la categoría funcional especificada
+  data_filtered <- merged_data %>% filter(Functional_Category == category)
+  conteos <- data_filtered %>%
+    group_by(Lineages) %>%
+    summarize(N = sum(!is.na(Ratio_Percentage)), max_value = max(Ratio_Percentage, na.rm = TRUE), .groups = 'drop')
+  
+  # Crear el gráfico
+  p <- ggplot(data_filtered, aes(x = Lineages, y = Ratio_Percentage, color = Lineages)) +
+    geom_jitter(alpha = 0.5) +
+    scale_color_manual(values = colors) +
+    labs(x = "", y = "Percentage") +
+    theme_pubr() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      legend.position = "top"
+    ) + 
+    geom_text(data = conteos, aes(label = N, y = max_value * 1.02), 
+              position = position_dodge(width = 0.75), 
+              size = 3, vjust = 0) + 
+    ggtitle(category) + 
+    stat_kwAllPairsDunnTest(hide.ns=TRUE, p.adjust.method = "BH") + 
+    theme(legend.position = "none") +
+    expand_limits(y = max(conteos$max_value) * 1.08) # Aumentar dinámicamente el espacio en el eje y
+  
+  print(p)
+  # ggplotly(p) %>% layout(autosize = F, width = 800, height = 400)
+}
+```
 
+#### PE/PPE
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("PE/PPE")
+```
+
+#### cell wall and cell processes
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("cell wall and cell processes")
+```
+
+#### conserved hypotheticals
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("conserved hypotheticals")
+```
+
+#### information pathways
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("information pathways")
+```
+
+#### insertion seqs and phages
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("insertion seqs and phages")
+```
+
+#### intermediary metabolism and respiration
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("intermediary metabolism and respiration")
+```
+
+#### lipid metabolism
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("lipid metabolism")
+```
+
+#### regulatory proteins
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("regulatory proteins")
+```
+
+#### unknown
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("unknown")
+```
+
+#### virulence, detoxification, adaptation
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("virulence, detoxification, adaptation")
+```
+
+#### NaN
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+create_plotMyco("NaN")
+```
+
+### Statistics
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+statistics <- merged_data %>%
+  group_by(Lineages, Functional_Category) %>%
+  summarise(
+    Count = n(),
+    Mean_Percentage = mean(Ratio_Percentage, na.rm = TRUE),
+    SD_Percentage = sd(Ratio_Percentage, na.rm = TRUE),
+    Median_Percentage = median(Ratio_Percentage, na.rm = TRUE),
+    IQR_Percentage = IQR(Ratio_Percentage, na.rm = TRUE)
+  )
+datatable(
+  statistics,
+  rownames = FALSE,
+  extensions = 'Buttons',
+  options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+    pageLength = 10,
+    initComplete = JS(
+      "function(settings, json) {",
+      "$(document.head).append('<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" />');",
+      "$(this.api().table().header()).css({'background-color': '#3da68d', 'color': '#fff', 'font-size': '16px', 'font-family': 'Roboto'});",
+      "$(this.api().table().body()).css({'font-size': '14px', 'font-family': 'Roboto'});",
+      "}"
+    ),
+    class = 'cell-border stripe'
+  ),
+  class = 'cell-border stripe'
+)
+```
+
+### AnimalvsHuman
+```{r , echo=FALSE, fig.align='center', fig.height=9, fig.width=11, message=FALSE, warning=FALSE}
+merged_data$Host <- ifelse(substr(merged_data$Lineages, 1, 1) == "L", "Human", 
+                              ifelse(substr(merged_data$Lineages, 1, 1) == "A", "Animal", NA))
+
+p <- ggplot(merged_data, aes(x = Host, y = Ratio_Percentage)) +
+  geom_boxplot(aes(color = Host), fill = NA, alpha = 1, size = 1) + # Boxplot con contorno coloreado y sin relleno
+  geom_jitter(aes(color = Lineages, shape = Host), width = 0.2, size = 1.5, alpha = 0.4) +  scale_color_manual(values = c("L5"="#995200","L6"="#1eb040","A1"="#d1ae00","A4"="#ff9cdb","A2"="#8ef5c8", "A3"="#73c2ff", "L4"="#ff0000","L1"="#ff3091", "L2"="#001aff", "L3" ="#8a0bd2", "L7"="#fbff00", "L8"="#ff9d00","L9"="#37ff30", "L10"="#8fbda1", "Animal"="black", "Human"="grey")) + 
+  scale_shape_manual(values = c("Human" = 17, "Animal" = 16)) +
+  labs(x = "", y = "Ratio_Percentage") +
+  theme_pubr() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "top"
+  ) +
+  theme(legend.position = "none") +
+  stat_compare_means(aes(group = Host), method = "wilcox.test", label = "p.format", 
+                     label.y.npc = 'bottom', size = 3) + # Ajuste de la posición de las etiquetas
+  facet_wrap(~Functional_Category, scales = "free_y") # Añadido facet_wrap
+
+print(p)
+```

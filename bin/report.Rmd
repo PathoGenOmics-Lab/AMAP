@@ -30,6 +30,7 @@ library(plotly)
 library(dplyr)
 library(ggpubr)
 library(DT)
+library(ggsimplestats)
 
 cog_summary <- "input_cog.txt"
 myco_summary <- "input_MycoBrowser.txt"
@@ -252,152 +253,192 @@ datatable(
 ### Scatterplot per COG {.tabset}
 ```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
 create_plotCOG <- function(category, title) {
+  
   # Filtrar datos por la categoría funcional especificada
   data_filtered <- datos_cog1 %>% filter(Functional_Category == category)
+  conteos <- data_filtered %>%
+    group_by(Lineages) %>%
+    summarize(N = sum(!is.na(Percentage)), max_value = max(Percentage, na.rm = TRUE), .groups = 'drop')
   
   # Crear el gráfico
   p <- ggplot(data_filtered, aes(x = Lineages, y = Percentage, color = Lineages)) +
     geom_jitter(alpha = 0.5) +
     scale_color_manual(values = colors) +
-    labs(x = "Functional Category", y = "Percentage") +
+    labs(x = "", y = "Percentage") +
     theme_pubr() +
     theme(
       axis.text.x = element_text(angle = 45, hjust = 1),
-      legend.position = "top"  
+      legend.position = "top"
     ) + 
-    ggtitle(title)
+    geom_text(data = conteos, aes(label = N, y = max_value * 1.02), 
+              position = position_dodge(width = 0.75), 
+              size = 3, vjust = 0) + 
+    ggtitle(title) + 
+    stat_kwAllPairsDunnTest(hide.ns=TRUE, p.adjust.method = "BH") + 
+    theme(legend.position = "none") +
+    expand_limits(y = max(conteos$max_value) * 1.08) # Aumentar dinámicamente el espacio en el eje y
   
-  ggplotly(p) %>% layout(autosize = F, width = 800, height = 400)
+  print(p)
+  # ggplotly(p) %>% layout(autosize = F, width = 800, height = 400)
 }
 ```
 
 #### A
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("A","A - RNA processing and modification")
 ```
 
 #### B
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("B","B - Chromatin structure and dynamics")
 ```
 
 #### C
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("C","C - Energy production and conversion")
 ```
 
 #### D
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("D","D - Cell cycle control, cell division, chromosome partitioning")
 ```
 
 #### E
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("E","E - Amino acid transport and metabolism")
 ```
 
 #### F
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("F","F - Nucleotide transport and metabolism")
 ```
 
 #### G
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("G","G - Carbohydrate transport and metabolism")
 ```
 
 #### H
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("H","H - Coenzyme transport and metabolism")
 ```
 
 #### I
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("I","I - Lipid transport and metabolism")
 ```
 
 #### J
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("J","J - Translation, ribosomal structure and biogenesis")
 ```
 
 #### K
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("K","K - Transcription")
 ```
 
 #### L
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("L","L - Replication, recombination and repair")
 ```
 
 #### M
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("M","M - Cell wall/membrane/envelope biogenesis")
 ```
 
 #### N
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("N","N - Cell motility")
 ```
 
 #### O
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("O","O - Posttranslational modification, protein turnover, chaperones")
 ```
 
 #### P
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("P","P - Inorganic ion transport and metabolism")
 ```
 
 #### Q
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("Q","Q - Secondary metabolites biosynthesis, transport and catabolism")
 ```
 
 #### R
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("R","R - General function prediction only")
 ```
 
 #### S
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("S","S - Function unknown")
 ```
 
 #### T
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("T","T - Signal transduction mechanisms")
 ```
 
 #### U
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("U","U - Intracellular trafficking, secretion, and vesicular transport")
 ```
 
 #### V
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("V","V - Defense mechanisms")
 ```
 
 #### W
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("W","W - Extracellular structures")
 ```
+
 #### X
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("X","X - Mobilome: prophages, transposons")
 ```
+
 #### Y
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("Y","Y - Nuclear structure")
 ```
+
 #### Z
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("Z","Z - Cytoskeleton")
 ```
+
 #### NaN
-```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r , echo=FALSE, fig.align='center', fig.height=5, fig.width=9, message=FALSE, warning=FALSE}
 create_plotCOG("NaN","Unknown")
 ```
+
+### AnimalvsHuman
+```{r , echo=FALSE, fig.align='center', fig.height=9, fig.width=11, message=FALSE, warning=FALSE}
+
+datos_cog1$Host <- ifelse(substr(datos_cog1$Lineages, 1, 1) == "L", "Human", 
+                              ifelse(substr(datos_cog1$Lineages, 1, 1) == "A", "Animal", NA))
+
+p <- ggplot(datos_cog1, aes(x = Host, y = Percentage)) +
+  geom_boxplot(aes(color = Host), fill = NA, alpha = 1, size = 1) + # Boxplot con contorno coloreado y sin relleno
+  geom_jitter(aes(color = Lineages, shape = Host), width = 0.2, size = 1.5, alpha = 0.4) +  scale_color_manual(values = c("L5"="#995200","L6"="#1eb040","A1"="#d1ae00","A4"="#ff9cdb","A2"="#8ef5c8", "A3"="#73c2ff", "L4"="#ff0000","L1"="#ff3091", "L2"="#001aff", "L3" ="#8a0bd2", "L7"="#fbff00", "L8"="#ff9d00","L9"="#37ff30", "L10"="#8fbda1", "Animal"="black", "Human"="grey")) + 
+  scale_shape_manual(values = c("Human" = 17, "Animal" = 16)) +
+  labs(x = "", y = "Percentage") +
+  theme_pubr() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "top"
+  ) +
+  theme(legend.position = "none") +
+  stat_compare_means(aes(group = Host), method = "wilcox.test", label = "p.format", 
+                     label.y.npc = 'bottom', size = 3) + # Ajuste de la posición de las etiquetas
+  facet_wrap(~Functional_Category, scales = "free_y") # Añadido facet_wrap
+
+print(p)
+```
+

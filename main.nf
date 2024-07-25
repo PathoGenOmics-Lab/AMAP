@@ -25,12 +25,14 @@ log.info """\
  """
 
 process EGGNOG_DB {
+    cpus 1
+    memory '10 GB'
     output:
     file "eggnog_db.log"
 
     script:
-    // Comprueba si params.eggnog_db es una ruta absoluta. Si no, concatena con workflow.launchDir
-    def eggnog_db_dir = params.eggnog_db.startsWith("/") ? params.eggnog_db : "${workflow.launchDir}/${params.eggnog_db}"
+    // Comprueba si params.eggnog_db es una ruta absoluta. Si no, concatena con projectDir
+    def eggnog_db_dir = params.eggnog_db.startsWith("/") ? params.eggnog_db : "${projectDir}/${params.eggnog_db}"
 
     """
     mkdir -p ${eggnog_db_dir}
@@ -49,6 +51,8 @@ Channel
 
 process MTB_TYPER { //done
     tag "$sampleId"
+    cpus 1
+    memory '1 GB'
     publishDir "${params.outdir}/MTB_TYPER/typing", pattern: "*.", mode: 'copy'
     publishDir "${params.outdir}/MTB_TYPER/fastas", pattern: "*.fasta", mode: 'copy'
     input:
@@ -57,13 +61,15 @@ process MTB_TYPER { //done
     tuple stdout, path("*.fasta"), path("*.")
     script:
     """
-    python3 ${workflow.launchDir}/bin/mtb_typer.py -i $fasta -t "/reference/snps_lineages.tsv" -r "/reference/MTB_ancestor_reference.fasta"
+    python3 ${projectDir}/bin/mtb_typer.py -i $fasta -t "/home/ruizro/test_amap/snps_lineages.tsv" -r "/reference/MTB_ancestor_reference.fasta"
     ls *. | tr -d '.' | tr -d '\\n'
     """
 }
 
 process BAKTA_ANNOTATOR { //done
     tag "$sampleId"
+    cpus 10
+    memory '6 GB'
     publishDir "${params.outdir}/BAKTA/", mode: 'copy'
     input:
     tuple val(sampleId), path(fasta), path(nametag)
@@ -79,6 +85,8 @@ process BAKTA_ANNOTATOR { //done
 
 process MINIPROT { //done
     tag "$sampleId"
+    cpus 1
+    memory '500 MB'
     input:
     tuple val(sampleId), path(fasta), path(proteins), path(tsv)
     output:
@@ -92,6 +100,8 @@ process MINIPROT { //done
 }
 
 process TYPE_CASES {
+    cpus 1
+    memory '1 GB'
     tag "$sampleId"
     publishDir "${params.outdir}/CDS_CASES/summary", pattern: "*summary.tsv", mode: 'copy'
     publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*case*.tsv", mode: 'copy'
@@ -103,11 +113,13 @@ process TYPE_CASES {
     tuple val(sampleId), path("${sampleId}_corrected.tsv"), path("*summary.tsv"),path("*case*.tsv"), path("*rvmissing.tsv"), path("*.html")
     script:
     """
-    python3 ${workflow.launchDir}/bin/classify_cases2.py -b ${tsv} -p ${miniprot} -bb ${badbakta} -c ${cds}
+    python3 ${projectDir}/bin/classify_cases2.py -b ${tsv} -p ${miniprot} -bb ${badbakta} -c ${cds}
     """
 }
 
 process FIX_CDS {
+    cpus 1
+    memory '1 GB'
     tag "$sampleId"
     input:
     tuple val(sampleId), path(corrected_tsv), path(summary), path(fasta), path(faa), path(tsv)
@@ -117,18 +129,20 @@ process FIX_CDS {
 
     script:
     """
-    python3 ${workflow.launchDir}/bin/check_cds.py ${fasta} ${corrected_tsv}
+    python3 ${projectDir}/bin/check_cds.py ${fasta} ${corrected_tsv}
     """
 }
 
 process ANNOT_EGGNOGMAP {
+    cpus 32
+    memory '10 GB'
     tag "$sampleId"
     input:
     tuple val(sampleId), path(fixtsv), path(fixfaa), path(fixfna), path(baktatsv), path(fasta), path(dbMarker)
     output:
     tuple val(sampleId), path("${sampleId}.emapper.annotations")
     script:
-    def eggnog_db_dir = params.eggnog_db.startsWith("/") ? params.eggnog_db : "${workflow.launchDir}/${params.eggnog_db}"
+    def eggnog_db_dir = params.eggnog_db.startsWith("/") ? params.eggnog_db : "${projectDir}/${params.eggnog_db}"
     """
     emapper.py  -i ${fixfaa} --cpu 0 -m diamond --sensmode fast -o ${sampleId} --data_dir ${eggnog_db_dir}
     """
@@ -143,11 +157,11 @@ process GET_DUPLICATIONS {
     tuple path("duplications_*"), path("${sampleId}.AMAP.faa.renamed.dup"), path("duplications_${sampleId}_groups.tsv")
     script:
     """
-    python3 ${workflow.launchDir}/bin/rename_fastas.py ${emapper} ${fixfaa}
+    python3 ${projectDir}/bin/rename_fastas.py ${emapper} ${fixfaa}
     diamond blastp --db ${fixfaa}.renamed -q ${fixfaa}.renamed --outfmt 6 qseqid sseqid pident length mismatch gaps qstart qend sstart send evalue bitscore qlen slen nident --no-self-hits --header > duplications_${sampleId}
 
-    python3 ${workflow.launchDir}/bin/get_duplicationsv2.py duplications_${sampleId}
-    python3 ${workflow.launchDir}/bin/dup_ex_multifasta.py duplications_${sampleId}_groups.tsv ${sampleId}.AMAP.faa.renamed
+    python3 ${projectDir}/bin/get_duplicationsv2.py duplications_${sampleId}
+    python3 ${projectDir}/bin/dup_ex_multifasta.py duplications_${sampleId}_groups.tsv ${sampleId}.AMAP.faa.renamed
     """
 }
 
@@ -161,7 +175,7 @@ process GET_OUTPUTS {
     script:
     """
     sed -i '1d' ${fixtsv}
-    python3 ${workflow.launchDir}/bin/generate_tsv_gff_gbk.py ${emapper} ${fixtsv} ${baktatsv} /reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt ${fasta}
+    python3 ${projectDir}/bin/generate_tsv_gff_gbk.py ${emapper} ${fixtsv} ${baktatsv} /reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt ${fasta}
     """
 }
 
@@ -174,7 +188,7 @@ process COUNT_ANNOT {
     path("*.tsv")
     script:
     """
-    python3 ${workflow.launchDir}/bin/count_annot.py ${mastertable}
+    python3 ${projectDir}/bin/count_annot.py ${mastertable}
     """
 }
 
@@ -203,8 +217,6 @@ process FINAL_REPORT{
     publishDir "${params.outdir}/", mode: 'copy'
     input:
     tuple path(input_cog), path(input_myco), path(input_summary)
-    output:
-    path("final_report.html")
     script:
     """
     echo ${input_cog}
@@ -212,9 +224,9 @@ process FINAL_REPORT{
     echo ${input_summary}
     WORK_DIR=`pwd`
     echo \$WORK_DIR
-    Rscript -e "rmarkdown::render('${workflow.launchDir}/bin/check.Rmd', output_file='${workflow.launchDir}/${params.outdir}/final_report2.html', params=list(cog_summary='\$WORK_DIR/${input_cog}', myco_summary='\$WORK_DIR/${input_myco}', input_sum='\$WORK_DIR/${input_summary}'))"    
-    #Rscript -e "rmarkdown::render('${workflow.launchDir}/bin/check_quarto.qmd', output_file='${workflow.launchDir}/${params.outdir}/final_report.html', params=list(cog_summary='${input_cog}', myco_summary='${input_myco}', input_sum='${input_summary}'))"    
-    quarto render /home/paula/AMAP/bin/check_quarto.qmd --to html --output 'final_report.html' -P cog_summary:\$WORK_DIR/${input_cog} -P myco_summary:\$WORK_DIR/${input_myco} -P input_sum:\$WORK_DIR/${input_summary}
+    Rscript -e "rmarkdown::render('${projectDir}/bin/check.Rmd', output_file='${projectDir}/${params.outdir}/final_report2.html', params=list(cog_summary='\$WORK_DIR/${input_cog}', myco_summary='\$WORK_DIR/${input_myco}', input_sum='\$WORK_DIR/${input_summary}'))"    
+    #Rscript -e "rmarkdown::render('${projectDir}/bin/check_quarto.qmd', output_file='${projectDir}/${params.outdir}/final_report.html', params=list(cog_summary='${input_cog}', myco_summary='${input_myco}', input_sum='${input_summary}'))"    
+    #quarto render /home/paula/AMAP/bin/check_quarto.qmd --to html --output 'final_report.html' -P cog_summary:\$WORK_DIR/${input_cog} -P myco_summary:\$WORK_DIR/${input_myco} -P input_sum:\$WORK_DIR/${input_summary}
     """
 }
 
@@ -230,6 +242,8 @@ process PASS {
 }
 
 process ALL_DUP {
+    cpus 13
+    memory '10 GB'
     publishDir "${params.outdir}/finalreport/", mode: 'copy'
     input:
     path(fastas)
@@ -242,7 +256,7 @@ process ALL_DUP {
     
     diamond cluster -d all_fasta.fa -o all.diamond --approx-id 30 -M 16G
     diamond blastp --db all_fasta.fa -q all_fasta.fa --outfmt 6 qseqid sseqid pident length mismatch gaps qstart qend sstart send evalue bitscore qlen slen nident --no-self-hits --header > all.diamond
-    python3 ${workflow.launchDir}/bin/network_genomes.py all.diamond
+    python3 ${projectDir}/bin/network_genomes.py all.diamond
     """
 }
 
@@ -282,4 +296,3 @@ workflow {
     FINAL_REPORT(result_fix2.combine(result_fix1))
     ALL_DUP(res_dup.collect())
     }
-

@@ -16,7 +16,7 @@ RUN mkdir -p /app/matplotlib_config /data/bakta_db /reference && \
 RUN apt-get update && \
     apt-get install -y git build-essential zlib1g-dev r-base pandoc libxml2-dev libcurl4-openssl-dev libssl-dev && \
     conda install -c conda-forge python=3.9 pandas plotly biopython  matplotlib=3.8.3 && \
-    conda install -c bioconda -c conda-forge eggNOG-mapper=2.1.12 bakta=1.9.3 snp-sites=2.5.1 ska2=0.3.9 && \
+    conda install -c bioconda -c conda-forge eggNOG-mapper=2.1.12 bakta=1.9.3 snp-sites=2.5.1 ska2=0.3.9 iqtree=2.3.5 && \
     pip install intervaltree python-louvain pyvis==0.3.2 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*

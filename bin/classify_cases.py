@@ -7,6 +7,15 @@ import os
 from intervaltree import Interval, IntervalTree
 import plotly.graph_objects as go
 
+__author__ = 'Paula Ruiz-Rodriguez'
+__credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
+__license__ = ['GPL 3']
+__version__ = '0.1.0'
+__maintainer__ = '@paururo'
+__email__ = 'paula.ruiz-rodriguez@uv.es'
+__status__ = 'finished'
+__lab__ = 'PathoGenOmics (I2SysBio)'
+
 def clean_id(gene_id):
     """
     Cleans a gene ID based on the 4-part rule.

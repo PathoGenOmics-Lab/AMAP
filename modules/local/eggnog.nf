@@ -1,5 +1,5 @@
 process EGGNOG_DB {
-    tag 'eggnog_db_setup'
+    tag "eggnog_db_setup"
     cpus   16
     memory '45 GB'
 
@@ -47,7 +47,7 @@ process EGGNOG_DB {
 }
 
 process ANNOT_EGGNOGMAP {
-    tag    { sampleId }
+    tag    "$sampleId"
     cpus   32
     memory '10 GB'
     publishDir "${params.outdir}/annotations", mode: 'copy'

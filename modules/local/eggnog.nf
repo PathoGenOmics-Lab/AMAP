@@ -45,3 +45,35 @@ process EGGNOG_DB {
     ln -sfn ${eggnog_db_dir} eggnog_db
     """
 }
+
+process ANNOT_EGGNOGMAP {
+    tag    { sampleId }
+    cpus   32
+    memory '10 GB'
+    publishDir "${params.outdir}/annotations", mode: 'copy'
+
+    input:
+    tuple val(sampleId), path(fixfaa), path(fixfna)
+    path eggnog_db
+
+    output:
+    tuple val(sampleId), path("*.emapper.annotations")
+
+    script:
+    """
+    set -euo pipefail
+    mkdir -p scratch
+    echo ${eggnog_db} 
+
+    emapper.py \
+        -i ${fixfaa} \
+        -m diamond \
+        --dmnd_db ${eggnog_db}/bacteria.dmnd \
+        --cpu ${task.cpus} \
+        --sensmode fast \
+        --tax_scope 2 \
+        --target_orthologs one2one \
+        -o ${sampleId} \
+        --data_dir ${eggnog_db}
+    """
+}

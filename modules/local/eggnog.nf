@@ -58,14 +58,13 @@ process ANNOT_EGGNOGMAP {
     tag    "$sampleId"
     cpus   32
     memory '10 GB'
-    publishDir "${params.outdir}/annotations", mode: 'copy'
-
+    
     input:
     tuple val(sampleId), path(fixfaa), path(fixfna)
     path eggnog_db
 
     output:
-    tuple val(sampleId), path("*.emapper.annotations")
+    tuple val(sampleId), path("${sampleId}.emapper.annotations")
 
     script:
     """

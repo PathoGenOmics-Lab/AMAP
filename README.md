@@ -128,11 +128,12 @@ All inputs that Bakta software offers to annotate a genome, generates a director
 ## AMAP Workflow
 ```mermaid
 %%{init: { 'theme': 'dark' } }%%
+%%{init: { 'theme': 'dark' } }%%
 flowchart TB
     subgraph "INPUT"
     v0["GENOMES"]
     end
-    v3([MTB TYPER])
+    v3([PATHOTYPR])
     v4([BAKTA ANNOTATOR])
     v6([MINIPROT])
     v8([TYPE CASES])
@@ -146,6 +147,7 @@ flowchart TB
     ANNOTATION])
     v16["FINAL RUN 
     REPORT"]
+    v22([PANGENE])
     subgraph "RESULTS"
     v12["OG Bakta annotation 
     /BAKTA"]
@@ -153,8 +155,12 @@ flowchart TB
     /CDS_CASES"]
     v13["Corrected annotation
     /AMAP"]
+    v23["Duplicated genes
+    /DUPLICATIONS"]
+    v21["Pangenome"
+    /PANGENE]
     v15["Lineage Typing
-    /MTB_TYPER"]
+    /PATHOTYPR"]
     
     end
     v3 --> v4
@@ -170,7 +176,6 @@ flowchart TB
     v20 --> v13
     v19 --> v13
     v3 --> v15
-    v12 --> v16
     v10 --> v16
     v13 --> v16
     v15 --> v16
@@ -178,13 +183,19 @@ flowchart TB
     v14 --> v19
     v18 --> v19
     v14 --> v20
+    v14 --> v22
+    v22 --> v21
+    v20 --> v23
+
+
 ```
+
 ## AMAP Algorithm
 
 ## Citation
->Ruiz-Rodriguez, P., & Coscolla, M. (2024). AMAP (Version 0.1.0) [Computer software]. https://doi.org/10.5281/zenodo.1234
+>Ruiz-Rodriguez, P., & Coscolla, M. (2025). AMAP (Version 0.1.0) [Computer software]. https://doi.org/10.5281/zenodo.1234
 ```bibtex
-@software{Ruiz-Rodriguez_AMAP_2023,
+@software{Ruiz-Rodriguez_AMAP_2025,
   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},
   doi = {10.5281/zenodo.1234},
   license = {GPL-3.0},
@@ -192,7 +203,7 @@ flowchart TB
   title = {{AMAP}},
   url = {https://github.com/PathoGenOmics-Lab/AMAP},
   version = {0.1.0},
-  year = {2024}}
+  year = {2025}}
 ```
 ---
 <h2 id="contributors" align="center">

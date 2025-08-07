@@ -95,3 +95,32 @@ process GET_COUNT {
     python3 ${projectDir}/bin/count_annot.py ${mastertable}
     """
 }
+
+process GET_ALLDUP {
+    cpus 13
+    memory '10 GB'
+    publishDir "${params.outdir}/DUPLICATIONS", mode: 'copy'
+
+    input:
+    path dup_fastas
+
+    output:
+    tuple path("homologous_communities.tsv"), path("homologous_communities.html")
+
+    script:
+    """
+    cat *.dup > all_fastas.fa
+    rm *.dup
+
+    diamond blastp \\
+        --db all_fastas.fa \\
+        -q all_fastas.fa \\
+        --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen nident \\
+        --very-sensitive \\
+        --no-self-hits \\
+        --header \\
+        > all_vs_all.diamond
+
+    python3 ${projectDir}/bin/network_genomes.py all_vs_all.diamond
+    """
+}

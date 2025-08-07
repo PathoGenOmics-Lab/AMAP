@@ -31,18 +31,24 @@ def clean_id(gene_id):
         # Otherwise, return the original ID.
         return gene_id
 
-def format_final_id(gene_id):
+def format_cluster_id(gene_id, base_name):
     """
-    Formats a gene ID to keep only the first 3 parts.
-    Example: 'L8_G26689_Rv0609A_703830-704057' becomes 'L8_G26689_Rv0609A'.
-    If it has fewer than 3 parts, it returns the original ID.
+    Formats the final gene ID.
+    - If the ID consists of a single part (e.g., 'Rv1234'), it joins it
+      with the base_name (e.g., 'Sample1_Rv1234').
+    - If the ID has 3 or more parts, it keeps the first 3.
+    - Otherwise, it returns the ID as is.
     """
     parts = str(gene_id).split('_')
-    if len(parts) >= 3:
-        # Join the first three parts.
+    if len(parts) == 1:
+        # If only one part remains, prepend the base name
+        return f"{base_name}_{parts[0]}"
+    elif len(parts) >= 3:
+        # If it's a complex ID, keep the first three parts.
         return '_'.join(parts[:3])
-    # Otherwise, return the ID as is.
-    return gene_id
+    else:
+        # Otherwise (e.g., 2 parts), return the ID as is.
+        return gene_id
 
 def read_to_pandaBakta(bakta_path):
     """
@@ -373,7 +379,7 @@ def main():
         locus_tag = value['Locus Tags'][0]
         overlaps = 0
         if locus_tag in new_groups:
-             overlaps = len(new_groups[locus_tag]['Locus Tags'])
+                overlaps = len(new_groups[locus_tag]['Locus Tags'])
 
         new_coord, new_id = None, None
         if overlaps > 1:
@@ -529,7 +535,7 @@ def main():
         if not bakta_matches.empty:
             original_id = bakta_matches.iloc[0]['Locus Tag']
             # Apply formatting to the final ID
-            cluster_id = format_final_id(original_id)
+            cluster_id = format_cluster_id(original_id, base_name)
             rv_ids = ", ".join(miniprot_matches['Prot Id'].unique())
             temp_list_single.append([cluster_id, strand, start, end, rv_ids])
         else:
@@ -537,11 +543,11 @@ def main():
             joined_rvs = ", ".join(rv_ids)
             if len(rv_ids) == 0:
                 # Apply formatting to the final ID
-                cluster_id = format_final_id(value)
+                cluster_id = format_cluster_id(value, base_name)
                 temp_list_single.append([cluster_id, strand, start, end, ""])
             elif len(rv_ids) < 2:
-                # Apply formatting to the final ID
-                cluster_id = format_final_id(f"{base_name}_{rv_ids[0]}")
+                # Apply formatting to the final ID from the single rv_id
+                cluster_id = format_cluster_id(rv_ids[0], base_name)
                 temp_list_single.append([cluster_id, strand, start, end, joined_rvs])
             else:
                 cluster_id = f"{base_name}_dup_{dup_counter}"

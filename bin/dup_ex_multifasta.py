@@ -1,32 +1,70 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import pandas as pd
 from Bio import SeqIO
 import argparse
 
-def extraer_secuencias(fichero_tsv, fichero_fasta, fichero_salida):
-    # Leer el archivo TSV
-    df = pd.read_csv(fichero_tsv, sep='\t')
+__author__ = 'Paula Ruiz-Rodriguez'
+__credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
+__license__ = ['GPL 3']
+__version__ = '0.1.0'
+__maintainer__ = '@paururo'
+__email__ = 'paula.ruiz.rodriguez@csic.es'
+__status__ = 'finished'
+__lab__ = 'PathoGenOmics (I2SysBio)'
 
-    # Extraer los IDs de la segunda columna y limpiarlos
-    ids = []
+
+def extract_sequences(tsv_filepath, fasta_filepath, output_filepath):
+    """
+    Extracts sequences from a FASTA file based on a list of IDs from a TSV file.
+
+    Args:
+        tsv_filepath (str): Path to the input TSV file.
+        fasta_filepath (str): Path to the input multifasta file.
+        output_filepath (str): Path for the output FASTA file.
+    """
+    # Read the TSV file into a pandas DataFrame.
+    df = pd.read_csv(tsv_filepath, sep='\t')
+
+    # Extract the sequence IDs from the 'Members' column.
+    # The IDs are stored in a string that looks like a list, e.g., "['id1', 'id2']".
+    # We clean this string and split it to get individual IDs.
+    sequence_ids = []
     for row in df['Members']:
-        ids.extend(row.strip("[]'").split("', '"))
+        # Removes brackets and single quotes, then splits the string into a list of IDs.
+        cleaned_ids = row.strip("[]'").split("', '")
+        sequence_ids.extend(cleaned_ids)
 
-    # Limpiar los IDs para extraer solo la parte relevante antes del punto y coma
+    # Read the FASTA file and create a dictionary of sequences, with IDs as keys.
+    # This allows for quick lookups.
+    available_sequences = {record.id: record for record in SeqIO.parse(fasta_filepath, 'fasta')}
+    
+    # Create a list of sequences that match the IDs from the TSV file.
+    found_sequences = [available_sequences[seq_id] for seq_id in sequence_ids if seq_id in available_sequences]
 
-    # Leer el archivo FASTA y guardar las secuencias que coinciden con los IDs
-    secuencias = {record.id: record for record in SeqIO.parse(fichero_fasta, 'fasta')}
-    secuencias_encontradas = [secuencias[id] for id in ids if id in secuencias]
-
-    # Guardar las secuencias encontradas en un nuevo archivo FASTA
-    SeqIO.write(secuencias_encontradas, fichero_salida, 'fasta')
+    # Write the found sequences to a new FASTA file.
+    SeqIO.write(found_sequences, output_filepath, 'fasta')
+    print(f"Successfully extracted {len(found_sequences)} sequences to {output_filepath}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="")
-    parser.add_argument("tsv", help="tsv file")
-    parser.add_argument("cds", help="cds multifasta")
+    """
+    Main function to parse command-line arguments and run the script.
+    """
+    parser = argparse.ArgumentParser(
+        description="Extracts specific sequences from a multifasta file based on a list of IDs provided in a TSV file."
+    )
+    parser.add_argument("tsv", help="Path to the input TSV file containing the sequence IDs in a 'Members' column.")
+    parser.add_argument("cds", help="Path to the input multifasta file (e.g., CDS sequences).")
+    
     args = parser.parse_args()
-    extraer_secuencias(args.tsv, args.cds, args.cds+".dup")
+    
+    # Define the output file name by appending '.dup' to the input CDS file name.
+    output_file = args.cds + ".dup"
+    
+    # Call the function to perform the extraction.
+    extract_sequences(args.tsv, args.cds, output_file)
 
 if __name__ == '__main__':
     main()

@@ -1,242 +1,356 @@
-#! /usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+"""
+This script analyzes BLASTp output to identify, characterize, and visualize
+networks of homologous gene communities within and between genomes. It performs
+the following steps:
+1.  Filters BLAST results to retain significant hits.
+2.  Builds a protein-protein interaction network for each genome.
+3.  Detects gene communities (modules) within each network using the Louvain method.
+4.  Identifies homologous relationships between communities across different genomes.
+5.  Calculates various network topology metrics for each community.
+6.  Generates a detailed TSV report of the communities and their metrics.
+7.  Creates an interactive HTML visualization of the homologous community network.
+"""
 
 import argparse
 import pandas as pd
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 from pyvis.network import Network
-import community as community_louvain
-from networkx.algorithms import community
-import matplotlib.colors
+from pathlib import Path
+from typing import List, Dict, Set, Tuple, Any
 
 __author__ = 'Paula Ruiz-Rodriguez'
 __credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
-__license__ = 'GPL 3'
+__license__ = ['GPL 3']
 __version__ = '0.1.0'
 __maintainer__ = '@paururo'
-__email__ = 'paula.ruiz-rodriguez@uv.es'
-__status__ = 'developing'
+__email__ = 'paula.ruiz.rodriguez@csic.es'
+__status__ = 'finished'
 __lab__ = 'PathoGenOmics (I2SysBio)'
 
-def read_and_create(p_file):
-    df = pd.read_csv(p_file, sep='\t', comment='#')
-    names_columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gaps", "qstart", "qend", "sstart", "send", "evalue", "bitscore", "qlen", "slen", "nident"]
-    df.columns = names_columns
-    df['same_seq'] = df.iloc[:, 0] == df.iloc[:, 1]
-    df['p_query'] = (df.iloc[:, 14] / df.iloc[:, 12]).replace([np.inf, -np.inf], np.nan) * 100
-    df['p_subject'] = (df.iloc[:, 14] / df.iloc[:, 13]).replace([np.inf, -np.inf], np.nan) * 100
-    df_filtered = df.loc[df['same_seq'] == False]
-    df_final_filtered = df_filtered.loc[(df_filtered['p_query'] >= 80) | (df_filtered['p_subject'] >= 80)]
-    return df_final_filtered
 
-def extract_unique_sequences(df):
-    """ Extrae todas las secuencias únicas del dataframe, tomando solo los primeros dos elementos de las secuencias. """
-    sequences = set()
+# --- 1. Data Loading and Preparation ---
 
-    for seq in df['qseqid'].tolist() + df['sseqid'].tolist():
-        # Dividir la secuencia y tomar los primeros dos elementos
-        split_seq = seq.split('_')[:2]
-        # Unir los elementos y añadir al conjunto de secuencias
-        sequences.add('_'.join(split_seq))
+def load_and_filter_blast_results(blast_filepath: Path) -> pd.DataFrame:
+    """
+    Reads a BLASTp output file (outfmt 6) and filters for significant alignments.
 
-    return sequences
-def create_network(df, sequence):
-    """ Crea una red para una secuencia (genoma) específica. """
-    filtered_df = df[(df['qseqid'].str.startswith(sequence)) & (df['sseqid'].str.startswith(sequence))]
-    G = nx.Graph()
-    for idx, row in filtered_df.iterrows():
-        G.add_edge(row['qseqid'], row['sseqid'])
-    return G
+    Filtering criteria:
+    - Removes self-hits.
+    - Keeps hits where the alignment covers at least 80% of the query or the subject.
 
-def create_pairs_set(df):
-    """ Crea un conjunto con todos los pares de secuencias en ambas direcciones. """
-    pairs = set()
-    for _, row in df.iterrows():
-        pairs.add((row['qseqid'], row['sseqid']))
-        pairs.add((row['sseqid'], row['qseqid']))
-    return pairs
+    Args:
+        blast_filepath: Path to the BLASTp output file.
 
-def find_homologous_communities(labeled_communities, pairs):
-    homologous_communities = {}
-    for genome1, communities1 in labeled_communities.items():
-        for genome2, communities2 in labeled_communities.items():
-            if genome1 != genome2:
-                for com1_name, com1_members in communities1.items():
-                    for com2_name, com2_members in communities2.items():
-                        if any((m1, m2) in pairs or (m2, m1) in pairs for m1 in com1_members for m2 in com2_members):
-                            homologous_communities.setdefault((genome1, com1_name), []).append((genome2, com2_name))
-    return homologous_communities
+    Returns:
+        A pandas DataFrame with the filtered BLAST results.
+    """
+    column_names = [
+        "qseqid", "sseqid", "pident", "length", "mismatch", "gaps", "qstart",
+        "qend", "sstart", "send", "evalue", "bitscore", "qlen", "slen", "nident"
+    ]
+    try:
+        df = pd.read_csv(blast_filepath, sep='\t', comment='#', header=None, names=column_names)
+    except FileNotFoundError:
+        print(f"Error: Input file not found at {blast_filepath}")
+        exit(1)
 
-def detect_communities(network):
-    communities = community.louvain_communities(network)
-    return communities
+    # Calculate query and subject coverage percentages
+    df['query_coverage'] = (df['nident'] / df['qlen']) * 100
+    df['subject_coverage'] = (df['nident'] / df['slen']) * 100
 
-def label_communities(communities_by_genome):
+    # Filter out self-hits and low-coverage hits
+    df_filtered = df[df['qseqid'] != df['sseqid']]
+    df_final = df_filtered[
+        (df_filtered['query_coverage'] >= 80) | (df_filtered['subject_coverage'] >= 80)
+    ].copy()
+
+    return df_final
+
+
+def get_genome_ids(df: pd.DataFrame) -> Set[str]:
+    """
+    Extracts unique genome identifiers from the sequence IDs in the BLAST results.
+    Assumes a sequence ID format of 'GenomeID_GeneID...'.
+
+    Args:
+        df: The filtered BLAST results DataFrame.
+
+    Returns:
+        A set of unique genome identifiers.
+    """
+    all_seq_ids = set(df['qseqid'].unique()) | set(df['sseqid'].unique())
+    genome_ids = {"_".join(seq_id.split('_')[:2]) for seq_id in all_seq_ids}
+    return genome_ids
+
+
+# --- 2. Network Construction and Community Detection ---
+
+def build_intra_genome_networks(df: pd.DataFrame, genome_ids: Set[str]) -> Dict[str, nx.Graph]:
+    """
+    Builds a protein-protein interaction network for each individual genome.
+
+    Args:
+        df: The filtered BLAST results DataFrame.
+        genome_ids: A set of unique genome identifiers.
+
+    Returns:
+        A dictionary mapping each genome ID to its corresponding NetworkX graph.
+    """
+    networks = {}
+    for genome_id in genome_ids:
+        genome_df = df[
+            df['qseqid'].str.startswith(genome_id) & df['sseqid'].str.startswith(genome_id)
+        ]
+        G = nx.from_pandas_edgelist(genome_df, 'qseqid', 'sseqid')
+        networks[genome_id] = G
+    return networks
+
+
+def detect_and_label_communities(networks: Dict[str, nx.Graph]) -> Dict[str, Dict[str, Set[str]]]:
+    """
+    Detects communities in each network using the Louvain method and labels them.
+
+    Args:
+        networks: A dictionary of genome networks.
+
+    Returns:
+        A nested dictionary: {genome_id: {community_name: {node1, node2, ...}}}.
+    """
     labeled_communities = {}
-    for genome, communities in communities_by_genome.items():
-        labeled_communities[genome] = {f"Community_{i}": comm for i, comm in enumerate(communities)}
+    for genome_id, G in networks.items():
+        # Use networkx's implementation of the Louvain method
+        communities = nx.community.louvain_communities(G)
+        labeled_communities[genome_id] = {
+            f"Community_{i}": comm for i, comm in enumerate(communities)
+        }
     return labeled_communities
 
 
+# --- 3. Homologous Community Analysis ---
 
-def get_unique_colors(n):
-    """Genera n colores únicos en formato RGB."""
-    colors = plt.cm.get_cmap('tab20', n)
-    return [colors(i) for i in range(n)]
+def find_homologous_communities(
+    labeled_communities: Dict[str, Dict[str, Set[str]]],
+    blast_df: pd.DataFrame
+) -> Dict[Tuple[str, str], List[Tuple[str, str]]]:
+    """
+    Identifies homologous relationships between communities across different genomes.
 
-def assign_colors_to_genomes(genomes):
-    """Asigna un color único a cada genoma."""
-    unique_colors = get_unique_colors(len(genomes))
-    return {genome: matplotlib.colors.to_hex(color) for genome, color in zip(genomes, unique_colors)}
+    Two communities are considered homologous if at least one protein from the first
+    community has a significant BLAST hit to a protein in the second community.
+
+    Args:
+        labeled_communities: The dictionary of labeled communities for each genome.
+        blast_df: The original filtered BLAST results DataFrame.
+
+    Returns:
+        A dictionary mapping a community (genome_id, community_name) to a list of
+        its homologous communities [(homolog_genome, homolog_community), ...].
+    """
+    # Create a set of all homologous pairs for fast lookups
+    homologous_pairs = set(zip(blast_df['qseqid'], blast_df['sseqid']))
+
+    homologous_map = {}
+    genome_ids = list(labeled_communities.keys())
+
+    # Compare every community from every genome against all others
+    for i, g1_id in enumerate(genome_ids):
+        for j in range(i, len(genome_ids)):
+            g2_id = genome_ids[j]
+
+            for c1_name, c1_nodes in labeled_communities[g1_id].items():
+                for c2_name, c2_nodes in labeled_communities[g2_id].items():
+                    # Skip self-comparison if it's the same community in the same genome
+                    if g1_id == g2_id and c1_name == c2_name:
+                        continue
+
+                    # Check for any homologous link between the two communities
+                    is_homologous = any(
+                        (n1, n2) in homologous_pairs or (n2, n1) in homologous_pairs
+                        for n1 in c1_nodes for n2 in c2_nodes
+                    )
+
+                    if is_homologous:
+                        homologous_map.setdefault((g1_id, c1_name), []).append((g2_id, c2_name))
+                        # Add the reverse relationship if genomes are different
+                        if g1_id != g2_id:
+                            homologous_map.setdefault((g2_id, c2_name), []).append((g1_id, c1_name))
+    return homologous_map
 
 
-def visualize_homologous_communities_with_pyvis(homologous_communities, labeled_communities):
-    net = Network(height='1080px', width='100%', bgcolor='#FFFFFF', font_color='black')
+# --- 4. Network Metrics Calculation ---
 
-    # Preparar los datos: identificar los tamaños de las comunidades y las relaciones homólogas
-    community_sizes = {}
-    for genome, communities in labeled_communities.items():
-        for community_name, nodes in communities.items():
-            community_sizes[(genome, community_name)] = len(nodes)
+def calculate_subgraph_metrics(subgraph: nx.Graph) -> Dict[str, Any]:
+    """Calculates various topological metrics for a given subgraph."""
+    metrics = {}
+    if not subgraph or subgraph.number_of_nodes() == 0:
+        return {
+            'avg_degree': 0, 'density': 0, 'avg_clustering': 0,
+            'avg_path_length': np.nan, 'modularity': np.nan
+        }
 
-    # Normalizar los tamaños para que sean más manejables en la visualización
-    max_size = max(community_sizes.values())
-    min_size, max_vis_size = 10, 50  # Tamaños mínimo y máximo para la visualización
-    normalized_sizes = {key: int(min_size + (max_vis_size - min_size) * (size / max_size)) for key, size in community_sizes.items()}
+    metrics['avg_degree'] = np.mean(list(dict(subgraph.degree()).values()))
+    metrics['density'] = nx.density(subgraph)
+    metrics['avg_clustering'] = nx.average_clustering(subgraph)
+    metrics['modularity'] = nx.community.modularity(subgraph, [set(subgraph.nodes())])
+    
+    if nx.is_connected(subgraph):
+        metrics['avg_path_length'] = nx.average_shortest_path_length(subgraph)
+    else:
+        # Calculate for the largest connected component
+        largest_cc = max(nx.connected_components(subgraph), key=len)
+        largest_subgraph = subgraph.subgraph(largest_cc)
+        if largest_subgraph.number_of_nodes() > 1:
+            metrics['avg_path_length'] = nx.average_shortest_path_length(largest_subgraph)
+        else:
+            metrics['avg_path_length'] = 0
 
-    # Asignar colores a los genomas
-    genomes = labeled_communities.keys()
-    genome_colors = assign_colors_to_genomes(genomes)
-    # Añadir nodos representando las comunidades
-    for (genome, community), size in normalized_sizes.items():
-        rgba_color = genome_colors[genome]  # Obtener color RGBA para el genoma
-        hex_color = matplotlib.colors.to_hex(rgba_color)  # Convertir a formato hexadecimal
-        net.add_node(f"{genome}:{community}", label=f"{genome}:{community}", size=size, color=hex_color)
-
-    # Añadir aristas representando relaciones homólogas
-    for (genome, community), homologs in homologous_communities.items():
-        for homolog_genome, homolog_community in homologs:
-            net.add_edge(f"{genome}:{community}", f"{homolog_genome}:{homolog_community}")
-
+    return metrics
 
 
-    # Mostrar el gráfico
-    net.show("homologous_communities.html", notebook=False)
-
-def calculate_centrality_measures(network):
-    degree_centrality = nx.degree_centrality(network)
-    closeness_centrality = nx.closeness_centrality(network)
-    betweenness_centrality = nx.betweenness_centrality(network)
-    return {
-        'degree': degree_centrality,
-        'closeness': closeness_centrality,
-        'betweenness': betweenness_centrality
-    }
-
-def calculate_additional_metrics(network, nodes):
-    try:
-        eigen_centralities = nx.eigenvector_centrality(network)
-        avg_eigen = np.mean(list(eigen_centralities.values()))
-    except nx.PowerIterationFailedConvergence:
-        avg_eigen = np.nan
-
-    try:
-        katz_centralities = nx.katz_centrality(network, max_iter=5000, alpha=0.005)
-        avg_katz = np.mean(list(katz_centralities.values()))
-    except nx.PowerIterationFailedConvergence:
-        avg_katz = np.nan
-
-    density = nx.density(network)
-    clustering_coefficient = nx.average_clustering(network)
-    avg_path_length = nx.average_shortest_path_length(network) if nx.is_connected(network) else float('inf')
-    transitivity = nx.transitivity(network)
-    communities = [set(nodes)]
-    modularity = nx.algorithms.community.modularity(network, communities)
-
-    return {
-        "density": density,
-        "clustering_coefficient": clustering_coefficient,
-        "average_path_length": avg_path_length,
-        "average_eigen_centralities": avg_eigen,
-        "average_katz_centralities": avg_katz,
-        "transitivity": transitivity,
-        "modularity": modularity
-    }
-
-def get_community_info(genome, community, labeled_communities, network):
-    nodes = labeled_communities[genome][community]
-    element_counts = {element.split(";")[1]: 0 for element in nodes}
-    for node in nodes:
-        element = node.split(";")[1]
-        element_counts[element] += 1
-
+def get_community_report_row(
+    genome_id: str,
+    community_name: str,
+    labeled_communities: Dict,
+    network: nx.Graph
+) -> List[Any]:
+    """Generates a single row of data for the final report DataFrame."""
+    nodes = labeled_communities[genome_id][community_name]
     subgraph = network.subgraph(nodes)
-    centralities = calculate_centrality_measures(subgraph)
-    additional_metrics = calculate_additional_metrics(subgraph, nodes)
+    metrics = calculate_subgraph_metrics(subgraph)
+    
+    # Extract gene names (assuming format '...;GeneName;...')
+    elements = [node.split(';')[1] if len(node.split(';')) > 1 else 'Unknown' for node in nodes]
 
-    avg_degree = np.mean(list(centralities['degree'].values()))
-    avg_closeness = np.mean(list(centralities['closeness'].values()))
-    avg_betweenness = np.mean(list(centralities['betweenness'].values()))
+    return [
+        genome_id,
+        community_name,
+        len(nodes),
+        dict(pd.Series(elements).value_counts()),
+        metrics.get('avg_degree', 0),
+        metrics.get('density', 0),
+        metrics.get('avg_clustering', 0),
+        metrics.get('avg_path_length', np.nan),
+        metrics.get('modularity', np.nan),
+        ", ".join(sorted(list(nodes)))
+    ]
 
-    return [genome, community, len(nodes), element_counts, avg_degree, avg_closeness, avg_betweenness,
-            additional_metrics.get('density', np.nan), additional_metrics.get('clustering_coefficient', np.nan),
-            additional_metrics.get('average_path_length', np.nan), additional_metrics.get('average_eigen_centralities', np.nan),
-            additional_metrics.get('average_katz_centralities', np.nan), additional_metrics.get('transitivity', np.nan),
-            additional_metrics.get('modularity', np.nan), ', '.join(nodes)]
 
-def create_homologous_communities_df(labeled_communities, homologous_communities, networks):
-    rows = []
-    for genome, network in networks.items():
-        for community in labeled_communities[genome]:
-            row = get_community_info(genome, community, labeled_communities, network)
-            homologs = homologous_communities.get((genome, community), [])
+def create_summary_report(
+    labeled_communities: Dict,
+    homologous_map: Dict,
+    networks: Dict
+) -> pd.DataFrame:
+    """Creates a DataFrame summarizing all communities and their homologous relationships."""
+    report_rows = []
+    processed_pairs = set()
+
+    for (g1_id, c1_name), homologs in homologous_map.items():
+        for (g2_id, c2_name) in homologs:
+            # Create a sorted tuple to represent the pair uniquely
+            pair = tuple(sorted(((g1_id, c1_name), (g2_id, c2_name))))
+            if pair in processed_pairs:
+                continue
             
-            if homologs:
-                for homolog_genome, homolog_community in homologs:
-                    homolog_row = get_community_info(homolog_genome, homolog_community, labeled_communities, networks[homolog_genome])
-                    rows.append(row + homolog_row)
-            else:
-                empty_row = [np.nan] * len(row)
-                rows.append(row + empty_row)
+            row1 = get_community_report_row(g1_id, c1_name, labeled_communities, networks[g1_id])
+            row2 = get_community_report_row(g2_id, c2_name, labeled_communities, networks[g2_id])
+            report_rows.append(row1 + row2)
+            processed_pairs.add(pair)
 
-    columns = ["Genome1", "Community1", "Size1", "Elements1", "AverageDegree1", "AverageCloseness1", "AverageBetweenness1",
-               "Density1", "ClusteringCoefficient1", "AveragePathLength1", "Eigen1", "Katz1","transitivity1","modularity1", "Nodes1",
-               "Genome2", "Community2", "Size2", "Elements2", "AverageDegree2", "AverageCloseness2", "AverageBetweenness2",
-               "Density2", "ClusteringCoefficient2", "AveragePathLength2", "Eigen2", "Katz2","transitivity2","modularity2", "Nodes2"]
-    df = pd.DataFrame(rows, columns=columns)
-    return df
+    columns = [
+        "Genome1", "Community1", "Size1", "Elements1", "AvgDegree1", "Density1",
+        "AvgClustering1", "AvgPathLength1", "Modularity1", "Nodes1",
+        "Genome2", "Community2", "Size2", "Elements2", "AvgDegree2", "Density2",
+        "AvgClustering2", "AvgPathLength2", "Modularity2", "Nodes2"
+    ]
+    return pd.DataFrame(report_rows, columns=columns)
 
+
+# --- 5. Visualization ---
+
+def visualize_network(
+    labeled_communities: Dict,
+    homologous_map: Dict,
+    output_path: Path
+):
+    """Creates an interactive HTML network visualization using pyvis."""
+    net = Network(height='100vh', width='100%', bgcolor='#FFFFFF', font_color='black', notebook=False)
+    net.force_atlas_2based(gravity=-50, central_gravity=0.01, spring_length=100)
+
+    # Assign a unique color to each genome
+    genome_ids = list(labeled_communities.keys())
+    colors = plt.cm.get_cmap('tab20', len(genome_ids))
+    genome_colors = {gid: mcolors.to_hex(colors(i)) for i, gid in enumerate(genome_ids)}
+
+    # Add nodes (communities)
+    for genome_id, communities in labeled_communities.items():
+        for comm_name, nodes in communities.items():
+            node_id = f"{genome_id}:{comm_name}"
+            node_size = int(10 + 40 * (len(nodes) / 100)) # Scale size
+            net.add_node(
+                node_id,
+                label=comm_name,
+                size=max(10, node_size),
+                color=genome_colors[genome_id],
+                title=f"Genome: {genome_id}\nCommunity: {comm_name}\nSize: {len(nodes)}"
+            )
+
+    # Add edges (homologous relationships)
+    for (g1_id, c1_name), homologs in homologous_map.items():
+        for (g2_id, c2_name) in homologs:
+            # Avoid adding self-loops for intra-genome homology
+            if g1_id == g2_id and c1_name == c2_name:
+                continue
+            
+            source_node = f"{g1_id}:{c1_name}"
+            target_node = f"{g2_id}:{c2_name}"
+            net.add_edge(source_node, target_node)
+
+    net.show(str(output_path), notebook=False)
+    print(f"Successfully generated interactive network at {output_path}")
+
+
+# --- Main Execution ---
 
 def main():
-    parser = argparse.ArgumentParser(description="Read blast and generate cluster of duplications")
-    parser.add_argument("file", help="Blastp output")
+    """Main function to parse arguments and run the network analysis workflow."""
+    parser = argparse.ArgumentParser(
+        description="Analyze BLAST results to find and visualize homologous gene communities."
+    )
+    parser.add_argument(
+        "blast_file",
+        help="Path to the input BLASTp output file (format 6)."
+    )
     args = parser.parse_args()
+    
+    input_path = Path(args.blast_file)
+    output_tsv = input_path.parent / "homologous_communities.tsv"
+    output_html = input_path.parent / "homologous_communities.html"
 
-    df = read_and_create(args.file)
-    unique_sequences = extract_unique_sequences(df)
-    networks = {seq: create_network(df, seq) for seq in unique_sequences}
-    pairs = create_pairs_set(df)
-    communities_by_genome = {genome: detect_communities(net) for genome, net in networks.items()}
-    labeled_communities = label_communities(communities_by_genome)
-    homologous_communities = find_homologous_communities(labeled_communities, pairs)
-    for genome, communities in labeled_communities.items():
-        for community_id, nodes in communities.items():
-            print(f"Genoma: {genome}, Comunidad: {community_id}, Nodos: {list(nodes)}")
+    # --- Workflow ---
+    # 1. Load and filter data
+    blast_df = load_and_filter_blast_results(input_path)
+    genome_ids = get_genome_ids(blast_df)
 
-    # 4. Presentar Agrupaciones Homólogas
-    for (genome, community), homologs in homologous_communities.items():
-        print(f"En el genoma {genome}, la comunidad {community} es homóloga a las siguientes comunidades en otros genomas:")
-        for homolog_genome, homolog_community in homologs:
-            print(f"  - {homolog_community} en el genoma {homolog_genome}")
+    # 2. Build networks and detect communities
+    networks = build_intra_genome_networks(blast_df, genome_ids)
+    labeled_communities = detect_and_label_communities(networks)
 
+    # 3. Find homologous relationships
+    homologous_map = find_homologous_communities(labeled_communities, blast_df)
 
+    # 4. Generate summary report and save
+    report_df = create_summary_report(labeled_communities, homologous_map, networks)
+    report_df.to_csv(output_tsv, sep="\t", index=False)
+    print(f"Successfully generated report at {output_tsv}")
 
-    visualize_homologous_communities_with_pyvis(homologous_communities, labeled_communities)
-    #reporte = generate_report(labeled_communities, homologous_communities, networks)
-    #print(reporte)
-    df = create_homologous_communities_df(labeled_communities, homologous_communities, networks)
-    df.to_csv("homologous_communities.tsv", sep="\t", index=False)
+    # 5. Generate interactive visualization
+    visualize_network(labeled_communities, homologous_map, output_html)
+
 if __name__ == "__main__":
     main()

@@ -21,7 +21,7 @@ __license__ = ['GPL 3']
 __version__ = '0.1.0'
 __maintainer__ = '@paururo'
 __email__ = 'paula.ruiz-rodriguez@uv.es'
-__status__ = 'developing'
+__status__ = 'finished'
 __lab__ = 'PathoGenOmics (I2SysBio)'
 
 def format_gff_attributes(feature: SeqFeature) -> str:

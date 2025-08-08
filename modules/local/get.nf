@@ -12,6 +12,7 @@ process GET_DUPLICATIONS {
 
     output:
     path("*.dup"), emit: dup_fastas
+    path("duplications*")
 
     script:
     """

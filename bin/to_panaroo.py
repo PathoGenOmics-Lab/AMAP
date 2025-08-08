@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+This script converts a GenBank file (GBK) into a GFF3 file formatted
+specifically for compatibility with Panaroo, mimicking the Prokka GFF3 style.
+It processes 'gene' and 'CDS' features, creating appropriate attributes
+and parent-child relationships, and appends the FASTA sequence to the end.
+"""
+
+import argparse
+from pathlib import Path
+from typing import Dict, List, Any
+from Bio import SeqIO
+from Bio.SeqRecord import SeqRecord
+from Bio.SeqFeature import SeqFeature
+
+__author__ = 'Paula Ruiz-Rodriguez'
+__credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
+__license__ = ['GPL 3']
+__version__ = '0.1.0'
+__maintainer__ = '@paururo'
+__email__ = 'paula.ruiz-rodriguez@uv.es'
+__status__ = 'developing'
+__lab__ = 'PathoGenOmics (I2SysBio)'
+
+def format_gff_attributes(feature: SeqFeature) -> str:
+    """
+    Formats the GFF3 attributes column for a given feature.
+
+    Args:
+        feature: A Biopython SeqFeature object.
+
+    Returns:
+        A semicolon-separated string of GFF3 attributes.
+    """
+    attributes = []
+    locus_tag = feature.qualifiers.get("locus_tag", [None])[0]
+
+    if not locus_tag:
+        return ""
+
+    if feature.type == 'gene':
+        attributes.append(f"ID={locus_tag}_gene")
+        attributes.append(f"Name={locus_tag}")
+        attributes.append(f"gene={locus_tag}")
+    
+    elif feature.type == 'CDS':
+        attributes.append(f"ID={locus_tag}")
+        attributes.append(f"Parent={locus_tag}_gene")
+        if "product" in feature.qualifiers:
+            attributes.append(f"product={feature.qualifiers['product'][0]}")
+        if "db_xref" in feature.qualifiers:
+            # Join multiple db_xrefs if they exist
+            db_xrefs = ",".join(feature.qualifiers['db_xref'])
+            attributes.append(f"db_xref={db_xrefs}")
+        if "inference" in feature.qualifiers:
+            attributes.append(f"inference={feature.qualifiers['inference'][0]}")
+
+    return ";".join(attributes)
+
+def convert_gbk_to_panaroo_gff3(gbk_path: Path, gff3_path: Path):
+    """
+    Reads a GenBank file and writes a Panaroo-compatible GFF3 file.
+
+    Args:
+        gbk_path: The path to the input GenBank file.
+        gff3_path: The path to the output GFF3 file.
+    """
+    try:
+        gbk_record = SeqIO.read(gbk_path, "genbank")
+    except FileNotFoundError:
+        print(f"Error: Input file not found at {gbk_path}")
+        return
+    except Exception as e:
+        print(f"An error occurred while reading the GenBank file: {e}")
+        return
+
+    with open(gff3_path, "w") as gff3_file:
+        # Write GFF3 header
+        gff3_file.write("##gff-version 3\n")
+        gff3_file.write(f"##sequence-region {gbk_record.id} 1 {len(gbk_record.seq)}\n")
+
+        # Process and write features
+        for feature in gbk_record.features:
+            if feature.type not in ["gene", "CDS"]:
+                continue
+
+            start = feature.location.start + 1
+            end = feature.location.end
+            strand = '+' if feature.strand == 1 else '-'
+            score = '.'
+            phase = '0' if feature.type == 'CDS' else '.'
+            
+            # Determine the source based on feature type
+            source = "Prodigal:002006" if feature.type == 'CDS' else "AMAP"
+            
+            attribute_str = format_gff_attributes(feature)
+            if not attribute_str:
+                continue
+
+            gff3_file.write(
+                f"{gbk_record.id}\t{source}\t{feature.type}\t"
+                f"{start}\t{end}\t{score}\t{strand}\t{phase}\t{attribute_str}\n"
+            )
+
+        # Append the FASTA sequence at the end of the file
+        gff3_file.write("##FASTA\n")
+        gff3_file.write(f">{gbk_record.id}\n")
+        # Write sequence with line breaks every 60 characters for readability
+        for i in range(0, len(gbk_record.seq), 60):
+            gff3_file.write(str(gbk_record.seq[i:i+60]) + "\n")
+
+    print(f"Successfully converted {gbk_path.name} to {gff3_path.name}")
+
+def main():
+    """
+    Main function to parse command-line arguments and initiate the conversion.
+    """
+    parser = argparse.ArgumentParser(
+        description='Convert a GenBank (.gbk) file to a Panaroo-compatible GFF3 file.'
+    )
+    parser.add_argument(
+        '--id',
+        type=str,
+        required=True,
+        help='The base ID for the input and output filenames (e.g., "A1_G48905").'
+    )
+    args = parser.parse_args()
+    
+    # Construct file paths using pathlib for better cross-platform compatibility
+    gbk_filename = Path(f"{args.id}-AMAP.gbk")
+    gff3_filename = Path(f"{args.id}.panaroo.gff")
+
+    convert_gbk_to_panaroo_gff3(gbk_filename, gff3_filename)
+
+if __name__ == "__main__":
+    main()

@@ -18,9 +18,9 @@ from typing import Tuple
 __author__ = 'Paula Ruiz-Rodriguez'
 __credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
 __license__ = ['GPL 3']
-__version__ = '0.1.0'
+__version__ = '1.0.0'
 __maintainer__ = '@paururo'
-__email__ = 'paula.ruiz-rodriguez@uv.es'
+__email__ = 'paula.ruiz.rodriguez@csic.es'
 __status__ = 'finished'
 __lab__ = 'PathoGenOmics (I2SysBio)'
 
@@ -44,8 +44,8 @@ def process_cog_categories(df: pd.DataFrame) -> pd.DataFrame:
     # Create a temporary DataFrame for COG processing
     cog_df = df[['lineage', 'genome', 'COG_category']].copy()
     
-    # Handle missing values and convert category strings to lists of characters
-    cog_df['COG_category'] = cog_df['COG_category'].fillna('Unassigned').apply(list)
+    # Handle missing values, convert to uppercase, and then to lists of characters
+    cog_df['COG_category'] = cog_df['COG_category'].fillna('Unassigned').str.upper().apply(list)
     
     # Create a new row for each COG category character
     cog_df_exploded = cog_df.explode('COG_category')
@@ -145,9 +145,44 @@ def main():
     df = pd.read_csv(input_path, sep='\t', low_memory=False)
     df.replace("-", np.nan, inplace=True)
     
-    # Extract lineage and genome IDs from the first column
-    # Assumes format like 'L1_G0001' in the first column
-    df[['lineage', 'genome']] = df.iloc[:, 0].str.split('_', n=1, expand=True)
+    # --- START: MODIFIED SECTION ---
+    # Use the first column as the source for IDs
+    id_source = df.iloc[:, 0].astype(str)
+
+    # Create a boolean mask to identify reference genes.
+    # Reference genes are identified as having fewer than 3 parts when split by '_'.
+    is_ref_gene = id_source.str.split('_').str.len() < 3
+    is_sample_gene = ~is_ref_gene
+
+    # Determine the primary lineage and genome ID from the sample genes
+    sample_ids = id_source[is_sample_gene]
+    if not sample_ids.empty:
+        first_sample_id_parts = sample_ids.iloc[0].split('_')
+        sample_lineage = first_sample_id_parts[0]
+        sample_genome_id = first_sample_id_parts[1]
+    else:
+        # Fallback if no clear sample ID is found
+        sample_lineage = 'Unknown_Lineage'
+        sample_genome_id = 'Unknown_Genome'
+
+
+    # Assign 'lineage' column
+    # For reference genes, use the sample's primary lineage. For others, extract it from the ID.
+    df['lineage'] = np.where(
+        is_ref_gene,
+        sample_lineage,
+        id_source.str.split('_').str[0]
+    )
+
+    # Assign 'genome' column
+    # For reference genes, prepend the sample's genome ID.
+    # For sample genes, use everything after the first underscore.
+    df['genome'] = np.where(
+        is_ref_gene,
+        sample_genome_id + '_' + id_source.str.split('_').str[0], # e.g., G26689_Rv0029
+        id_source.str.split('_', n=1).str[1] # e.g., 'G26689_2049' from 'L8_G26689_2049'
+    )
+    # --- END: MODIFIED SECTION ---
 
     # Process COG and Mycobrowser categories
     cog_summary = process_cog_categories(df)

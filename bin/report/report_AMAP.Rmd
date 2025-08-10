@@ -5,14 +5,14 @@ date: "`r format(Sys.time(), '%d/%m/%Y')`"
 
 output:
   html_document:
-    theme: flatly       
-    toc: true            
-    toc_float:           
+    theme: flatly        # cualquier tema Bootswatch: cerulean, cosmo, darkly, etc.
+    toc: true            # activa la TOC
+    toc_float:           # flotante (se puede contraer)
       collapsed: false
       smooth_scroll: true
-    highlight: tango     
-    css: styles.css      
-    includes:            
+    highlight: tango     # resaltado de código; prueba otros (“monokai”, “textmate”…)
+    css: styles.css      # hoja de estilo que añadiremos abajo
+    includes:            # inyectamos los logos en la cabecera
       before_body: header.html
 params:
   cog_file: "input_cog.txt"
@@ -654,8 +654,8 @@ Each tab shows the distribution of CDS counts for a specific case across all lin
 The AMAP classification is:
 
 - **Case 1:** Novel CDS not present in the reference H37Rv. 
-  - **Case 1 – keep:** CDS missing from the reference annotation; they may be real or artefacts.  
-  - **Case 1 – remove:** CDS falsely introduced by Bakta and absent from the reference.
+  - **Case 1 – kept:** CDS missing from the reference annotation; they may be real or artefacts.  
+  - **Case 1 – removed:** CDS falsely introduced by Bakta and absent from the reference.
 - **Case 2:** Perfect match with the reference.
 - **Case 3:** Same start or end as the reference but containing mismatches.
 - **Case 4:** CDS coordinates corrected by AMAP.
@@ -783,15 +783,15 @@ print(p)
 ### CDS Table stats {.tabset}
 #### CASE 1
 ```{r case1_stats, echo=FALSE, message=FALSE, warning=FALSE}
-generate_statistics_table(data, "case1")
+generate_statistics_table(data, "case1_initial")
 ```
 #### CASE 1 KEEP
 ```{r case1keep_stats, echo=FALSE, message=FALSE, warning=FALSE}
-generate_statistics_table(data, "case1_keep")
+generate_statistics_table(data, "case1_kept")
 ```
 #### CASE 1 REMOVE
 ```{r case1remove_stats, echo=FALSE, message=FALSE, warning=FALSE}
-generate_statistics_table(data, "case1_remove")
+generate_statistics_table(data, "case1_removed")
 ```
 #### CASE 2
 ```{r case2_stats, echo=FALSE, message=FALSE, warning=FALSE}
@@ -811,5 +811,6 @@ generate_statistics_table(data, "CDS")
 ```
 #### MISSING RVs
 ```{r missing_stats, echo=FALSE, message=FALSE, warning=FALSE}
-generate_statistics_table(data, "missingRvs")
+generate_statistics_table(data, "rv_missing")
+```
 ```

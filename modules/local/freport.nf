@@ -38,18 +38,25 @@ process FINAL_REPORT {
 
     script:
     """
-    # FIX: Corrected typos from 'p' to 'cp' to copy necessary files for the report.
     cp ${projectDir}/bin/report/AMAP.png .
     cp ${projectDir}/bin/report/header.html .
     cp ${projectDir}/bin/report/styles.css .
-    cp ${projectDir}/bin/report/test_AMAP.Rmd .
+    cp ${projectDir}/bin/report/report_AMAP.Rmd .
     WORK_DIR=`pwd`
     echo \$WORK_DIR
-    Rscript -e "rmarkdown::render('test_AMAP.Rmd', output_file='final_report.html',params=list(cog_file='\$WORK_DIR/${input_cog}', myco_file='\$WORK_DIR/${input_myco}', summary_file='\$WORK_DIR/${input_summary}', empty_file='\$WORK_DIR/${input_noref}'))"
+    Rscript -e "rmarkdown::render('report_AMAP.Rmd', output_file='final_report.html',params=list(cog_file='\$WORK_DIR/${input_cog}', myco_file='\$WORK_DIR/${input_myco}', summary_file='\$WORK_DIR/${input_summary}', empty_file='\$WORK_DIR/${input_noref}'))"
     
-    rm ${projectDir}/bin/report/AMAP.png .
-    rm ${projectDir}/bin/report/header.html .
-    rm ${projectDir}/bin/report/styles.css .
-    rm ${projectDir}/bin/report/test_AMAP.Rmd .
+    rm AMAP.png 
+    rm header.html 
+    rm styles.css 
+    rm report_AMAP.Rmd 
+    awk '
+    BEGIN { OFS="\\t" }
+    FNR > 1 {
+        new_name = \$NF "_" \$1;
+        print \$1, new_name
+    }
+    ' ${params.outdir}/PATHOTYPR/typing/*_summary.tsv > ${params.outdir}/PATHOTYPR/renamed_fastas.tsv || echo "Pathotyper summary not found, skipping file renaming."
+
     """
 }

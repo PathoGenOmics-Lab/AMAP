@@ -61,23 +61,29 @@ if (params.help) {
     log.info logo
     log.info """
     Usage:
-    nextflow run ${workflow.manifest.name} -profile singularity [options]
+    nextflow run ${workflow.manifest.name} -profile <profile> [options]
 
-    Required arguments:
+    Required Arguments:
     --tsv                       Path to the input TSV file.
                                 Format: sampleId<TAB>fasta_path
 
-    Optional arguments:
-    --outdir                    Path to the output directory. (Default: ${params.outdir})
-    --eggnog_db                 Path to the eggNOG database directory. (Default: ${params.eggnog_db})
-    --skip_typing               Skip the PATHOTYPR lineage typing step. (Default: ${params.skip_typing})
+    Optional Arguments:
+    --outdir                    Path to the output directory. (Default: "${params.outdir}")
+    --skip_typing               Skip the initial PATHOTYPR lineage typing step. (Default: ${params.skip_typing})
+    --skip_functional_annotation Skip all functional annotation and downstream analysis steps. (Default: ${params.skip_functional_annotation})
+    --genus                     Genus for Bakta annotation. (Default: "${params.genus}")
+    --species                   Species for Bakta annotation. (Default: "${params.species}")
     --help                      Display this help message.
 
-    Reference file arguments (advanced):
-    --pathotyper_snps     Path to the SNPs TSV for MTB_TYPER.
-    --pathotyper_ref      Path to the reference FASTA for MTB_TYPER.
-    --miniprot_ref_aa     Path to the H37Rv amino acid reference for MINIPROT.
-    ...and other reference files.
+    Reference & Database Arguments:
+    --eggnog_db                 Path to the pre-formatted eggNOG database directory. (Default: "${params.eggnog_db}")
+    --pathotyper_snps           Path to the SNPs TSV file for Pathotyper. (Default: "${params.pathotyper_snps}")
+    --pathotyper_ref            Path to the reference FASTA file for Pathotyper. (Default: "${params.pathotyper_ref}")
+    --miniprot_ref_aa           Path to the H37Rv amino acid reference for Miniprot. (Default: "${params.miniprot_ref_aa}")
+    --miniprot_ref_bad_bakta    Path to the 'bad bakta' reference FASTA for Miniprot. (Default: "${params.miniprot_ref_bad_bakta}")
+    --miniprot_ref_h37rv        Path to the H37Rv reference genome FASTA for Miniprot. (Default: "${params.miniprot_ref_h37rv}")
+    --bakta_proteins            Path to the reference proteins GBK file for Bakta. (Default: "${params.bakta_proteins}")
+    --mycobrowser_ref           Path to the Mycobrowser reference TXT file. (Default: "${params.mycobrowser_ref}")
     """
     exit 0
 }

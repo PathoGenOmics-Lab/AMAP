@@ -12,10 +12,8 @@ process TYPE_CASES {
     tuple val(sampleId), path(miniprot_paf), path(badbakta_paf), path(h37rv_paf), path(fasta), path(bakta_tsv), path(bakta_faa)
 
     output:
-    // Outputs for downstream processes
     tuple val(sampleId), path("${sampleId}_corrected.tsv"), emit: for_fix
     path "*-summary.tsv", emit: summaries
-    // Outputs needed ONLY for publishing
     path "*-case*.tsv"
     path "*-rvmissing.tsv"
     path "*.html"

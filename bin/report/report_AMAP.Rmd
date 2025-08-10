@@ -654,8 +654,8 @@ Each tab shows the distribution of CDS counts for a specific case across all lin
 The AMAP classification is:
 
 - **Case 1:** Novel CDS not present in the reference H37Rv. 
-  - **Case 1 – kept:** CDS missing from the reference annotation; they may be real or artefacts.  
-  - **Case 1 – removed:** CDS falsely introduced by Bakta and absent from the reference.
+  - **Case 1 – keep:** CDS missing from the reference annotation; they may be real or artefacts.  
+  - **Case 1 – remove:** CDS falsely introduced by Bakta and absent from the reference.
 - **Case 2:** Perfect match with the reference.
 - **Case 3:** Same start or end as the reference but containing mismatches.
 - **Case 4:** CDS coordinates corrected by AMAP.
@@ -751,7 +751,7 @@ filtered_data <- means %>%
   filter(str_starts(V1, "case"))
 
 colores <- c(
-  "case1" = "#e41a1c", "case1_keep" = "#13ff03", "case1_remove" = "#377eb8",
+  "case1_kept" = "#e41a1c", "case1_kept" = "#13ff03", "case1_removed" = "#377eb8",
   "case2" = "#984ea3", "case3" = "#ffff33", "case4" = "#ff7f00"
 )
 
@@ -807,7 +807,7 @@ generate_statistics_table(data, "case4")
 ```
 #### ALL CDS
 ```{r cds_stats, echo=FALSE, message=FALSE, warning=FALSE}
-generate_statistics_table(data, "CDS")
+generate_statistics_table(data, "total_cds")
 ```
 #### MISSING RVs
 ```{r missing_stats, echo=FALSE, message=FALSE, warning=FALSE}

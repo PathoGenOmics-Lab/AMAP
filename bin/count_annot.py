@@ -24,6 +24,7 @@ __email__ = 'paula.ruiz.rodriguez@csic.es'
 __status__ = 'finished'
 __lab__ = 'PathoGenOmics (I2SysBio)'
 
+
 def process_cog_categories(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculates the count and percentage of each COG category.
@@ -145,29 +146,33 @@ def main():
     df = pd.read_csv(input_path, sep='\t', low_memory=False)
     df.replace("-", np.nan, inplace=True)
     
-    # --- START: MODIFIED SECTION ---
+    # --- START: ID PROCESSING LOGIC ---
     # Use the first column as the source for IDs
     id_source = df.iloc[:, 0].astype(str)
 
-    # Create a boolean mask to identify reference genes.
-    # Reference genes are identified as having fewer than 3 parts when split by '_'.
-    is_ref_gene = id_source.str.split('_').str.len() < 3
-    is_sample_gene = ~is_ref_gene
+    # A gene is a "sample" gene if the 'rvs' column IS empty (NaN).
+    # A gene is a "reference" gene if the 'rvs' column is NOT empty.
+    is_sample_gene = df['rvs'].isna()
+    is_ref_gene = ~is_sample_gene
 
-    # Determine the primary lineage and genome ID from the sample genes
+    # Determine the primary lineage and genome ID from the sample genes (where 'rvs' is empty)
     sample_ids = id_source[is_sample_gene]
     if not sample_ids.empty:
+        # Find the first valid sample ID to extract lineage and genome
         first_sample_id_parts = sample_ids.iloc[0].split('_')
-        sample_lineage = first_sample_id_parts[0]
-        sample_genome_id = first_sample_id_parts[1]
+        if len(first_sample_id_parts) >= 2:
+            sample_lineage = first_sample_id_parts[0]
+            sample_genome_id = first_sample_id_parts[1]
+        else:
+            sample_lineage = 'Unknown_Lineage'
+            sample_genome_id = 'Unknown_Genome'
     else:
-        # Fallback if no clear sample ID is found
+        # Fallback if no sample genes are found
         sample_lineage = 'Unknown_Lineage'
         sample_genome_id = 'Unknown_Genome'
 
-
     # Assign 'lineage' column
-    # For reference genes, use the sample's primary lineage. For others, extract it from the ID.
+    # For reference genes, use the sample's primary lineage. For others, extract it from their ID.
     df['lineage'] = np.where(
         is_ref_gene,
         sample_lineage,
@@ -182,23 +187,34 @@ def main():
         sample_genome_id + '_' + id_source.str.split('_').str[0], # e.g., G26689_Rv0029
         id_source.str.split('_', n=1).str[1] # e.g., 'G26689_2049' from 'L8_G26689_2049'
     )
-    # --- END: MODIFIED SECTION ---
+    # --- END: ID PROCESSING LOGIC ---
 
     # Process COG and Mycobrowser categories
     cog_summary = process_cog_categories(df)
     mycobrowser_summary = process_mycobrowser_categories(df)
 
-    # Save summary files
+    # --- START: SAVE ALL OUTPUT FILES ---
+    print("Saving output files...")
+
+    # Define output paths with a consistent naming convention
     cog_output_path = input_path.parent / f"{base_name}-AMAP.COG.tsv"
     myco_output_path = input_path.parent / f"{base_name}-AMAP.MycoBrowser.tsv"
-    plot_output_path = input_path.parent / f"{base_name}.AMAP-annot.png"
+    plot_output_path = input_path.parent / f"{base_name}-AMAP.annot.png"
+    no_ref_output_path = input_path.parent / f"{base_name}-AMAP.noRef.tsv"
 
+    # Save summary tables
     cog_summary.to_csv(cog_output_path, sep='\t', index=False)
     mycobrowser_summary.to_csv(myco_output_path, sep='\t', index=False)
-    print(f"Successfully saved summary files to {cog_output_path} and {myco_output_path}")
+    print(f"Successfully saved summary files: {cog_output_path.name}, {myco_output_path.name}")
+
+    # Save non-reference gene list (where 'rvs' was empty)
+    no_ref_df = df.loc[is_sample_gene, ['genome', 'lineage']]
+    no_ref_df.to_csv(no_ref_output_path, sep='\t', index=False, header=True)
+    print(f"Successfully generated non-reference file: {no_ref_output_path.name}")
 
     # Generate and save plots
     create_summary_plots(cog_summary, mycobrowser_summary, plot_output_path)
+    # --- END: SAVE ALL OUTPUT FILES ---
 
 if __name__ == "__main__":
     main()

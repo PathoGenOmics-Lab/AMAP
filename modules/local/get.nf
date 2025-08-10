@@ -5,7 +5,7 @@ process GET_DUPLICATIONS {
 
     publishDir "${params.outdir}/DUPLICATIONS/${sampleId}",
            mode: 'copy',
-           pattern: "*"                  
+           pattern: "duplications*"                  
 
     input:
     tuple val(sampleId), path(amap_tsv), path(amap_faa), path(amap_fna), path(bakta_tsv), path(fasta), path(emapper)
@@ -26,7 +26,7 @@ process GET_DUPLICATIONS {
         --header \\
         > duplications_${sampleId}
 
-    python3 ${projectDir}/bin/get_duplicationsv2.py duplications_${sampleId}
+    python3 ${projectDir}/bin/get_duplications.py duplications_${sampleId}
     python3 ${projectDir}/bin/dup_ex_multifasta.py duplications_${sampleId}_groups.tsv ${sampleId}.AMAP.faa.renamed
     """
 }
@@ -34,7 +34,6 @@ process GET_DUPLICATIONS {
 process GET_OUTPUTS {
     tag "$sampleId"
 
-    /* copy every file whose name contains AMAP */
     publishDir "${params.outdir}/AMAP/${sampleId}",
                mode: 'copy',
                pattern: "*AMAP*"
@@ -75,10 +74,8 @@ process GET_OUTPUTS {
 }
 
 process GET_COUNT {
-
     tag "$sampleId"
 
-    /* Copy every summary TSV produced by count_annot.py */
     publishDir "${params.outdir}/AMAP/${sampleId}",
                mode: 'copy',
                pattern: "*-AMAP.*.tsv"

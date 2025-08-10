@@ -24,7 +24,6 @@ params.outdir = 'results'
 params.eggnog_db = 'eggnog_db'
 params.help = false
 params.skip_typing = false
-params.skip_functional_annotation = false
 params.genus = "Mycobacterium"
 params.species = "Mycobacterium tuberculosis"
 
@@ -62,38 +61,33 @@ if (params.help) {
     log.info logo
     log.info """
     Usage:
-    nextflow run ${workflow.manifest.name} -profile <profile> [options]
+    nextflow run ${workflow.manifest.name} -profile singularity [options]
 
     Required arguments:
     --tsv                       Path to the input TSV file.
+                                Format: sampleId<TAB>fasta_path
 
     Optional arguments:
-    --outdir                    Path to the output directory. (Default: results)
-    --skip_typing               Skip the PATHOTYPR lineage typing step. (Default: false)
-    --skip_functional_annotation Skip all functional annotation steps. (Default: false)
-    --genus                     Genus for Bakta annotation. (Default: "Mycobacterium")
-    --species                   Species for Bakta annotation. (Default: "Mycobacterium tuberculosis")
+    --outdir                    Path to the output directory. (Default: ${params.outdir})
+    --eggnog_db                 Path to the eggNOG database directory. (Default: ${params.eggnog_db})
+    --skip_typing               Skip the PATHOTYPR lineage typing step. (Default: ${params.skip_typing})
     --help                      Display this help message.
 
-    Reference File Arguments (override paths in nextflow.config):
-    --eggnog_db                 Path to the eggNOG database. (Default: 'eggnog_db')
-    --pathotyper_snps           Path to the SNPs TSV for Pathotyper.
-    --pathotyper_ref            Path to the reference FASTA for Pathotyper.
-    --miniprot_ref_aa           Path to the H37Rv amino acid reference for Miniprot.
-    --miniprot_ref_bad_bakta    Path to the 'bad bakta' reference for Miniprot.
-    --miniprot_ref_h37rv        Path to the H37Rv reference genome for Miniprot.
-    --bakta_proteins            Path to the proteins GBK file for Bakta.
-    --mycobrowser_ref           Path to the Mycobrowser reference TXT file.
+    Reference file arguments (advanced):
+    --pathotyper_snps     Path to the SNPs TSV for MTB_TYPER.
+    --pathotyper_ref      Path to the reference FASTA for MTB_TYPER.
+    --miniprot_ref_aa     Path to the H37Rv amino acid reference for MINIPROT.
+    ...and other reference files.
     """
     exit 0
 }
 
 log.info logo
 log.info """
-    Input TSV                  : ${params.tsv}
-    Output dir                 : ${params.outdir}
-    Skip Typing                : ${params.skip_typing}
-    Skip Functional Annotation : ${params.skip_functional_annotation}
+    fastas          : ${params.tsv}
+    output          : ${params.outdir}
+    eggnog_db       : ${params.eggnog_db}
+    skip_typing     : ${params.skip_typing}
 """
 //
 // --- MODULE INCLUDES ---
@@ -126,53 +120,76 @@ Channel
 // --- WORKFLOW ---
 //
 workflow {
-    // These steps always run
+    // 1. Setup eggNOG database if not present
+    EGGNOG_DB()
+
+    // 2. Perform MTB lineage typing or skip it
     if (!params.skip_typing) {
         PATHOTYPR(fasta_ch)
         typed_ch = PATHOTYPR.out.typed_fasta
     } else {
+        // If skipping typing, create a placeholder file for caching.
         CREATE_EMPTY_FILE()
         typed_ch = fasta_ch.combine(CREATE_EMPTY_FILE.out).map { sampleId, fasta, empty_file ->
             tuple(sampleId, fasta, empty_file)
         }
     }
+
+    // 3. Annotate genomes with Bakta
     BAKTA_ANNOTATOR(typed_ch.combine(Channel.value(params.genus)).combine(Channel.value(params.species)))
+
+    // 4. Align proteins to the genome with Miniprot
     MINIPROT(BAKTA_ANNOTATOR.out.for_miniprot)
+
+    // 5. Classify CDS cases based on alignments
     TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases))
+
+    // 6. Correct CDS based on classified cases
     FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix))
 
+    // FIX 1: Transform the output of FIX_CDS to match what ANNOT_EGGNOGMAP expects.
+    // The .map operator takes the 3-element tuple (id, faa, fna) and returns
+    // the 2-element tuple (id, faa) that ANNOT_EGGNOGMAP needs.
+    FIX_CDS.out.for_eggnog
+        .map { sampleId, faa, fna -> tuple(sampleId, faa) }
+        .set { for_eggnog_ch }
 
-    // --- CONDITIONAL EXECUTION BLOCK ---
-    if (!params.skip_functional_annotation) {
-        // Run the full pipeline with functional annotation
-        log.info "Running full pipeline with functional annotation."
+    // 7. Annotate corrected proteins with eggNOG-mapper
+    ANNOT_EGGNOGMAP(for_eggnog_ch, EGGNOG_DB.out.db_path)
 
-        EGGNOG_DB()
-        
-        FIX_CDS.out.for_eggnog
-            .map { sampleId, faa, fna -> tuple(sampleId, faa) }
-            .set { for_eggnog_ch }
+    // Combine results for downstream processing
+    ch_for_downstream = FIX_CDS.out.for_downstream.join(ANNOT_EGGNOGMAP.out)
 
-        ANNOT_EGGNOGMAP(for_eggnog_ch, EGGNOG_DB.out.db_path)
-        
-        ch_for_downstream = FIX_CDS.out.for_downstream.join(ANNOT_EGGNOGMAP.out)
-        
-        GET_OUTPUTS(ch_for_downstream)
-        GET_DUPLICATIONS(ch_for_downstream)
-        PANGENE(ch_for_downstream)
-        GET_COUNT(GET_OUTPUTS.out.master_table)
-        
-        summaries_cases_ch = TYPE_CASES.out.summaries.collect()
-        summaries_annot_ch = GET_COUNT.out.collect()
-        
-        REPORT_INPUTS(summaries_annot_ch, summaries_cases_ch)
-        GET_ALLDUP(GET_DUPLICATIONS.out.dup_fastas.collect())
-        FINAL_REPORT(REPORT_INPUTS.out)
+    // 8. Generate final output files (GFF, GBK, Master Table)
+    GET_OUTPUTS(ch_for_downstream)
 
-    } else {
-        // Skip functional annotation and all downstream steps
-        log.info "Skipping functional annotation. The pipeline will stop after CDS correction."
-    }
+    // 9. Find and analyze gene duplications
+    GET_DUPLICATIONS(ch_for_downstream)
+    
+    // 10. Runs pangenome for the genes of each genome
+    PANGENE(ch_for_downstream)
+
+    // 11. Count annotations per category
+    GET_COUNT(GET_OUTPUTS.out.master_table)
+
+    // --- FIX 2: CHANNEL HANDLING FOR FINAL REPORT ---
+    // 12. Generate final reports
+    
+    // First, collect the outputs from the upstream processes.
+    // .collect() will gather all files emitted by each process into a single list.
+    summaries_cases_list_ch = TYPE_CASES.out.summaries.collect()
+    summaries_annot_list_ch = GET_COUNT.out.collect()
+
+    // 13. Pass these two lists directly to REPORT_INPUTS.
+    // This process is designed to take two inputs: the list of annotation files and the list of case files.
+    REPORT_INPUTS(summaries_annot_list_ch, summaries_cases_list_ch)
+
+    // 14. Analyze duplications across all samples
+    GET_ALLDUP(GET_DUPLICATIONS.out.dup_fastas.collect())
+
+    // 15. Render the final HTML report
+    FINAL_REPORT(REPORT_INPUTS.out)
+
 }
 
 //

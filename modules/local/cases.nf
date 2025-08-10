@@ -7,7 +7,7 @@ process TYPE_CASES {
     publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*-case*.tsv", mode: 'copy'
     publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*-rvmissing.tsv", mode: 'copy'
     publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*.html", mode: 'copy'
-    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*.corrected.tsv", mode: 'copy'
+    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*_corrected.tsv", mode: 'copy'
 
     input:
     tuple val(sampleId), path(miniprot_paf), path(badbakta_paf), path(h37rv_paf), path(fasta), path(bakta_tsv), path(bakta_faa)
@@ -26,6 +26,7 @@ process TYPE_CASES {
         -p ${miniprot_paf} \\
         -bb ${badbakta_paf} \\
         -c ${h37rv_paf}
+    
     """
 }
 
@@ -33,6 +34,8 @@ process FIX_CDS {
     tag "$sampleId"
     cpus 1
     memory '1 GB'
+    
+    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*_corrected.tsv", mode: 'copy'
 
     input:
     tuple val(sampleId), path(corrected_tsv), path(fasta), path(bakta_tsv)

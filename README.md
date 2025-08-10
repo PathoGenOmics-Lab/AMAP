@@ -261,19 +261,19 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 
 | Software                                                  | Version | Type     | Usage                           |
 |-----------------------------------------------------------|---------|----------|---------------------------------|
-| [Nextflow](https://github.com/nextflow-io/nextflow)       | 23.10.1 | Nextflow | Workflow Management             |
-| [Bakta](https://github.com/oschwengers/bakta)             | 1.9.3   | Other    | Annotation Tools                |
+| [Nextflow](https://github.com/nextflow-io/nextflow)       | 25.04.6 | Nextflow | Workflow Management             |
+| [Bakta](https://github.com/oschwengers/bakta)             | 1.11.3  | Other    | Annotation Tools                |
 | [miniprot](https://github.com/lh3/miniprot)               | 0.13    | Other    | Mapping Tools                   |
-| [Python](https://www.python.org/)                         | 3.9     | Python   | Programming Language            |
-| [R](https://www.R-project.org/)                           | 4.3.3   | R        | Statistical Computing           |
-| [pandas](https://github.com/pandas-dev/pandas)            | 2.2.1   | Python   | Data Analysis                   |
+| [Python](https://www.python.org/)                         | 3.9.2   | Python   | Programming Language            |
+| [R](https://www.R-project.org/)                           | 4.2.3   | R        | Statistical Computing           |
+| [pandas](https://github.com/pandas-dev/pandas)            | 2.3.1   | Python   | Data Analysis                   |
 | [intervaltree](https://github.com/chaimleib/intervaltree) | 3.1.0   | Python   | Data Structures                 |
-| [plotly.py](https://github.com/plotly/plotly.py)          | 5.20.0  | Python   | Data Visualization              |
-| [ggplot2](https://ggplot2.tidyverse.org/index.html)       | 3.5.0   | R        | Data Visualization              |
+| [plotly.py](https://github.com/plotly/plotly.py)          | 6.2.0   | Python   | Data Visualization              |
+| [ggplot2](https://ggplot2.tidyverse.org/index.html)       | 3.5.2   | R        | Data Visualization              |
 | [dplyr](https://dplyr.tidyverse.org/)                     | 1.1.4   | R        | Data Manipulation               |
 | [Singularity](https://sylabs.io/singularity/)             | 3.11.1  | Other    | Containerization                |
 | [Docker](https://www.docker.com/)                         | 25.0.4  | Other    | Containerization                |
-| [Conda](https://docs.conda.io/en/latest/)                 | 24.1.2  | Other    | Package/Environment Management  |
-| [eggnog-mapper](https://github.com/eggnogdb/eggnog-mapper)| 2.1.12  | Python   | Annotation Tools                |
+| [Conda](https://docs.conda.io/en/latest/)                 | 23.5.2  | Other    | Package/Environment Management  |
+| [eggnog-mapper](https://github.com/eggnogdb/eggnog-mapper)| 2.1.13  | Python   | Annotation Tools                |
 
 <div align="justify">

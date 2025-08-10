@@ -5,41 +5,16 @@
 ========================================================================================
     Assisted MTBC Annotator Pipeline
 ----------------------------------------------------------------------------------------
-    Publication:
-    DOI:
-----------------------------------------------------------------------------------------
     Usage:
-    nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv <your_samples.tsv>
+    nextflow run PathoGenOmics-Lab/AMAP -profile <docker/singularity/slurm> --tsv <your_samples.tsv>
 ----------------------------------------------------------------------------------------
 */
 
 // Enable Nextflow DSL 2
 nextflow.enable.dsl=2
 
-//
-// --- PARAMS ---
-//
-params.tsv = 'example_files/test.tsv'
-params.outdir = 'results'
-params.eggnog_db = 'eggnog_db'
-params.help = false
-params.skip_typing = false
-params.genus = "Mycobacterium"
-params.species = "Mycobacterium tuberculosis"
-
-// Reference files
-params.pathotyper_snps = "/reference/snps_lineages.tsv"
-params.pathotyper_ref = "/reference/MTB_ancestor_reference.fasta"
-params.miniprot_ref_aa = "/reference/aa_H37Rv.translated.fas"
-params.miniprot_ref_bad_bakta = "/reference/bad.bakta.translated.fas"
-params.miniprot_ref_h37rv = "/reference/new_refH37Rv.fasta"
-params.bakta_proteins = "/reference/sequence.gb"
-params.mycobrowser_ref = "/reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt"
-
-//
-// --- LOG AND HELP ---
-//
-def logo = """\
+// --- LOGO and HELP MESSAGE ---
+def logo = """
 =======================================
         A M A P   P I P E L I N E
 =======================================
@@ -61,54 +36,47 @@ if (params.help) {
     log.info logo
     log.info """
     Usage:
-    nextflow run ${workflow.manifest.name} -profile singularity [options]
+    nextflow run ${workflow.manifest.name} -profile <profile> [options]
 
     Required arguments:
     --tsv                       Path to the input TSV file.
                                 Format: sampleId<TAB>fasta_path
 
     Optional arguments:
-    --outdir                    Path to the output directory. (Default: ${params.outdir})
-    --eggnog_db                 Path to the eggNOG database directory. (Default: ${params.eggnog_db})
-    --skip_typing               Skip the PATHOTYPR lineage typing step. (Default: ${params.skip_typing})
+    --outdir                    Path to the output directory. (Default: results)
+    --skip_typing               Skip the PATHOTYPR lineage typing step. (Default: false)
     --help                      Display this help message.
 
-    Reference file arguments (advanced):
-    --pathotyper_snps     Path to the SNPs TSV for MTB_TYPER.
-    --pathotyper_ref      Path to the reference FASTA for MTB_TYPER.
-    --miniprot_ref_aa     Path to the H37Rv amino acid reference for MINIPROT.
-    ...and other reference files.
+    All other parameters, such as reference file paths, can be configured in the
+    `nextflow.config` file or overridden on the command line.
     """
     exit 0
 }
 
 log.info logo
 log.info """
-    fastas          : ${params.tsv}
-    output          : ${params.outdir}
-    eggnog_db       : ${params.eggnog_db}
-    skip_typing     : ${params.skip_typing}
+    Input TSV       : ${params.tsv}
+    Output dir      : ${params.outdir}
+    Skip Typing     : ${params.skip_typing}
 """
-//
+
 // --- MODULE INCLUDES ---
-//
-include { PATHOTYPR }           from './modules/local/pathotypr'
-include { BAKTA_ANNOTATOR }     from './modules/local/bakta'
-include { MINIPROT }            from './modules/local/miniprot'
-include { TYPE_CASES }          from './modules/local/cases'
-include { FIX_CDS }             from './modules/local/cases'
-include { EGGNOG_DB }           from './modules/local/eggnog'
-include { ANNOT_EGGNOGMAP }     from './modules/local/eggnog'
-include { GET_COUNT }           from './modules/local/get'
-include { GET_DUPLICATIONS }    from './modules/local/get'
-include { GET_OUTPUTS }         from './modules/local/get'
-include { GET_ALLDUP }          from './modules/local/get'
-include { PANGENE }             from './modules/local/pangene'
-include { REPORT_INPUTS }       from './modules/local/freport'
-include { FINAL_REPORT }        from './modules/local/freport'
+include { PATHOTYPR }           from './modules/pathotypr'
+include { BAKTA_ANNOTATOR }     from './modules/bakta'
+include { MINIPROT }            from './modules/miniprot'
+include { TYPE_CASES }          from './modules/cases'
+include { FIX_CDS }             from './modules/cases'
+include { EGGNOG_DB }           from './modules/eggnog'
+include { ANNOT_EGGNOGMAP }     from './modules/eggnog'
+include { GET_COUNT }           from './modules/get'
+include { GET_DUPLICATIONS }    from './modules/get'
+include { GET_OUTPUTS }         from './modules/get'
+include { GET_ALLDUP }          from './modules/get'
+include { PANGENE }             from './modules/pangene'
+include { REPORT_INPUTS }       from './modules/freport'
+include { FINAL_REPORT }        from './modules/freport'
 
 // --- INPUT CHANNEL ---
-//
 Channel
     .fromPath(params.tsv)
     .ifEmpty { error "Input TSV file not found: ${params.tsv}" }
@@ -116,9 +84,7 @@ Channel
     .map { row -> tuple(row.sampleId, file(row.fasta)) }
     .set { fasta_ch }
 
-//
 // --- WORKFLOW ---
-//
 workflow {
     // 1. Setup eggNOG database if not present
     EGGNOG_DB()
@@ -178,12 +144,9 @@ workflow {
 
     // 15. Render the final HTML report
     FINAL_REPORT(REPORT_INPUTS.out)
-
 }
 
-//
-// --- PROCESSES ---
-//
+// --- HELPER PROCESSES ---
 /**
  * Creates a single, stable empty file to be used as a placeholder.
  * This ensures that downstream processes that need this file as an

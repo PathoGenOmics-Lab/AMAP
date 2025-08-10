@@ -3,13 +3,44 @@
 ========================================================================================
     A M A P   P I P E L I N E
 ========================================================================================
+    Assisted MTBC Annotator Pipeline
+----------------------------------------------------------------------------------------
+    Publication:
+    DOI:
+----------------------------------------------------------------------------------------
+    Usage:
+    nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv <your_samples.tsv>
+----------------------------------------------------------------------------------------
 */
 
 // Enable Nextflow DSL 2
 nextflow.enable.dsl=2
 
-// --- LOGO and HELP MESSAGE ---
-def logo = """
+//
+// --- PARAMS ---
+//
+params.tsv = 'example_files/test.tsv'
+params.outdir = 'results'
+params.eggnog_db = 'eggnog_db'
+params.help = false
+params.skip_typing = false
+params.skip_functional_annotation = false
+params.genus = "Mycobacterium"
+params.species = "Mycobacterium tuberculosis"
+
+// Reference files
+params.pathotyper_snps = "/reference/snps_lineages.tsv"
+params.pathotyper_ref = "/reference/MTB_ancestor_reference.fasta"
+params.miniprot_ref_aa = "/reference/aa_H37Rv.translated.fas"
+params.miniprot_ref_bad_bakta = "/reference/bad.bakta.translated.fas"
+params.miniprot_ref_h37rv = "/reference/new_refH37Rv.fasta"
+params.bakta_proteins = "/reference/sequence.gb"
+params.mycobrowser_ref = "/reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt"
+
+//
+// --- LOG AND HELP ---
+//
+def logo = """\
 =======================================
         A M A P   P I P E L I N E
 =======================================
@@ -64,24 +95,26 @@ log.info """
     Skip Typing                : ${params.skip_typing}
     Skip Functional Annotation : ${params.skip_functional_annotation}
 """
-
+//
 // --- MODULE INCLUDES ---
-include { PATHOTYPR }           from './modules/pathotypr'
-include { BAKTA_ANNOTATOR }     from './modules/bakta'
-include { MINIPROT }            from './modules/miniprot'
-include { TYPE_CASES }          from './modules/cases'
-include { FIX_CDS }             from './modules/cases'
-include { EGGNOG_DB }           from './modules/eggnog'
-include { ANNOT_EGGNOGMAP }     from './modules/eggnog'
-include { GET_COUNT }           from './modules/get'
-include { GET_DUPLICATIONS }    from './modules/get'
-include { GET_OUTPUTS }         from './modules/get'
-include { GET_ALLDUP }          from './modules/get'
-include { PANGENE }             from './modules/pangene'
-include { REPORT_INPUTS }       from './modules/freport'
-include { FINAL_REPORT }        from './modules/freport'
-
+//
+include { PATHOTYPR }           from './modules/local/pathotypr'
+include { BAKTA_ANNOTATOR }     from './modules/local/bakta'
+include { MINIPROT }            from './modules/local/miniprot'
+include { TYPE_CASES }          from './modules/local/cases'
+include { FIX_CDS }             from './modules/local/cases'
+include { EGGNOG_DB }           from './modules/local/eggnog'
+include { ANNOT_EGGNOGMAP }     from './modules/local/eggnog'
+include { GET_COUNT }           from './modules/local/get'
+include { GET_DUPLICATIONS }    from './modules/local/get'
+include { GET_OUTPUTS }         from './modules/local/get'
+include { GET_ALLDUP }          from './modules/local/get'
+include { PANGENE }             from './modules/local/pangene'
+include { REPORT_INPUTS }       from './modules/local/freport'
+include { FINAL_REPORT }        from './modules/local/freport'
+//
 // --- INPUT CHANNEL ---
+//
 Channel
     .fromPath(params.tsv)
     .ifEmpty { error "Input TSV file not found: ${params.tsv}" }
@@ -89,7 +122,9 @@ Channel
     .map { row -> tuple(row.sampleId, file(row.fasta)) }
     .set { fasta_ch }
 
+//
 // --- WORKFLOW ---
+//
 workflow {
     // These steps always run
     if (!params.skip_typing) {
@@ -113,7 +148,13 @@ workflow {
         log.info "Running full pipeline with functional annotation."
 
         EGGNOG_DB()
-        ANNOT_EGGNOGMAP(FIX_CDS.out.for_eggnog, EGGNOG_DB.out.db_path)
+        
+        FIX_CDS.out.for_eggnog
+            .map { sampleId, faa, fna -> tuple(sampleId, faa) }
+            .set { for_eggnog_ch }
+
+        ANNOT_EGGNOGMAP(for_eggnog_ch, EGGNOG_DB.out.db_path)
+        
         ch_for_downstream = FIX_CDS.out.for_downstream.join(ANNOT_EGGNOGMAP.out)
         
         GET_OUTPUTS(ch_for_downstream)
@@ -131,15 +172,22 @@ workflow {
     } else {
         // Skip functional annotation and all downstream steps
         log.info "Skipping functional annotation. The pipeline will stop after CDS correction."
-        // The results from TYPE_CASES and FIX_CDS will be published automatically
-        // as defined in their respective modules. No further steps are needed.
     }
 }
 
-// --- HELPER PROCESSES ---
+//
+// --- PROCESSES ---
+//
+/**
+ * Creates a single, stable empty file to be used as a placeholder.
+ * This ensures that downstream processes that need this file as an
+ * input can be cached correctly when using -resume.
+ */
 process CREATE_EMPTY_FILE {
+    // This process will be cached after its first successful run.
     output:
     path 'empty_summary.log'
+
     script:
     "touch empty_summary.log"
 }

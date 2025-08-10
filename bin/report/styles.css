@@ -1,0 +1,85 @@
+/* ==============================================================
+ * 1. PAGE-WIDE SETTINGS
+ * ============================================================== */
+:root{
+  --tocW: 400px;  /* TOC width                               */
+  --gap :  100px;  /* space between TOC and article           */
+}
+html,body{
+  font-size:16px;
+  line-height:1.5;
+  margin:0;
+  overflow-x:hidden;        /* never show a horiz. scrollbar    */
+}
+
+/* ==============================================================
+ * 2. MAIN CONTAINER – centred by default
+ * ============================================================== */
+.main-container{
+  max-width:1000px;
+  margin:0 auto;            /* centred when no TOC margin       */
+  transition:margin-left .25s ease;
+}
+
+/* When viewport ≥ 992 px → show TOC & push article right        */
+@media(min-width:992px){
+  .main-container{
+    margin-left:calc(var(--tocW) + var(--gap));
+  }
+}
+
+/* ==============================================================
+ * 3. FLOATING TOC
+ * ============================================================== */
+#TOC.tocify{
+  position:fixed;
+  top:100px;                /* below the logos                  */
+  left:var(--gap);
+  width:var(--tocW)!important;
+  min-width:var(--tocW)!important;
+  max-height:80vh;
+  overflow-y:auto;
+  box-shadow:0 0 12px rgba(0,0,0,.15);
+}
+
+/* Hide TOC on viewports < 992 px and restore centred article   */
+@media(max-width:991.98px){
+  #TOC.tocify{display:none!important;}
+  .main-container{margin-left:auto;}
+}
+
+/* ==============================================================
+ * 4. CORNER LOGOS (adjust size here)
+ * ============================================================== */
+#logo-left-fixed,
+#logo-right-fixed{
+  position:fixed;
+  top:40px;
+  max-height:120px;          /* enlarge / shrink as you like     */
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  z-index:1000;
+}
+#logo-left-fixed {left:350px;}
+#logo-right-fixed{right:30px;}
+
+@media(max-width:575px){
+  #logo-left-fixed,#logo-right-fixed{
+    top:35px;
+    max-height:60px;
+  }
+}
+
+/* ==============================================================
+ * 5. REMOVE LEGACY BLUE HEADER IF STILL PRESENT
+ * ============================================================== */
+#custom-header{display:none!important;}
+
+/* ==============================================================
+ * 6. IMAGE ZOOM OVERLAY
+ * ============================================================== */
+.zoomDiv{
+  background:rgba(0,0,0,.8);
+  transition:opacity .3s ease;
+}

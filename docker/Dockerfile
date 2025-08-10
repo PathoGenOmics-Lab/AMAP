@@ -92,6 +92,7 @@ RUN \
       matplotlib=3.8.3 \
       eggnog-mapper=2.1.13 \
       bakta=1.11.3 \
+      plotly \
       # R packages (using the r- prefix)
       r-ggplot2 \
       r-dplyr \

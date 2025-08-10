@@ -3,18 +3,13 @@ process PATHOTYPR {
     cpus 1
     memory '1 GB'
 
-    // Publish results to specific directories.
-    // The renamed FASTA and the typing summary will be published.
     publishDir "${params.outdir}/PATHOTYPR/typing", pattern: "*_summary.tsv", mode: 'copy'
     publishDir "${params.outdir}/PATHOTYPR/fastas", pattern: "*.fasta", mode: 'copy'
 
     input:
-    // Receives the sample ID and the path to its FASTA file.
     tuple val(sampleId), path(fasta)
 
     output:
-    // Emits the new sample ID (from stdout), the renamed FASTA, and the summary file.
-    // This allows downstream processes to use the new name.
     tuple stdout, path("*.fasta"), path("*_summary.tsv"), emit: typed_fasta
 
     script:

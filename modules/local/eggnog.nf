@@ -53,34 +53,36 @@ process EGGNOG_DB {
     """
 }
 
-
 process ANNOT_EGGNOGMAP {
-    tag    "$sampleId"
-    cpus   32
-    memory '10 GB'
-    
-    input:
-    tuple val(sampleId), path(fixfaa), path(fixfna)
-    path eggnog_db
+  tag "$sampleId"
+  cpus 12
+  memory '10 GB'
+  scratch true
 
-    output:
-    tuple val(sampleId), path("${sampleId}.emapper.annotations")
+  input:
+  tuple val(sampleId), path(fixfaa)
+  path eggnog_db
 
-    script:
-    """
-    set -euo pipefail
-    mkdir -p scratch
-    echo ${eggnog_db} 
+  output:
+  tuple val(sampleId), path("${sampleId}.emapper.annotations")
 
-    emapper.py \
-        -i ${fixfaa} \
-        -m diamond \
-        --dmnd_db ${eggnog_db}/bacteria.dmnd \
-        --cpu ${task.cpus} \
-        --sensmode fast \
-        --tax_scope 2 \
-        --target_orthologs one2one \
-        -o ${sampleId} \
-        --data_dir ${eggnog_db}
-    """
+  script:
+  """
+  set -euo pipefail
+  mkdir -p tmp
+  mkdir -p scr_tmp
+
+  emapper.py \
+    -i ${fixfaa} \
+    -m diamond \
+    --dmnd_db eggnog_db/bacteria.dmnd \
+    --cpu ${task.cpus} \
+    --sensmode fast \
+    --tax_scope 2 \
+    --target_orthologs one2one \
+    -o ${sampleId} \
+    --data_dir eggnog_db \
+    --temp_dir tmp \
+    --scratch_dir scr_tmp
+  """
 }

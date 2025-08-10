@@ -1,298 +1,199 @@
 #!/usr/bin/env nextflow
+/*
+========================================================================================
+    A M A P   P I P E L I N E
+========================================================================================
+    Assisted MTBC Annotator Pipeline
+----------------------------------------------------------------------------------------
+    Publication:
+    DOI:
+----------------------------------------------------------------------------------------
+    Usage:
+    nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv <your_samples.tsv>
+----------------------------------------------------------------------------------------
+*/
 
+// Enable Nextflow DSL 2
 nextflow.enable.dsl=2
 
-log.info """\
+//
+// --- PARAMS ---
+//
+params.tsv = 'example_files/test.tsv'
+params.outdir = 'results'
+params.eggnog_db = 'eggnog_db'
+params.help = false
+params.skip_typing = false
+params.genus = "Mycobacterium"
+params.species = "Mycobacterium tuberculosis"
 
-    ===============================
-       A M A P   P I P E L I N E
-    ===============================
-            _,--',   _._.--._____
-     .--.--';_'-.', ";_      _.,-'
-    .'--'.  _.'    {`'-;_ .-.>.'
-          '-:_      )  / `' '=.
-            ) >     {_/,     /~)
-            |/               `^ .' 
-    ===============================
- `-:-.   ,-;"`-:-.   ,-;"`-:-.   ,-;"`
-    `=`,'=/     `=`,'=/     `=`,'=/   
-      y==/        y==/        y==/    
-    ,=,-<=`.    ,=,-<=`.    ,=,-<=`.  
- ,-'-'   `-=_,-'-'   `-=_,-'-'   `-=_,
-    fastas:     ${params.tsv}
-    output:     ${params.outdir}
-    eggnog_db:  ${params.eggnog_db}
- """
+// Reference files
+params.pathotyper_snps = "/reference/snps_lineages.tsv"
+params.pathotyper_ref = "/reference/MTB_ancestor_reference.fasta"
+params.miniprot_ref_aa = "/reference/aa_H37Rv.translated.fas"
+params.miniprot_ref_bad_bakta = "/reference/bad.bakta.translated.fas"
+params.miniprot_ref_h37rv = "/reference/new_refH37Rv.fasta"
+params.bakta_proteins = "/reference/sequence.gb"
+params.mycobrowser_ref = "/reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt"
 
-process EGGNOG_DB {
-    cpus 1
-    memory '10 GB'
-    output:
-    file "eggnog_db.log"
+//
+// --- LOG AND HELP ---
+//
+def logo = """\
+=======================================
+        A M A P   P I P E L I N E
+=======================================
+           _,--',   _._.--._____
+   .--.--';_'-.', ";_         _.,-'
+   .'--'.  _.'     {`'-;_ .-.>.'
+           '-:_       )  / `' '=.
+             ) >     {_/,     /~)
+             |/               `^ .'
+=======================================
+`-:-.   ,-;"`-:-.   ,-;"`-:-.   ,-;"`
+    `=,´=/     `=,´=/     `=,´=/
+      y==/         y==/       y==/
+    ,=,-<=`.     ,=,-<=`.    ,=,-<=`.
+ ,-'-'   `-=_, -'-'   `-=_, -'-'   `-=
+"""
 
-    script:
-    // Comprueba si params.eggnog_db es una ruta absoluta. Si no, concatena con projectDir
-    def eggnog_db_dir = params.eggnog_db.startsWith("/") ? params.eggnog_db : "${projectDir}/${params.eggnog_db}"
+if (params.help) {
+    log.info logo
+    log.info """
+    Usage:
+    nextflow run ${workflow.manifest.name} -profile singularity [options]
 
+    Required arguments:
+    --tsv                       Path to the input TSV file.
+                                Format: sampleId<TAB>fasta_path
+
+    Optional arguments:
+    --outdir                    Path to the output directory. (Default: ${params.outdir})
+    --eggnog_db                 Path to the eggNOG database directory. (Default: ${params.eggnog_db})
+    --skip_typing               Skip the PATHOTYPR lineage typing step. (Default: ${params.skip_typing})
+    --help                      Display this help message.
+
+    Reference file arguments (advanced):
+    --pathotyper_snps     Path to the SNPs TSV for MTB_TYPER.
+    --pathotyper_ref      Path to the reference FASTA for MTB_TYPER.
+    --miniprot_ref_aa     Path to the H37Rv amino acid reference for MINIPROT.
+    ...and other reference files.
     """
-    mkdir -p ${eggnog_db_dir}
-    if [ ! -f ${eggnog_db_dir}/eggnog.db ]; then
-        download_eggnog_data.py -y --data_dir ${eggnog_db_dir}
-    fi
-    echo "eggNOG DB setup complete in ${eggnog_db_dir}" > eggnog_db.log
-    """
+    exit 0
 }
 
+log.info logo
+log.info """
+    fastas          : ${params.tsv}
+    output          : ${params.outdir}
+    eggnog_db       : ${params.eggnog_db}
+    skip_typing     : ${params.skip_typing}
+"""
+//
+// --- MODULE INCLUDES ---
+//
+include { PATHOTYPR }           from './modules/local/pathotypr'
+include { BAKTA_ANNOTATOR }     from './modules/local/bakta'
+include { MINIPROT }            from './modules/local/miniprot'
+include { TYPE_CASES }          from './modules/local/cases'
+include { FIX_CDS }             from './modules/local/cases'
+include { EGGNOG_DB }           from './modules/local/eggnog'
+include { ANNOT_EGGNOGMAP }     from './modules/local/eggnog'
+include { GET_COUNT }           from './modules/local/get'
+include { GET_DUPLICATIONS }    from './modules/local/get'
+include { GET_OUTPUTS }         from './modules/local/get'
+include { GET_ALLDUP }          from './modules/local/get'
+include { PANGENE }             from './modules/local/pangene'
+include { REPORT_INPUTS }       from './modules/local/freport'
+include { FINAL_REPORT }        from './modules/local/freport'
+
+// --- INPUT CHANNEL ---
+//
 Channel
     .fromPath(params.tsv)
+    .ifEmpty { error "Input TSV file not found: ${params.tsv}" }
     .splitCsv(header: true, sep: '\t')
     .map { row -> tuple(row.sampleId, file(row.fasta)) }
-    .set { sample_fasta }
+    .set { fasta_ch }
 
-process MTB_TYPER { //done
-    tag "$sampleId"
-    cpus 1
-    memory '1 GB'
-    publishDir "${params.outdir}/MTB_TYPER/typing", pattern: "*.", mode: 'copy'
-    publishDir "${params.outdir}/MTB_TYPER/fastas", pattern: "*.fasta", mode: 'copy'
-    input:
-    tuple val(sampleId), val(fasta)
-    output:
-    tuple stdout, path("*.fasta"), path("*.")
-    script:
-    """
-    python3 ${projectDir}/bin/mtb_typer.py -i $fasta -t "/home/ruizro/test_amap/snps_lineages.tsv" -r "/reference/MTB_ancestor_reference.fasta"
-    ls *. | tr -d '.' | tr -d '\\n'
-    """
-}
-
-process BAKTA_ANNOTATOR { //done
-    tag "$sampleId"
-    cpus 10
-    memory '6 GB'
-    publishDir "${params.outdir}/BAKTA/", mode: 'copy'
-    input:
-    tuple val(sampleId), path(fasta), path(nametag)
-    output:
-    tuple val(sampleId), path(fasta), path("${sampleId}/${sampleId}.faa"), path("${sampleId}/${sampleId}.tsv"), path("${sampleId}/${sampleId}.gff3"), 
-    path("${sampleId}/*hypotheticals*"), path("${sampleId}/${sampleId}.png"), path("${sampleId}/${sampleId}.txt"),
-    path("${sampleId}/${sampleId}.gbff")
-    script:
-    """
-    bakta --db /data/bakta_db/db-light --skip-trna --genus "Mycobacterium" --species "Mycobacterium tuberculosis" --output ${sampleId} --prefix ${sampleId} --locus-tag ${sampleId} --proteins /reference/sequence.gb ${fasta}
-    """
-}
-
-process MINIPROT { //done
-    tag "$sampleId"
-    cpus 1
-    memory '500 MB'
-    input:
-    tuple val(sampleId), path(fasta), path(proteins), path(tsv)
-    output:
-    tuple val(sampleId),path("${sampleId}.paf"), path("${sampleId}-badbakta.paf"), path("${sampleId}-H37Rv.paf")
-    script:
-    """
-    miniprot --outs=0.95 -Iut16 -S ${fasta} /reference/aa_H37Rv.translated.fas > ${sampleId}.paf
-    miniprot --outs=0.95 -Iut16 -S ${fasta} /reference/bad.bakta.translated.fas > ${sampleId}-badbakta.paf
-    miniprot --outs=0.95 -Iut16 -S /reference/new_refH37Rv.fasta  ${proteins} > ${sampleId}-H37Rv.paf
-    """
-}
-
-process TYPE_CASES {
-    cpus 1
-    memory '1 GB'
-    tag "$sampleId"
-    publishDir "${params.outdir}/CDS_CASES/summary", pattern: "*summary.tsv", mode: 'copy'
-    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*case*.tsv", mode: 'copy'
-    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*rvmissing.tsv", mode: 'copy'
-    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*.html", mode: 'copy'
-    input:
-    tuple val(sampleId), path(miniprot), path(badbakta), path(cds), path(fasta), path(faa), path(tsv)
-    output:
-    tuple val(sampleId), path("${sampleId}_corrected.tsv"), path("*summary.tsv"),path("*case*.tsv"), path("*rvmissing.tsv"), path("*.html")
-    script:
-    """
-    python3 ${projectDir}/bin/classify_cases2.py -b ${tsv} -p ${miniprot} -bb ${badbakta} -c ${cds}
-    """
-}
-
-process FIX_CDS {
-    cpus 1
-    memory '1 GB'
-    tag "$sampleId"
-    input:
-    tuple val(sampleId), path(corrected_tsv), path(summary), path(fasta), path(faa), path(tsv)
-
-    output:
-    tuple val(sampleId), path("${sampleId}.AMAP.tsv"), path("${sampleId}.AMAP.faa"), path("${sampleId}.AMAP.fna"), path(tsv), path(fasta)
-
-    script:
-    """
-    python3 ${projectDir}/bin/check_cds.py ${fasta} ${corrected_tsv}
-    """
-}
-
-process ANNOT_EGGNOGMAP {
-    cpus 32
-    memory '10 GB'
-    tag "$sampleId"
-    input:
-    tuple val(sampleId), path(fixtsv), path(fixfaa), path(fixfna), path(baktatsv), path(fasta), path(dbMarker)
-    output:
-    tuple val(sampleId), path("${sampleId}.emapper.annotations")
-    script:
-    def eggnog_db_dir = params.eggnog_db.startsWith("/") ? params.eggnog_db : "${projectDir}/${params.eggnog_db}"
-    """
-    emapper.py  -i ${fixfaa} --cpu 0 -m diamond --sensmode fast -o ${sampleId} --data_dir ${eggnog_db_dir}
-    """
-}
-
-process GET_DUPLICATIONS {
-    tag "$sampleId"
-    publishDir "${params.outdir}/DUPLICATIONS", mode: 'copy'
-    input:
-    tuple val(sampleId), path(fixtsv), path(fixfaa), path(fixfna), path(baktatsv), path(fasta), path(emapper)
-    output:
-    tuple path("duplications_*"), path("${sampleId}.AMAP.faa.renamed.dup"), path("duplications_${sampleId}_groups.tsv")
-    script:
-    """
-    python3 ${projectDir}/bin/rename_fastas.py ${emapper} ${fixfaa}
-    diamond blastp --db ${fixfaa}.renamed -q ${fixfaa}.renamed --outfmt 6 qseqid sseqid pident length mismatch gaps qstart qend sstart send evalue bitscore qlen slen nident --no-self-hits --header > duplications_${sampleId}
-
-    python3 ${projectDir}/bin/get_duplicationsv2.py duplications_${sampleId}
-    python3 ${projectDir}/bin/dup_ex_multifasta.py duplications_${sampleId}_groups.tsv ${sampleId}.AMAP.faa.renamed
-    """
-}
-
-process GET_OUTPUTS {
-    tag "$sampleId"
-    publishDir "${params.outdir}/AMAP/${sampleId}", mode: 'copy'
-    input:
-    tuple val(sampleId), path(fixtsv), path(fixfaa), path(fixfna), path(baktatsv), path(fasta), path(emapper)
-    output:
-    tuple val(sampleId),path("${sampleId}-AMAPmastertable.tsv"),path("${sampleId}-AMAP.tsv"),path("${sampleId}-AMAP.gbk"),path("${sampleId}-AMAP.gff3"), path(fixfaa), path(fixfna)
-    script:
-    """
-    sed -i '1d' ${fixtsv}
-    python3 ${projectDir}/bin/generate_tsv_gff_gbk.py ${emapper} ${fixtsv} ${baktatsv} /reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt ${fasta}
-    """
-}
-
-process COUNT_ANNOT {
-    tag "$sampleId"
-    publishDir "${params.outdir}/AMAP/${sampleId}", mode: 'copy'
-    input:
-    tuple val(sampleId), path(mastertable)
-    output:
-    path("*.tsv")
-    script:
-    """
-    python3 ${projectDir}/bin/count_annot.py ${mastertable}
-    """
-}
-
-process REPORT_CASES2 {
-    input:
-    path(summaries)
-    output:
-    tuple path("input_cog.txt"), path("input_MycoBrowser.txt")
-    script:
-    """
-    echo ${summaries} | grep -o "[^ ]*.AMAP.COG\\.tsv" | xargs cat | grep -v '^lineage' > input_cog.txt
-    echo ${summaries} | grep -o "[^ ]*.AMAP.MycoBrowser\\.tsv" | xargs cat | grep -v '^lineage' > input_MycoBrowser.txt
-    """
-}
-process REPORT_CASES1{
-    input:
-    path(summaries)
-    output:
-    path("input_summary.txt")
-    script:
-    """
-    echo ${summaries} | grep -o "[^ ]*-summary\\.tsv" | xargs cat | grep -v '^Type' > input_summary.txt
-    """
-}
-process FINAL_REPORT{
-    publishDir "${params.outdir}/", mode: 'copy'
-    input:
-    tuple path(input_cog), path(input_myco), path(input_summary)
-    script:
-    """
-    echo ${input_cog}
-    echo ${input_myco}
-    echo ${input_summary}
-    WORK_DIR=`pwd`
-    echo \$WORK_DIR
-    Rscript -e "rmarkdown::render('${projectDir}/bin/check.Rmd', output_file='${projectDir}/${params.outdir}/final_report2.html', params=list(cog_summary='\$WORK_DIR/${input_cog}', myco_summary='\$WORK_DIR/${input_myco}', input_sum='\$WORK_DIR/${input_summary}'))"    
-    #Rscript -e "rmarkdown::render('${projectDir}/bin/check_quarto.qmd', output_file='${projectDir}/${params.outdir}/final_report.html', params=list(cog_summary='${input_cog}', myco_summary='${input_myco}', input_sum='${input_summary}'))"    
-    #quarto render /home/paula/AMAP/bin/check_quarto.qmd --to html --output 'final_report.html' -P cog_summary:\$WORK_DIR/${input_cog} -P myco_summary:\$WORK_DIR/${input_myco} -P input_sum:\$WORK_DIR/${input_summary}
-    """
-}
-
-process PASS {
-    input:
-    tuple val(ids), path(tsv),path(summaries)
-    output:
-    path(summaries)
-    script:
-    """
-    echo "Summarizing cases"
-    """
-}
-
-process ALL_DUP {
-    cpus 13
-    memory '10 GB'
-    publishDir "${params.outdir}/finalreport/", mode: 'copy'
-    input:
-    path(fastas)
-    output:
-    tuple path("homologous_communities.tsv"), path("homologous_communities.html")
-    script:
-    """
-    cat *.dup > all_fasta.fa
-    rm *.dup
-    
-    diamond cluster -d all_fasta.fa -o all.diamond --approx-id 30 -M 16G
-    diamond blastp --db all_fasta.fa -q all_fasta.fa --outfmt 6 qseqid sseqid pident length mismatch gaps qstart qend sstart send evalue bitscore qlen slen nident --no-self-hits --header > all.diamond
-    python3 ${projectDir}/bin/network_genomes.py all.diamond
-    """
-}
-
+//
+// --- WORKFLOW ---
+//
 workflow {
+    // 1. Setup eggNOG database if not present
     EGGNOG_DB()
-        .set { db_done } 
-    MTB_TYPER(sample_fasta)
-        .set { result_mtb_typer }
-    BAKTA_ANNOTATOR(result_mtb_typer)
-        .map { sampleId, fasta, proteins, tsv, gff, hyp, png, txt, gb -> tuple(sampleId, fasta, proteins, tsv) }
-        .set { result_bakta_annotator } 
-    MINIPROT(result_bakta_annotator)
-        .set {result_miniprot}
-    TYPE_CASES(result_miniprot.join(result_bakta_annotator))
-        .map {sampleId, tsv, summary, cases, miss, html -> tuple(sampleId, tsv, summary)}
-        .set {result_typecases}
-    FIX_CDS(result_typecases.join(result_bakta_annotator))
-        .set {result_fix}
-    
-    ANNOT_EGGNOGMAP(result_fix.combine(db_done))
-        .set {eggnogres}
-    GET_OUTPUTS(result_fix.join(eggnogres))
-        .map {sampleId, mastertable, tsv, gbk, gff3, fixfaa, fixfna ->tuple(sampleId, mastertable)}
-        .set {annotation}
-    GET_DUPLICATIONS(result_fix.join(annotation))
-        .map {all, fastas, tsv -> fastas}
-        .set {res_dup}
 
-    COUNT_ANNOT(annotation)
-        .set {count_annotation}
-    PASS(result_typecases)
-        .set {result_pass}
-    REPORT_CASES1(result_pass.collect())
-        .set {result_fix1}
-    REPORT_CASES2(count_annotation.collect())
-        .set {result_fix2}
-    FINAL_REPORT(result_fix2.combine(result_fix1))
-    ALL_DUP(res_dup.collect())
+    // 2. Perform MTB lineage typing or skip it
+    if (!params.skip_typing) {
+        PATHOTYPR(fasta_ch)
+        typed_ch = PATHOTYPR.out.typed_fasta
+    } else {
+        // If skipping typing, create a placeholder file for caching.
+        CREATE_EMPTY_FILE()
+        typed_ch = fasta_ch.combine(CREATE_EMPTY_FILE.out).map { sampleId, fasta, empty_file ->
+            tuple(sampleId, fasta, empty_file)
+        }
     }
+
+    // 3. Annotate genomes with Bakta
+    BAKTA_ANNOTATOR(typed_ch.combine(Channel.value(params.genus)).combine(Channel.value(params.species)))
+
+    // 4. Align proteins to the genome with Miniprot
+    MINIPROT(BAKTA_ANNOTATOR.out.for_miniprot)
+
+    // 5. Classify CDS cases based on alignments
+    TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases))
+
+    // 6. Correct CDS based on classified cases
+    FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix))
+
+    // 7. Annotate corrected proteins with eggNOG-mapper
+    ANNOT_EGGNOGMAP(FIX_CDS.out.for_eggnog, EGGNOG_DB.out.db_path)
+
+    // Combine results for downstream processing
+    ch_for_downstream = FIX_CDS.out.for_downstream.join(ANNOT_EGGNOGMAP.out)
+
+    // 8. Generate final output files (GFF, GBK, Master Table)
+    GET_OUTPUTS(ch_for_downstream)
+
+    // 9. Find and analyze gene duplications
+    GET_DUPLICATIONS(ch_for_downstream)
+    
+    // 10. Runs pangenome for the genes of each genome
+    PANGENE(ch_for_downstream)
+
+    // 11. Count annotations per category
+    GET_COUNT(GET_OUTPUTS.out.master_table)
+
+    // 12. Generate final reports
+    // Collect summaries from different processes
+    summaries_cases_ch = TYPE_CASES.out.summaries.collect()
+    summaries_annot_ch = GET_COUNT.out.collect()
+
+    // 13. Create report inputs
+    REPORT_INPUTS(summaries_annot_ch, summaries_cases_ch)
+
+    // 14. Analyze duplications across all samples
+    GET_ALLDUP(GET_DUPLICATIONS.out.dup_fastas.collect())
+
+    // 15. Render the final HTML report
+    FINAL_REPORT(REPORT_INPUTS.out)
+
+}
+
+//
+// --- PROCESSES ---
+//
+/**
+ * Creates a single, stable empty file to be used as a placeholder.
+ * This ensures that downstream processes that need this file as an
+ * input can be cached correctly when using -resume.
+ */
+process CREATE_EMPTY_FILE {
+    // This process will be cached after its first successful run.
+    output:
+    path 'empty_summary.log'
+
+    script:
+    "touch empty_summary.log"
+}

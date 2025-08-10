@@ -7,6 +7,7 @@ process TYPE_CASES {
     publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*-case*.tsv", mode: 'copy'
     publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*-rvmissing.tsv", mode: 'copy'
     publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*.html", mode: 'copy'
+    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*.corrected.tsv", mode: 'copy'
 
     input:
     tuple val(sampleId), path(miniprot_paf), path(badbakta_paf), path(h37rv_paf), path(fasta), path(bakta_tsv), path(bakta_faa)

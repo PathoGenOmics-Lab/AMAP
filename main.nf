@@ -6,7 +6,7 @@
     Assisted MTBC Annotator Pipeline
 ----------------------------------------------------------------------------------------
     Publication:
-    DOI:
+    DOI: https://doi.org/10.5281/zenodo.8024446
 ----------------------------------------------------------------------------------------
     Usage:
     nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv <your_samples.tsv>

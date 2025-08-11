@@ -307,10 +307,10 @@ flowchart TB
   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},
   doi = {10.5281/zenodo.1234},
   license = {GPL-3.0},
-  month = jul,
+  month = oct,
   title = {{AMAP}},
   url = {https://github.com/PathoGenOmics-Lab/AMAP},
-  version = {0.1.0},
+  version = {1.0.0},
   year = {2025}}
 ```
 ---

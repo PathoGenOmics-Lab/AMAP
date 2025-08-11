@@ -18,7 +18,7 @@ __and Mireia Coscolla<sup>1</sup>__
     </td>
     <td style="padding-left: 20px;">
       <p>AMAP is a bioinformatics pipeline written in Nextflow for processing, annotating and correcting annotations of <em>Mycobacterium tuberculosis</em> complex (MTBC) genomes. The reference-based correction adjusts approximately 30% of the genes in a given genome.</p>
-      <p>Although AMAP has been optimized for the MTBC, *its structure allows for adaptation to other organisms* by modifying the reference files and specific parameters.</p>
+      <p>Although AMAP has been optimized for the MTBC, <strong>its structure allows for adaptation to other organisms</strong> by modifying the reference files and specific parameters.</p>
     </td>
   </tr>
 </table>

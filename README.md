@@ -200,7 +200,7 @@ results/
 │
 ├── DUPLICATIONS/
 │   ├── {sampleId}/
-│   │   ├── duplications* # Raw BLASTp output for within-genome duplications.
+│   │   ├── duplications*                # Raw BLASTp output for within-genome duplications.
 │   │   ├── duplications_*_groups.tsv    # Table grouping duplicated genes into families.
 │   │   └── *.dup                        # FASTA file of all duplicated protein sequences for the sample.
 │   ├── homologous_communities.tsv       # Summary table of homologous gene communities across all samples, with network metrics.

@@ -140,55 +140,88 @@ To run the AMAP pipeline hosted on GitHub by PathoGenOmics-Lab, follow these sim
    ```bash
    nextflow run PathoGenOmics-Lab/AMAP --tsv test_file.tsv
    ```
-## Outputs
-### MTB_TYPER
-MTB typer uses a k-mear aproach to use robust phylogenetic markers:
-- /fastas/*.fasta
-- /typing/*.
-### BAKTA
-All inputs that Bakta software offers to annotate a genome, generates a directory by genome:
-- /genome_name/*.faa
-- /genome_name/*.gbff
-- /genome_name/*.gff3
-- /genome_name/*.hypotheticals.faa
-- /genome_name/*.hypotheticals.tsv
-- /genome_name/*.png
-- /genome_name/*.tsv
-- /genome_name/*.txt
-### CDS_CASES
-- /genome_name/*-case1.tsv:
-- /genome_name/*-case2.tsv:
-- /genome_name/*-case3.tsv:
-- /genome_name/*-case4.tsv:
-- /genome_name/*-rvmissing.tsv:
-- /genome_name/*-single_overlap.html:
-- /genome_name/*-multiple_overlap.html:
-- /summary/*-summary.tsv
-### AMAP
-- /genome_name/*.AMAP.tsv
-- /genome_name/*.AMAP.COG.tsv
-- /genome_name/*.AMAP.faa
-- /genome_name/*.AMAP.fna
-- /genome_name/*.AMAP.MycoBrowser.tsv
-- /genome_name/*.AMAP.gbk
-- /genome_name/*.AMAP.gff3
-- /genome_name/*.AMAPmastertable.tsv
-### DUPLICATIONS
-- /duplications_*
-- /duplications_*_groups.tsv
-- /duplications_*_network.png
-- /duplications_*_interactive.html
-- /duplications_*.AMAP.faa.renamed.dup
-### FINAL REPORT
-- homologous_communities.html
-- homologous_communities.tsv
-### pipeline_info
-- execution_report_*.html
-- execition_timeline_*.html
-- pipeline_dag_*.html
-- execution_trace_*.tsv
+# Detailed Outputs
 
-#### Network measures of Duplications
+The pipeline will create a main output directory (specified by `--outdir`, default: `results/`). Within this directory, a structured set of subdirectories will be generated for each step of the analysis.
+
+```
+results/
+├── AMAP/
+│   └── {sampleId}/
+│       ├── *-AMAP.faa                   # Final corrected protein sequences in FASTA format.
+│       ├── *-AMAP.fna                   # Final corrected nucleotide sequences in FASTA format.
+│       ├── *-AMAP.gff3                  # Final corrected annotation in GFF3 format.
+│       ├── *-AMAP.gbk                   # Final corrected annotation in GenBank format.
+│       ├── *-AMAPmastertable.tsv        # Master table combining all annotation info (coordinates, eggNOG, Mycobrowser).
+│       ├── *-AMAP.COG.tsv               # Summary count of COG functional categories.
+│       └── *-AMAP.MycoBrowser.tsv       # Summary count of Mycobrowser functional categories.
+│
+├── BAKTA/
+│   └── {sampleId}/
+│       ├── *.faa                        # Original protein sequences from Bakta.
+│       ├── *.gbff                       # Original GenBank file from Bakta.
+│       ├── *.gff3                       # Original GFF3 file from Bakta.
+│       ├── *.hypotheticals.faa          # FASTA of hypothetical proteins.
+│       ├── *.hypotheticals.tsv          # TSV of hypothetical proteins.
+│       ├── *.png                        # Genome map image.
+│       ├── *.tsv                        # Original annotation table from Bakta.
+│       └── *.txt                        # Summary statistics from Bakta.
+│
+├── CDS_CASES/
+│   ├── summary/
+│   │   └── *-summary.tsv                # Summary table of all classified cases across all samples.
+│   └── {sampleId}/
+│       ├── *-case[1-4].tsv              # Tables for each specific case (novel, perfect match, mismatch, corrected).
+│       ├── *-rvmissing.tsv              # Genes from the reference (H37Rv) not found by Bakta.
+│       ├── *.html                       # Interactive plots visualizing gene overlaps.
+│       └── *_corrected.tsv              # The final list of corrected CDS coordinates before generating new annotation files.
+│
+├── DUPLICATIONS/
+│   ├── {sampleId}/
+│   │   ├── duplications* # Raw BLASTp output for within-genome duplications.
+│   │   ├── duplications_*_groups.tsv    # Table grouping duplicated genes into families.
+│   │   └── *.dup                        # FASTA file of all duplicated protein sequences for the sample.
+│   ├── homologous_communities.tsv       # Summary table of homologous gene communities across all samples, with network metrics.
+│   └── homologous_communities.html      # Interactive network visualization of the homologous communities.
+│
+├── PANGENE/
+│   └── {sampleId}/
+│       ├── *.gfa                        # Pangenome graph in Graphical Fragment Assembly format.
+│       ├── *.bubbles.txt                # Details on structural variations (bubbles) in the graph.
+│       ├── *.Rtab                       # Presence/absence matrix of genes across genomes.
+│       └── *.stat                       # Statistics of the GFA graph.
+│
+├── PATHOTYPR/
+│   ├── typing/
+│   │   └── *_summary.tsv                # Summary of lineage classification from Pathotyper.
+│   ├── fastas/
+│   │   └── *.fasta                      # Renamed genome FASTA files based on the assigned lineage.
+│   └── renamed_fastas.tsv               # TSV file mapping original sample IDs to new lineage-based names.
+│
+├── pipeline_info/
+│   ├── execution_report_*.html          # Nextflow execution report.
+│   ├── execution_timeline_*.html        # Nextflow execution timeline.
+│   ├── pipeline_dag_*.html              # Pipeline dependency graph (DAG).
+│   └── execution_trace_*.txt            # Nextflow execution trace file with resource usage.
+│
+└── final_report.html                    # The main HTML report summarizing the entire analysis.
+```
+
+## Effect of Skip Options
+
+Using optional flags will prevent certain directories and files from being generated:
+
+* **If `--skip_typing` is used:**
+    * The entire `PATHOTYPR/` directory will not be created. The pipeline will proceed using the original sample IDs.
+
+* **If `--skip_functional_annotation` is used:**
+    * The pipeline will stop after the annotation correction step. The following directories and files **will not be generated**:
+        * `AMAP/`
+        * `DUPLICATIONS/`
+        * `PANGENE/`
+        * `final_report.html`
+
+## Network measures of Duplications
 1. **Degree Centrality** ``(AverageDegree1-2)``: Measures the number of direct connections a node has. In networks based on pairwise relationships, this measure is crucial for identifying highly connected nodes. Simply put,it is the average number of connections each node in the community has.
 2. **Closeness Centrality** ``(AverageCloseness1-2)``: Calculates the average distance of a node to all others in the network, identifying nodes capable of efficiently propagating information. This metric measures how'close' nodes are to each other in terms of steps or hops. A high value indicates that nodes are, on average, closer to each other.
 3. **Betweenness Centrality** ``(AverageBetweenness1-2)``: Indicates how often a node acts as a bridge on the shortest path between two other nodes, thus controlling the flow of information. A high value may indicate nodesthat act as 'bridges' between different parts of the network.
@@ -265,7 +298,7 @@ flowchart TB
 
 ```
 
-## AMAP Algorithm
+## AMAP Correction Algorithm
 
 ## Citation
 >Ruiz-Rodriguez, P., & Coscolla, M. (2025). AMAP (Version 0.1.0) [Computer software]. https://doi.org/10.5281/zenodo.1234

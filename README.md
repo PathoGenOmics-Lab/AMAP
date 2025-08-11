@@ -5,19 +5,24 @@
 [![Docker Image](https://img.shields.io/badge/Docker%20Image-AMAP-blue?style=plastic&logo=docker)](https://hub.docker.com/repository/docker/paururo/amap/general)
 [![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-%23c9ac02?style=plastic)](https://doi.org/10.5281/zenodo.8024447)
 
-# AMAP: Assisted MTBC annotator pipeline  
-__Paula Ruiz-Rodriguez<sup>1</sup>__ 
-__and Mireia Coscolla<sup>1</sup>__
-<br>
-<sub> 1. I<sup>2</sup>SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Valencia, Spain </sub>  
-
-<p align="center">
-  <img src=".github/AMAP.png" title="AMAP logo" style="width:650px; height: auto;">
-</p>
-
-AMAP is a bioinformatics pipeline written in Nextflow for processing, annotating and correcting annotations of _Mycobacterium tuberculosis_ complex (MTBC) genomes.
-
-Although AMAP has been optimized for the MTBC, its structure allows for adaptation to other organisms by modifying the reference files and specific parameters.
+# AMAP: Assisted MTBC annotator pipeline
+<table>
+  <tr>
+    <td width="350">
+      <img src=".github/AMAP.png" title="AMAP logo" style="width:350px; height: auto;">
+    </td>
+    <td style="padding-left: 20px;">
+      <p>
+        <strong>Paula Ruiz-Rodriguez<sup>1</sup></strong>
+        <strong>and Mireia Coscolla<sup>1</sup></strong>
+        <br>
+        <sub>1. I<sup>2</sup>SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Valencia, Spain</sub>
+      </p>
+      <p>AMAP is a bioinformatics pipeline written in Nextflow for processing, annotating and correcting annotations of <em>Mycobacterium tuberculosis</em> complex (MTBC) genomes. The reference-based correction adjusts approximately 30% of the genes in a given genome.</p>
+      <p>Although AMAP has been optimized for the MTBC, its structure allows for adaptation to other organisms by modifying the reference files and specific parameters.</p>
+    </td>
+  </tr>
+</table>
 
 ## What can AMAP do?
 
@@ -233,7 +238,7 @@ Using optional flags will prevent certain directories and files from being gener
 9. **Transitivity** ``(transitivity1-2)``: Measures the likelihood that the neighbors of a node are also connected to each other. It is similar to the clustering coefficient but applies to the entire network. It indicatesthe general tendency of the network to form triangles or "three connected friends."
 10. **Modularity** ``(modularity1-2)``: Evaluates the community structure within a network. High modularity indicates that the network has densely interconnected communities, but with few connections between these distinct communities. It helps to identify how well defined the communities are within the network.
 
-## AMAP Workflow
+## AMAP Detailed Workflow
 ```mermaid
 %%{init: { 'theme': 'dark' } }%%
 %%{init: { 'theme': 'dark' } }%%

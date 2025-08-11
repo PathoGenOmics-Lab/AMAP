@@ -13,8 +13,8 @@ __and Mireia Coscolla<sup>1</sup>__
 
 <table>
   <tr>
-    <td width="300">
-      <img src=".github/AMAP.png" title="AMAP logo" style="width:300px; height: auto;">
+    <td width="350">
+      <img src=".github/AMAP.png" title="AMAP logo" style="width:350px; height: auto;">
     </td>
     <td style="padding-left: 20px;">
       <p>AMAP is a bioinformatics pipeline written in Nextflow for processing, annotating and correcting annotations of <em>Mycobacterium tuberculosis</em> complex (MTBC) genomes. The reference-based correction adjusts approximately 30% of the genes in a given genome.</p>

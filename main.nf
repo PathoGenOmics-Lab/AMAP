@@ -24,6 +24,7 @@ params.outdir = 'results'
 params.eggnog_db = 'eggnog_db'
 params.help = false
 params.skip_typing = false
+params.skip_functional_annotation = false
 params.genus = "Mycobacterium"
 params.species = "Mycobacterium tuberculosis"
 
@@ -41,11 +42,11 @@ params.mycobrowser_ref = "/reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt
 //
 def logo = """\
 =======================================
-        A M A P   P I P E L I N E
+       A M A P   P I P E L I N E
 =======================================
            _,--',   _._.--._____
    .--.--';_'-.', ";_         _.,-'
-   .'--'.  _.'     {`'-;_ .-.>.'
+   .'--'. _.'     {`'-;_ .-.>.'
            '-:_       )  / `' '=.
              ) >     {_/,     /~)
              |/               `^ .'
@@ -90,10 +91,11 @@ if (params.help) {
 
 log.info logo
 log.info """
-    fastas          : ${params.tsv}
-    output          : ${params.outdir}
-    eggnog_db       : ${params.eggnog_db}
-    skip_typing     : ${params.skip_typing}
+    fastas                      : ${params.tsv}
+    output                      : ${params.outdir}
+    eggnog_db                   : ${params.eggnog_db}
+    skip_typing                 : ${params.skip_typing}
+    skip_functional_annotation  : ${params.skip_functional_annotation}
 """
 //
 // --- MODULE INCLUDES ---
@@ -127,7 +129,9 @@ Channel
 //
 workflow {
     // 1. Setup eggNOG database if not present
-    EGGNOG_DB()
+    if (!params.skip_functional_annotation) {
+        EGGNOG_DB()
+    }
 
     // 2. Perform MTB lineage typing or skip it
     if (!params.skip_typing) {
@@ -153,49 +157,41 @@ workflow {
     // 6. Correct CDS based on classified cases
     FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix))
 
-    // FIX 1: Transform the output of FIX_CDS to match what ANNOT_EGGNOGMAP expects.
-    // The .map operator takes the 3-element tuple (id, faa, fna) and returns
-    // the 2-element tuple (id, faa) that ANNOT_EGGNOGMAP needs.
-    FIX_CDS.out.for_eggnog
-        .map { sampleId, faa, fna -> tuple(sampleId, faa) }
-        .set { for_eggnog_ch }
+    // --- FUNCTIONAL ANNOTATION AND DOWNSTREAM ANALYSIS ---
+    // This entire block will be skipped if --skip_functional_annotation is used
+    if (!params.skip_functional_annotation) {
+        // 7. Annotate corrected proteins with eggNOG-mapper
+        ANNOT_EGGNOGMAP(FIX_CDS.out.for_eggnog, EGGNOG_DB.out.db_path)
 
-    // 7. Annotate corrected proteins with eggNOG-mapper
-    ANNOT_EGGNOGMAP(for_eggnog_ch, EGGNOG_DB.out.db_path)
+        // Combine results for downstream processing
+        ch_for_downstream = FIX_CDS.out.for_downstream.join(ANNOT_EGGNOGMAP.out)
 
-    // Combine results for downstream processing
-    ch_for_downstream = FIX_CDS.out.for_downstream.join(ANNOT_EGGNOGMAP.out)
+        // 8. Generate final output files (GFF, GBK, Master Table)
+        GET_OUTPUTS(ch_for_downstream)
 
-    // 8. Generate final output files (GFF, GBK, Master Table)
-    GET_OUTPUTS(ch_for_downstream)
+        // 9. Find and analyze gene duplications
+        GET_DUPLICATIONS(ch_for_downstream)
+        
+        // 10. Runs pangenome for the genes of each genome
+        PANGENE(ch_for_downstream)
 
-    // 9. Find and analyze gene duplications
-    GET_DUPLICATIONS(ch_for_downstream)
-    
-    // 10. Runs pangenome for the genes of each genome
-    PANGENE(ch_for_downstream)
+        // 11. Count annotations per category
+        GET_COUNT(GET_OUTPUTS.out.master_table)
 
-    // 11. Count annotations per category
-    GET_COUNT(GET_OUTPUTS.out.master_table)
+        // 12. Generate final reports
+        // Collect summaries from different processes
+        summaries_cases_ch = TYPE_CASES.out.summaries.collect()
+        summaries_annot_ch = GET_COUNT.out.collect()
 
-    // --- FIX 2: CHANNEL HANDLING FOR FINAL REPORT ---
-    // 12. Generate final reports
-    
-    // First, collect the outputs from the upstream processes.
-    // .collect() will gather all files emitted by each process into a single list.
-    summaries_cases_list_ch = TYPE_CASES.out.summaries.collect()
-    summaries_annot_list_ch = GET_COUNT.out.collect()
+        // 13. Create report inputs
+        REPORT_INPUTS(summaries_annot_ch, summaries_cases_ch)
 
-    // 13. Pass these two lists directly to REPORT_INPUTS.
-    // This process is designed to take two inputs: the list of annotation files and the list of case files.
-    REPORT_INPUTS(summaries_annot_list_ch, summaries_cases_list_ch)
+        // 14. Analyze duplications across all samples
+        GET_ALLDUP(GET_DUPLICATIONS.out.dup_fastas.collect())
 
-    // 14. Analyze duplications across all samples
-    GET_ALLDUP(GET_DUPLICATIONS.out.dup_fastas.collect())
-
-    // 15. Render the final HTML report
-    FINAL_REPORT(REPORT_INPUTS.out)
-
+        // 15. Render the final HTML report
+        FINAL_REPORT(REPORT_INPUTS.out)
+    }
 }
 
 //

@@ -15,10 +15,84 @@ __and Mireia Coscolla<sup>1</sup>__
   <img src=".github/AMAP.png" title="AMAP logo" style="width:650px; height: auto;">
 </p>
 
-AMAP is a bioinformatics pipeline written in Nextflow for processing, annotating and correct annotations of _Mycobacterium tuberculosis_ complex (MTBC) genomes.
+AMAP is a bioinformatics pipeline written in Nextflow for processing, annotating and correcting annotations of _Mycobacterium tuberculosis_ complex (MTBC) genomes.
 
-## What can do AMAP?
+Although AMAP has been optimized for the MTBC, its structure allows for adaptation to other organisms by modifying the reference files and specific parameters.
+
+## What can AMAP do?
+
+AMAP is designed to provide a comprehensive and accurate annotation of MTBC genomes, starting from assembled genome sequences. The pipeline performs a series of steps to classify, annotate, correct, and analyze the genomes.
+
 ![AMAP pipeline map](.github/metroAMAP_trayectos_css_clean_anim.svg)
+
+The main steps of the AMAP workflow are:
+
+1.  **Database Setup (EggNOG)**: The pipeline first checks if the necessary EggNOG database exists. If the database (`bacteria.dmnd`) is found, this step is skipped. If not, it proceeds to download and build it before any analysis begins.
+
+2.  **MTBC Lineage Typing (PATHOTYPR)**: The pipeline classifies the input genomes into _Mycobacterium tuberculosis_ lineages using robust phylogenetic markers. This step can be skipped if desired. The results of this classification are used to rename the sequences for clarity in downstream analyses.
+
+3.  **Genome Annotation (Bakta)**: Each genome is then annotated using the **Bakta** tool. This process identifies coding sequences (CDS), tRNAs, and other genomic features, providing a baseline annotation for each genome.
+
+4.  **Protein Alignment (miniprot)**: The annotated proteins are aligned against a reference proteome (H37Rv) using **miniprot**. This step is crucial for identifying orthologous proteins and assessing the quality of the initial annotation.
+
+5.  **CDS Case Classification**: Based on the alignments from miniprot, the pipeline classifies each CDS into different "cases" to identify discrepancies between the input genome's annotation and the reference.
+    * **Case 1**: Novel CDS not present in the reference.
+    * **Case 2**: Perfect match with the reference annotation.
+    * **Case 3**: Same start or end as the reference but with mismatches.
+    * **Case 4**: CDS coordinates corrected by AMAP.
+    * **Missing RVs**: Reference genes that were not annotated by Bakta in the input genome.
+
+6.  **Annotation Correction**: Using the case classifications, the pipeline corrects the CDS annotations, adjusting start/end coordinates to produce a more accurate set of annotated genes.
+
+7.  **Functional Annotation (eggNOG-mapper)**: The corrected protein sequences are functionally annotated using **eggNOG-mapper**. This assigns functional information, such as COG categories, to each gene.
+
+8.  **Gene Duplication Analysis**: The pipeline identifies and analyzes gene duplications within each genome. It generates a network of duplicated genes and calculates various network metrics to characterize these duplications.
+
+9.  **Pangenome Analysis (pangene)**: AMAP performs a pangenome analysis to compare the gene content across all processed genomes, helping to understand the core and accessory genome of the dataset.
+
+10. **Final Report Generation**: Finally, AMAP generates a comprehensive HTML report summarizing all the results, including distributions, functional summaries, and statistical analyses.
+
+## Parameters
+
+### Input/Output
+
+| Parameter | Description | Type | Default | Required |
+| :--- | :--- | :--- | :--- | :--- |
+| `--tsv` | Path to the input TSV file. The file should have two columns: `sampleId` and `fasta`, separated by a tab. | `file` | `example_files/test.tsv` | **Yes** |
+| `--outdir` | Path to the output directory where the results will be saved. | `string` | `results` | No |
+
+### Optional Arguments
+
+| Parameter | Description | Type | Default |
+| :--- | :--- | :--- | :--- |
+| `--skip_typing` | Skip the initial PATHOTYPR lineage typing step. | `boolean` | `false` |
+| `--skip_functional_annotation` | Skip all functional annotation and downstream analysis steps. | `boolean` | `false` |
+| `--genus` | The genus to be used for Bakta annotation. | `string` | `"Mycobacterium"` |
+| `--species` | The species to be used for Bakta annotation. | `string` | `"Mycobacterium tuberculosis"` |
+| `--help` | Display the help message and exit. | `boolean` | `false` |
+
+### Reference & Database Arguments
+
+**Note**: All the necessary reference files for the standard MTBC analysis are **included in the Docker and Singularity images**. These files, originally sourced from public repositories like Zenodo, are located in the `/reference/` directory inside the container.
+
+Therefore, **you do not need to specify these parameters** if you are running the pipeline with Docker or Singularity for a standard analysis. The pipeline will automatically use the bundled files.
+
+These options are provided for advanced users who wish to:
+* Run the pipeline without a container.
+* Use custom or updated reference files.
+* Adapt the pipeline for other organisms.
+
+| Parameter | Description | Type | Default (within container) |
+| :--- | :--- | :--- | :--- |
+| `--eggnog_db` | Path to the pre-formatted eggNOG database directory. | `string` | `eggnog_db` |
+| `--pathotyper_snps` | Path to the SNPs TSV file for Pathotyper. | `file` | `/reference/snps_lineages.tsv` |
+| `--pathotyper_ref` | Path to the reference FASTA file for Pathotyper. | `file` | `/reference/MTB_ancestor_reference.fasta` |
+| `--miniprot_ref_aa` | Path to the reference amino acid proteome for Miniprot. | `file` | `/reference/aa_H37Rv.translated.fas` |
+| `--miniprot_ref_bad_bakta` | Path to a set of problematic proteins for Miniprot alignment. | `file` | `/reference/bad.bakta.translated.fas` |
+| `--miniprot_ref_h37rv` | Path to the reference genome FASTA for Miniprot. | `file` | `/reference/new_refH37Rv.fasta` |
+| `--bakta_proteins` | Path to a reference proteins GBK file for Bakta annotation. | `file` | `/reference/sequence.gb` |
+| `--mycobrowser_ref` | Path to the Mycobrowser reference TXT file for functional categorization. | `file` | `/reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt` |
+
 
 ## First Steps for Using AMAP
 
@@ -66,11 +140,6 @@ To run the AMAP pipeline hosted on GitHub by PathoGenOmics-Lab, follow these sim
    ```bash
    nextflow run PathoGenOmics-Lab/AMAP --tsv test_file.tsv
    ```
-
-## Parameters
-
-## Inputs
-
 ## Outputs
 ### MTB_TYPER
 MTB typer uses a k-mear aproach to use robust phylogenetic markers:

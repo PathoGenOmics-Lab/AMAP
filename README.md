@@ -27,8 +27,6 @@ __and Mireia Coscolla<sup>1</sup>__
 
 AMAP is designed to provide a comprehensive and accurate annotation of MTBC genomes, starting from assembled genome sequences. The pipeline performs a series of steps to classify, annotate, correct, and analyze the genomes.
 
-![AMAP pipeline map](.github/metroAMAP_trayectos_css_clean_anim.svg)
-
 The main steps of the AMAP workflow are:
 
 1.  **Database Setup (EggNOG)**: The pipeline first checks if the necessary EggNOG database exists. If the database (`bacteria.dmnd`) is found, this step is skipped. If not, it proceeds to download and build it before any analysis begins.
@@ -55,6 +53,8 @@ The main steps of the AMAP workflow are:
 9.  **Pangenome Analysis (pangene)**: AMAP performs a pangenome analysis to compare the gene content across all processed genomes, helping to understand the core and accessory genome of the dataset.
 
 10. **Final Report Generation**: Finally, AMAP generates a comprehensive HTML report summarizing all the results, including distributions, functional summaries, and statistical analyses.
+
+![AMAP pipeline map](.github/metroAMAP_trayectos_css_clean_anim.svg)
 
 ## Parameters
 
@@ -144,6 +144,24 @@ To run the AMAP pipeline hosted on GitHub by PathoGenOmics-Lab, follow these sim
    ```bash
    nextflow run PathoGenOmics-Lab/AMAP --tsv test_file.tsv
    ```
+### Advanced Usage
+
+#### Resuming a run
+If your run is interrupted for any reason, you can resume it from the last successfully completed step by adding the `-resume` flag to your command:
+
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv test_file.tsv -resume
+```
+
+#### Running on a SLURM Cluster
+The pipeline includes a `slurm` profile for execution on HPC clusters using the SLURM workload manager. To use it, combine it with a container profile like `singularity`:
+
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv test_file.tsv
+```
+The default Quality of Service (QoS) is set to `short` in the `nextflow.config` file. You can modify this file to change the `clusterOptions` to suit your cluster's configuration (e.g., specifying a different partition or account).
+
+
 # Detailed Outputs
 
 The pipeline will create a main output directory (specified by `--outdir`, default: `results/`). Within this directory, a structured set of subdirectories will be generated for each step of the analysis.

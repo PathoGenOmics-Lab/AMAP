@@ -1,3 +1,4 @@
+# AMAP: Assisted MTBC annotator pipeline  
 [![PGO](https://img.shields.io/badge/PathoGenOmics-Lab-grey?style=plastic&labelColor=red)](https://github.com/PathoGenOmics-Lab)
 [![AMAP](https://img.shields.io/badge/AMAP-v1.0.0-green?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP)
 [![Nextflow](https://img.shields.io/badge/Nextflow-%E2%89%A5%20v23.10.1-%2330ba91?style=plastic)](https://github.com/nextflow-io/nextflow/releases/tag/v23.10.1)
@@ -5,7 +6,6 @@
 [![Docker Image](https://img.shields.io/badge/Docker%20Image-AMAP-blue?style=plastic&logo=docker)](https://hub.docker.com/repository/docker/paururo/amap/general)
 [![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-%23c9ac02?style=plastic)](https://doi.org/10.5281/zenodo.8024447)
 
-# AMAP: Assisted MTBC annotator pipeline  
 __Paula Ruiz-Rodriguez<sup>1</sup>__ 
 __and Mireia Coscolla<sup>1</sup>__
 <br>

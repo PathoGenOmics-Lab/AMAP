@@ -46,7 +46,7 @@ The main steps of the AMAP workflow are:
 
 6.  **Annotation Correction**: Using the case classifications, the pipeline corrects the CDS annotations, adjusting start/end coordinates to produce a more accurate set of annotated genes.
 
-7.  **Functional Annotation ([eggNOG-mapper](https://github.com/eggnogdb/eggnog-mapper)**: The corrected protein sequences are functionally annotated using **eggNOG-mapper**. This assigns functional information, such as COG categories, to each gene.
+7.  **Functional Annotation ([eggNOG-mapper](https://github.com/eggnogdb/eggnog-mapper))**: The corrected protein sequences are functionally annotated using **eggNOG-mapper**. This assigns functional information, such as COG categories, to each gene.
 
 8.  **Gene Duplication Analysis**: The pipeline identifies and analyzes gene duplications within each genome. It generates a network of duplicated genes and calculates various network metrics to characterize these duplications.
 

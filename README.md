@@ -320,8 +320,46 @@ flowchart TB
 
 ```
 
-## AMAP Correction Algorithm
+# AMAP Correction Algorithm: A Deeper Look
 
+The core of AMAP's functionality is its algorithm for refining genome annotations. It acts as a "referee" between the initial annotation (from Bakta) and a trusted reference (alignments to the H37Rv proteome via Miniprot). The process involves classifying every potential gene and then applying a set of rules to resolve discrepancies.
+
+---
+
+#### 1. Initial CDS Classification
+
+First, every CDS from the initial Bakta annotation is compared to the Miniprot alignments and categorized:
+
+* **Case 2 (Perfect Match)**: The Bakta CDS has the **exact same start and end coordinates** as a high-quality Miniprot alignment. These are considered correct and are kept.
+* **Case 3 (Imperfect Match)**: The Bakta CDS has the same coordinates, but the alignment length differs slightly (e.g., due to indels). These are also kept as they are generally reliable.
+* **Case 4 (Conflicting Overlap)**: A Bakta CDS and a Miniprot alignment overlap positionally, but their start/end coordinates do not match. These are conflicts that must be resolved.
+* **Case 1 (Potentially Novel)**: A Bakta CDS has **no overlap** with any Miniprot alignment. This suggests it might be a novel gene not present in the H37Rv reference.
+* **Missing RVs**: A Miniprot alignment has **no overlap** with any Bakta CDS. This represents a reference gene that the initial annotation tool missed entirely. These are automatically "rescued" and added to the set of trusted genes.
+
+---
+
+#### 2. Conflict Resolution and Decision Logic
+
+The algorithm's main task is to resolve the conflicts from **Case 4** and filter the potentially novel genes from **Case 1**.
+
+* **Filtering Case 1**: Potentially novel genes are scrutinized. A gene is **removed** if:
+    * It has an overlap of **≥ 80%** with a database of known false positives or problematic annotations.
+    * It shows a weak but significant alignment (**≥ 80%** match identity) to the reference, indicating it's not truly novel but a mis-annotation.
+    * Genes that pass these filters are kept (`case1_kept`).
+
+* **Resolving Case 4 Conflicts**: When a Bakta CDS and a Miniprot alignment overlap, a winner is chosen based on the following logic:
+    * **Single Overlaps**: For a one-to-one conflict, the algorithm compares the length of the Bakta annotation versus the length of the Miniprot alignment.
+        * The **Miniprot version is preferred by default**.
+        * The Bakta version is only chosen if it is substantially longer than the Miniprot alignment (a difference of **> 550 bp**). This rule avoids discarding a potentially full-length gene in favor of a shorter, fragmented reference alignment.
+    * **Multiple Overlaps**: If multiple Bakta CDSs overlap a single Miniprot alignment (a sign of a fragmented gene), the algorithm first finds the Bakta CDS with the best overlap percentage. It then compares this "best" Bakta CDS to the Miniprot alignment using a similar length-based rule (threshold of **500 bp**).
+
+* **Final De-duplication**: After a "winner" is chosen from a conflict, it is compared against the existing set of trusted genes. If the new gene has a high overlap (**≥ 70%**) with an existing one, it is only kept if it is substantially longer (difference **> 550 bp**). This prevents the inclusion of redundant, shorter fragments.
+
+---
+
+#### 3. Final Quality Control: Stop Codon Check
+
+As a final validation step (performed by the `check_cds.py` script), the algorithm translates every CDS in the final, corrected set. If a sequence does not end with a valid stop codon, its coordinates are automatically extended to the next in-frame stop codon in the genome. This ensures that all final annotations correspond to complete, translatable proteins.
 ## Citation
 >Ruiz-Rodriguez, P., & Coscolla, M. (2025). AMAP (Version 0.1.0) [Computer software]. https://doi.org/10.5281/zenodo.1234
 ```bibtex

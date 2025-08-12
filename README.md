@@ -29,13 +29,13 @@ AMAP is designed to provide a comprehensive and accurate annotation of MTBC geno
 
 The main steps of the AMAP workflow are:
 
-1.  **Database Setup (EggNOG)**: The pipeline first checks if the necessary EggNOG database exists. If the database (`bacteria.dmnd`) is found, this step is skipped. If not, it proceeds to download and build it before any analysis begins.
+1.  **Database Setup ([eggnog](https://github.com/eggnogdb/))**: The pipeline first checks if the necessary EggNOG database exists. If the database (`bacteria.dmnd`) is found, this step is skipped. If not, it proceeds to download and build it before any analysis begins.
 
-2.  **MTBC Lineage Typing (PATHOTYPR)**: The pipeline classifies the input genomes into _Mycobacterium tuberculosis_ lineages using robust phylogenetic markers. This step can be skipped if desired. The results of this classification are used to rename the sequences for clarity in downstream analyses.
+2.  **MTBC Lineage Typing ([pathotypr](https://github.com/PathoGenOmics-Lab/pathotypr))**: The pipeline classifies the input genomes into _Mycobacterium tuberculosis_ lineages using robust phylogenetic markers. This step can be skipped if desired. The results of this classification are used to rename the sequences for clarity in downstream analyses.
 
-3.  **Genome Annotation (Bakta)**: Each genome is then annotated using the **Bakta** tool. This process identifies coding sequences (CDS), tRNAs, and other genomic features, providing a baseline annotation for each genome.
+3.  **Genome Annotation ([bakta](https://github.com/oschwengers/bakta))**: Each genome is then annotated using the **Bakta** tool. This process identifies coding sequences (CDS), tRNAs, and other genomic features, providing a baseline annotation for each genome.
 
-4.  **Protein Alignment (miniprot)**: The annotated proteins are aligned against a reference proteome (H37Rv) using **miniprot**. This step is crucial for identifying orthologous proteins and assessing the quality of the initial annotation.
+4.  **Protein Alignment ([miniprot](https://github.com/lh3/miniprot))**: The annotated proteins are aligned against a reference proteome (H37Rv) using **miniprot**. This step is crucial for identifying orthologous proteins and assessing the quality of the initial annotation.
 
 5.  **CDS Case Classification**: Based on the alignments from miniprot, the pipeline classifies each CDS into different "cases" to identify discrepancies between the input genome's annotation and the reference.
     * **Case 1**: Novel CDS not present in the reference.
@@ -46,11 +46,11 @@ The main steps of the AMAP workflow are:
 
 6.  **Annotation Correction**: Using the case classifications, the pipeline corrects the CDS annotations, adjusting start/end coordinates to produce a more accurate set of annotated genes.
 
-7.  **Functional Annotation (eggNOG-mapper)**: The corrected protein sequences are functionally annotated using **eggNOG-mapper**. This assigns functional information, such as COG categories, to each gene.
+7.  **Functional Annotation ([eggNOG-mapper](https://github.com/eggnogdb/eggnog-mapper)**: The corrected protein sequences are functionally annotated using **eggNOG-mapper**. This assigns functional information, such as COG categories, to each gene.
 
 8.  **Gene Duplication Analysis**: The pipeline identifies and analyzes gene duplications within each genome. It generates a network of duplicated genes and calculates various network metrics to characterize these duplications.
 
-9.  **Pangenome Analysis (pangene)**: AMAP performs a pangenome analysis to compare the gene content across all processed genomes, helping to understand the core and accessory genome of the dataset.
+9.  **Pangenome Analysis ([pangene](https://github.com/lh3/pangene))**: AMAP performs a pangenome analysis to compare the gene content across all processed genomes, helping to understand the core and accessory genome of the dataset.
 
 10. **Final Report Generation**: Finally, AMAP generates a comprehensive HTML report summarizing all the results, including distributions, functional summaries, and statistical analyses.
 

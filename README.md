@@ -37,18 +37,18 @@ The main steps of the AMAP workflow are:
 
 4.  **Protein Alignment ([miniprot](https://github.com/lh3/miniprot))**: The annotated proteins are aligned against a reference proteome (H37Rv) using **miniprot**. This step is crucial for identifying orthologous proteins and assessing the quality of the initial annotation.
 
-5.  **CDS Case Classification**: Based on the alignments from miniprot, the pipeline classifies each CDS into different "cases" to identify discrepancies between the input genome's annotation and the reference.
+5.  **CDS Case Classification ([AMAP](https://github.com/PathoGenOmics-Lab/AMAP))**: Based on the alignments from miniprot, the pipeline classifies each CDS into different "cases" to identify discrepancies between the input genome's annotation and the reference.
     * **Case 1**: Novel CDS not present in the reference.
     * **Case 2**: Perfect match with the reference annotation.
     * **Case 3**: Same start or end as the reference but with mismatches.
     * **Case 4**: CDS coordinates corrected by AMAP.
     * **Missing RVs**: Reference genes that were not annotated by Bakta in the input genome.
 
-6.  **Annotation Correction**: Using the case classifications, the pipeline corrects the CDS annotations, adjusting start/end coordinates to produce a more accurate set of annotated genes.
+6.  **Annotation Correction ([AMAP](https://github.com/PathoGenOmics-Lab/AMAP))**: Using the case classifications, the pipeline corrects the CDS annotations, adjusting start/end coordinates to produce a more accurate set of annotated genes.
 
 7.  **Functional Annotation ([eggNOG-mapper](https://github.com/eggnogdb/eggnog-mapper))**: The corrected protein sequences are functionally annotated using **eggNOG-mapper**. This assigns functional information, such as COG categories, to each gene.
 
-8.  **Gene Duplication Analysis**: The pipeline identifies and analyzes gene duplications within each genome. It generates a network of duplicated genes and calculates various network metrics to characterize these duplications.
+8.  **Gene Duplication Analysis ([AMAP](https://github.com/PathoGenOmics-Lab/AMAP))**: The pipeline identifies and analyzes gene duplications within each genome. It generates a network of duplicated genes and calculates various network metrics to characterize these duplications.
 
 9.  **Pangenome Analysis ([pangene](https://github.com/lh3/pangene))**: AMAP performs a pangenome analysis to compare the gene content across all processed genomes, helping to understand the core and accessory genome of the dataset.
 

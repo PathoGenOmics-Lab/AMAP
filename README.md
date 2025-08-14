@@ -361,7 +361,7 @@ The algorithm's main task is to resolve the conflicts from **Case 4** and filter
 
 As a final validation step (performed by the `check_cds.py` script), the algorithm translates every CDS in the final, corrected set. If a sequence does not end with a valid stop codon, its coordinates are automatically extended to the next in-frame stop codon in the genome. This ensures that all final annotations correspond to complete, translatable proteins.
 ## Citation
->Ruiz-Rodriguez, P., & Coscolla, M. (2025). AMAP (Version 0.1.0) [Computer software]. https://doi.org/10.5281/zenodo.1234
+>Ruiz-Rodriguez, P., & Coscolla, M. (2025). AMAP (Version 1.0.0) [Computer software]. https://doi.org/10.5281/zenodo.1234
 ```bibtex
 @software{Ruiz-Rodriguez_AMAP_2025,
   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},

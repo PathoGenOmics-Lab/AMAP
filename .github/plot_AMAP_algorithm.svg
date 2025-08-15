@@ -1,0 +1,1920 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="960"
+   height="600"
+   overflow="hidden"
+   version="1.1"
+   id="svg655"
+   sodipodi:docname="plot_AMAP_algorithm.svg"
+   inkscape:version="1.2 (dc2aedaf03, 2022-05-15)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview657"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="1.0965608"
+     inkscape:cx="514.33534"
+     inkscape:cy="243.48854"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g653" />
+  <defs
+     id="defs5">
+    <clipPath
+       id="clip0">
+      <rect
+         x="0"
+         y="0"
+         width="960"
+         height="756"
+         id="rect2" />
+    </clipPath>
+  </defs>
+  <g
+     clip-path="url(#clip0)"
+     id="g653"
+     transform="translate(0,-128)">
+    <rect
+       x="0"
+       y="128.96809"
+       width="960"
+       height="598.82593"
+       fill="#ffffff"
+       id="rect7"
+       style="stroke-width:0.889901" />
+    <path
+       d="m 78,559.123 51,-27.006 51,27.006 -51,27.006 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path9" />
+    <path
+       d="m 308,342.742 c 0,-2.025 1.642,-3.667 3.667,-3.667 h 64.666 c 2.025,0 3.667,1.642 3.667,3.667 v 14.67 c 0,2.026 -1.642,3.668 -3.667,3.668 h -64.666 c -2.025,0 -3.667,-1.642 -3.667,-3.668 z"
+       fill="#e7defe"
+       fill-rule="evenodd"
+       id="path11" />
+    <path
+       d="m 162,342.909 c 0,-2.118 1.716,-3.834 3.833,-3.834 h 86.334 c 2.117,0 3.833,1.716 3.833,3.834 v 15.337 c 0,2.117 -1.716,3.834 -3.833,3.834 h -86.334 c -2.117,0 -3.833,-1.717 -3.833,-3.834 z"
+       fill="#e7defe"
+       fill-rule="evenodd"
+       id="path13" />
+    <path
+       d="m 64,280.062 c 0,-1.105 0.8955,-2.001 2,-2.001 h 41 c 1.105,0 2,0.896 2,2.001 v 8.001 c 0,1.105 -0.895,2.001 -2,2.001 H 66 c -1.1045,0 -2,-0.896 -2,-2.001 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path15" />
+    <path
+       d="m 223,280.062 c 0,-1.105 0.895,-2.001 2,-2.001 h 41 c 1.105,0 2,0.896 2,2.001 v 8.001 c 0,1.105 -0.895,2.001 -2,2.001 h -41 c -1.105,0 -2,-0.896 -2,-2.001 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path17" />
+    <path
+       d="m 405,280.062 c 0,-1.105 0.895,-2.001 2,-2.001 h 42 c 1.105,0 2,0.896 2,2.001 v 8.001 c 0,1.105 -0.895,2.001 -2,2.001 h -42 c -1.105,0 -2,-0.896 -2,-2.001 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path19" />
+    <path
+       d="m 639,278.061 c 0,-1.104 0.895,-2 2,-2 h 41 c 1.105,0 2,0.896 2,2 v 8.002 c 0,1.105 -0.895,2.001 -2,2.001 h -41 c -1.105,0 -2,-0.896 -2,-2.001 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path21" />
+    <path
+       d="m 602,218.048 61,-25.005 61,25.005 -61,25.006 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path23" />
+    <path
+       d="m 818,218.048 61,-25.005 61,25.005 -61,25.006 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path25" />
+    <path
+       d="m 232,151.534 c 0,-1.934 1.567,-3.501 3.5,-3.501 h 79 c 1.933,0 3.5,1.567 3.5,3.501 v 14.002 c 0,1.934 -1.567,3.501 -3.5,3.501 h -79 c -1.933,0 -3.5,-1.567 -3.5,-3.501 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path27" />
+    <path
+       d="m 75,150.2 c 0,-2.854 2.3132,-5.168 5.1668,-5.168 h 71.6662 c 2.854,0 5.167,2.314 5.167,5.168 v 20.671 c 0,2.854 -2.313,5.168 -5.167,5.168 H 80.1668 C 77.3132,176.039 75,173.725 75,170.871 Z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path29" />
+    <path
+       d="m 169.5,160.035 h 46.196 v 1.001 H 169.5 Z m 46.196,0.501 -2.667,-4.001 8,4.001 -8,4 z"
+       id="path31" />
+    <text
+       fill="#6b9ce5"
+       font-family="'Arial Narrow', 'Arial Narrow_MSFontService', sans-serif"
+       font-weight="700"
+       font-stretch="condensed"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,102.622,144)"
+       id="text33">Bakta</text>
+    <path
+       d="m 330.5,159.035 h 132.458 v 1 H 330.5 Z m 132.459,0.5 -2.667,-4.001 8,4.001 -8,4.001 z"
+       id="path35" />
+    <text
+       fill="#6b9ce5"
+       font-family="'Arial Narrow', 'Arial Narrow_MSFontService', sans-serif"
+       font-weight="700"
+       font-stretch="condensed"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,389.435,149)"
+       id="text37">miniprot</text>
+    <path
+       d="m 476,158.535 83,-20.505 83,20.505 -83,20.504 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path39" />
+    <path
+       d="m 673.5,159.035 h 206.041 c 0.276,0 0.5,0.224 0.5,0.5 v 27.753 h -1 v -27.753 l 0.5,0.5 H 673.5 Z m 206.041,28.253 4,-2.667 -4,8.002 -4,-8.002 z"
+       id="path41" />
+    <path
+       d="M 2.10076e-6,-0.5 19.6545,-0.499917 v 1 L -2.10076e-6,0.5 Z M 19.6545,8.25788e-5 16.9878,-3.99993 l 8,4.000034987 -8,3.999965013 z"
+       transform="matrix(-1,0,0,1.00022,335.488,213.547)"
+       id="path43" />
+    <path
+       d="m 186,213.047 61,-25.006 61,25.006 -61,25.005 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path45" />
+    <path
+       d="m 0,-0.5 h 68.0023 c 0.2762,0 0.5,0.223858 0.5,0.5 v 59.3381 h -1 V 0 l 0.5,0.5 H 0 Z m 68.0023,59.8381 4,-2.6667 -4,8 -4,-8 z"
+       transform="matrix(-1,0,0,1.00022,154.502,212.547)"
+       id="path47" />
+    <path
+       d="m 247,253.556 v 15.908 h -1 v -15.908 z m -0.5,15.908 4,-2.667 -4,8.002 -4,-8.002 z"
+       id="path49" />
+    <path
+       d="m 428,252.556 v 17.811 h -1 v -17.811 z m -0.5,17.811 4,-2.667 -4,8.001 -4,-8.001 z"
+       id="path51" />
+    <path
+       d="M 0.499999,-9.36861e-4 0.521817,11.6432 -0.478181,11.645 -0.499999,9.36861e-4 Z M 0.0218178,11.6441 4.01681,8.96995 0.031811,16.9774 -3.98317,8.98494 Z"
+       transform="matrix(-1,0,0,1.00022,662.532,258.557)"
+       id="path53" />
+    <path
+       d="M 5.33334,-0.5 H 62.9151 c 0.2761,0 0.5,0.223858 0.5,0.5 v 11.4581 c 0,0.2761 -0.2239,0.5 -0.5,0.5 h -0.1957 v -1 h 0.1957 l -0.5,0.5 V 0 l 0.5,0.5 H 5.33334 Z M 5.33333,0 8,4 0,0 8,-4 Z"
+       transform="matrix(1,0,0,-1.00022,496.5,213.005)"
+       id="path55" />
+    <path
+       d="m 784.307,219.667 -49.48,-0.559 0.012,-1 49.479,0.558 z m -49.474,-1.059 2.621,4.031 -7.954,-4.091 8.045,-3.91 z"
+       id="path57" />
+    <path
+       d="M 0,0 576.031,1.5242"
+       stroke="#000000"
+       stroke-linejoin="round"
+       stroke-miterlimit="10"
+       fill="none"
+       fill-rule="evenodd"
+       transform="matrix(1,0,0,-1.00022,86.5001,306.092)"
+       id="path59" />
+    <path
+       d="m 246.5,292.565 v 13.798"
+       stroke="#000000"
+       stroke-linejoin="round"
+       stroke-miterlimit="10"
+       fill="none"
+       fill-rule="evenodd"
+       id="path61" />
+    <path
+       d="m 367,212.547 60.5,-25.506 60.5,25.506 -60.5,25.505 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path63" />
+    <path
+       d="m 343,305.567 v 26.4 h -1 v -26.4 z m -0.5,26.4 4,-2.668 -4,8.002 -4,-8.002 z"
+       id="path65" />
+    <path
+       d="m 221,420.093 63.5,-25.006 63.5,25.006 -63.5,25.005 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path67" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,86.438,417)"
+       id="text69">Bakta</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,88.438,435)"
+       id="text71">CDSs</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,123.271,435)"
+       id="text73" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,123.612,480)"
+       id="text75">H37Rv</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,171.112,480)"
+       id="text77" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,131.445,498)"
+       id="text79">CDS</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,159.612,498)"
+       id="text81" />
+    <path
+       d="M 0.0181229,-0.499671 4.01549,-0.354689 3.97925,0.644654 -0.0181229,0.499671 Z M 7.01352,-0.245951 11.0109,-0.100969 10.9746,0.898374 6.97728,0.753391 Z M 14.0089,0.00776857 18.0063,0.152751 17.97,1.15209 13.9727,1.00711 Z M 21.0043,0.261489 25.0017,0.406471 24.9654,1.40581 20.9681,1.26083 Z m 6.9954,0.25372 3.9974,0.144983 -0.0363,0.999338 -3.9973,-0.14498 z m 6.9954,0.25372 3.9974,0.144983 -0.0363,0.999338 -3.9973,-0.14498 z m 6.9954,0.253721 3.9974,0.14498 -0.0363,0.99934 -3.9973,-0.14498 z m 6.9954,0.25372 3.0189,0.10949 -0.0363,0.99934 -3.0188,-0.10949 z m 3.0008,0.60916 -2.5199,-4.09402 7.8497,4.28734 -8.1397,3.7074 z"
+       transform="matrix(-1,0,0,1.00022,194.817,419.593)"
+       id="path83" />
+    <path
+       d="m 286,459.59 0.442,19.931 -1,0.022 L 285,459.612 Z m -0.058,19.942 3.94,-2.755 -3.822,8.088 -4.176,-7.911 z"
+       id="path85" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,884.573,289)"
+       id="text87">Bakta</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,927.073,289)"
+       id="text89" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,886.573,307)"
+       id="text91">CDSs</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,921.407,307)"
+       id="text93" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,819.138,381)"
+       id="text95">H37Rv</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,866.638,381)"
+       id="text97" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,826.972,399)"
+       id="text99">CDS</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,855.138,399)"
+       id="text101" />
+    <path
+       d="m 746.501,385.085 54.219,0.115 -0.002,1 -54.219,-0.115 z m 54.218,0.615 -2.658,-4.006 7.992,4.017 -8.009,3.984 z"
+       id="path103" />
+    <rect
+       x="4"
+       y="669.14801"
+       width="105"
+       height="55.0121"
+       fill="#eeeeee"
+       id="rect105" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,29.2598,693)"
+       id="text107">Curated</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,20.4265,711)"
+       id="text109">annotation</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,92.5931,711)"
+       id="text111" />
+    <path
+       d="m 0,-0.5 h 4 v 1 H 0 Z m 7,0 h 4 v 1 H 7 Z m 7,0 h 3.8173 c 0.2762,0 0.5,0.223858 0.5,0.5 v 0.182677 h -1 V 0 l 0.5,0.5 H 14 Z m 4.3173,3.68268 v 4 h -1 v -4 z m 0,7.00002 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7.0003 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 1.196 h -1 v -1.196 z m -0.5,1.196 4,-2.667 -4,8 -4,-8 z"
+       transform="matrix(-1,0,0,1.00022,75.3174,421.593)"
+       id="path113" />
+    <path
+       d="m 905.228,320.571 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.002 v 4 h -1 v -4 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.002 v 4 h -1 v -4 z m 0,7.001 v 4.001 h -1 V 453.6 Z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.002 v 4 h -1 v -4 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.002 v 4 h -1 v -4 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4 h -1 v -4 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.002 v 4 h -1 v -4 z m -2.394,5.606 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -7,0 h -4 v -1 h 4 z m -4.001,-0.5 2.667,4.001 -8,-4.001 8,-4.001 z"
+       id="path115" />
+    <path
+       d="m 556.502,386.085 29.085,0.109 -0.004,1 -29.085,-0.109 z m 29.083,0.609 -2.651,-4.011 7.985,4.031 -8.015,3.971 z"
+       id="path117" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,239.692,163)"
+       id="text119">Bakta CDS</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,310.359,163)"
+       id="text121" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.0031px"
+       transform="matrix(1,0,0,1.00022,85.1219,157)"
+       id="text123">Annotate</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.0031px"
+       transform="matrix(1,0,0,1.00022,86.6219,173)"
+       id="text125">genomes</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.0031px"
+       transform="matrix(1,0,0,1.00022,143.122,173)"
+       id="text127" />
+    <text
+       fill="#7f7f7f"
+       font-family="'Abadi Extra Light', 'Abadi Extra Light_MSFontService', sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,327.974,156)"
+       id="text129">CDS</text>
+    <text
+       fill="#7f7f7f"
+       font-family="'Abadi Extra Light', 'Abadi Extra Light_MSFontService', sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,349.141,156)"
+       id="text131">Bakta</text>
+    <text
+       fill="#7f7f7f"
+       font-family="'Abadi Extra Light', 'Abadi Extra Light_MSFontService', sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,420.633,172)"
+       id="text133">CDS</text>
+    <text
+       fill="#7f7f7f"
+       font-family="'Abadi Extra Light', 'Abadi Extra Light_MSFontService', sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,441.8,172)"
+       id="text135">H37Rv</text>
+    <text
+       fill="#7f7f7f"
+       font-family="'Abadi Extra Light', 'Abadi Extra Light_MSFontService', sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,678.627,156)"
+       id="text137">q: Bakta</text>
+    <text
+       fill="#7f7f7f"
+       font-family="'Abadi Extra Light', 'Abadi Extra Light_MSFontService', sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,889.524,178)"
+       id="text139">s: bad bakta</text>
+    <text
+       fill="#7f7f7f"
+       font-family="'Abadi Extra Light', 'Abadi Extra Light_MSFontService', sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,900.444,191)"
+       id="text141">H37Rv</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,648.004,163)"
+       id="text143">NO</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,662.838,163)"
+       id="text145" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="16.0035px"
+       transform="matrix(1,0,0,1.00022,503.287,162)"
+       id="text147">Found a match?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="16.0035px"
+       transform="matrix(1,0,0,1.00022,619.287,162)"
+       id="text149" />
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,550.115,192)"
+       id="text151">YES</text>
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,569.282,192)"
+       id="text153" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="16.0035px"
+       transform="matrix(1,0,0,1.00022,378.012,207)"
+       id="text155">len (query) ==</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="16.0035px"
+       transform="matrix(1,0,0,1.00022,378.345,227)"
+       id="text157">len (subject)?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="16.0035px"
+       transform="matrix(1,0,0,1.00022,476.179,227)"
+       id="text159" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="16.0035px"
+       transform="matrix(1,0,0,1.00022,194.332,209)"
+       id="text161">Found gaps or</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="16.0035px"
+       transform="matrix(1,0,0,1.00022,199.912,229)"
+       id="text163">mismatches?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="16.0035px"
+       transform="matrix(1,0,0,1.00022,292.912,229)"
+       id="text165" />
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,420.079,248)"
+       id="text167">NO</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,434.913,248)"
+       id="text169" />
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,238.252,250)"
+       id="text171">NO</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,253.086,250)"
+       id="text173" />
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,163.897,216)"
+       id="text175">YES</text>
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,183.064,216)"
+       id="text177" />
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,342.475,217)"
+       id="text179">YES</text>
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,361.642,217)"
+       id="text181" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,825.347,215)"
+       id="text183">Found &gt; 80% match</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,935.181,215)"
+       id="text185" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,835.514,229)"
+       id="text187">with bad bakta?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,922.014,229)"
+       id="text189" />
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,794.408,222)"
+       id="text191">YES</text>
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,813.575,222)"
+       id="text193" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,609.033,216)"
+       id="text195">Found &gt; 80% match</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,718.867,216)"
+       id="text197" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,613.113,230)"
+       id="text199">with H37Rv fasta?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,711.78,230)"
+       id="text201" />
+    <text
+       fill="#6b9ce5"
+       font-family="'Arial Narrow', 'Arial Narrow_MSFontService', sans-serif"
+       font-weight="700"
+       font-stretch="condensed"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,740.49,235)"
+       id="text203">miniprot</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,655.065,255)"
+       id="text205">NO</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,669.899,255)"
+       id="text207" />
+    <text
+       fill="#6b9ce5"
+       font-family="'Arial Narrow', 'Arial Narrow_MSFontService', sans-serif"
+       font-weight="700"
+       font-stretch="condensed"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,785.976,152)"
+       id="text209">miniprot</text>
+    <text
+       fill="#7f7f7f"
+       font-family="'Abadi Extra Light', 'Abadi Extra Light_MSFontService', sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,772.515,211)"
+       id="text211">q: Bakta</text>
+    <text
+       fill="#7f7f7f"
+       font-family="'Abadi Extra Light', 'Abadi Extra Light_MSFontService', sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,716.688,207)"
+       id="text213">s: Fasta</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,224.086,288)"
+       id="text215">c</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,231.586,288)"
+       id="text217">ase 2</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,267.253,288)"
+       id="text219" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,406.33,289)"
+       id="text221">c</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,413.83,289)"
+       id="text223">ase 4</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,448.663,289)"
+       id="text225" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,64.9192,289)"
+       id="text227">c</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,72.4192,289)"
+       id="text229">ase 3</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,107.919,289)"
+       id="text231" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,626.033,287)"
+       id="text233">c</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,633.533,287)"
+       id="text235">ase</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,660.367,287)"
+       id="text237">1</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,666.033,287)"
+       id="text239" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,669.7,287)"
+       id="text241">kept</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,698.867,287)"
+       id="text243" />
+    <path
+       d="m 427.5,292.565 v 12.81"
+       stroke="#000000"
+       stroke-linejoin="round"
+       stroke-miterlimit="10"
+       fill="none"
+       fill-rule="evenodd"
+       id="path245" />
+    <path
+       d="m 662.5,291.564 v 12.81"
+       stroke="#000000"
+       stroke-linejoin="round"
+       stroke-miterlimit="10"
+       fill="none"
+       fill-rule="evenodd"
+       id="path247" />
+    <path
+       d="m 86.5001,292.565 1e-4,13.798"
+       stroke="#000000"
+       stroke-linejoin="round"
+       stroke-miterlimit="10"
+       fill="none"
+       fill-rule="evenodd"
+       id="path249" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="16.0035px"
+       transform="matrix(1,0,0,1.00022,312.475,356)"
+       id="text251">Fix CDSs</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="16.0035px"
+       transform="matrix(1,0,0,1.00022,375.975,356)"
+       id="text253" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="16.0035px"
+       transform="matrix(1,0,0,1.00022,164.223,357)"
+       id="text255">H37Rv</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="16.0035px"
+       transform="matrix(1,0,0,1.00022,216.056,357)"
+       id="text257">CDSs</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="16.0035px"
+       transform="matrix(1,0,0,1.00022,253.889,357)"
+       id="text259" />
+    <g
+       id="g267">
+      <g
+         id="g265">
+        <g
+           id="g263">
+          <path
+             d="m 25.8671,25.0176 c -1.0992,0 -2.1985,0.4424 -3.0807,0.8875 l -7.4968,-5.7597 c 0.2198,-0.665 0.4397,-1.33 0.4397,-2.2175 0,-0.8876 -0.2172,-1.5526 -0.4397,-2.2176 l 7.2145,-5.5453 c 0.6596,0.665 1.7616,1.1074 2.8636,1.1074 3.022,0.0198 5.4879,-2.41402 5.5077,-5.43606 2e-4,-0.0364 10e-5,-0.07281 -4e-4,-0.10921 0.0406,-3.02182 -2.3763,-5.504366 -5.3981,-5.544916 -0.0373,-5e-4 -0.0746,-6.19e-4 -0.1119,-3.57e-4 -3.0221,-0.016761 -5.4855,2.419513 -5.5023,5.441553 -2e-4,0.03458 0,0.06917 4e-4,0.10372 0,1.11016 0.4398,2.22029 0.8795,3.10516 l -6.555,4.88031 c -1.102,-1.33 -2.4239,-2.2176 -3.9629,-2.4402 V 8.83229 c 1.9814,-0.44242 3.3033,-2.21758 3.3033,-4.21258 0,-2.44285 -1.9814,-4.437853 -4.40529,-4.437853 -2.42384,0 -4.40529,1.997713 -4.40529,4.437853 0,1.995 1.31916,3.77016 3.30329,4.21258 v 2.44281 c -3.30329,0.6623 -5.72714,3.3223 -5.72714,6.65 0,3.3278 2.42385,5.9905 5.5073,6.4329 v 2.4401 c -1.98145,0.4425 -3.306,2.2176 -3.306,4.2153 0,2.4402 1.98142,4.4352 4.40526,4.4352 2.42387,0 4.40797,-1.995 4.40797,-4.4352 0,-1.9977 -1.3218,-3.7728 -3.306,-4.2153 V 24.358 c 1.5418,-0.2226 3.0835,-1.1101 3.9656,-2.4401 l 7.2743,5.5371 c -0.4397,0.8876 -0.8794,1.995 -0.8794,3.1051 0,3.1052 2.4238,5.5453 5.5073,5.5453 3.022,0.0198 5.4879,-2.414 5.5076,-5.4361 3e-4,-0.0364 10e-5,-0.0728 -4e-4,-0.1092 0.0406,-3.0218 -2.3762,-5.5043 -5.3981,-5.5449 -0.0372,-5e-4 -0.0745,-6e-4 -0.1119,-3e-4 z M 25.3704,2.39943 c 1.7616,0 3.3033,1.55528 3.3033,3.3277 0,1.77516 -1.5417,3.32774 -3.3033,3.32774 -1.7643,0 -3.306,-1.55258 -3.306,-3.32774 0,-1.77242 1.5417,-3.3277 3.306,-3.3277 z M 8.97613,13.5334 c 2.30987,0 4.33197,2.0357 4.33197,4.3592 0,2.3261 -2.0221,4.3591 -4.32923,4.3591 -2.30716,0 -4.32929,-2.0357 -4.32929,-4.3591 0,-2.3235 2.01942,-4.3592 4.32929,-4.3592 z M 6.70158,4.61971 c 0,-1.33 0.88213,-2.22028 2.20129,-2.22028 1.32183,0 2.20403,0.88757 2.20403,2.22028 0,1.33 -0.8822,2.21758 -2.20403,2.21758 -1.31916,0 -2.20129,-0.88758 -2.20129,-2.21758 z M 11.1069,31.236 c 0,1.33 -0.8822,2.2203 -2.20403,2.2203 -1.31916,0 -2.20129,-0.8876 -2.20129,-2.2203 0,-1.33 0.88213,-2.2176 2.20129,-2.2176 1.32183,0 2.20403,0.8876 2.20403,2.2176 z m 14.7657,2.6546 c -1.7643,0 -3.3033,-1.5526 -3.3033,-3.3277 0,-1.7752 1.5417,-3.3278 3.3033,-3.3278 1.7643,0 3.3033,1.5526 3.3033,3.3278 0,1.7751 -1.5418,3.3277 -3.3033,3.3277 z"
+             fill="#aebcc4"
+             transform="matrix(1,0,0,1.00022,267,328.072)"
+             id="path261" />
+        </g>
+      </g>
+    </g>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,204.584,423)"
+       id="text269">NO</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,219.417,423)"
+       id="text271" />
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,274.95,456)"
+       id="text273">YES</text>
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,294.117,456)"
+       id="text275" />
+    <path
+       d="m 222,511.613 63,-26.506 63,26.506 -63,26.506 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path277" />
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,352.053,514)"
+       id="text279">NO</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,366.886,514)"
+       id="text281" />
+    <path
+       d="m 401,387.085 63.5,-27.006 63.5,27.006 -63.5,27.006 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path283" />
+    <path
+       d="M 359,503.802 V 387.586 c 0,-0.277 0.224,-0.501 0.5,-0.501 h 38.448 v 1.001 H 359.5 l 0.5,-0.5 v 116.216 z m 38.948,-116.216 -2.667,-4.001 8,4.001 -8,4 z"
+       id="path285" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,422.523,385)"
+       id="text287">nº</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,437.357,385)"
+       id="text289">Bakta</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,469.023,385)"
+       id="text291" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,472.023,385)"
+       id="text293">CDS ==</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,512.023,385)"
+       id="text295" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,424.523,399)"
+       id="text297">nº H37Rv CDS?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,507.023,399)"
+       id="text299" />
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,531.327,390)"
+       id="text301">NO</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,546.16,390)"
+       id="text303" />
+    <path
+       d="m 590,386.585 63.5,-26.506 63.5,26.506 -63.5,26.506 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path305" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,617.682,383)"
+       id="text307">nº</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,632.515,383)"
+       id="text309">Bakta</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,664.182,383)"
+       id="text311" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,667.182,383)"
+       id="text313">CDS &gt;</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,702.349,383)"
+       id="text315" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,617.269,397)"
+       id="text317">nº H37Rv CDS?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,699.769,397)"
+       id="text319" />
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,721.302,389)"
+       id="text321">NO</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,736.135,389)"
+       id="text323" />
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,454.73,358)"
+       id="text325">YES</text>
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,473.896,358)"
+       id="text327" />
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,645.838,357)"
+       id="text329">YES</text>
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,665.004,357)"
+       id="text331" />
+    <path
+       d="M 0,0 150.13,0.499318"
+       stroke="#000000"
+       stroke-linejoin="round"
+       stroke-miterlimit="10"
+       stroke-dasharray="4, 3"
+       fill="none"
+       fill-rule="evenodd"
+       transform="matrix(1,0,0,-1.00022,485.5,355.078)"
+       id="path333" />
+    <path
+       d="m 0,-0.5 h 4 v 1 H 0 Z m 7,0 h 4 v 1 H 7 Z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 0.8353 c 0.2762,0 0.5,0.223858 0.5,0.5 v 3.16467 h -1 V 0 l 0.5,0.5 H 91 Z m 1.3353,6.66467 v 4.00003 h -1 V 6.16467 Z m 0,7.00003 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0,7 v 4 h -1 v -4 z m 0.5759,5.4241 h 4 v 1 h -4 z m 7,0 h 3.9998 v 1 h -3.9998 z m 6.9998,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 4 v 1 h -4 z m 7,0 h 1.426 v 1 h -1.426 z m 1.426,0.5 -2.666,-4 8,4 -8,4 z"
+       transform="matrix(1,0,0,-1.00022,676.5,353.667)"
+       id="path335" />
+    <path
+       d="m 0.0229991,-0.499471 4.6036909,0.211986 4.61171,0.6219 4.5369,1.004125 4.4262,1.3588 8.3611,3.66441 c 0.0233,0.01022 0.0457,0.02216 0.0671,0.0358 l 7.4428,4.72685 c 0.0227,0.0144 0.0441,0.0305 0.0642,0.0484 l 6.2903,5.5928 2.67,3.1014 2.2575,3.2283 1.8238,3.3443 1.3528,3.4345 0.4059,1.6735 -0.9725,0.233 -0.3642,-1.541 L 46.3,26.9177 44.5346,23.6678 42.3384,20.5186 39.7625,17.5129 33.4722,11.9201 33.5364,11.9685 26.0936,7.2417 26.1608,7.2775 17.9077,3.65321 13.5588,2.31483 9.10434,1.32539 4.58069,0.711456 -0.0229991,0.499471 Z M 48.4507,31.6641 l 3.6038,-3.1819 -2.8844,8.4665 -5.0425,-7.3874 z"
+       transform="matrix(-1,0,0,1.00022,195.67,419.593)"
+       id="path337" />
+    <text
+       fill="#6b9ce5"
+       font-family="'Arial Narrow', 'Arial Narrow_MSFontService', sans-serif"
+       font-weight="700"
+       font-stretch="condensed"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,265.511,381)"
+       id="text339">miniprot</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,254.192,513)"
+       id="text341">Is</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,264.025,513)"
+       id="text343" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,267.692,513)"
+       id="text345">case</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,298.192,513)"
+       id="text347" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,301.859,513)"
+       id="text349">4</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,309.859,513)"
+       id="text351">?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,317.025,513)"
+       id="text353" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,246.812,422)"
+       id="text355">Is</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,256.646,422)"
+       id="text357" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,260.312,422)"
+       id="text359">a</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,272.479,422)"
+       id="text361">match</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,313.979,422)"
+       id="text363">?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,321.146,422)"
+       id="text365" />
+    <path
+       d="m 369,542.62 63,-26.506 63,26.506 -63,26.505 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path367" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,392.894,542)"
+       id="text369">nº</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,407.727,542)"
+       id="text371">Bakta</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,439.394,542)"
+       id="text373" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,442.394,542)"
+       id="text375">CDS &lt;</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,477.561,542)"
+       id="text377" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,392.481,556)"
+       id="text379">nº H37Rv CDS?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,474.981,556)"
+       id="text381" />
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,276.466,548)"
+       id="text383">YES</text>
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,295.633,548)"
+       id="text385" />
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,423.68,582)"
+       id="text387">YES</text>
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,442.847,582)"
+       id="text389" />
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,425.257,512)"
+       id="text391">NO</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,440.09,512)"
+       id="text393" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,323.795,597)"
+       id="text395">H37Rv</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,371.295,597)"
+       id="text397" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,331.628,615)"
+       id="text399">CDS</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,359.795,615)"
+       id="text401" />
+    <path
+       d="m 434.717,585.629 v 15.448 c 0,0.276 -0.223,0.5 -0.5,0.5 h -49.384 v -1 h 49.384 l -0.5,0.5 v -15.448 z m -49.884,15.448 2.667,4.001 -8,-4.001 8,-4.001 z"
+       id="path403" />
+    <text
+       fill="#6b9ce5"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,206.548,678)"
+       id="text407">&gt; 80% in fasta</text>
+    <text
+       fill="#6b9ce5"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,299.881,678)"
+       id="text409" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,82.5617,552)"
+       id="text411">Is</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,92.395,552)"
+       id="text413" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,96.0617,552)"
+       id="text415">in</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,111.228,552)"
+       id="text417">curated</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,163.395,552)"
+       id="text419" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,83.3083,570)"
+       id="text421">annotation</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,155.475,570)"
+       id="text423">?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,162.642,570)"
+       id="text425" />
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,119.421,596)"
+       id="text427">NO</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,134.255,596)"
+       id="text429" />
+    <path
+       d="m 128.221,599.672 -0.317,3.988 -0.997,-0.079 0.317,-3.988 z m -0.796,7.017 -0.858,3.705 -0.092,0.251 -0.933,-0.359 0.051,-0.118 0.857,-3.705 z m -2.027,6.757 -0.737,1.914 -0.978,1.767 -0.874,-0.486 0.919,-1.64 0.737,-1.914 z m -3.175,6.303 -0.036,0.065 c -0.013,0.022 -0.027,0.044 -0.043,0.064 l -2.414,3.096 -0.788,-0.615 2.414,-3.096 -0.043,0.064 0.036,-0.065 z m -4.697,5.379 -1.566,1.388 c -0.029,0.026 -0.062,0.048 -0.096,0.067 l -1.684,0.897 -0.471,-0.882 1.684,-0.898 -0.096,0.067 1.566,-1.387 z m -6.24,3.525 -2.585,0.472 -1.35,0.247 -0.179,-0.984 1.349,-0.247 2.586,-0.472 z m -6.665,1.425 -2.792,1.489 0.096,-0.067 -0.625,0.554 -0.663,-0.748 0.625,-0.555 c 0.03,-0.026 0.062,-0.048 0.097,-0.067 l 2.792,-1.488 z m -5.567,3.966 -0.3575,0.317 0.0628,-0.067 -2.1662,2.778 -0.7886,-0.615 2.1662,-2.778 c 0.0189,-0.024 0.0399,-0.047 0.0628,-0.067 l 0.3574,-0.317 z m -4.03,5.485 -1.5598,2.801 -0.2556,0.678 -0.9333,-0.36 0.3153,-0.805 1.5598,-2.801 z m -2.8928,6.279 -0.5222,1.357 -0.5539,2.414 -0.9742,-0.225 0.5949,-2.548 0.5221,-1.357 z m -2.2092,6.509 4.1985,-2.342 -4.6204,7.66 -3.3545,-8.294 z"
+       id="path431" />
+    <path
+       d="m 313.052,601.538 -5.426,-0.018 -4.736,-0.046 -1.894,-0.03 -1.461,-0.035 -0.946,-0.036 -0.369,-0.041 -0.332,-0.038 -0.901,-0.034 -1.449,-0.034 -1.887,-0.03 -4.73,-0.046 h -0.089 l 0.003,-1.001 0.096,10e-4 4.736,0.046 1.894,0.031 1.465,0.034 0.975,0.039 0.332,0.038 0.295,0.035 0.93,0.037 1.454,0.034 1.887,0.03 4.73,0.046 5.426,0.018 z m -24.219,-0.888 2.654,4.009 -7.987,-4.026 8.013,-3.976 z"
+       id="path433" />
+    <text
+       fill="#6b9ce5"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,216.29,605)"
+       id="text435">miniprot</text>
+    <text
+       fill="#6b9ce5"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,271.457,605)"
+       id="text437" />
+    <path
+       d="m 235,620.637 v 33.281 h -1 v -33.281 z m -0.5,33.281 4,-2.668 -4,8.002 -4,-8.002 z"
+       fill="#6b9ce5"
+       id="path439" />
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,175.136,562)"
+       id="text441">YES</text>
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,194.303,562)"
+       id="text443" />
+    <path
+       d="M 0.0343206,-0.498821 6.46663,-0.0562557 12.761,1.20307 18.6469,3.16242 23.926,5.70717 c 0.0218,0.0105 0.0426,0.0225 0.0626,0.03603 l 4.4117,2.9825 c 0.0249,0.01684 0.0482,0.03585 0.0697,0.05688 l 3.4014,3.32882 c 0.0292,0.0286 0.0548,0.0607 0.0762,0.0955 l 1.3275,2.1587 -0.8518,0.5238 -1.3275,-2.1587 0.0761,0.0954 L 27.7706,9.49726 27.8403,9.55414 23.4286,6.57165 23.4912,6.60767 18.3305,4.11104 12.5641,2.18351 6.39799,0.941386 -0.0343206,0.498821 Z M 32.8492,14.6275 35.8383,10.8624 34.4852,19.7037 28.224,13.3165 Z"
+       transform="matrix(0,1.00022,1,0,185.5,565.625)"
+       id="path445" />
+    <path
+       d="m 191.631,673.643 -3.762,-0.387 c -0.032,-0.004 -0.063,-0.01 -0.094,-0.019 l -3.732,-1.129 c -0.027,-0.008 -0.053,-0.019 -0.078,-0.031 l -3.674,-1.821 c -0.021,-0.011 -0.041,-0.023 -0.061,-0.036 l -3.585,-2.464 -3.516,-3.095 -3.357,-3.637 -3.174,-4.131 -2.961,-4.573 -2.721,-4.968 -2.453,-5.314 -3.982,-11.451 -1.48,-6.07 -1.091,-6.204 -0.677,-6.305 -0.038,-1.025 0.999,-0.037 0.034,0.955 0.667,6.239 1.077,6.14 1.453,5.979 3.945,11.36 2.423,5.252 2.684,4.905 2.915,4.508 3.115,4.062 3.284,3.565 3.42,3.02 3.586,2.465 -0.062,-0.036 3.674,1.821 -0.077,-0.031 3.733,1.129 -0.094,-0.018 3.762,0.387 z m -39.937,-62.678 -3.9,2.811 3.706,-8.142 4.289,7.85 z"
+       id="path447" />
+    <path
+       d="M 842.182,413.591 V 635.41 c 0,0.276 -0.224,0.5 -0.5,0.5 H 244.5 c -0.276,0 -0.5,-0.224 -0.5,-0.5 v -18.671 h 1 v 18.671 l -0.5,-0.5 h 597.182 l -0.5,0.5 V 413.591 Z M 244.5,616.739 l -4,2.668 4,-8.002 4,8.002 z"
+       id="path449" />
+    <path
+       d="m 0,-0.5 h 18.5609 c 0.2761,0 0.5,0.223858 0.5,0.5 v 98.3448 l -0.5,-0.5 h 54.8269 v 1 H 18.5609 c -0.2762,0 -0.5,-0.2239 -0.5,-0.5 V 0 l 0.5,0.5 H 0 Z m 73.3878,98.8448 -2.6666,-4 8,4 -8,4.0002 z"
+       transform="matrix(0,1.00022,1,0,146.5,511.613)"
+       id="path451" />
+    <path
+       d="M 433,502.092 V 452.6 c 0,-0.276 0.224,-0.5 0.5,-0.5 h 8.097 v 1 H 433.5 l 0.5,-0.5 v 49.492 z m 8.597,-49.492 -2.666,-4.001 8,4.001 -8,4.001 z"
+       id="path453" />
+    <path
+       d="m 446,452.1 63,-27.006 63,27.006 -63,27.006 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path455" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,473.538,450)"
+       id="text457">Bakta</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,505.204,450)"
+       id="text459" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,508.204,450)"
+       id="text461">CDS ==</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,548.204,450)"
+       id="text463" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,477.038,464)"
+       id="text465">H37Rv CDS?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,544.704,464)"
+       id="text467" />
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,498.008,496)"
+       id="text469">YES</text>
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,517.175,496)"
+       id="text471" />
+    <rect
+       x="476"
+       y="625.138"
+       width="63"
+       height="55.0121"
+       fill="#ffffff"
+       fill-opacity="0.411765"
+       id="rect473" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,488.265,649)"
+       id="text475">Bakta</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,490.265,667)"
+       id="text477">CDSs</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,525.098,667)"
+       id="text479" />
+    <path
+       d="m 509,680.65 v 4.001 h -1 v -4.001 z m 0,7.002 v 3.739 h -1 v -3.739 z m -0.5,3.739 4,-2.667 -4,8.002 -4,-8.002 z"
+       id="path481" />
+    <path
+       d="m 509,499.61 0.003,4.001 h -1 l -0.003,-4 z m 0.005,7.001 0.003,4.001 -1,10e-4 -0.003,-4.001 z m 0.005,7.002 0.003,4.001 -1,10e-4 -0.003,-4.001 z m 0.005,7.001 0.003,4.001 -1,10e-4 -0.003,-4.001 z m 0.005,7.002 0.003,4.001 -1,0.001 -0.003,-4.001 z m 0.005,7.002 0.003,4 -1,10e-4 -0.003,-4.001 z m 0.005,7.001 0.003,4.001 -1,10e-4 -0.003,-4.001 z m 0.005,7.002 0.003,4.001 h -1 l -0.003,-4.001 z m 0.005,7.001 0.003,4.001 -1,10e-4 -0.003,-4.001 z m 0.005,7.002 0.003,4.001 h -1 l -0.003,-4.001 z m 0.005,7.001 0.003,4.001 -1,10e-4 -0.003,-4.001 z m 0.005,7.002 0.003,4.001 h -1 l -0.003,-4 z m 0.005,7.001 0.003,4.001 -1,10e-4 -0.003,-4.001 z m 0.005,7.002 0.003,4.001 h -1 l -0.003,-4 z m 0.005,7.001 0.003,4.001 -1,0.001 -0.003,-4.001 z m 0.005,7.002 0.003,4.001 -1,10e-4 -0.003,-4.001 z m 0.005,7.002 0.003,4 -1,10e-4 -0.003,-4.001 z m 0.006,7.001 10e-4,1.401 -1,10e-4 -10e-4,-1.401 z m -0.499,1.401 3.998,-2.67 -3.995,8.005 -4.005,-7.999 z"
+       id="path483" />
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,569.756,456)"
+       id="text485">NO</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,584.589,456)"
+       id="text487" />
+    <path
+       d="M 641,452.6 704.5,426.094 768,452.6 704.5,479.106 Z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path489" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,673.287,451)"
+       id="text491">H37Rv CDS</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,646.954,465)"
+       id="text493">equivalent</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,703.787,465)"
+       id="text495" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,706.787,465)"
+       id="text497">to</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,717.954,465)"
+       id="text499" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,720.954,465)"
+       id="text501">Bakta</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,752.621,465)"
+       id="text503" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,755.621,465)"
+       id="text505">?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="12.0026px"
+       transform="matrix(1,0,0,1.00022,761.454,465)"
+       id="text507" />
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,774.144,456)"
+       id="text509">NO</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,788.977,456)"
+       id="text511" />
+    <path
+       d="m 782,445.88 v -60.295 c 0,-0.276 0.224,-0.5 0.5,-0.5 h 18.679 v 1 H 782.5 l 0.5,-0.5 v 60.295 z m 19.179,-60.295 -2.667,-4.001 8,4.001 -8,4.001 z"
+       id="path513" />
+    <path
+       d="m 598.506,453.1 34.206,0.418 -0.012,1 -34.206,-0.418 z m 34.2,0.918 -2.617,-4.033 7.95,4.099 -8.048,3.902 z"
+       id="path515" />
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,696.777,493)"
+       id="text517">YES</text>
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,715.943,493)"
+       id="text519" />
+    <rect
+       x="401"
+       y="624.138"
+       width="63"
+       height="55.0121"
+       fill="#ffffff"
+       fill-opacity="0.411765"
+       id="rect521" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,450.354,666)"
+       id="text527" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,778.475,532)"
+       id="text533">H37Rv</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,825.975,532)"
+       id="text535" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,786.308,550)"
+       id="text537">CDS</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,814.475,550)"
+       id="text539" />
+    <text
+       fill="#6b9ce5"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,667.866,541)"
+       id="text541">miniprot</text>
+    <text
+       fill="#6b9ce5"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,723.033,541)"
+       id="text543" />
+    <path
+       d="m 605,582.128 50.5,-27.006 50.5,27.006 -50.5,27.006 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path545" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,601.641,579)"
+       id="text547">H37Rv</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,649.141,579)"
+       id="text549">is</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,659.141,579)"
+       id="text551" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,662.808,579)"
+       id="text553">longer</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,705.641,579)"
+       id="text555" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,613.808,597)"
+       id="text557">than</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,643.808,597)"
+       id="text559" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,647.475,597)"
+       id="text561">Bakta</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,686.308,597)"
+       id="text563">?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,693.475,597)"
+       id="text565" />
+    <path
+       d="m 727.5,490.108 h 73.543 c 0.276,0 0.5,0.224 0.5,0.5 v 13.599 h -1 v -13.599 l 0.5,0.5 H 727.5 Z m 73.543,14.099 4,-2.668 -4,8.002 -4,-8.002 z"
+       id="path567" />
+    <path
+       d="m 307.503,544.12 59.336,0.316 -0.006,1 -59.336,-0.316 z m 59.333,0.816 -2.645,-4.015 7.978,4.044 -8.021,3.958 z"
+       id="path569" />
+    <path
+       d="m 765.128,537.439 -24.3,-0.263 0.01,-1 24.301,0.263 z m -24.295,-0.763 2.623,4.03 -7.956,-4.088 8.043,-3.914 z"
+       id="path571" />
+    <text
+       fill="#6b9ce5"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,619.537,493)"
+       id="text573">&gt; 80% in</text>
+    <text
+       fill="#6b9ce5"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,629.87,511)"
+       id="text575">fasta</text>
+    <text
+       fill="#6b9ce5"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,664.37,511)"
+       id="text577" />
+    <path
+       d="m 0,-0.5 h 31.1425 c 0.2761,0 0.5,0.223858 0.5,0.5 v 2.54341 h -1 V 0 l 0.5,0.5 H 0 Z m 31.1425,3.04341 4,-2.666665 -4,8.000005 -4,-8.000005 z"
+       fill="#6b9ce5"
+       transform="matrix(0,-1.00022,-1,0,696.377,528.759)"
+       id="path579" />
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,650.688,616)"
+       id="text581">NO</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,665.521,616)"
+       id="text583" />
+    <rect
+       x="629"
+       y="626.138"
+       width="63"
+       height="55.0121"
+       fill="#ffffff"
+       fill-opacity="0.411765"
+       id="rect585" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,641.182,650)"
+       id="text587">Bakta</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,646.515,668)"
+       id="text589">CDS</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,674.682,668)"
+       id="text591" />
+    <path
+       d="m 662,681.65 v 4.001 h -1 v -4.001 z m 0,7.002 v 3.036 h -1 v -3.036 z m -0.5,3.036 4,-2.668 -4,8.002 -4,-8.001 z"
+       id="path593" />
+    <path
+       d="m 659,620.637 v 4.001 h -1 v -4.001 z m 0,7.001 v 4.001 h -1 v -4.001 z m 0,7.002 v 0.428 h -1 v -0.428 z m -0.5,0.428 4,-2.668 -4,8.002 -4,-8.002 z"
+       id="path595" />
+    <rect
+       x="753"
+       y="624.138"
+       width="63"
+       height="55.0121"
+       fill="#ffffff"
+       fill-opacity="0.411765"
+       id="rect597" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,762.673,648)"
+       id="text599">H37Rv</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,770.506,666)"
+       id="text601">CDS</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,798.673,666)"
+       id="text603" />
+    <path
+       d="m 744.5,580.128 h 40.566 c 0.276,0 0.5,0.224 0.5,0.5 v 43.852 h -1 v -43.852 l 0.5,0.5 H 744.5 Z m 40.566,44.352 4,-2.667 -4,8.002 -4,-8.002 z"
+       id="path605" />
+    <path
+       d="m 786,676.649 v 4.001 h -1 v -4.001 z m 0,7.002 v 4.001 h -1 v -4.001 z m 0,7.001 v 0.428 h -1 v -0.428 z m -0.5,0.428 4,-2.667 -4,8.002 -4,-8.002 z"
+       id="path607" />
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,713.951,584)"
+       id="text609">YES</text>
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,733.118,584)"
+       id="text611" />
+    <path
+       d="m 518,537.619 50.5,-26.506 50.5,26.506 -50.5,26.505 z"
+       fill="#eeeeee"
+       fill-rule="evenodd"
+       id="path613" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,521.867,531)"
+       id="text615">Is</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,531.7,531)"
+       id="text617" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,535.367,531)"
+       id="text619">in</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,550.533,531)"
+       id="text621">curated</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,602.7,531)"
+       id="text623" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,522.613,549)"
+       id="text625">annotation</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,594.78,549)"
+       id="text627">?</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,601.947,549)"
+       id="text629" />
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,559.729,564)"
+       id="text631">NO</text>
+    <text
+       fill="#ff0000"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,574.562,564)"
+       id="text633" />
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,609.819,541)"
+       id="text635">YES</text>
+    <text
+       fill="#38761d"
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="700"
+       font-size="10.669px"
+       transform="matrix(1,0,0,1.00022,628.985,541)"
+       id="text637" />
+    <path
+       d="m 0,-0.5 h 7.22887 c 0.27614,0 0.5,0.223858 0.5,0.5 v 16.205 h -1 V 0 l 0.5,0.5 H 0 Z m 7.22887,16.705 4.00003,-2.6666 -4.00003,8 -4,-8 z"
+       fill="#6b9ce5"
+       transform="matrix(1,0,0,-1.00022,640.5,537.157)"
+       id="path639" />
+    <path
+       d="m 0,-0.5 h 14.3464 c 0.2761,0 0.5,0.223858 0.5,0.5 v 18.6396 h -1 V 0 l 0.5,0.5 H 0 Z m 14.3464,19.1396 4,-2.6667 -4,8 -4,-8 z"
+       transform="matrix(0,1.00022,1,0,567.5,568.625)"
+       id="path641" />
+    <path
+       d="m 0,-0.5 h 38.3098 c 0.2762,0 0.5,0.223858 0.5,0.5 v 8.99685 h -1 V 0 l 0.5,0.5 H 0 Z m 38.3098,9.49685 4,-2.66667 -4,8.00002 -4,-8.00002 z"
+       transform="matrix(-1,0,0,1.00022,606.81,497.61)"
+       id="path643" />
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,642.667,140)"
+       id="text645">c</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,650.167,140)"
+       id="text647">ase</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,677.001,140)"
+       id="text649">1</text>
+    <text
+       font-family="Fredoka, Fredoka_MSFontService, sans-serif"
+       font-weight="400"
+       font-size="14.6699px"
+       transform="matrix(1,0,0,1.00022,682.667,140)"
+       id="text651" />
+  </g>
+</svg>

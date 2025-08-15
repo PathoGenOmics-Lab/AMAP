@@ -348,12 +348,14 @@ The algorithm's main task is to resolve the conflicts from **Case 4** and filter
     * Genes that pass these filters are kept (`case1_kept`).
 
 * **Resolving Case 4 Conflicts**: When a Bakta CDS and a H37Rv alignment overlap, a winner is chosen based on the following logic:
-    * **Single Overlaps**: For a one-to-one conflict, the algorithm compares the length of the Bakta annotation versus the length of the Miniprot alignment.
+    * **Single Overlaps**: For a one-to-one conflict, the algorithm compares the length of the Bakta annotation versus the length of the H37Rv alignment.
         * The **H37Rv version is preferred by default**.
-        * The Bakta version is only chosen if it is substantially longer than the Miniprot alignment (a difference of **> 550 bp**). This rule avoids discarding a potentially full-length gene in favor of a shorter, fragmented reference alignment.
+        * The Bakta version is only chosen if it is substantially longer than the H37Rv alignment (a difference of **> 550 bp**). This rule avoids discarding a potentially full-length gene in favor of a shorter, fragmented reference alignment.
     * **Multiple Overlaps**: If multiple Bakta CDSs overlap a single H37Rv alignment (a sign of a fragmented gene), the algorithm first finds the Bakta CDS with the best overlap percentage. It then compares this "best" Bakta CDS to the H37Rv alignment using a similar length-based rule (threshold of **500 bp**).
 
 * **Final De-duplication**: After a "winner" is chosen from a conflict, it is compared against the existing set of trusted genes. If the new gene has a high overlap (**≥ 70%**) with an existing one, it is only kept if it is substantially longer (difference **> 550 bp**). This prevents the inclusion of redundant, shorter fragments.
+
+![AMAP pipeline map](.github/plot_AMAP_algorithm.svg)
 
 ---
 

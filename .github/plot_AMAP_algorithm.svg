@@ -23,7 +23,7 @@
      showgrid="false"
      inkscape:zoom="0.77538561"
      inkscape:cx="424.30501"
-     inkscape:cy="318.55118"
+     inkscape:cy="319.84086"
      inkscape:window-width="1920"
      inkscape:window-height="1009"
      inkscape:window-x="-8"
@@ -69,14 +69,6 @@
   <g
      clip-path="url(#clip0)"
      id="g458">
-    <rect
-       x="-12.896809"
-       y="-104.46415"
-       width="972.89679"
-       height="703.2901"
-       fill="#ffffff"
-       id="rect16"
-       style="stroke-width:0.970859" />
     <path
        d="m 589.10319,413.14985 50.5,-26.506 50.5,26.506 -50.5,26.506 z"
        fill="#eeeeee"

@@ -55,9 +55,8 @@ process EGGNOG_DB {
 
 process ANNOT_EGGNOGMAP {
   tag "$sampleId"
-  cpus 12
-  memory '10 GB'
-  scratch true
+  cpus 24
+  memory '50 GB'
 
   input:
   tuple val(sampleId), path(fixfaa)
@@ -77,6 +76,8 @@ process ANNOT_EGGNOGMAP {
     -m diamond \
     --dmnd_db eggnog_db/bacteria.dmnd \
     --cpu ${task.cpus} \
+    --usemem \
+    --dbmem \
     --sensmode fast \
     --tax_scope 2 \
     --target_orthologs one2one \
@@ -86,3 +87,4 @@ process ANNOT_EGGNOGMAP {
     --scratch_dir scr_tmp
   """
 }
+

@@ -51,9 +51,6 @@ process FINAL_REPORT {
     echo \$WORK_DIR
     Rscript -e "rmarkdown::render('report_AMAP.Rmd', output_file='final_report.html',params=list(cog_file='\$WORK_DIR/${input_cog}', myco_file='\$WORK_DIR/${input_myco}', summary_file='\$WORK_DIR/${input_summary}', empty_file='\$WORK_DIR/${input_noref}'))"
     
-    rm AMAP.png 
-    rm header.html 
-    rm styles.css 
-    rm report_AMAP.Rmd 
+    # Keep copied files for -resume compatibility (Nextflow caches workdir contents)
     """
 }

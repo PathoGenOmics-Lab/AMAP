@@ -1,7 +1,5 @@
 process PANGENE {
     tag "$sampleId"
-    cpus   16
-    memory '16 GB'
 
     publishDir "${params.outdir}/PANGENE/${sampleId}",
                mode: 'copy',
@@ -34,7 +32,12 @@ process PANGENE {
     ln -sf ${fixfna} ${sampleId}-AMAP.fna
 
     # 2) collect reference genomes (staged via Nextflow channel, flat in workdir)
-    refs=( *.fasta )
+    #    Exclude the sample's own FASTA to avoid self-alignment
+    refs=()
+    for f in *.fasta; do
+        [[ "\$f" == "${fasta}" ]] && continue
+        refs+=("\$f")
+    done
 
     if [ \${#refs[@]} -eq 0 ]; then
         echo "No reference FASTA files – skipping pangene for ${sampleId}"

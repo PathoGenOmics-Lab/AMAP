@@ -98,8 +98,8 @@ def convert_gbk_to_panaroo_gff3(gbk_path: Path, gff3_path: Path):
                 score = '.'
                 phase = '0' if feature.type == 'CDS' else '.'
                 
-                # Determine the source based on feature type
-                source = "Prodigal:002006" if feature.type == 'CDS' else "AMAP"
+                # Use AMAP as source for all features (annotation was curated by AMAP)
+                source = "AMAP"
                 
                 attribute_str = format_gff_attributes(feature)
                 if not attribute_str:

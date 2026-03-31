@@ -27,6 +27,7 @@ params.skip_typing = false
 params.skip_functional_annotation = false
 params.genus = "Mycobacterium"
 params.species = "Mycobacterium tuberculosis"
+params.bakta_db = "/data/bakta_db/db-light"
 
 // Reference files
 params.pathotyper_snps = "/reference/snps_lineages.tsv"
@@ -74,6 +75,7 @@ if (params.help) {
     --skip_functional_annotation Skip all functional annotation and downstream analysis steps. (Default: ${params.skip_functional_annotation})
     --genus                     Genus for Bakta annotation. (Default: "${params.genus}")
     --species                   Species for Bakta annotation. (Default: "${params.species}")
+    --bakta_db                  Path to the Bakta database directory. (Default: "${params.bakta_db}")
     --help                      Display this help message.
 
     Reference & Database Arguments:
@@ -121,7 +123,16 @@ Channel
     .fromPath(params.tsv)
     .ifEmpty { error "Input TSV file not found: ${params.tsv}" }
     .splitCsv(header: true, sep: '\t')
-    .map { row -> tuple(row.sampleId, file(row.fasta)) }
+    .map { row ->
+        if (!row.containsKey('sampleId') || !row.containsKey('fasta')) {
+            error "Input TSV must have columns 'sampleId' and 'fasta' (tab-separated). Found: ${row.keySet()}"
+        }
+        def f = file(row.fasta)
+        if (!f.exists()) {
+            error "FASTA file not found for sample '${row.sampleId}': ${row.fasta}"
+        }
+        tuple(row.sampleId, f)
+    }
     .set { fasta_ch }
 
 //

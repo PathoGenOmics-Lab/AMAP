@@ -38,18 +38,19 @@ process PATHOTYPR {
         if [ -n "\$newName" ]; then
             # 5. Modify the FASTA header and save to a new file.
             #    - `sed` replaces the line starting with '>' with the new name.
-            sed "s/>.*/>\$newName/" "${fasta}" > "\${newName}.fasta"
+            # Only rename the FIRST header; preserve other contig headers in multi-contig FASTAs
+            awk -v name="\$newName" 'BEGIN{first=1} /^>/{if(first){print ">"name; first=0}else{print}; next} {print}' "${fasta}" > "\${newName}.fasta"
 
             # 6. Print the new name to standard output for Nextflow to capture.
             echo -n "\$newName"
         else
             echo "Error: Could not determine new name from summary file. Using original sampleId." >&2
-            sed "s/>.*/>NA_${sampleId}/" "${fasta}" > "NA_${sampleId}.fasta"
+            awk -v name="NA_${sampleId}" 'BEGIN{first=1} /^>/{if(first){print ">"name; first=0}else{print}; next} {print}' "${fasta}" > "NA_${sampleId}.fasta"
             echo -n "${sampleId}"
         fi
     else
         echo "Error: Summary file not found or empty. Using original sampleId." >&2
-        sed "s/>.*/>NA_${sampleId}/" "${fasta}" > "NA_${sampleId}.fasta"
+        awk -v name="NA_${sampleId}" 'BEGIN{first=1} /^>/{if(first){print ">"name; first=0}else{print}; next} {print}' "${fasta}" > "NA_${sampleId}.fasta"
         echo -n "${sampleId}"
     fi
     """

@@ -1,26 +1,27 @@
 process EGGNOG_DB {
     tag 'eggnog_db_setup'
-    cpus   16
-    memory '45 GB'
 
     output:
     path "eggnog_db", emit: db_path
 
     script:
-    def eggnog_db_dir = params.eggnog_db.startsWith('/') \
-        ? params.eggnog_db \
-        : "${projectDir}/${params.eggnog_db}"
-
     """
     set -euo pipefail
-    mkdir -p ${eggnog_db_dir}
+
+    # Resolve the user-provided eggnog_db path
+    EGGNOG_DB_DIR="${params.eggnog_db}"
+    if [[ ! "\$EGGNOG_DB_DIR" = /* ]]; then
+        EGGNOG_DB_DIR="${projectDir}/${params.eggnog_db}"
+    fi
+
+    mkdir -p "\$EGGNOG_DB_DIR"
 
     # ------------------------------------------------------------
     # 0) Quick exit if the bacteria DB already exists
     # ------------------------------------------------------------
-    if [ -f "${eggnog_db_dir}/bacteria.dmnd" ]; then
+    if [ -f "\$EGGNOG_DB_DIR/bacteria.dmnd" ]; then
         echo "==> bacteria.dmnd found – skipping download and build."
-        ln -sfn ${eggnog_db_dir} eggnog_db
+        ln -sfn "\$EGGNOG_DB_DIR" eggnog_db
         exit 0
     fi
 
@@ -28,7 +29,7 @@ process EGGNOG_DB {
     # 1) Download metadata only (skip 60-GB Diamond core)
     # ------------------------------------------------------------
     echo "==> Downloading metadata only (skipping Diamond core)…"
-    download_eggnog_data.py -D -y --data_dir ${eggnog_db_dir}
+    download_eggnog_data.py -D -y --data_dir "\$EGGNOG_DB_DIR"
 
     # ------------------------------------------------------------
     # 2) Build the bacteria-only Diamond index (~3 GB)
@@ -38,25 +39,22 @@ process EGGNOG_DB {
                   --dbname bacteria \
                   --taxa Bacteria \
                   -y \
-                  --data_dir ${eggnog_db_dir}
+                  --data_dir "\$EGGNOG_DB_DIR"
 
     # ------------------------------------------------------------
     # 3) Clean up build-only files
     # ------------------------------------------------------------
     echo "==> Removing build-only FASTA and taxid table…"
-    rm -f ${eggnog_db_dir}/e5.proteomes.faa  || true
-    rm -f ${eggnog_db_dir}/e5.taxid_info.tsv || true
-    # (Keep eggnog.taxa.db.traverse.pkl; delete it if you need the extra 150 MB.)
+    rm -f "\$EGGNOG_DB_DIR"/e5.proteomes.faa  || true
+    rm -f "\$EGGNOG_DB_DIR"/e5.taxid_info.tsv || true
 
-    # Symlink for downstream processes
-    ln -sfn ${eggnog_db_dir} eggnog_db
+    # Symlink into workdir for Nextflow output channel
+    ln -sfn "\$EGGNOG_DB_DIR" eggnog_db
     """
 }
 
 process ANNOT_EGGNOGMAP {
   tag "$sampleId"
-  cpus 24
-  memory '50 GB'
 
   input:
   tuple val(sampleId), path(fixfaa)

@@ -1,7 +1,5 @@
 process BAKTA_ANNOTATOR {
     tag "$sampleId"
-    cpus 12
-    memory '6 GB'
     publishDir "${params.outdir}/BAKTA", pattern: "${sampleId}", mode: 'copy'
 
     input:
@@ -16,7 +14,7 @@ process BAKTA_ANNOTATOR {
     script:
     """
     bakta \\
-        --db /data/bakta_db/db-light \\
+        --db "${params.bakta_db}" \\
         --skip-trna \\
         --genus "${genus}" \\
         --species "${species}" \\

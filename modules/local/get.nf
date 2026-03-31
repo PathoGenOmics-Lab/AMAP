@@ -1,7 +1,5 @@
 process GET_DUPLICATIONS {
     tag "$sampleId"
-    cpus   6
-    memory '10 GB'
 
     publishDir "${params.outdir}/DUPLICATIONS/${sampleId}",
            mode: 'copy',
@@ -61,9 +59,10 @@ process GET_OUTPUTS {
     # Copy input TSV to avoid modifying Nextflow-staged symlink (breaks -resume)
     cp ${amap_tsv} local_amap.tsv
 
-    # remove header line if present (starts with column name like 'id' or 'lineage')
-    if head -1 local_amap.tsv | grep -qP '^(id|lineage)\t'; then
-        sed -i '1d' local_amap.tsv
+    # Remove header line if present: detect by checking if the first field
+    # of line 1 is NOT a valid coordinate (i.e. not purely numeric after the ID)
+    if head -1 local_amap.tsv | awk -F'\\t' '{exit (\$3 ~ /^[0-9]+\$/) ? 1 : 0}'; then
+        tail -n +2 local_amap.tsv > local_amap_tmp.tsv && mv local_amap_tmp.tsv local_amap.tsv
     fi
 
     python3 ${projectDir}/bin/generate_tsv_gff_gbk.py \\
@@ -101,8 +100,6 @@ process GET_COUNT {
 }
 
 process GET_ALLDUP {
-    cpus 13
-    memory '10 GB'
     publishDir "${params.outdir}/DUPLICATIONS", mode: 'copy'
 
     input:

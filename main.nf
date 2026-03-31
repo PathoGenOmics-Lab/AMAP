@@ -173,7 +173,13 @@ workflow {
         GET_DUPLICATIONS(ch_for_downstream)
         
         // 10. Runs pangenome for the genes of each genome
-        PANGENE(ch_for_downstream)
+        // Collect typed FASTA files from PATHOTYPR step (or empty channel if skipped)
+        if (!params.skip_typing) {
+            ref_fastas_ch = PATHOTYPR.out.typed_fasta.map { it[1] }.collect()
+        } else {
+            ref_fastas_ch = Channel.empty()
+        }
+        PANGENE(ch_for_downstream, ref_fastas_ch)
 
         // 11. Count annotations per category
         GET_COUNT(GET_OUTPUTS.out.master_table)

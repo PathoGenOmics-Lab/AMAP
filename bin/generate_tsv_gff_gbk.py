@@ -6,7 +6,6 @@ import pandas as pd
 import numpy as np
 from Bio import SeqIO
 import csv
-from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 
 __author__ = 'Paula Ruiz-Rodriguez'
@@ -28,37 +27,45 @@ def filter_bakta(bakta_pd):
     return bakta_pd_cds, bakta_pd_rest
 
 def tsv_to_gbk(tsv_file, fasta_file, gbk_file, molecule_type='DNA'):
+    """Convert a TSV annotation file + FASTA to GenBank format."""
     secuencias = SeqIO.to_dict(SeqIO.parse(fasta_file, "fasta"))
+    
+    for record in secuencias.values():
+        record.annotations['molecule_type'] = molecule_type
+
+    # Read all features from the TSV file
     with open(tsv_file, 'r') as tsv:
         tsv_reader = csv.reader(tsv, delimiter='\t')
-        next(tsv_reader, None) 
-        
-        for record in secuencias.values():
-            record.annotations['molecule_type'] = molecule_type
-            for row in tsv_reader:
-                if row[0].startswith('#'):
-                    continue
-                seq_id, feature_type, start, end, strand, locus_tag, gene, product, db_xrefs = row
-                if seq_id not in secuencias:
-                    continue 
+        for row in tsv_reader:
+            # Skip header and comment lines
+            if not row or row[0].startswith('#'):
+                continue
+            if len(row) < 9:
+                continue
+            seq_id, feature_type, start, end, strand, locus_tag, gene, product, db_xrefs = row[:9]
+            if seq_id not in secuencias:
+                continue
+            try:
                 start, end = int(start) - 1, int(end)
-                strand = 1 if strand == '+' else -1 if strand == '-' else 0
-                qualifiers = {
-                    'locus_tag': [locus_tag],
-                    'gene': [gene],
-                    'product': [product],
-                    'db_xref': db_xrefs.split(', ')
-                }
-                if feature_type.lower() == 'cds':
-                    sequence = secuencias[seq_id].seq[start:end]
-                    if strand == -1:
-                        sequence = sequence.reverse_complement()
-                    qualifiers['translation'] = [str(sequence.translate(to_stop=True))]
-                feature = SeqFeature(FeatureLocation(start, end, strand=strand), type=feature_type, qualifiers=qualifiers)
-                secuencias[seq_id].features.append(feature)
-            tsv.seek(0) 
-        with open(gbk_file, 'w') as gbk:
-            SeqIO.write(secuencias.values(), gbk, 'genbank')
+            except ValueError:
+                continue
+            strand_int = 1 if strand == '+' else -1 if strand == '-' else 0
+            qualifiers = {
+                'locus_tag': [locus_tag],
+                'gene': [gene],
+                'product': [product],
+                'db_xref': db_xrefs.split(', ')
+            }
+            if feature_type.lower() == 'cds':
+                sequence = secuencias[seq_id].seq[start:end]
+                if strand_int == -1:
+                    sequence = sequence.reverse_complement()
+                qualifiers['translation'] = [str(sequence.translate(to_stop=True))]
+            feature = SeqFeature(FeatureLocation(start, end, strand=strand_int), type=feature_type, qualifiers=qualifiers)
+            secuencias[seq_id].features.append(feature)
+
+    with open(gbk_file, 'w') as gbk:
+        SeqIO.write(secuencias.values(), gbk, 'genbank')
 
 def columns():
     name_eggnog = [
@@ -123,8 +130,9 @@ def generate_tsv(merged_df, bakta_rest_df, fasta_file_path, output_file_path):
     new_column_names = {'id': 'Locus Tag', 'strand': 'Strand', 'start': 'Start', 'end': 'Stop', 'Combined_Gene': 'Gene', 'Combined_Description': 'Product', 'rvs': 'DbXrefs'}
     new_df.rename(columns=new_column_names, inplace=True)
 
-    # Setting additional columns
-    new_df['Sequence Id'] = "contig_1"
+    # Setting additional columns — use the first FASTA sequence ID
+    first_seq_id = next(SeqIO.parse(fasta_file_path, "fasta")).id
+    new_df['Sequence Id'] = first_seq_id
     new_df['Type'] = "CDS"
     
     # Reordering columns
@@ -133,10 +141,6 @@ def generate_tsv(merged_df, bakta_rest_df, fasta_file_path, output_file_path):
 
     # Concatenating with bakta_rest_df and sorting
     new_df = pd.concat([bakta_rest_df, new_df], ignore_index=True).sort_values(by='Start')
-
-    # Update 'Sequence Id' for each sequence in FASTA file (this might need adjustment based on specific needs)
-    for sequence in SeqIO.parse(fasta_file_path, "fasta"):
-        new_df.loc[new_df['Sequence Id'] == "contig_1", 'Sequence Id'] = sequence.id
 
     # Header for TSV file
     header_content = "\n".join([
@@ -166,13 +170,13 @@ def generate_gff(new_df, gff_file_path, fasta_file_path):
     # Rearrange columns
     new_df = new_df[['Sequence Id', 'Source', 'Type', 'Start', 'Stop', 'Score', 'Strand', 'Phase', 'Attributes']]
    
-    # Writing the DataFrame to a GFF file
-    new_df.to_csv(gff_file_path, sep='\t', index=False, header=False)
+    # Writing the DataFrame to a GFF3 file with proper header
+    with open(gff_file_path, 'w') as file_gff:
+        file_gff.write("##gff-version 3\n")
+        new_df.to_csv(file_gff, sep='\t', index=False, header=False)
 
-    # Appending FASTA sequences to the GFF file
-    with open(gff_file_path, 'a') as file_gff:
-        file_gff.write("\n##FASTA\n")
-
+        # Append FASTA sequences
+        file_gff.write("##FASTA\n")
         for sequence in SeqIO.parse(fasta_file_path, "fasta"):
             file_gff.write(f">{sequence.id}\n{sequence.seq}\n")
 

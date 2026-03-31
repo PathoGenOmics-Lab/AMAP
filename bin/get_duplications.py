@@ -5,6 +5,8 @@ import argparse
 import pandas as pd
 import numpy as np
 import networkx as nx
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from pyvis.network import Network
 import community as community_louvain
@@ -55,10 +57,19 @@ def plot_network(df, output_filename):
     # Calculate connected components (clusters)
     clusters = list(nx.connected_components(G))
     
-    # Calculate the number of rows and columns for the grid of subplots
+    # Handle edge case: no clusters
     num_clusters = len(clusters)
+    if num_clusters == 0:
+        fig, ax = plt.subplots(figsize=(10, 10))
+        ax.text(0.5, 0.5, 'No duplications found', ha='center', va='center', fontsize=16)
+        ax.axis('off')
+        plt.savefig(output_filename, format='png', dpi=300)
+        plt.close()
+        return
+
+    # Calculate the number of rows and columns for the grid of subplots
     num_rows = int(np.ceil(np.sqrt(num_clusters)))
-    num_cols = num_rows if num_clusters > num_rows * (num_rows - 1) else num_rows - 1
+    num_cols = max(1, num_rows if num_clusters > num_rows * (num_rows - 1) else num_rows - 1)
     
     # Create subplots in a grid
     fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(20, 20))

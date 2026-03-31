@@ -125,6 +125,7 @@ def process_case2_and_case3(bakta_df, miniprot_df, base_name=None):
 def process_cases(bakta_df, miniprot_df, base_name=None):
     """
     Processes and separates data into 'case 1' (no overlap) and 'case 4' (coordinate overlap).
+    Uses IntervalTree for O(n log n) overlap detection instead of O(n²).
     """
     bakta_df['Length_nt'] = bakta_df['End'] - bakta_df['Start']
     merged_df = pd.merge(bakta_df, miniprot_df, on=['Start', 'End'], how='inner')
@@ -134,11 +135,16 @@ def process_cases(bakta_df, miniprot_df, base_name=None):
     rows_not_in_merged = merged_indicator[merged_indicator['_merge'] == 'left_only'].drop('_merge', axis=1)
     rows_not_in_merged = rows_not_in_merged[["Locus Tag", "Start", "End", "Strand", 'Length_nt']]
 
-    # Check for any positional overlap
-    rows_not_in_merged['Overlaps'] = False
-    for index, row in rows_not_in_merged.iterrows():
-        has_overlap = ((miniprot_df['Start'] <= row['End']) & (miniprot_df['End'] >= row['Start'])).any()
-        rows_not_in_merged.at[index, 'Overlaps'] = has_overlap
+    # Build IntervalTree from miniprot for fast overlap queries
+    miniprot_tree = IntervalTree()
+    for _, row in miniprot_df.iterrows():
+        if row['Start'] < row['End']:
+            miniprot_tree[row['Start']:row['End']] = True
+
+    # Check for any positional overlap using the tree
+    rows_not_in_merged['Overlaps'] = rows_not_in_merged.apply(
+        lambda row: len(miniprot_tree[row['Start']:row['End']]) > 0, axis=1
+    )
 
     case4 = rows_not_in_merged[rows_not_in_merged['Overlaps'] == True]
     case1 = rows_not_in_merged[rows_not_in_merged['Overlaps'] == False]
@@ -156,11 +162,18 @@ def get_non_overlapping_rows(miniprot_df, bakta_df, base_name=None):
     """
     Identifies rows in miniprot_df that do not overlap with any row in bakta_df.
     These are considered 'rv_missing' from the Bakta annotation.
+    Uses IntervalTree for O(n log n) overlap detection.
     """
-    miniprot_df['Overlaps'] = False
-    for index, row in miniprot_df.iterrows():
-        has_overlap = ((bakta_df['Start'] <= row['End']) & (bakta_df['End'] >= row['Start'])).any()
-        miniprot_df.at[index, 'Overlaps'] = has_overlap
+    # Build IntervalTree from bakta for fast overlap queries
+    bakta_tree = IntervalTree()
+    for _, row in bakta_df.iterrows():
+        if row['Start'] < row['End']:
+            bakta_tree[row['Start']:row['End']] = True
+
+    miniprot_df = miniprot_df.copy()
+    miniprot_df['Overlaps'] = miniprot_df.apply(
+        lambda row: len(bakta_tree[row['Start']:row['End']]) > 0, axis=1
+    )
 
     no_overlap_with_bakta = miniprot_df[miniprot_df['Overlaps'] == False]
     # Filter out zero-length alignments

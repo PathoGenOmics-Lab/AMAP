@@ -284,7 +284,7 @@ def visualize_network(
 
     # Assign a unique color to each genome
     genome_ids = list(labeled_communities.keys())
-    colors = plt.cm.get_cmap('tab20', len(genome_ids))
+    colors = plt.colormaps['tab20'].resampled(len(genome_ids))
     genome_colors = {gid: mcolors.to_hex(colors(i)) for i, gid in enumerate(genome_ids)}
 
     # Add nodes (communities)

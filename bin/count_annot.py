@@ -11,6 +11,8 @@ category distributions.
 import argparse
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')  # Headless backend — must be set before pyplot import
 import matplotlib.pyplot as plt
 from pathlib import Path
 from typing import Tuple

@@ -15,6 +15,7 @@ process PANGENE {
           path(baktatsv),
           path(fasta),
           path(emapper)
+    path ref_fastas  // staged reference FASTA files from PATHOTYPR
 
     output:
     tuple val(sampleId),
@@ -32,9 +33,8 @@ process PANGENE {
     ln -sf ${fixfaa} ${sampleId}-AMAP.faa
     ln -sf ${fixfna} ${sampleId}-AMAP.fna
 
-    # 2) collect reference genomes
-    ref_dir="${projectDir}/${params.outdir}/PATHOTYPR/fastas"
-    refs=( \$ref_dir/*.fasta )
+    # 2) collect reference genomes (staged via Nextflow channel)
+    refs=( ${ref_fastas}/*.fasta ${ref_fastas} )
 
     if [ \${#refs[@]} -eq 0 ]; then
         echo "No reference FASTA files – skipping pangene for ${sampleId}"

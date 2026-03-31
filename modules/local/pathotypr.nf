@@ -20,7 +20,7 @@ process PATHOTYPR {
 
     # 1. Run the lineage classifier.
     # This command generates an output file named `${sampleId}_summary.tsv`.
-    /scr/ruizro/AMAP/pathotypr classify \\
+    pathotypr classify \\
         -i ${fasta} \\
         -m "${params.pathotyper_snps}" \\
         -r "${params.pathotyper_ref}" \\

@@ -29,7 +29,11 @@ params.genus = "Mycobacterium"
 params.species = "Mycobacterium tuberculosis"
 params.bakta_db = "/data/bakta_db/db-light"
 
-// Reference files
+// Custom reference (set both to use your own reference instead of H37Rv)
+params.ref_annotation = null   // GFF3 or GenBank of a trusted reference
+params.ref_genome = null       // FASTA of the reference genome
+
+// Default H37Rv reference files (used when ref_annotation/ref_genome are not set)
 params.pathotyper_snps = "/reference/snps_lineages.tsv"
 params.pathotyper_ref = "/reference/MTB_ancestor_reference.fasta"
 params.miniprot_ref_aa = "/reference/aa_H37Rv.translated.fas"
@@ -78,6 +82,12 @@ if (params.help) {
     --bakta_db                  Path to the Bakta database directory. (Default: "${params.bakta_db}")
     --help                      Display this help message.
 
+    Custom Reference (replaces built-in H37Rv):
+    --ref_annotation            Path to a trusted reference annotation (GFF3 or GenBank).
+    --ref_genome                Path to the trusted reference genome (FASTA).
+                                Both must be set together. When used, the pipeline extracts
+                                proteins from your reference and uses them instead of H37Rv.
+
     Reference & Database Arguments:
     --eggnog_db                 Path to the pre-formatted eggNOG database directory. (Default: "${params.eggnog_db}")
     --pathotyper_snps           Path to the SNPs TSV file for Pathotyper. (Default: "${params.pathotyper_snps}")
@@ -98,7 +108,13 @@ log.info """
     eggnog_db                   : ${params.eggnog_db}
     skip_typing                 : ${params.skip_typing}
     skip_functional_annotation  : ${params.skip_functional_annotation}
+    custom_reference            : ${params.ref_annotation ? params.ref_annotation + ' + ' + params.ref_genome : 'H37Rv (default)'}
 """
+
+// Validate custom reference params
+if ((params.ref_annotation && !params.ref_genome) || (!params.ref_annotation && params.ref_genome)) {
+    error "Both --ref_annotation and --ref_genome must be provided together. You set one but not the other."
+}
 //
 // --- MODULE INCLUDES ---
 //
@@ -116,6 +132,7 @@ include { GET_ALLDUP }          from './modules/local/get'
 include { PANGENE }             from './modules/local/pangene'
 include { REPORT_INPUTS }       from './modules/local/freport'
 include { FINAL_REPORT }        from './modules/local/freport'
+include { PREPARE_REFERENCE }   from './modules/local/reference'
 //
 // --- INPUT CHANNEL ---
 //
@@ -159,13 +176,27 @@ workflow {
     // 3. Annotate genomes with Bakta
     BAKTA_ANNOTATOR(typed_ch.combine(Channel.value(params.genus)).combine(Channel.value(params.species)))
 
-    // 4. Align proteins to the genome with Miniprot
-    MINIPROT(BAKTA_ANNOTATOR.out.for_miniprot)
+    // 4. Prepare reference proteome (custom or default H37Rv)
+    if (params.ref_annotation && params.ref_genome) {
+        log.info "Using custom reference: ${params.ref_annotation} + ${params.ref_genome}"
+        PREPARE_REFERENCE(
+            Channel.value(file(params.ref_annotation)),
+            Channel.value(file(params.ref_genome))
+        )
+        ref_proteome_ch    = PREPARE_REFERENCE.out.ref_proteome
+        ref_genome_fasta_ch = PREPARE_REFERENCE.out.ref_genome_fasta
+    } else {
+        ref_proteome_ch     = Channel.value(file(params.miniprot_ref_aa))
+        ref_genome_fasta_ch = Channel.value(file(params.miniprot_ref_h37rv))
+    }
 
-    // 5. Classify CDS cases based on alignments
+    // 5. Align proteins to the genome with Miniprot
+    MINIPROT(BAKTA_ANNOTATOR.out.for_miniprot, ref_proteome_ch, ref_genome_fasta_ch)
+
+    // 6. Classify CDS cases based on alignments
     TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases))
 
-    // 6. Correct CDS based on classified cases
+    // 7. Correct CDS based on classified cases
     FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix))
 
     // --- FUNCTIONAL ANNOTATION AND DOWNSTREAM ANALYSIS ---

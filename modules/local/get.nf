@@ -17,8 +17,11 @@ process GET_DUPLICATIONS {
     script:
     """
     python3 ${projectDir}/bin/rename_fastas.py ${emapper} ${amap_faa}
+
+    # Build Diamond DB first, then query against it
+    diamond makedb --in ${amap_faa}.renamed --db renamed_db
     diamond blastp \\
-        --db ${amap_faa}.renamed \\
+        --db renamed_db \\
         -q ${amap_faa}.renamed \\
         --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen nident \\
         --very-sensitive \\
@@ -27,7 +30,7 @@ process GET_DUPLICATIONS {
         > duplications_${sampleId}
 
     python3 ${projectDir}/bin/get_duplications.py duplications_${sampleId}
-    python3 ${projectDir}/bin/dup_ex_multifasta.py duplications_${sampleId}_groups.tsv ${sampleId}.AMAP.faa.renamed
+    python3 ${projectDir}/bin/dup_ex_multifasta.py duplications_${sampleId}_groups.tsv ${amap_faa}.renamed
     """
 }
 
@@ -55,14 +58,17 @@ process GET_OUTPUTS {
     """
     set -euo pipefail
 
-    # remove header once
-    if ! grep -q '^lineage' ${amap_tsv}; then
-        sed -i '1d' ${amap_tsv}
+    # Copy input TSV to avoid modifying Nextflow-staged symlink (breaks -resume)
+    cp ${amap_tsv} local_amap.tsv
+
+    # remove header line if present (starts with column name like 'id' or 'lineage')
+    if head -1 local_amap.tsv | grep -qP '^(id|lineage)\t'; then
+        sed -i '1d' local_amap.tsv
     fi
 
     python3 ${projectDir}/bin/generate_tsv_gff_gbk.py \\
         ${emapper} \\
-        ${amap_tsv} \\
+        local_amap.tsv \\
         ${bakta_tsv} \\
         "${params.mycobrowser_ref}" \\
         ${fasta}
@@ -110,8 +116,9 @@ process GET_ALLDUP {
     cat *.dup > all_fastas.fa
     rm *.dup
 
+    diamond makedb --in all_fastas.fa --db all_fastas_db
     diamond blastp \\
-        --db all_fastas.fa \\
+        --db all_fastas_db \\
         -q all_fastas.fa \\
         --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen nident \\
         --very-sensitive \\

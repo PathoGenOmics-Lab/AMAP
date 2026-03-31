@@ -68,7 +68,7 @@ def convert_gbk_to_panaroo_gff3(gbk_path: Path, gff3_path: Path):
         gff3_path: The path to the output GFF3 file.
     """
     try:
-        gbk_record = SeqIO.read(gbk_path, "genbank")
+        gbk_records = list(SeqIO.parse(gbk_path, "genbank"))
     except FileNotFoundError:
         print(f"Error: Input file not found at {gbk_path}")
         return
@@ -76,40 +76,46 @@ def convert_gbk_to_panaroo_gff3(gbk_path: Path, gff3_path: Path):
         print(f"An error occurred while reading the GenBank file: {e}")
         return
 
+    if not gbk_records:
+        print(f"Error: No records found in {gbk_path}")
+        return
+
     with open(gff3_path, "w") as gff3_file:
         # Write GFF3 header
         gff3_file.write("##gff-version 3\n")
-        gff3_file.write(f"##sequence-region {gbk_record.id} 1 {len(gbk_record.seq)}\n")
+        for gbk_record in gbk_records:
+            gff3_file.write(f"##sequence-region {gbk_record.id} 1 {len(gbk_record.seq)}\n")
 
-        # Process and write features
-        for feature in gbk_record.features:
-            if feature.type not in ["gene", "CDS"]:
-                continue
+        # Process and write features for all records/contigs
+        for gbk_record in gbk_records:
+            for feature in gbk_record.features:
+                if feature.type not in ["gene", "CDS"]:
+                    continue
 
-            start = feature.location.start + 1
-            end = feature.location.end
-            strand = '+' if feature.strand == 1 else '-'
-            score = '.'
-            phase = '0' if feature.type == 'CDS' else '.'
-            
-            # Determine the source based on feature type
-            source = "Prodigal:002006" if feature.type == 'CDS' else "AMAP"
-            
-            attribute_str = format_gff_attributes(feature)
-            if not attribute_str:
-                continue
+                start = feature.location.start + 1
+                end = feature.location.end
+                strand = '+' if feature.strand == 1 else '-'
+                score = '.'
+                phase = '0' if feature.type == 'CDS' else '.'
+                
+                # Determine the source based on feature type
+                source = "Prodigal:002006" if feature.type == 'CDS' else "AMAP"
+                
+                attribute_str = format_gff_attributes(feature)
+                if not attribute_str:
+                    continue
 
-            gff3_file.write(
-                f"{gbk_record.id}\t{source}\t{feature.type}\t"
-                f"{start}\t{end}\t{score}\t{strand}\t{phase}\t{attribute_str}\n"
-            )
+                gff3_file.write(
+                    f"{gbk_record.id}\t{source}\t{feature.type}\t"
+                    f"{start}\t{end}\t{score}\t{strand}\t{phase}\t{attribute_str}\n"
+                )
 
-        # Append the FASTA sequence at the end of the file
+        # Append FASTA sequences for all records at the end
         gff3_file.write("##FASTA\n")
-        gff3_file.write(f">{gbk_record.id}\n")
-        # Write sequence with line breaks every 60 characters for readability
-        for i in range(0, len(gbk_record.seq), 60):
-            gff3_file.write(str(gbk_record.seq[i:i+60]) + "\n")
+        for gbk_record in gbk_records:
+            gff3_file.write(f">{gbk_record.id}\n")
+            for i in range(0, len(gbk_record.seq), 60):
+                gff3_file.write(str(gbk_record.seq[i:i+60]) + "\n")
 
     print(f"Successfully converted {gbk_path.name} to {gff3_path.name}")
 

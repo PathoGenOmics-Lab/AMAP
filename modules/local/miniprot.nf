@@ -11,8 +11,8 @@ process MINIPROT {
 
     script:
     """
-    miniprot --outs=0.95 -Iut16 -S ${fasta} "${params.miniprot_ref_aa}" > ${sampleId}.paf
-    miniprot --outs=0.95 -Iut16 -S ${fasta} "${params.miniprot_ref_bad_bakta}" > ${sampleId}-badbakta.paf
-    miniprot --outs=0.95 -Iut16 -S "${params.miniprot_ref_h37rv}" ${proteins_faa} > ${sampleId}-H37Rv.paf
+    miniprot --outs=0.95 -Iut${task.cpus} -S ${fasta} "${params.miniprot_ref_aa}" > ${sampleId}.paf
+    miniprot --outs=0.95 -Iut${task.cpus} -S ${fasta} "${params.miniprot_ref_bad_bakta}" > ${sampleId}-badbakta.paf
+    miniprot --outs=0.95 -Iut${task.cpus} -S "${params.miniprot_ref_h37rv}" ${proteins_faa} > ${sampleId}-H37Rv.paf
     """
 }

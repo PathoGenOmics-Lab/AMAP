@@ -144,6 +144,8 @@ def find_homologous_communities(
     Two communities are considered homologous if at least one protein from the first
     community has a significant BLAST hit to a protein in the second community.
 
+    Uses an inverted index (node→community) for O(E) complexity instead of O(C²·N²).
+
     Args:
         labeled_communities: The dictionary of labeled communities for each genome.
         blast_df: The original filtered BLAST results DataFrame.
@@ -152,34 +154,28 @@ def find_homologous_communities(
         A dictionary mapping a community (genome_id, community_name) to a list of
         its homologous communities [(homolog_genome, homolog_community), ...].
     """
-    # Create a set of all homologous pairs for fast lookups
-    homologous_pairs = set(zip(blast_df['qseqid'], blast_df['sseqid']))
+    # Build inverted index: node → (genome_id, community_name)
+    node_to_community = {}
+    for genome_id, communities in labeled_communities.items():
+        for comm_name, nodes in communities.items():
+            for node in nodes:
+                node_to_community[node] = (genome_id, comm_name)
 
+    # Walk all BLAST edges once — O(E) instead of O(C²·N²)
+    homologous_edges = set()
+    for _, row in blast_df.iterrows():
+        q_comm = node_to_community.get(row['qseqid'])
+        s_comm = node_to_community.get(row['sseqid'])
+        if q_comm and s_comm and q_comm != s_comm:
+            edge = tuple(sorted([q_comm, s_comm]))
+            homologous_edges.add(edge)
+
+    # Build symmetric adjacency map
     homologous_map = {}
-    genome_ids = list(labeled_communities.keys())
+    for comm1, comm2 in homologous_edges:
+        homologous_map.setdefault(comm1, []).append(comm2)
+        homologous_map.setdefault(comm2, []).append(comm1)
 
-    # Compare every community from every genome against all others
-    for i, g1_id in enumerate(genome_ids):
-        for j in range(i, len(genome_ids)):
-            g2_id = genome_ids[j]
-
-            for c1_name, c1_nodes in labeled_communities[g1_id].items():
-                for c2_name, c2_nodes in labeled_communities[g2_id].items():
-                    # Skip self-comparison if it's the same community in the same genome
-                    if g1_id == g2_id and c1_name == c2_name:
-                        continue
-
-                    # Check for any homologous link between the two communities
-                    is_homologous = any(
-                        (n1, n2) in homologous_pairs or (n2, n1) in homologous_pairs
-                        for n1 in c1_nodes for n2 in c2_nodes
-                    )
-
-                    if is_homologous:
-                        homologous_map.setdefault((g1_id, c1_name), []).append((g2_id, c2_name))
-                        # Add the reverse relationship if genomes are different
-                        if g1_id != g2_id:
-                            homologous_map.setdefault((g2_id, c2_name), []).append((g1_id, c1_name))
     return homologous_map
 
 

@@ -199,21 +199,29 @@ def create_and_save_summary(base_name, data_frames, case_types):
     summary_df = pd.DataFrame(summary_data)
     summary_df.to_csv(f"{base_name}-summary.tsv", sep='\t', index=False)
 
-def calculate_overlap_length(row1, df2):
-    """
-    Calculates the total length of overlaps between a given row and all rows in another DataFrame.
-    """
-    def overlap_len(start1, end1, start2, end2):
-        return max(0, min(end1, end2) - max(start1, start2))
-
-    total_overlap = df2.apply(lambda row2: overlap_len(row1['Start'], row1['End'], row2['Start'], row2['End']), axis=1).sum()
-    return total_overlap
-
 def get_case1(case1, bakta_df_bad, cds_path):
     """
     Further processes 'case 1' data to resolve potential misclassifications based on overlap percentages.
+    Uses IntervalTree for efficient overlap length calculation.
     """
-    case1['Overlap_Length'] = case1.apply(lambda row: calculate_overlap_length(row, bakta_df_bad), axis=1)
+    # Build IntervalTree from bakta_df_bad for O(n log n) overlap queries
+    bad_tree = IntervalTree()
+    for _, row in bakta_df_bad.iterrows():
+        if row['Start'] < row['End']:
+            bad_tree[row['Start']:row['End']] = True
+
+    def calc_overlap_length(gene_start, gene_end):
+        """Sum overlap lengths between a gene and all overlapping intervals in the tree."""
+        overlapping = bad_tree[gene_start:gene_end]
+        total = 0
+        for iv in overlapping:
+            total += max(0, min(gene_end, iv.end) - max(gene_start, iv.begin))
+        return total
+
+    case1 = case1.copy()
+    case1['Overlap_Length'] = case1.apply(
+        lambda row: calc_overlap_length(row['Start'], row['End']), axis=1
+    )
     case1['Overlap_Percentage'] = (case1['Overlap_Length'] / case1['Length_nt']) * 100
 
     case1_remove = case1[case1['Overlap_Percentage'] >= 80]

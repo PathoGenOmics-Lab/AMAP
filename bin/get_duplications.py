@@ -73,7 +73,8 @@ def plot_network(df, output_filename):
     
     # Create subplots in a grid
     fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(20, 20))
-    axes = axes.flatten()  # Flatten the axes array for easy indexing
+    # Ensure axes is always a flat array (single subplot returns bare Axes)
+    axes = np.atleast_1d(axes).flatten()
     
     # Adjust the spacing between the subplots
     plt.subplots_adjust(wspace=0.3, hspace=0.3)  # Modify these values as needed for your data

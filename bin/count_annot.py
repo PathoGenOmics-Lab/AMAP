@@ -58,8 +58,12 @@ def process_cog_categories(df: pd.DataFrame) -> pd.DataFrame:
         ['lineage', 'genome', 'COG_category']
     ).size().reset_index(name='count')
 
-    # Calculate percentage based on the total number of genes
-    cog_counts['percentage'] = (cog_counts['count'] / total_genes) * 100
+    # Calculate percentage based on the total number of genes.
+    # NOTE: Multi-letter COG categories (e.g. "JKS") are exploded to individual
+    # letters, so a gene can contribute to multiple categories. This means the
+    # sum of percentages across all categories can exceed 100% — this is expected
+    # behaviour and matches eggNOG-mapper convention.
+    cog_counts['percentage_of_genes'] = (cog_counts['count'] / total_genes) * 100
     
     return cog_counts
 

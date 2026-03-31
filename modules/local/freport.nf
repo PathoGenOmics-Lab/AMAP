@@ -11,19 +11,24 @@ process REPORT_INPUTS {
 
     script:
     """
-    # COG: grab every *AMAP.COG.tsv in the bundle
-    cat \$(echo ${summaries_annot} | tr ' ' '\\n' | grep 'AMAP.COG.tsv\$') \\
-        | grep -v '^lineage' > input_cog.txt
+    # COG: grab every *AMAP.COG.tsv in the bundle, strip header lines exactly
+    for f in \$(echo ${summaries_annot} | tr ' ' '\\n' | grep 'AMAP.COG.tsv\$'); do
+        tail -n +2 "\$f"
+    done > input_cog.txt
 
     # MycoBrowser: every *AMAP.MycoBrowser.tsv
-    cat \$(echo ${summaries_annot} | tr ' ' '\\n' | grep 'AMAP.MycoBrowser.tsv\$') \\
-        | grep -v '^lineage' > input_myco.txt
+    for f in \$(echo ${summaries_annot} | tr ' ' '\\n' | grep 'AMAP.MycoBrowser.tsv\$'); do
+        tail -n +2 "\$f"
+    done > input_myco.txt
 
-    cat \$(echo ${summaries_annot} | tr ' ' '\\n' | grep 'AMAP.noRef.tsv\$') \\
-        | grep -v '^genome' > input_noref.txt
+    for f in \$(echo ${summaries_annot} | tr ' ' '\\n' | grep 'AMAP.noRef.tsv\$'); do
+        tail -n +2 "\$f"
+    done > input_noref.txt
 
-    # Case summaries
-    cat ${summaries_cases} | grep -v '^Type' > input_summary.txt
+    # Case summaries — strip header from each file
+    for f in ${summaries_cases}; do
+        tail -n +2 "\$f"
+    done > input_summary.txt
     """
 }
 

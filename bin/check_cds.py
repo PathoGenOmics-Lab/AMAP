@@ -6,6 +6,7 @@ import pandas as pd
 from Bio import SeqIO
 from Bio.Seq import Seq
 import logging
+import re
 import warnings
 
 __author__ = 'Paula Ruiz-Rodriguez'
@@ -116,7 +117,7 @@ def get_goodseq(sequence, start, end, strand):
                 logging.info(f"Minus-strand gene already ends with stop codon '{first_codon_rc}' (rc) — no extension needed")
                 return start, end, strand
         # Search for stop codon scanning toward lower coordinates
-        new_start = find_next_stop_codon(sequence, start - 3, strand)
+        new_start = find_next_stop_codon(sequence, max(start - 3, 0), strand)
         if new_start is not None:
             start = new_start  # Include the stop codon
 
@@ -133,15 +134,16 @@ def extract_and_translate_cds(fasta_file, annotation_df):
     logging.info(f"Extracting and translating CDS from FASTA file {fasta_file}")
     # Load all contigs into a dict for multi-contig support
     fasta_records = SeqIO.to_dict(SeqIO.parse(fasta_file, "fasta"))
-    if len(fasta_records) == 1:
-        fasta_seq = next(iter(fasta_records.values()))
-    else:
-        # For single-contig genomes (most MTBC), use the first
-        fasta_seq = next(iter(fasta_records.values()))
-        logging.info(f"Multi-contig assembly: {len(fasta_records)} contigs, using first for CDS extraction")
+    # Sort contigs by length (longest first) for coordinate-based matching
+    sorted_contigs = sorted(fasta_records.values(), key=lambda r: len(r.seq), reverse=True)
+    is_multi_contig = len(fasta_records) > 1
+    if is_multi_contig:
+        logging.warning(f"Multi-contig assembly: {len(fasta_records)} contigs — matching genes to contigs by coordinate")
+    default_contig = sorted_contigs[0]
     cds_amino_acids = {}
     cds_nts = {}
 
+    indices_to_drop = []
     for index, row in annotation_df.iterrows():
         start = row['start'] - 1  
         end = row['end']
@@ -152,13 +154,22 @@ def extract_and_translate_cds(fasta_file, annotation_df):
         # Skip genes with invalid strand
         if strand not in ('+', '-'):
             logging.warning(f"Skipping {ide}: invalid strand '{strand}'")
-            annotation_df.drop(index, inplace=True)
+            indices_to_drop.append(index)
             continue
+
+        # Select the correct contig for this gene
+        if is_multi_contig:
+            fasta_seq = default_contig
+            for contig in sorted_contigs:
+                if end <= len(contig.seq):
+                    fasta_seq = contig
+        else:
+            fasta_seq = default_contig
         
         # Validate coordinates
         if start < 0 or end <= start or end > len(fasta_seq.seq):
             logging.warning(f"Skipping {ide}: invalid coordinates {start+1}-{end}")
-            annotation_df.drop(index, inplace=True)
+            indices_to_drop.append(index)
             continue
 
         sequence = fasta_seq.seq[start:end]
@@ -195,7 +206,6 @@ def extract_and_translate_cds(fasta_file, annotation_df):
             # Check if this is a reference gene whose coordinates match the ID-embedded
             # coordinates. If so, it's a known pseudogene — don't extend.
             # If coords DON'T match the ID, it's a partial alignment that needs extension.
-            import re
             is_ref_pseudogene = False
             ref_id = str(rvs) if pd.notna(rvs) and str(rvs).startswith('Rv') else str(ide)
             m = re.search(r'_(\d+)-(\d+)$', ref_id)
@@ -255,6 +265,8 @@ def extract_and_translate_cds(fasta_file, annotation_df):
         annotation_df.at[index, 'start'] = start + 1  
         annotation_df.at[index, 'end'] = end
 
+    # Drop invalid rows collected during iteration (avoids mutation during iterrows)
+    annotation_df.drop(indices_to_drop, inplace=True)
     logging.info(f"CDS extraction and translation complete")
     return cds_amino_acids, cds_nts, annotation_df
 

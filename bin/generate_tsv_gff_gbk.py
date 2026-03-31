@@ -117,24 +117,36 @@ def generate_tsv(merged_df, bakta_rest_df, fasta_file_path, output_file_path):
     # Use loc to set values and avoid warnings
     new_df.loc[:, 'Preferred_name'] = new_df['Preferred_name'].replace('-', np.nan)
     new_df.loc[:, 'Description'] = new_df['Description'].replace('-', np.nan)
-    new_df.loc[:, 'Combined_Gene'] = new_df['Preferred_name'] + ';' + new_df['Gene']
-    new_df.loc[:, 'Combined_Description'] = new_df['Product_x'] + ';' + new_df['Description']
-    
+
+    # Combine gene names: prefer Bakta Gene over eggNOG Preferred_name, fallback chain
+    new_df.loc[:, 'Combined_Gene'] = new_df['Gene'].fillna(new_df['Preferred_name'])
+    # Combine descriptions: prefer eggNOG Description over Bakta Product_x, fallback chain
+    new_df.loc[:, 'Combined_Description'] = new_df['Description'].fillna(new_df['Product_x'])
+
     # Dropping columns
     new_df.drop(columns=['Gene', 'Preferred_name', 'Product_x', 'Description'], inplace=True)
-
-    # Splitting and renaming columns
-    new_df.loc[:, 'Combined_Gene'] = new_df['Combined_Gene'].str.split(';').str[1]
-    new_df.loc[:, 'Combined_Description'] = new_df['Combined_Description'].str.split(';').str[1]
     new_df.loc[:, 'rvs'] = 'AMAP_ids:' + new_df['rvs'].astype(str)
     
     # Renaming columns
     new_column_names = {'id': 'Locus Tag', 'strand': 'Strand', 'start': 'Start', 'end': 'Stop', 'Combined_Gene': 'Gene', 'Combined_Description': 'Product', 'rvs': 'DbXrefs'}
     new_df.rename(columns=new_column_names, inplace=True)
 
-    # Setting additional columns — use the first FASTA sequence ID
-    first_seq_id = next(SeqIO.parse(fasta_file_path, "fasta")).id
-    new_df['Sequence Id'] = first_seq_id
+    # Setting additional columns — assign Sequence Id per gene
+    # For multi-contig assemblies, match each gene to the correct contig by coordinates
+    fasta_records = list(SeqIO.parse(fasta_file_path, "fasta"))
+    if len(fasta_records) == 1:
+        new_df['Sequence Id'] = fasta_records[0].id
+    else:
+        # Sort contigs by length desc, assign each gene to the smallest fitting contig
+        sorted_contigs = sorted(fasta_records, key=lambda r: len(r.seq), reverse=True)
+        def find_contig_id(row):
+            end = row['Stop'] if not pd.isna(row['Stop']) else 0
+            best = sorted_contigs[0].id
+            for contig in sorted_contigs:
+                if int(end) <= len(contig.seq):
+                    best = contig.id
+            return best
+        new_df['Sequence Id'] = new_df.apply(find_contig_id, axis=1)
     new_df['Type'] = "CDS"
     
     # Reordering columns

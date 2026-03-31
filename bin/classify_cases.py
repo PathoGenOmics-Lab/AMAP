@@ -85,7 +85,11 @@ def read_to_pandaMiniprot(miniprot_path):
     miniprot_df['Start'] = miniprot_df['Start'] + 1
     last_miniprot = miniprot_df[["Prot Id", "Prot len", "Strand", "Start", "End", "Match Nt", "Num nt"]]
     # Apply the filter to keep only the best alignments per protein ID
-    filtered_miniprot = last_miniprot.groupby('Prot Id').apply(custom_filter, include_groups=False).reset_index()
+    # Drop groupby key column manually for pandas <2.2 compatibility
+    def _apply_filter(group):
+        result = custom_filter(group)
+        return result.drop(columns=['Prot Id'], errors='ignore')
+    filtered_miniprot = last_miniprot.groupby('Prot Id').apply(_apply_filter).reset_index()
     return filtered_miniprot
 
 def read_to_pandaBadbakta(miniprot_path):
@@ -258,7 +262,7 @@ def get_overlap_tree(tree_df, overlap_df, tree_id_col, overlap_id_col):
     tree = IntervalTree()
     for idx, row in tree_df.iterrows():
         start, end = row['Start'], row['End']
-        if start <= end:
+        if start < end:
             tree[start:end] = (idx, row[tree_id_col])
 
     overlap_counts = {}

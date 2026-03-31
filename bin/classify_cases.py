@@ -377,19 +377,14 @@ def main():
     generate_plot(multiple_overlap_groups, f"{base_name}_multiple_overlaps.html")
 
     def create_coords_dict(df, id_col):
-        """Create a coordinate→ID dict. If multiple genes share coordinates, keep all with numbered suffix."""
+        """Create a coordinate→ID dict. When multiple genes share coordinates, keep the first only.
+        DO NOT create artificial offset coordinates — they generate false entries."""
         result = {}
         for _, row in df.iterrows():
             key = (row['Start'], row['End'])
             if key not in result:
                 result[key] = row[id_col]
-            else:
-                # Avoid silently overwriting — append with offset to make unique key
-                # This handles the rare case of overlapping annotations at exact same coords
-                offset = 1
-                while (key[0], key[1] + offset) in result:
-                    offset += 1
-                result[(key[0], key[1] + offset)] = row[id_col]
+            # If key already exists, skip — same coordinates means same gene region
         return result
 
     coords_case2 = create_coords_dict(case_2, 'Locus Tag')
@@ -574,6 +569,21 @@ def main():
             strand = miniprot_matches.iloc[0]['Strand']
         elif not bakta_matches.empty:
             strand = bakta_matches.iloc[0]['Strand']
+        
+        # If still no strand, try to find from overlapping entries
+        if not strand or strand == "" or (isinstance(strand, float) and pd.isna(strand)):
+            # Look for the closest overlapping miniprot hit
+            mp_overlaps = miniprot_df[(miniprot_df['Start'] <= end) & (miniprot_df['End'] >= start)]
+            if not mp_overlaps.empty:
+                strand = mp_overlaps.iloc[0]['Strand']
+            else:
+                # Look for closest overlapping bakta hit
+                bk_overlaps = bakta_df[(bakta_df['Start'] <= end) & (bakta_df['End'] >= start)]
+                if not bk_overlaps.empty:
+                    strand = bk_overlaps.iloc[0]['Strand']
+                else:
+                    print(f"WARNING: No strand found for gene at {start}-{end}, defaulting to '+'")
+                    strand = "+"
 
         if not bakta_matches.empty:
             original_id = bakta_matches.iloc[0]['Locus Tag']

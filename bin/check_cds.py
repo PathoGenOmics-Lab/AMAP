@@ -27,12 +27,18 @@ def warning_on_one_line(message, category, filename, lineno, file=None, line=Non
 warnings.formatwarning = warning_on_one_line
 logging.captureWarnings(True)
 
-def find_next_stop_codon(fasta_seq, start_index, strand):
+def find_next_stop_codon(fasta_seq, start_index, strand, max_distance=300):
     """Find the next in-frame stop codon in the DNA sequence.
     
     For '+' strand: scans forward from start_index in steps of 3.
     For '-' strand: scans backward (toward lower coordinates) from start_index
                     in steps of 3, reading codons on the reverse complement.
+    
+    Args:
+        fasta_seq: Biopython SeqRecord of the genome.
+        start_index: 0-based position to start scanning from.
+        strand: '+' or '-'.
+        max_distance: Maximum distance (bp) to search before giving up.
     
     Returns the 0-based position of the first base of the stop codon, or None.
     """
@@ -42,27 +48,33 @@ def find_next_stop_codon(fasta_seq, start_index, strand):
     logging.info(f"Finding next stop codon from index {start_index} on strand {strand}")
 
     if strand == "+":
-        for i in range(start_index, len(sequence) - 2, 3):
+        end_limit = min(start_index + max_distance, len(sequence) - 2)
+        for i in range(start_index, end_limit, 3):
             codon = str(sequence[i:i + 3])
             if codon in stop_codons:
                 logging.info(f"Found stop codon '{codon}' at position {i}")
                 return i
     else:
         # On minus strand, codons are read as reverse complement.
-        # We scan toward lower coordinates.
-        for i in range(start_index, 1, -3):
-            if i + 3 > len(sequence):
+        # We scan toward lower coordinates (3' direction on minus strand).
+        end_limit = max(start_index - max_distance, 0)
+        for i in range(start_index, end_limit, -3):
+            if i < 0 or i + 3 > len(sequence):
                 continue
             codon = str(sequence[i:i + 3].reverse_complement())
             if codon in stop_codons:
                 logging.info(f"Found stop codon '{codon}' (rc) at position {i}")
                 return i
 
-    logging.warning("No stop codon found")
+    logging.warning(f"No stop codon found within {max_distance}bp")
     return None
 
 def get_goodseq(sequence, start, end, strand):
     """Extend a CDS to include its stop codon, adjusting frame if needed.
+    
+    Only extends if the current sequence does NOT already end with a stop codon.
+    This prevents extending genes that already have the stop included in their
+    coordinates (as is the convention in Sanger/RefSeq annotations).
     
     Args:
         sequence: Biopython SeqRecord of the genome.
@@ -74,12 +86,19 @@ def get_goodseq(sequence, start, end, strand):
         Tuple of (start, end, strand) with adjusted coordinates.
     """
     logging.info(f"Getting good sequence from {start} to {end} on strand {strand}")
+    seq = sequence.seq
 
     if strand == "+":
         # Ensure length is divisible by 3
         resto = (end - start) % 3
         if resto != 0:
             end = end - resto
+        # Check if gene already ends with stop codon
+        if end >= start + 3:
+            last_codon = str(seq[end - 3:end])
+            if last_codon in {"TAA", "TAG", "TGA"}:
+                logging.info(f"Gene already ends with stop codon '{last_codon}' — no extension needed")
+                return start, end, strand
         # Search for stop codon starting at current end
         new_end = find_next_stop_codon(sequence, end, strand)
         if new_end is not None:
@@ -90,6 +109,12 @@ def get_goodseq(sequence, start, end, strand):
         resto = length % 3
         if resto != 0:
             start = start + resto  # Trim from the 3' end (lower coord)
+        # Check if gene already has stop codon at 3' end (lower coordinate on minus strand)
+        if start + 3 <= end:
+            first_codon_rc = str(seq[start:start + 3].reverse_complement())
+            if first_codon_rc in {"TAA", "TAG", "TGA"}:
+                logging.info(f"Minus-strand gene already ends with stop codon '{first_codon_rc}' (rc) — no extension needed")
+                return start, end, strand
         # Search for stop codon scanning toward lower coordinates
         new_start = find_next_stop_codon(sequence, start - 3, strand)
         if new_start is not None:
@@ -120,9 +145,21 @@ def extract_and_translate_cds(fasta_file, annotation_df):
     for index, row in annotation_df.iterrows():
         start = row['start'] - 1  
         end = row['end']
-        strand = row['strand']
+        strand = str(row['strand']).strip()
         ide = row['id']
         rvs = row['rvs']
+
+        # Skip genes with invalid strand
+        if strand not in ('+', '-'):
+            logging.warning(f"Skipping {ide}: invalid strand '{strand}'")
+            annotation_df.drop(index, inplace=True)
+            continue
+        
+        # Validate coordinates
+        if start < 0 or end <= start or end > len(fasta_seq.seq):
+            logging.warning(f"Skipping {ide}: invalid coordinates {start+1}-{end}")
+            annotation_df.drop(index, inplace=True)
+            continue
 
         sequence = fasta_seq.seq[start:end]
         
@@ -145,31 +182,53 @@ def extract_and_translate_cds(fasta_file, annotation_df):
             continue
 
         if len(translated_seq) > 0 and translated_seq[-1] == "*":
+            # Gene already ends with a stop codon — good as is
             cds_id = f"{ide};{strand};{start}-{end}"
             cds_amino_acids[cds_id] = translated_seq
             cds_nts[cds_id] = sequence
-        else:
-            if len(translated_seq) > 0:
-                # Use get_goodseq to find the stop codon — it handles both strands
-                new_start, new_end, strand = get_goodseq(fasta_seq, start, end, strand)
+        elif len(translated_seq) > 0:
+            # No terminal stop codon — try to extend to find one
+            new_start, new_end, strand = get_goodseq(fasta_seq, start, end, strand)
+            
+            # Validate that we got valid coordinates
+            if new_start is not None and new_end is not None and new_end > new_start:
+                start, end = new_start, new_end
+                if strand == "-":
+                    sequence_nt = fasta_seq.seq[start:end].reverse_complement()
+                else:
+                    sequence_nt = fasta_seq.seq[start:end]
+
+                new_translated = sequence_nt.translate()
                 
-                # Validate that we got valid coordinates
-                if new_start is not None and new_end is not None and new_end > new_start:
-                    start, end = new_start, new_end
+                # Check that extension actually added a stop and didn't introduce internal stops
+                if len(new_translated) > 0 and new_translated[-1] == "*" and "*" not in str(new_translated)[:-1]:
+                    cds_id = f"{ide};{strand};{start}-{end}"
+                    cds_amino_acids[cds_id] = new_translated
+                    cds_nts[cds_id] = sequence_nt
+                else:
+                    # Extension failed or introduced errors — keep original coordinates
+                    logging.warning(f"Extension for {ide} produced internal stops or no terminal stop, keeping original")
+                    start = row['start'] - 1
+                    end = row['end']
                     if strand == "-":
                         sequence_nt = fasta_seq.seq[start:end].reverse_complement()
                     else:
                         sequence_nt = fasta_seq.seq[start:end]
-
                     cds_id = f"{ide};{strand};{start}-{end}"
                     cds_amino_acids[cds_id] = sequence_nt.translate()
                     cds_nts[cds_id] = sequence_nt
-                else:
-                    logging.warning(f"Could not find valid stop codon for {ide}, skipping")
-                    continue
+            else:
+                logging.warning(f"Could not find valid stop codon for {ide}, keeping original")
+                cds_id = f"{ide};{strand};{start}-{end}"
+                cds_amino_acids[cds_id] = translated_seq
+                cds_nts[cds_id] = sequence
+        else:
+            logging.warning(f"Empty translation for {ide}, skipping")
+            continue
 
-            annotation_df.at[index, 'start'] = start + 1  
-            annotation_df.at[index, 'end'] = end   
+        # Update annotation coordinates (they may have changed from stop extension)
+        annotation_df.at[index, 'start'] = start + 1  
+        annotation_df.at[index, 'end'] = end
 
     logging.info(f"CDS extraction and translation complete")
     return cds_amino_acids, cds_nts, annotation_df
@@ -183,6 +242,14 @@ def main():
     annotation_df = read_to_pandas(args.annotation_file)
 
     annotation_df = annotation_df[annotation_df['end'] != 0]
+    
+    # Remove duplicate (start, end) entries BEFORE translation to avoid wasted work
+    n_before = len(annotation_df)
+    annotation_df = annotation_df.drop_duplicates(subset=['start', 'end'], keep='first')
+    n_after = len(annotation_df)
+    if n_before != n_after:
+        logging.info(f"Removed {n_before - n_after} duplicate coordinate entries before translation")
+    
     logging.info("Annotation DataFrame loaded and filtered")
     cds_amino_acids, cds_nts, annotation_df = extract_and_translate_cds(args.fasta_file, annotation_df)
     

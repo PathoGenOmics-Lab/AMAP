@@ -201,13 +201,20 @@ workflow {
         summaries_annot_ch = GET_COUNT.out.collect()
 
         // 13. Create report inputs
-        REPORT_INPUTS(summaries_annot_ch, summaries_cases_ch)
+        // Collect rvmissing files and master tables for comprehensive report
+        rvmissing_ch = TYPE_CASES.out.rvmissing.collect()
+        mastertables_ch = GET_OUTPUTS.out.master_table.map { it[1] }.collect()
+
+        // Collect pangene Rtab files (or empty if skipped)
+        pangene_rtab_ch = PANGENE.out.pangene_out.map { it[3] }.collect().ifEmpty( file('NO_PANGENE') )
+
+        REPORT_INPUTS(summaries_annot_ch, summaries_cases_ch, rvmissing_ch, mastertables_ch, pangene_rtab_ch)
 
         // 14. Analyze duplications across all samples
         GET_ALLDUP(GET_DUPLICATIONS.out.dup_fastas.collect())
 
         // 15. Render the final HTML report
-        FINAL_REPORT(REPORT_INPUTS.out)
+        FINAL_REPORT(REPORT_INPUTS.out, GET_ALLDUP.out)
     }
 }
 

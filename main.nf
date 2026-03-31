@@ -183,15 +183,17 @@ workflow {
             Channel.value(file(params.ref_annotation)),
             Channel.value(file(params.ref_genome))
         )
-        ref_proteome_ch    = PREPARE_REFERENCE.out.ref_proteome
+        ref_proteome_ch     = PREPARE_REFERENCE.out.ref_proteome
         ref_genome_fasta_ch = PREPARE_REFERENCE.out.ref_genome_fasta
+        bad_bakta_ch        = PREPARE_REFERENCE.out.bad_bakta
     } else {
         ref_proteome_ch     = Channel.value(file(params.miniprot_ref_aa))
         ref_genome_fasta_ch = Channel.value(file(params.miniprot_ref_h37rv))
+        bad_bakta_ch        = Channel.value(file(params.miniprot_ref_bad_bakta))
     }
 
     // 5. Align proteins to the genome with Miniprot
-    MINIPROT(BAKTA_ANNOTATOR.out.for_miniprot, ref_proteome_ch, ref_genome_fasta_ch)
+    MINIPROT(BAKTA_ANNOTATOR.out.for_miniprot, ref_proteome_ch, ref_genome_fasta_ch, bad_bakta_ch)
 
     // 6. Classify CDS cases based on alignments
     TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases))

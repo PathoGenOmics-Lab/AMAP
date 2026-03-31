@@ -52,7 +52,15 @@ The main steps of the AMAP workflow are:
 
 9.  **Pangenome Analysis ([pangene](https://github.com/lh3/pangene))**: AMAP performs a pangenome analysis to compare the gene content across all processed genomes, helping to understand the core and accessory genome of the dataset.
 
-10. **Final Report Generation**: Finally, AMAP generates a comprehensive HTML report summarizing all the results, including distributions, functional summaries, and statistical analyses.
+10. **Final Report Generation**: AMAP generates a comprehensive HTML report that exploits **all** pipeline outputs:
+    - **Sample Quality Overview**: per-sample CDS counts, correction rates, and missing gene statistics.
+    - **Missing Rv Genes**: which H37Rv reference genes are absent and in which lineages.
+    - **PE/PPE Gene Families**: distribution of these pathogenesis-critical genes per lineage.
+    - **KEGG Pathway Analysis**: top metabolic pathways and cross-lineage comparisons.
+    - **Gene Duplications**: community sizes, cross-genome homologous pairs, and network topology metrics.
+    - **Pangenome**: core/softcore/shell/cloud gene classification, frequency spectrum, and presence/absence heatmaps.
+    - **Master Table Explorer**: interactive, searchable table with all functional annotations (COG, KEGG, GO, EC, PFAMs, CAZy).
+    - Plus all existing sections: COG/Mycobrowser distributions, H37Rv comparisons, case statistics, and statistical tests.
 
 ![AMAP pipeline map](.github/metroAMAP_trayectos_css_clean_anim.svg)
 
@@ -73,6 +81,9 @@ The main steps of the AMAP workflow are:
 | `--skip_functional_annotation` | Skip all functional annotation and downstream analysis steps. | `boolean` | `false` |
 | `--genus` | The genus to be used for Bakta annotation. | `string` | `"Mycobacterium"` |
 | `--species` | The species to be used for Bakta annotation. | `string` | `"Mycobacterium tuberculosis"` |
+| `--bakta_db` | Path to the Bakta database directory. Only needed when running without a container. | `string` | `/data/bakta_db/db-light` |
+| `--max_cpus` | Maximum number of CPUs available for any single process. | `integer` | `24` |
+| `--max_memory` | Maximum memory available for any single process. | `string` | `50.GB` |
 | `--help` | Display the help message and exit. | `boolean` | `false` |
 
 ### Reference & Database Arguments
@@ -88,6 +99,7 @@ These options are provided for advanced users who wish to:
 
 | Parameter | Description | Type | Default (within container) |
 | :--- | :--- | :--- | :--- |
+| `--bakta_db` | Path to the Bakta database directory. | `string` | `/data/bakta_db/db-light` |
 | `--eggnog_db` | Path to the pre-formatted eggNOG database directory. | `string` | `eggnog_db` |
 | `--pathotyper_snps` | Path to the SNPs TSV file for Pathotyper. | `file` | `/reference/snps_lineages.tsv` |
 | `--pathotyper_ref` | Path to the reference FASTA file for Pathotyper. | `file` | `/reference/MTB_ancestor_reference.fasta` |
@@ -226,7 +238,8 @@ results/
 │   ├── pipeline_dag_*.html              # Pipeline dependency graph (DAG).
 │   └── execution_trace_*.txt            # Nextflow execution trace file with resource usage.
 │
-└── final_report.html                    # The main HTML report summarizing the entire analysis.
+└── final_report.html                    # Comprehensive HTML report with all analyses (COG, KEGG, PE/PPE,
+                                         #   pangenome, duplications, missing genes, quality overview, and more).
 ```
 
 ## Effect of Skip Options

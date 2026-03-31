@@ -109,6 +109,9 @@ RUN \
       r-rstatix \
       r-ggrepel \
       r-scales \
+      r-pheatmap \
+      r-rcolorbrewer \
+      r-tidyr \
       pandoc && \
     \
     # 3. Install Python packages with Pip that are not on Conda

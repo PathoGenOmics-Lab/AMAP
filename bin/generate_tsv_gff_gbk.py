@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import os
 import pandas as pd
 import numpy as np
 from Bio import SeqIO
@@ -216,7 +217,13 @@ def main():
     correctedtsv_pd['simple_id'] = correctedtsv_pd['id'].str.split(';').str[0]
     baktatsv_pd = read_pandas(args.bakta, name_bakta)
     bakta_pd_cds, bakta_pd_rest = filter_bakta(baktatsv_pd)
-    myco_pd = read_pandas(args.myco, name_myco)
+
+    # Mycobrowser is optional — skip if "NONE" or file doesn't exist
+    use_mycobrowser = args.myco != "NONE" and os.path.isfile(args.myco)
+    if use_mycobrowser:
+        myco_pd = read_pandas(args.myco, name_myco)
+    else:
+        myco_pd = pd.DataFrame(columns=['Locus'] + name_myco)
 
     merged_df = generate_master_table(eggnog_pd, correctedtsv_pd, bakta_pd_cds, myco_pd, base_name)
     nuevo_df = generate_tsv(merged_df,bakta_pd_rest,ruta_archivo_fasta, ruta_archivo)

@@ -28,6 +28,7 @@ params.skip_functional_annotation = false
 params.genus = "Mycobacterium"
 params.species = "Mycobacterium tuberculosis"
 params.bakta_db = "/data/bakta_db/db-light"
+params.skip_mycobrowser = false
 
 // Custom reference (set both to use your own reference instead of H37Rv)
 params.ref_annotation = null   // GFF3 or GenBank of a trusted reference
@@ -80,6 +81,7 @@ if (params.help) {
     --genus                     Genus for Bakta annotation. (Default: "${params.genus}")
     --species                   Species for Bakta annotation. (Default: "${params.species}")
     --bakta_db                  Path to the Bakta database directory. (Default: "${params.bakta_db}")
+    --skip_mycobrowser          Skip Mycobrowser functional categories (for non-MTBC organisms). (Default: ${params.skip_mycobrowser})
     --help                      Display this help message.
 
     Custom Reference (replaces built-in H37Rv):

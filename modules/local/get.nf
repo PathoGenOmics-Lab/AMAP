@@ -65,11 +65,17 @@ process GET_OUTPUTS {
         tail -n +2 local_amap.tsv > local_amap_tmp.tsv && mv local_amap_tmp.tsv local_amap.tsv
     fi
 
+    if [ "${params.skip_mycobrowser}" = "true" ] || [ "${params.skip_mycobrowser}" = "false" -a ! -f "${params.mycobrowser_ref}" ]; then
+        MYCO_ARG="NONE"
+    else
+        MYCO_ARG="${params.mycobrowser_ref}"
+    fi
+
     python3 ${projectDir}/bin/generate_tsv_gff_gbk.py \\
         ${emapper} \\
         local_amap.tsv \\
         ${bakta_tsv} \\
-        "${params.mycobrowser_ref}" \\
+        "\$MYCO_ARG" \\
         ${fasta}
     python3 ${projectDir}/bin/to_panaroo.py --id ${sampleId}
 

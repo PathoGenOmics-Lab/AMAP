@@ -195,9 +195,15 @@ def main():
     )
     # --- END: ID PROCESSING LOGIC ---
 
-    # Process COG and Mycobrowser categories
+    # Process COG categories (always available from eggNOG)
     cog_summary = process_cog_categories(df)
-    mycobrowser_summary = process_mycobrowser_categories(df)
+
+    # Process Mycobrowser categories (only if column exists)
+    has_mycobrowser = 'Functional_Category' in df.columns and df['Functional_Category'].notna().any()
+    if has_mycobrowser:
+        mycobrowser_summary = process_mycobrowser_categories(df)
+    else:
+        mycobrowser_summary = pd.DataFrame(columns=['lineage','genome','Functional_Category','count','percentage'])
 
     # --- START: SAVE ALL OUTPUT FILES ---
     print("Saving output files...")
@@ -210,8 +216,13 @@ def main():
 
     # Save summary tables
     cog_summary.to_csv(cog_output_path, sep='\t', index=False)
-    mycobrowser_summary.to_csv(myco_output_path, sep='\t', index=False)
-    print(f"Successfully saved summary files: {cog_output_path.name}, {myco_output_path.name}")
+    if has_mycobrowser:
+        mycobrowser_summary.to_csv(myco_output_path, sep='\t', index=False)
+        print(f"Successfully saved summary files: {cog_output_path.name}, {myco_output_path.name}")
+    else:
+        # Write empty file so downstream doesn't crash
+        pd.DataFrame().to_csv(myco_output_path, sep='\t', index=False)
+        print(f"Mycobrowser data not available — wrote empty {myco_output_path.name}")
 
     # Save non-reference gene list (where 'rvs' was empty)
     no_ref_df = df.loc[is_sample_gene, ['genome', 'lineage']]
@@ -219,7 +230,21 @@ def main():
     print(f"Successfully generated non-reference file: {no_ref_output_path.name}")
 
     # Generate and save plots
-    create_summary_plots(cog_summary, mycobrowser_summary, plot_output_path)
+    if has_mycobrowser:
+        create_summary_plots(cog_summary, mycobrowser_summary, plot_output_path)
+    else:
+        # COG-only plot
+        fig, ax1 = plt.subplots(1, 1, figsize=(12, 7))
+        cog_plot = cog_summary.groupby('COG_category')['count'].sum().reset_index()
+        ax1.bar(cog_plot['COG_category'], cog_plot['count'],
+                color=plt.cm.viridis(np.linspace(0, 1, len(cog_plot))))
+        ax1.set_title('eggNOG Functional Category Distribution', fontsize=14)
+        ax1.set_ylabel('Total Gene Count', fontsize=12)
+        ax1.tick_params(axis='x', rotation=45)
+        ax1.grid(axis='y', linestyle='--', alpha=0.7)
+        plt.tight_layout()
+        plt.savefig(plot_output_path, dpi=300, bbox_inches='tight')
+        print(f"Generated COG-only plot at {plot_output_path}")
     # --- END: SAVE ALL OUTPUT FILES ---
 
 if __name__ == "__main__":

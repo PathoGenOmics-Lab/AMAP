@@ -1,5 +1,5 @@
 ---
-title: "Assisted MTBC Annotator Pipeline"
+title: "AMAP — Assisted Microbial Annotation Pipeline"
 author: "AMAP v1.0.0"
 date: "`r format(Sys.time(), '%d/%m/%Y')`"
 
@@ -69,9 +69,12 @@ library(pheatmap)
 library(RColorBrewer)
 
 # ------------- GLOBAL VARIABLES -------------
-colors <- c("L5"="#995200","L6"="#1eb040","A1"="#d1ae00","A4"="#ff9cdb","A2"="#8ef5c8",
-            "A3"="#73c2ff","L4"="#ff0000","L1"="#ff3091","L2"="#001aff","L3"="#8a0bd2",
-            "L7"="#fbff00","L8"="#ff9d00","L9"="#37ff30","L10"="#8fbda1","NA"="#808080")
+# Lineage color palette — MTBC lineages + generic fallback
+mtbc_colors <- c("L5"="#995200","L6"="#1eb040","A1"="#d1ae00","A4"="#ff9cdb","A2"="#8ef5c8",
+                 "A3"="#73c2ff","L4"="#ff0000","L1"="#ff3091","L2"="#001aff","L3"="#8a0bd2",
+                 "L7"="#fbff00","L8"="#ff9d00","L9"="#37ff30","L10"="#8fbda1","NA"="#808080")
+# Will be extended dynamically with any lineages not in the MTBC palette
+colors <- mtbc_colors
 
 cog_names <- c("A"="A - RNA processing and modification","B"="B - Chromatin structure and dynamics",
   "C"="C - Energy production and conversion","D"="D - Cell cycle control, cell division",
@@ -166,8 +169,34 @@ datos_cog1 <- datos_cog
 lvl_cogs <- c("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","S","T","U","V","NA")
 datos_cog1$Functional_Category <- factor(datos_cog1$Functional_Category, levels = lvl_cogs)
 
-# Mycobrowser
-datos_myco <- read.table(params$myco_file, sep="\t", dec=".", header=F, fill=T, stringsAsFactors=F, quote="", col.names=paste0("V",1:5))
+# Dynamic color assignment for non-MTBC lineages
+all_lineages <- unique(c(as.character(datos_cog$Lineages)))
+unknown_lineages <- setdiff(all_lineages, names(colors))
+if (length(unknown_lineages) > 0) {
+  extra_cols <- scales::hue_pal()(length(unknown_lineages))
+  names(extra_cols) <- unknown_lineages
+  colors <- c(colors, extra_cols)
+}
+
+# Mycobrowser — may be empty for non-MTBC organisms
+has_mycobrowser_data <- file.exists(params$myco_file) && file.info(params$myco_file)$size > 10
+if (has_mycobrowser_data) {
+  myco_content <- tryCatch(readLines(params$myco_file, n=2), error=function(e) "")
+  has_mycobrowser_data <- length(myco_content) >= 1 && nchar(myco_content[1]) > 5
+}
+
+datos_myco <- if (has_mycobrowser_data) read.table(params$myco_file, sep="\t", dec=".", header=F, fill=T, stringsAsFactors=F, quote="", col.names=paste0("V",1:5)) else data.frame()
+if (!has_mycobrowser_data) datos_myco <- data.frame(Lineages=character(), genome=character(), Functional_Category=character(), Count=integer(), Percentage=numeric(), sequences=character())
+
+# Skip the rest of Mycobrowser processing if empty
+if (has_mycobrowser_data && nrow(datos_myco) > 0) {
+  # original Mycobrowser processing
+  datos_myco_orig <- datos_myco  # save raw
+} else {
+  datos_myco_orig <- data.frame()
+}
+
+if (has_mycobrowser_data && nrow(datos_myco) > 0) {
 datos_myco$V2 <- sapply(strsplit(as.character(datos_myco$V2), "_"), `[`, 1)
 colnames(datos_myco) <- c("Lineages","genome","Functional_Category","Count","Percentage")
 datos_myco$Lineages[is.na(datos_myco$Lineages) | datos_myco$Lineages == ""] <- "NA"
@@ -180,7 +209,7 @@ datos_myco <- datos_myco %>%
 datos_myco$Percentage <- as.numeric(datos_myco$Percentage)
 datos_myco$Count <- as.integer(datos_myco$Count)
 
-# H37Rv reference
+# H37Rv reference comparison (MTBC-specific)
 my_myco <- data.frame(
   lineage = rep("L4",11), genome = rep("H37Rv",11),
   Functional_Category = c("PE/PPE","cell wall and cell processes","conserved hypotheticals",
@@ -191,6 +220,10 @@ my_myco <- data.frame(
 )
 merged_data <- merge(my_myco, datos_myco, by="Functional_Category", all=TRUE)
 merged_data$Ratio_Percentage <- (merged_data$Count / merged_data$count) * 100
+} else {
+  # No Mycobrowser data — create empty placeholders
+  merged_data <- data.frame()
+}
 
 # Case summary data
 data_raw <- read.table(params$summary_file, header=F, sep="\t", col.names=c("V1","V2","V3","ID"), fill=T, stringsAsFactors=F, quote="")
@@ -199,7 +232,12 @@ data <- tibble(
   V1=data_raw$V1, V2=data_raw$V2, V3=data_raw$V3,
   V4=sapply(processed_ids, `[`, 1), genome=sapply(processed_ids, `[`, 2))
 data <- data %>% filter(!is.na(V4) & V4 != "")
-order_lineages <- rev(c("A4","A3","A2","A1","L10","L9","L6","L5","L4","L3","L2","L7","L1","L8","NA"))
+# Dynamic lineage ordering: use MTBC order for known lineages, alphabetical for others
+mtbc_order <- rev(c("A4","A3","A2","A1","L10","L9","L6","L5","L4","L3","L2","L7","L1","L8","NA"))
+observed_lineages <- unique(as.character(data$V4))
+known <- intersect(mtbc_order, observed_lineages)
+unknown_lin <- sort(setdiff(observed_lineages, mtbc_order))
+order_lineages <- c(unknown_lin, known)  # unknown first, then MTBC order
 data$V4 <- factor(data$V4, levels = order_lineages)
 data <- data %>% mutate(V4 = factor(V4)) %>% droplevels()
 
@@ -248,7 +286,7 @@ if (has_dups) {
 
 ## Dataset Composition
 
-This section provides a general overview of the dataset, showing the distribution of sequences across *M. tuberculosis* lineages.
+This section provides a general overview of the dataset, showing the distribution of sequences across lineages/groups.
 
 ```{r lineage_summary, echo=FALSE, fig.align='center', fig.width=14, message=FALSE, warning=FALSE}
 lineage_summary <- data %>%
@@ -328,7 +366,7 @@ p_cds_dist <- ggplot(data %>% filter(V1 == "total_cds"), aes(x = V4, y = V2, col
 print(p_cds_dist)
 ```
 
-## CDS not in H37Rv
+## CDS not in Reference
 
 ```{r cds_NoH37Rv, echo=FALSE, fig.align='center', fig.width=12, message=FALSE, warning=FALSE}
 datos_noH <- read.table(params$empty_file, sep="\t", dec=".", header=T, fill=T, stringsAsFactors=F, quote="", col.names=paste0("V",1:2))
@@ -337,7 +375,7 @@ resultado <- datos_noH %>% mutate(genome=sapply(strsplit(V1,"_"),`[`,1)) %>% cou
 p_false_cds <- ggplot(resultado, aes(x=V2, y=n, colour=V2)) +
   geom_boxplot(outlier.shape=NA, fill=NA) + geom_jitter(alpha=0.4, width=0.2) +
   scale_color_manual(values=colors) +
-  labs(x="Lineage", y="CDS not in H37Rv") + theme_pubr() +
+  labs(x="Lineage", y="CDS not in Reference") + theme_pubr() +
   theme(legend.position="none", axis.text.x=element_text(angle=45, hjust=1))
 print(p_false_cds)
 ```
@@ -367,7 +405,7 @@ ggplot(correction_data, aes(x=V4, y=TotalCDS, fill=CorrectionStatus)) +
 
 ## Missing Reference Genes (Rv) {.tabset}
 
-H37Rv reference genes absent from the Bakta annotation and recovered by AMAP.
+Reference genes absent from the Bakta annotation and recovered by AMAP.
 
 ### Heatmap
 
@@ -393,7 +431,7 @@ if (has_rvmissing) {
     geom_col(fill = "#3da68d") +
     coord_flip() +
     labs(title = "Top 50 Most Frequently Missing Rv Genes",
-         x = "H37Rv Gene", y = "Number of Genomes Missing This Gene") +
+         x = "Reference Gene", y = "Number of Genomes Missing This Gene") +
     theme_pubr()
   print(p)
 } else {
@@ -461,80 +499,98 @@ for (cat_code in names(cog_names)) {
 
 ## Mycobrowser Categories {.tabset}
 
+*Mycobrowser functional categories are specific to the M. tuberculosis complex. This section is only shown when Mycobrowser data is available.*
+
 ### Overview
 ```{r myco_all, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+if (!has_mycobrowser_data) { cat("Mycobrowser data not available for this dataset.\n") } else {
 p <- ggplot(datos_myco, aes(x=Functional_Category, y=Percentage, color=Lineages)) +
   geom_jitter(alpha=0.2) + scale_color_manual(values=colors) +
   labs(x="", y="Percentage") + theme_pubr() +
   theme(axis.text.x=element_text(angle=45, hjust=1, size=8), legend.position="top")
 ggplotly(p) %>% layout(autosize=F, width=800, height=450)
+}
 ```
 
 ### Per Category (%) {.tabset}
 ```{r myco_split_pct, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+if (!has_mycobrowser_data) { cat("Not available.\n") } else {
 myco_cats <- setdiff(unique(na.omit(datos_myco$Functional_Category)), "NA")
 for (cat_name in myco_cats) {
   cat(paste("####", cat_name, "\n\n"))
   print(create_scatter_plot(datos_myco, cat_name, 'Percentage', 'Percentage', cat_name))
   cat("\n\n")
 }
+}
 ```
 
 ### Per Category (Nº CDS) {.tabset}
 ```{r myco_split_count, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+if (!has_mycobrowser_data) { cat("Not available.\n") } else {
 for (cat_name in myco_cats) {
   cat(paste("####", cat_name, "\n\n"))
   print(create_scatter_plot(datos_myco, cat_name, 'Count', 'Number of CDS', cat_name))
   cat("\n\n")
 }
+}
 ```
 
 ### Statistics
 ```{r myco_stats, echo=FALSE, message=FALSE, warning=FALSE}
-stats_myco <- datos_myco %>%
-  group_by(Lineages, Functional_Category) %>%
-  summarise(Count=n(), Mean_Pct=round(mean(Percentage,na.rm=T),4),
-            SD_Pct=round(sd(Percentage,na.rm=T),4), .groups='drop')
-make_dt(stats_myco, "mycobrowser_statistics")
+if (has_mycobrowser_data) {
+  stats_myco <- datos_myco %>%
+    group_by(Lineages, Functional_Category) %>%
+    summarise(Count=n(), Mean_Pct=round(mean(Percentage,na.rm=T),4),
+              SD_Pct=round(sd(Percentage,na.rm=T),4), .groups='drop')
+  make_dt(stats_myco, "mycobrowser_statistics")
+} else { cat("Not available.\n") }
 ```
 
-## Compared to H37Rv {.tabset}
+## Compared to Reference {.tabset}
+
+*This section compares query genomes against the reference. For MTBC, this is H37Rv.*
 
 ### Overview
 ```{r h37rv_all, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+if (!has_mycobrowser_data || nrow(merged_data) == 0) { cat("Reference comparison requires Mycobrowser data.\n") } else {
 p <- ggplot(merged_data, aes(x=Functional_Category, y=Ratio_Percentage, color=Lineages)) +
   geom_jitter(alpha=0.2) + scale_color_manual(values=colors) +
-  labs(x="", y="Ratio to H37Rv (%)") + theme_pubr() +
+  labs(x="", y="Ratio to Reference (%)") + theme_pubr() +
   theme(axis.text.x=element_text(angle=45, hjust=1, size=8), legend.position="top")
 ggplotly(p) %>% layout(autosize=F, width=800, height=450)
+}
 ```
 
 ### Per Category {.tabset}
 ```{r h37rv_split, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+if (!has_mycobrowser_data || nrow(merged_data) == 0) { cat("Not available.\n") } else {
 h37rv_cats <- setdiff(unique(na.omit(merged_data$Functional_Category)), "NA")
 for (cat_name in h37rv_cats) {
   cat(paste("####", cat_name, "\n\n"))
-  print(create_scatter_plot(merged_data, cat_name, 'Ratio_Percentage', 'Ratio to H37Rv (%)', cat_name))
+  print(create_scatter_plot(merged_data, cat_name, 'Ratio_Percentage', 'Ratio to Reference (%)', cat_name))
   cat("\n\n")
+}
 }
 ```
 
 ### Statistics
 ```{r h37rv_stats, echo=FALSE, message=FALSE, warning=FALSE}
+if (!has_mycobrowser_data || nrow(merged_data) == 0) { cat("Not available.\n") } else {
 stats_h37rv <- merged_data %>%
   group_by(Lineages, Functional_Category) %>%
   summarise(Count=n(), Mean_Ratio=round(mean(Ratio_Percentage,na.rm=T),2),
             SD_Ratio=round(sd(Ratio_Percentage,na.rm=T),2), .groups='drop')
 make_dt(stats_h37rv, "h37rv_comparison")
+}
 ```
 
 ## PE/PPE Gene Families {.tabset}
 
-PE/PPE proteins are critical for *M. tuberculosis* pathogenesis and host interaction.
+*PE/PPE genes are specific to Mycobacteria. This section is only shown when Mycobrowser data is available.*
 
 ### Distribution per Lineage
 ```{r peppe, echo=FALSE, fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE}
-if (has_mastertable && "Functional_Category" %in% colnames(mastertable)) {
+if (!has_mycobrowser_data) { cat("PE/PPE analysis requires Mycobrowser data.\n") } else if (has_mastertable && "Functional_Category" %in% colnames(mastertable)) {
   peppe <- mastertable %>%
     filter(grepl("PE/PPE", Functional_Category, ignore.case=TRUE)) %>%
     mutate(
@@ -804,12 +860,12 @@ Detailed breakdown of the CDS-correction cases identified by AMAP.
 
 **Classification:**
 
-- **Case 1 keep:** CDS missing from H37Rv reference — potentially real novel genes
+- **Case 1 keep:** CDS missing from the reference — potentially real novel genes
 - **Case 1 remove:** CDS falsely introduced by Bakta, absent from reference
 - **Case 2:** Perfect coordinate match with reference
 - **Case 3:** Same start/end but containing mismatches
 - **Case 4:** Coordinates corrected by AMAP
-- **Missing Rvs:** H37Rv genes recovered by AMAP (not annotated by Bakta)
+- **Missing Genes:** Reference genes recovered by AMAP (not annotated by Bakta)
 
 ## Boxplot
 ```{r cds_boxplot, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}

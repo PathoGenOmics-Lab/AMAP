@@ -15,13 +15,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set a working directory for the build artifacts
 WORKDIR /build
 
-# Compile miniprot
-RUN git clone https://github.com/lh3/miniprot && \
+# Compile miniprot v0.18
+RUN git clone --branch v0.18 --depth 1 https://github.com/lh3/miniprot && \
     cd miniprot && \
     make
 
-# Download and extract pangene
-RUN wget https://github.com/lh3/pangene/releases/download/v1.1/pangene-1.1-bin.tar.bz2 -O- | tar -jxvf -
+# Download and extract pangene v1.1
+RUN wget https://github.com/lh3/pangene/releases/download/v1.1/pangene-1.1-bin.tar.bz2 -O- | tar -jxf -
 
 
 # STAGE 2: Download large datasets
@@ -29,7 +29,7 @@ RUN wget https://github.com/lh3/pangene/releases/download/v1.1/pangene-1.1-bin.t
 FROM continuumio/miniconda3 AS data_downloader
 
 # Install bakta and wget to download data, specifying a compatible Python version.
-RUN conda install -c conda-forge -c bioconda -y python=3.9 bakta=1.11.3 && \
+RUN conda install -c conda-forge -c bioconda -y python=3.9 bakta=1.12.0 && \
     apt-get update && apt-get install -y --no-install-recommends wget && \
     conda clean -afy && \
     rm -rf /var/lib/apt/lists/*
@@ -84,16 +84,16 @@ RUN \
     conda install -y \
       # Base environment
       python=3.9 \
-      r-base=4.2 \
+      r-base=4.4 \
       r-essentials \
       # Python packages
       pandas \
       biopython \
-      matplotlib=3.8.3 \
+      matplotlib \
       eggnog-mapper=2.1.13 \
-      bakta=1.11.3 \
+      bakta=1.12.0 \
       plotly \
-      diamond \
+      diamond=2.1.24 \
       gfatools \
       # R packages (using the r- prefix)
       r-ggplot2 \

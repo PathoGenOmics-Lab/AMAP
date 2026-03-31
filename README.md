@@ -1,7 +1,7 @@
 # AMAP: Assisted MTBC annotator pipeline  
 [![PGO](https://img.shields.io/badge/PathoGenOmics-Lab-grey?style=plastic&labelColor=red)](https://github.com/PathoGenOmics-Lab)
 [![AMAP](https://img.shields.io/badge/AMAP-v1.0.0-green?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP)
-[![Nextflow](https://img.shields.io/badge/Nextflow-%E2%89%A5%20v23.10.1-%2330ba91?style=plastic)](https://github.com/nextflow-io/nextflow/releases/tag/v23.10.1)
+[![Nextflow](https://img.shields.io/badge/Nextflow-%E2%89%A5%20v25.10-%2330ba91?style=plastic)](https://github.com/nextflow-io/nextflow)
 [![License: GPL v3](https://img.shields.io/badge/License%3A-GPL%20v3-orange?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE)
 [![Docker Image](https://img.shields.io/badge/Docker%20Image-AMAP-blue?style=plastic&logo=docker)](https://hub.docker.com/repository/docker/paururo/amap/general)
 [![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-%23c9ac02?style=plastic)](https://doi.org/10.5281/zenodo.8024447)
@@ -444,19 +444,24 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 
 | Software                                                  | Version | Type     | Usage                           |
 |-----------------------------------------------------------|---------|----------|---------------------------------|
-| [Nextflow](https://github.com/nextflow-io/nextflow)       | 25.04.6 | Nextflow | Workflow Management             |
-| [Bakta](https://github.com/oschwengers/bakta)             | 1.11.3  | Other    | Annotation Tools                |
-| [miniprot](https://github.com/lh3/miniprot)               | 0.13    | Other    | Mapping Tools                   |
-| [Python](https://www.python.org/)                         | 3.9.2   | Python   | Programming Language            |
-| [R](https://www.R-project.org/)                           | 4.2.3   | R        | Statistical Computing           |
-| [pandas](https://github.com/pandas-dev/pandas)            | 2.3.1   | Python   | Data Analysis                   |
-| [intervaltree](https://github.com/chaimleib/intervaltree) | 3.1.0   | Python   | Data Structures                 |
-| [plotly.py](https://github.com/plotly/plotly.py)          | 6.2.0   | Python   | Data Visualization              |
-| [ggplot2](https://ggplot2.tidyverse.org/index.html)       | 3.5.2   | R        | Data Visualization              |
-| [dplyr](https://dplyr.tidyverse.org/)                     | 1.1.4   | R        | Data Manipulation               |
-| [Singularity](https://sylabs.io/singularity/)             | 3.11.1  | Other    | Containerization                |
-| [Docker](https://www.docker.com/)                         | 25.0.4  | Other    | Containerization                |
-| [Conda](https://docs.conda.io/en/latest/)                 | 23.5.2  | Other    | Package/Environment Management  |
-| [eggnog-mapper](https://github.com/eggnogdb/eggnog-mapper)| 2.1.13  | Python   | Annotation Tools                |
+| [Nextflow](https://github.com/nextflow-io/nextflow)       | ≥25.10  | Nextflow | Workflow Management             |
+| [Bakta](https://github.com/oschwengers/bakta)             | 1.12.0  | Other    | Genome Annotation               |
+| [miniprot](https://github.com/lh3/miniprot)               | 0.18    | Other    | Protein-to-genome Alignment     |
+| [pangene](https://github.com/lh3/pangene)                 | 1.1     | Other    | Pangenome Graph Construction    |
+| [DIAMOND](https://github.com/bbuchfink/diamond)           | 2.1.24  | Other    | Fast Protein Alignment          |
+| [gfatools](https://github.com/lh3/gfatools)              | 0.5     | Other    | GFA Graph Utilities             |
+| [eggnog-mapper](https://github.com/eggnogdb/eggnog-mapper)| 2.1.13  | Python   | Functional Annotation           |
+| [Python](https://www.python.org/)                         | 3.9     | Python   | Programming Language            |
+| [R](https://www.R-project.org/)                           | 4.4     | R        | Statistical Computing           |
+| [pandas](https://github.com/pandas-dev/pandas)            | ≥2.0    | Python   | Data Analysis                   |
+| [Biopython](https://biopython.org/)                       | ≥1.83   | Python   | Sequence Manipulation           |
+| [intervaltree](https://github.com/chaimleib/intervaltree) | ≥3.1    | Python   | Overlap Detection               |
+| [plotly.py](https://github.com/plotly/plotly.py)          | ≥5.0    | Python   | Interactive Visualization       |
+| [networkx](https://networkx.org/)                         | ≥3.0    | Python   | Network Analysis                |
+| [ggplot2](https://ggplot2.tidyverse.org/)                 | ≥3.5    | R        | Data Visualization              |
+| [pheatmap](https://cran.r-project.org/package=pheatmap)   | ≥1.0    | R        | Heatmap Visualization           |
+| [DT](https://rstudio.github.io/DT/)                      | ≥0.30   | R        | Interactive Tables              |
+| [Singularity](https://sylabs.io/singularity/)             | ≥3.11   | Other    | Containerization                |
+| [Docker](https://www.docker.com/)                         | ≥25.0   | Other    | Containerization                |
 
 <div align="justify">

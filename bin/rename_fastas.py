@@ -27,13 +27,20 @@ def main():
 
     try:
         # Loading the EggNOG annotation.
-        # The emapper file has 4 header/comment lines that we need to skip.
-        # We use skiprows=4 to start reading from the table's header line.
-        df = pd.read_csv(args.egg_nog, sep='\t', skiprows=4)
-        
-        # The first column in the emapper file is named '#query'.
-        # We rename it to 'id' to match the rest of the script that searches for 'id'.
-        df.rename(columns={'#query': 'id'}, inplace=True)
+        # Use comment='#' to skip all comment/header lines regardless of version,
+        # then manually set column names from the emapper format.
+        df = pd.read_csv(args.egg_nog, sep='\t', comment='#', header=None)
+        emapper_columns = [
+            "id", "seed_ortholog", "evalue", "score", "eggNOG_OGs", "max_annot_lvl",
+            "COG_category", "Description", "Preferred_name", "GOs", "EC", "KEGG_ko",
+            "KEGG_Pathway", "KEGG_Module", "KEGG_Reaction", "KEGG_rclass", "BRITE",
+            "KEGG_TC", "CAZy", "BiGG_Reaction", "PFAMs"
+        ]
+        # Handle files with more or fewer columns than expected
+        if len(df.columns) >= len(emapper_columns):
+            df.columns = emapper_columns + [f"extra_{i}" for i in range(len(df.columns) - len(emapper_columns))]
+        else:
+            df.columns = emapper_columns[:len(df.columns)]
 
     except FileNotFoundError:
         print(f"Error: Annotation file not found at path: {args.egg_nog}")

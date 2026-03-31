@@ -102,7 +102,9 @@ def generate_master_table(eggnog_pd, correctedtsv_pd, bakta_pd_cds, myco_pd, bas
     merged_df = pd.merge(merged_df, myco_pd, on='Locus', how='left')
     columns_to_drop = ['Start_x', 'Stop_x', 'Start_y', 'Stop_y', 'Strand_x', 'Strand_y', 
                        'Product_y', 'Sequence Id', 'Type', 'Locus Tag']
-    merged_df = merged_df.drop(columns=columns_to_drop)
+    # Only drop columns that actually exist after the merges
+    existing_cols_to_drop = [c for c in columns_to_drop if c in merged_df.columns]
+    merged_df = merged_df.drop(columns=existing_cols_to_drop)
     merged_df.drop_duplicates(subset='simple_id', inplace=True)
     merged_df.to_csv(base_name + "-AMAPmastertable.tsv", sep='\t', index=False)
     return merged_df

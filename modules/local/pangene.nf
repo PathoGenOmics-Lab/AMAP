@@ -5,7 +5,7 @@ process PANGENE {
 
     publishDir "${params.outdir}/PANGENE/${sampleId}",
                mode: 'copy',
-               pattern: "*.gfa,*.bubbles.txt,*.Rtab,*.stat"
+               pattern: "*.{gfa,bubbles.txt,Rtab,stat}"
 
     input:
     tuple val(sampleId),
@@ -33,8 +33,8 @@ process PANGENE {
     ln -sf ${fixfaa} ${sampleId}-AMAP.faa
     ln -sf ${fixfna} ${sampleId}-AMAP.fna
 
-    # 2) collect reference genomes (staged via Nextflow channel)
-    refs=( ${ref_fastas}/*.fasta ${ref_fastas} )
+    # 2) collect reference genomes (staged via Nextflow channel, flat in workdir)
+    refs=( *.fasta )
 
     if [ \${#refs[@]} -eq 0 ]; then
         echo "No reference FASTA files – skipping pangene for ${sampleId}"

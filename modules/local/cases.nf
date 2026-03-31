@@ -38,7 +38,7 @@ process FIX_CDS {
     tuple val(sampleId), path(corrected_tsv), path(fasta), path(bakta_tsv)
 
     output:
-    tuple val(sampleId), path("*.AMAP.faa"), path("*.AMAP.fna"), emit: for_eggnog
+    tuple val(sampleId), path("*.AMAP.faa"), emit: for_eggnog
     tuple val(sampleId), path("*.AMAP.tsv"), path("*.AMAP.faa"), path("*.AMAP.fna"), path(bakta_tsv), path(fasta), emit: for_downstream
 
     script:

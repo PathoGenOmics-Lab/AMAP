@@ -50,13 +50,5 @@ process FINAL_REPORT {
     rm header.html 
     rm styles.css 
     rm report_AMAP.Rmd 
-    awk '
-    BEGIN { OFS="\\t" }
-    FNR > 1 {
-        new_name = \$NF "_" \$1;
-        print \$1, new_name
-    }
-    ' ${params.outdir}/PATHOTYPR/typing/*_summary.tsv > ${params.outdir}/PATHOTYPR/renamed_fastas.tsv || echo "Pathotyper summary not found, skipping file renaming."
-
     """
 }

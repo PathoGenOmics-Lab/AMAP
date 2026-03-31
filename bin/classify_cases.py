@@ -109,7 +109,9 @@ def process_case2_and_case3(bakta_df, miniprot_df, base_name=None):
     and 'case 3' (imperfect coordinate match).
     """
     case2_merged = pd.merge(bakta_df, miniprot_df, on=['Start', 'End'])
-    case2_merged['Difference'] = (case2_merged['Length_nt'] - case2_merged['Num nt'])+1
+    # Length_nt = End - Start (0-indexed length), Num nt = alignment span
+    # A perfect match: Length_nt == Num nt (no +1 offset)
+    case2_merged['Difference'] = case2_merged['Length_nt'] - case2_merged['Num nt']
 
     case_2 = case2_merged[case2_merged['Difference'] == 0]
     case3 = case2_merged[case2_merged['Difference'] != 0]
@@ -227,11 +229,16 @@ def get_case1(case1, bakta_df_bad, cds_path):
     case1_remove_too = matching_rows[matching_rows['match_per'] >= 80]
     case1_keep = matching_rows[matching_rows['match_per'] < 80]
 
-    locus_case1_remove_too = case1_remove_too['Prot Id'].tolist()
-    locus_case1_keep = case1_keep['Prot Id'].tolist()
+    locus_case1_remove_too = set(case1_remove_too['Prot Id'].tolist())
+    locus_case1_keep = set(case1_keep['Prot Id'].tolist())
 
     case1_remove2 = case1_check[case1_check['Locus Tag'].isin(locus_case1_remove_too)]
     case1_keep2 = case1_check[case1_check['Locus Tag'].isin(locus_case1_keep)]
+
+    # Genes in case1_check not found in reference at all → keep them (they're novel)
+    all_checked = locus_case1_remove_too | locus_case1_keep
+    case1_not_in_ref = case1_check[~case1_check['Locus Tag'].isin(all_checked)]
+    case1_keep2 = pd.concat([case1_keep2, case1_not_in_ref])
 
     final_case1_remove = pd.concat([case1_remove, case1_remove2])
     return case1_keep2, final_case1_remove
@@ -362,7 +369,20 @@ def main():
     generate_plot(multiple_overlap_groups, f"{base_name}_multiple_overlaps.html")
 
     def create_coords_dict(df, id_col):
-        return {(row['Start'], row['End']): row[id_col] for _, row in df.iterrows()}
+        """Create a coordinate→ID dict. If multiple genes share coordinates, keep all with numbered suffix."""
+        result = {}
+        for _, row in df.iterrows():
+            key = (row['Start'], row['End'])
+            if key not in result:
+                result[key] = row[id_col]
+            else:
+                # Avoid silently overwriting — append with offset to make unique key
+                # This handles the rare case of overlapping annotations at exact same coords
+                offset = 1
+                while (key[0], key[1] + offset) in result:
+                    offset += 1
+                result[(key[0], key[1] + offset)] = row[id_col]
+        return result
 
     coords_case2 = create_coords_dict(case_2, 'Locus Tag')
     coords_case3 = create_coords_dict(case3, 'Locus Tag')
@@ -411,7 +431,8 @@ def main():
         coords_to_add = {new_coord: new_id}
         coords_to_remove = set()
 
-        for exist_coord, exist_id in combined_coordinates_dict.items():
+        # Snapshot dict items to avoid RuntimeError from mutation during iteration
+        for exist_coord, exist_id in list(combined_coordinates_dict.items()):
             if new_coord != exist_coord and new_coord[1] > exist_coord[0] and new_coord[0] < exist_coord[1]:
                 percentage = get_overlap_percentage(new_coord, exist_coord)
                 if percentage >= 70:
@@ -462,7 +483,8 @@ def main():
             coords_to_remove = set()
             new_coord = largest_range
 
-            for exist_coord, exist_id in combined_coordinates_dict.items():
+            # Snapshot dict items to avoid RuntimeError from mutation during iteration
+            for exist_coord, exist_id in list(combined_coordinates_dict.items()):
                 if new_coord != exist_coord and new_coord[1] > exist_coord[0] and new_coord[0] < exist_coord[1]:
                     percentage = get_overlap_percentage(new_coord, exist_coord)
                     if percentage >= 70:

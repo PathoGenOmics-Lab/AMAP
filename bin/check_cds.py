@@ -106,8 +106,14 @@ def read_to_pandas(file):
 
 def extract_and_translate_cds(fasta_file, annotation_df):
     logging.info(f"Extracting and translating CDS from FASTA file {fasta_file}")
-    fasta_seq = next(SeqIO.parse(fasta_file, "fasta"))
-    fix_cds_stop = []
+    # Load all contigs into a dict for multi-contig support
+    fasta_records = SeqIO.to_dict(SeqIO.parse(fasta_file, "fasta"))
+    if len(fasta_records) == 1:
+        fasta_seq = next(iter(fasta_records.values()))
+    else:
+        # For single-contig genomes (most MTBC), use the first
+        fasta_seq = next(iter(fasta_records.values()))
+        logging.info(f"Multi-contig assembly: {len(fasta_records)} contigs, using first for CDS extraction")
     cds_amino_acids = {}
     cds_nts = {}
 

@@ -181,6 +181,10 @@ def extract_and_translate_cds(fasta_file, annotation_df):
             logging.error(f"Error translating sequence for ide {ide}: {e}")
             continue
 
+        # Track original coordinates for fallback
+        orig_start = start
+        orig_end = end
+
         if len(translated_seq) > 0 and translated_seq[-1] == "*":
             # Gene already ends with a stop codon — good as is
             cds_id = f"{ide};{strand};{start}-{end}"
@@ -188,40 +192,61 @@ def extract_and_translate_cds(fasta_file, annotation_df):
             cds_nts[cds_id] = sequence
         elif len(translated_seq) > 0:
             # No terminal stop codon — try to extend to find one
-            new_start, new_end, strand = get_goodseq(fasta_seq, start, end, strand)
+            # Check if this is a reference gene whose coordinates match the ID-embedded
+            # coordinates. If so, it's a known pseudogene — don't extend.
+            # If coords DON'T match the ID, it's a partial alignment that needs extension.
+            import re
+            is_ref_pseudogene = False
+            ref_id = str(rvs) if pd.notna(rvs) and str(rvs).startswith('Rv') else str(ide)
+            m = re.search(r'_(\d+)-(\d+)$', ref_id)
+            if m:
+                id_start = int(m.group(1))
+                id_end = int(m.group(2))
+                # Coords match the ID → this is a reference gene with its true coordinates
+                if abs((start + 1) - id_start) <= 3 and abs(end - id_end) <= 3:
+                    is_ref_pseudogene = True
             
-            # Validate that we got valid coordinates
-            if new_start is not None and new_end is not None and new_end > new_start:
-                start, end = new_start, new_end
-                if strand == "-":
-                    sequence_nt = fasta_seq.seq[start:end].reverse_complement()
-                else:
-                    sequence_nt = fasta_seq.seq[start:end]
-
-                new_translated = sequence_nt.translate()
+            if is_ref_pseudogene:
+                # Reference gene without stop = known pseudogene. Keep original coords.
+                logging.info(f"Reference gene {ide} has no stop codon (likely pseudogene), keeping original coordinates")
+                cds_id = f"{ide};{strand};{start}-{end}"
+                cds_amino_acids[cds_id] = translated_seq
+                cds_nts[cds_id] = sequence
+            else:
+                new_start, new_end, strand = get_goodseq(fasta_seq, start, end, strand)
                 
-                # Check that extension actually added a stop and didn't introduce internal stops
-                if len(new_translated) > 0 and new_translated[-1] == "*" and "*" not in str(new_translated)[:-1]:
-                    cds_id = f"{ide};{strand};{start}-{end}"
-                    cds_amino_acids[cds_id] = new_translated
-                    cds_nts[cds_id] = sequence_nt
-                else:
-                    # Extension failed or introduced errors — keep original coordinates
-                    logging.warning(f"Extension for {ide} produced internal stops or no terminal stop, keeping original")
-                    start = row['start'] - 1
-                    end = row['end']
+                # Validate that we got valid coordinates
+                if new_start is not None and new_end is not None and new_end > new_start:
+                    start, end = new_start, new_end
                     if strand == "-":
                         sequence_nt = fasta_seq.seq[start:end].reverse_complement()
                     else:
                         sequence_nt = fasta_seq.seq[start:end]
+
+                    new_translated = sequence_nt.translate()
+                    
+                    # Check that extension actually added a stop and didn't introduce internal stops
+                    if len(new_translated) > 0 and new_translated[-1] == "*" and "*" not in str(new_translated)[:-1]:
+                        cds_id = f"{ide};{strand};{start}-{end}"
+                        cds_amino_acids[cds_id] = new_translated
+                        cds_nts[cds_id] = sequence_nt
+                    else:
+                        # Extension failed — keep original coordinates
+                        logging.warning(f"Extension for {ide} produced errors, keeping original")
+                        start, end = orig_start, orig_end
+                        if strand == "-":
+                            sequence_nt = fasta_seq.seq[start:end].reverse_complement()
+                        else:
+                            sequence_nt = fasta_seq.seq[start:end]
+                        cds_id = f"{ide};{strand};{start}-{end}"
+                        cds_amino_acids[cds_id] = sequence_nt.translate()
+                        cds_nts[cds_id] = sequence_nt
+                else:
+                    logging.warning(f"Could not find valid stop codon for {ide}, keeping original")
+                    start, end = orig_start, orig_end
                     cds_id = f"{ide};{strand};{start}-{end}"
-                    cds_amino_acids[cds_id] = sequence_nt.translate()
-                    cds_nts[cds_id] = sequence_nt
-            else:
-                logging.warning(f"Could not find valid stop codon for {ide}, keeping original")
-                cds_id = f"{ide};{strand};{start}-{end}"
-                cds_amino_acids[cds_id] = translated_seq
-                cds_nts[cds_id] = sequence
+                    cds_amino_acids[cds_id] = translated_seq
+                    cds_nts[cds_id] = sequence
         else:
             logging.warning(f"Empty translation for {ide}, skipping")
             continue

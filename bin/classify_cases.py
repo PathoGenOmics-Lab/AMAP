@@ -506,6 +506,54 @@ def main():
     def get_best_match_filter(group):
         return group.loc[group['Match Nt'].idxmax()]
 
+    # --- RECONCILIATION PASS ---
+    # For each gene in the dict, check if miniprot has a perfect-match alignment
+    # at different coordinates. If so, replace with the reference coordinates.
+    # This fixes cases where Bakta extends a gene beyond its true boundaries
+    # (e.g., pseudogenes without stop codons that Bakta extends upstream).
+    #
+    # Additionally, extract true reference coordinates from the protein ID
+    # (format: "RvXXXX_START-END") to handle off-by-one alignment artifacts.
+
+    import re
+    def parse_ref_coords_from_id(prot_id):
+        """Extract 1-based start and end from IDs like 'Rv2427A_2725571-2726087'."""
+        m = re.search(r'_(\d+)-(\d+)$', str(prot_id))
+        if m:
+            return int(m.group(1)), int(m.group(2))
+        return None, None
+
+    # Build map: ref protein ID → (true_start_1based, true_end)
+    ref_true_coords = {}
+    for prot_id in miniprot_df['Prot Id'].unique():
+        true_s, true_e = parse_ref_coords_from_id(prot_id)
+        if true_s and true_e:
+            ref_true_coords[prot_id] = (true_s, true_e)
+
+    coords_to_remove = set()
+    coords_to_add = {}
+    for coord, gene_id in list(combined_coordinates_dict.items()):
+        # Check if any reference protein overlaps this coord with different start/end
+        for ref_id, ref_coord in ref_true_coords.items():
+            # Match by: ref ID contained in gene_id, or gene_id contained in ref ID
+            if ref_id in str(gene_id) or str(gene_id) in ref_id:
+                if ref_coord != coord:
+                    # Verify it's the same gene region (overlapping)
+                    overlap = max(0, min(coord[1], ref_coord[1]) - max(coord[0], ref_coord[0]))
+                    min_len = min(coord[1] - coord[0], ref_coord[1] - ref_coord[0])
+                    if min_len > 0 and overlap / min_len > 0.5:
+                        coords_to_remove.add(coord)
+                        coords_to_add[ref_coord] = ref_id
+                        break
+
+    for c in coords_to_remove:
+        if c in combined_coordinates_dict:
+            del combined_coordinates_dict[c]
+    for c, v in coords_to_add.items():
+        if c not in combined_coordinates_dict:
+            combined_coordinates_dict[c] = v
+
+    # --- MISSING GENES RECOVERY ---
     all_reference_ids = set(miniprot_df['Prot Id'].unique())
     included_ids = set(combined_coordinates_dict.values())
     missing_ids = all_reference_ids - included_ids

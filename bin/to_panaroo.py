@@ -87,6 +87,9 @@ def convert_gbk_to_panaroo_gff3(gbk_path: Path, gff3_path: Path):
             gff3_file.write(f"##sequence-region {gbk_record.id} 1 {len(gbk_record.seq)}\n")
 
         # Process and write features for all records/contigs
+        # Panaroo requires both gene and CDS features with proper Parent references.
+        # tsv_to_gbk only creates CDS features, so we emit a gene feature for
+        # every CDS to satisfy the Panaroo GFF3 requirement.
         for gbk_record in gbk_records:
             for feature in gbk_record.features:
                 if feature.type not in ["gene", "CDS"]:
@@ -96,19 +99,33 @@ def convert_gbk_to_panaroo_gff3(gbk_path: Path, gff3_path: Path):
                 end = feature.location.end
                 strand = '+' if feature.strand == 1 else '-'
                 score = '.'
-                phase = '0' if feature.type == 'CDS' else '.'
-                
-                # Use AMAP as source for all features (annotation was curated by AMAP)
                 source = "AMAP"
-                
-                attribute_str = format_gff_attributes(feature)
-                if not attribute_str:
+
+                locus_tag = feature.qualifiers.get("locus_tag", [None])[0]
+                if not locus_tag:
                     continue
 
-                gff3_file.write(
-                    f"{gbk_record.id}\t{source}\t{feature.type}\t"
-                    f"{start}\t{end}\t{score}\t{strand}\t{phase}\t{attribute_str}\n"
-                )
+                if feature.type == 'CDS':
+                    # Emit a parent gene feature first (required by Panaroo)
+                    gene_attrs = f"ID={locus_tag}_gene;Name={locus_tag};gene={locus_tag}"
+                    gff3_file.write(
+                        f"{gbk_record.id}\t{source}\tgene\t"
+                        f"{start}\t{end}\t{score}\t{strand}\t.\t{gene_attrs}\n"
+                    )
+                    # Then emit the CDS with Parent reference
+                    cds_attrs = format_gff_attributes(feature)
+                    gff3_file.write(
+                        f"{gbk_record.id}\t{source}\tCDS\t"
+                        f"{start}\t{end}\t{score}\t{strand}\t0\t{cds_attrs}\n"
+                    )
+                elif feature.type == 'gene':
+                    # Gene feature already exists in GBK — emit as-is
+                    attribute_str = format_gff_attributes(feature)
+                    if attribute_str:
+                        gff3_file.write(
+                            f"{gbk_record.id}\t{source}\tgene\t"
+                            f"{start}\t{end}\t{score}\t{strand}\t.\t{attribute_str}\n"
+                        )
 
         # Append FASTA sequences for all records at the end
         gff3_file.write("##FASTA\n")

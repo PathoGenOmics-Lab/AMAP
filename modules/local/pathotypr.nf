@@ -15,15 +15,18 @@ process PATHOTYPR {
     script:
     """
     #!/bin/bash
-    set -e
     set -o pipefail
+    # NOTE: do NOT use 'set -e' here. If pathotypr classify fails,
+    # we need to reach the fallback code that sets SAMPLE_NAME.
+    # With set -e, the script exits before SAMPLE_NAME is exported,
+    # leaving env() empty → downstream sampleId is blank.
 
-    # 1. Run the lineage classifier.
+    # 1. Run the lineage classifier (may fail for non-MTBC genomes).
     pathotypr classify \\
         -i ${fasta} \\
         -m "${params.pathotyper_snps}" \\
         -r "${params.pathotyper_ref}" \\
-        --output-prefix "${sampleId}"
+        --output-prefix "${sampleId}" || true
 
     # 2. Check if the summary file was created and is not empty.
     if [ -s "${sampleId}_summary.tsv" ]; then

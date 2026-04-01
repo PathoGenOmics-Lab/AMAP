@@ -9,9 +9,11 @@ process EGGNOG_DB {
     set -euo pipefail
 
     # Resolve the user-provided eggnog_db path
+    # Use launchDir (where user ran nextflow) for relative paths, NOT projectDir
+    # (which points to the pipeline cache and is wrong for user-supplied paths)
     EGGNOG_DB_DIR="${params.eggnog_db}"
     if [[ ! "\$EGGNOG_DB_DIR" = /* ]]; then
-        EGGNOG_DB_DIR="${projectDir}/${params.eggnog_db}"
+        EGGNOG_DB_DIR="${launchDir}/${params.eggnog_db}"
     fi
 
     mkdir -p "\$EGGNOG_DB_DIR"

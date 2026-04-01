@@ -38,7 +38,10 @@ def classify_case1_case4(bakta_df, miniprot_df, base_name=None):
     """Split non-matching Bakta CDS into case 1 (no overlap) and case 4 (overlap)."""
     bakta_df = bakta_df.copy()
     bakta_df['Length_nt'] = bakta_df['End'] - bakta_df['Start'] + 1
-    merged = pd.merge(bakta_df, miniprot_df, on=['Start', 'End'], how='inner')
+    # Merge on Start, End AND Strand to avoid cross-strand false exclusions.
+    # Without Strand: a gene at (100,200,+) matching miniprot at (100,200,-)
+    # would be excluded here AND from case2/3 → silently lost from annotation.
+    merged = pd.merge(bakta_df, miniprot_df, on=['Start', 'End', 'Strand'], how='inner')
 
     common_cols = [c for c in bakta_df.columns if c in merged.columns]
     indicator = bakta_df.merge(merged, on=common_cols, how='left', indicator=True)

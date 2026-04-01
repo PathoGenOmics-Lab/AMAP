@@ -1,4 +1,4 @@
-# AMAP Validation: H37Rv Sanger Benchmark
+# AMAP Benchmark: H37Rv Sanger Validation
 
 **Pipeline:** AMAP (branch `fix`)  
 **Reference:** *M. tuberculosis* H37Rv — Sanger annotation (AL123456.3, 4031 CDS)  

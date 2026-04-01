@@ -1,10 +1,11 @@
-# AMAP: Assisted MTBC annotator pipeline  
+# AMAP: Assisted Microbial Annotator Pipeline  
 [![PGO](https://img.shields.io/badge/PathoGenOmics-Lab-grey?style=plastic&labelColor=red)](https://github.com/PathoGenOmics-Lab)
-[![AMAP](https://img.shields.io/badge/AMAP-v1.0.0-green?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP)
-[![Nextflow](https://img.shields.io/badge/Nextflow-%E2%89%A5%20v25.10-%2330ba91?style=plastic)](https://github.com/nextflow-io/nextflow)
+[![AMAP](https://img.shields.io/badge/AMAP-v2.0.0-green?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP)
+[![Nextflow](https://img.shields.io/badge/Nextflow-%E2%89%A5%2023.04-%2330ba91?style=plastic)](https://github.com/nextflow-io/nextflow)
 [![License: GPL v3](https://img.shields.io/badge/License%3A-GPL%20v3-orange?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE)
 [![Docker Image](https://img.shields.io/badge/Docker%20Image-AMAP-blue?style=plastic&logo=docker)](https://hub.docker.com/repository/docker/paururo/amap/general)
 [![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-%23c9ac02?style=plastic)](https://doi.org/10.5281/zenodo.8024447)
+[![Tests](https://img.shields.io/badge/tests-58%20passed-brightgreen?style=plastic)](tests/)
 
 __Paula Ruiz-Rodriguez<sup>1</sup>__ 
 __and Mireia Coscolla<sup>1</sup>__
@@ -17,8 +18,8 @@ __and Mireia Coscolla<sup>1</sup>__
       <img src=".github/AMAP.png" title="AMAP logo" style="width:350px; height: auto;">
     </td>
     <td style="padding-left: 20px;">
-      <p>AMAP is a bioinformatics pipeline written in Nextflow for processing, annotating and correcting annotations of <em>Mycobacterium tuberculosis</em> complex (MTBC) genomes. The reference-based correction adjusts approximately 30% of the genes in a given genome.</p>
-      <p>Although AMAP has been optimized for the MTBC, <strong>its structure allows for adaptation to other organisms</strong> by modifying the reference files and specific parameters.</p>
+      <p>AMAP is a bioinformatics pipeline written in Nextflow for processing, annotating and correcting annotations of prokaryotic genomes. Originally developed for the <em>Mycobacterium tuberculosis</em> complex (MTBC), the reference-based correction adjusts approximately 30% of the genes in a given genome.</p>
+      <p>AMAP v2.0.0 is <strong>fully organism-agnostic</strong>: provide any trusted reference annotation (<code>--ref_annotation</code> + <code>--ref_genome</code>) to annotate <em>E. coli</em>, <em>S. aureus</em>, or any prokaryote. MTBC-specific features (lineage typing, Mycobrowser) are auto-detected and gracefully skipped for non-MTBC organisms.</p>
     </td>
   </tr>
 </table>
@@ -77,14 +78,30 @@ The main steps of the AMAP workflow are:
 
 | Parameter | Description | Type | Default |
 | :--- | :--- | :--- | :--- |
-| `--skip_typing` | Skip the initial PATHOTYPR lineage typing step. | `boolean` | `false` |
+| `--skip_typing` | Skip the initial PATHOTYPR lineage typing step. Required for non-MTBC organisms. | `boolean` | `false` |
 | `--skip_functional_annotation` | Skip all functional annotation and downstream analysis steps. | `boolean` | `false` |
+| `--skip_mycobrowser` | Skip Mycobrowser functional categories. Auto-enabled when `--genus` is not Mycobacterium. | `boolean` | `false` |
 | `--genus` | The genus to be used for Bakta annotation. | `string` | `"Mycobacterium"` |
 | `--species` | The species to be used for Bakta annotation. | `string` | `"Mycobacterium tuberculosis"` |
 | `--bakta_db` | Path to the Bakta database directory. Only needed when running without a container. | `string` | `/data/bakta_db/db-light` |
+| `--validate_only` | Run input validation only — check all FASTAs and databases without executing the pipeline. | `boolean` | `false` |
 | `--max_cpus` | Maximum number of CPUs available for any single process. | `integer` | `24` |
 | `--max_memory` | Maximum memory available for any single process. | `string` | `50.GB` |
+| `--max_time` | Maximum wall-clock time for any single process. | `string` | `72.h` |
+| `--scratch` | Use node-local scratch disk for I/O-intensive processes. Enabled by default on HPC profiles. | `boolean` | `false` |
 | `--help` | Display the help message and exit. | `boolean` | `false` |
+| `--version` | Print pipeline and Nextflow versions and exit. | `boolean` | `false` |
+
+### Custom Reference (Organism-Agnostic Mode)
+
+Provide your own trusted reference to annotate **any prokaryote**:
+
+| Parameter | Description | Type | Default |
+| :--- | :--- | :--- | :--- |
+| `--ref_annotation` | Path to a trusted reference annotation (GFF3 or GenBank). Both `--ref_annotation` and `--ref_genome` must be provided together. | `file` | `null` |
+| `--ref_genome` | Path to the trusted reference genome (FASTA). | `file` | `null` |
+
+When set, AMAP extracts proteins from your reference, generates a false-positive database by comparing against Bakta, and uses your reference for all alignment and correction steps instead of the built-in H37Rv.
 
 ### Reference & Database Arguments
 
@@ -230,10 +247,12 @@ The pipeline will create a main output directory (specified by `--outdir`, defau
 results/
 ├── AMAP/
 │   └── {sampleId}/
-│       ├── *-AMAP.faa                   # Final corrected protein sequences in FASTA format.
+│       ├── *-AMAP.faa                   # Final corrected protein sequences (all genes, including pseudogenes).
+│       ├── *-AMAP.clean.faa             # Clean proteome: no pseudogenes, no internal stops (for downstream tools).
 │       ├── *-AMAP.fna                   # Final corrected nucleotide sequences in FASTA format.
-│       ├── *-AMAP.gff3                  # Final corrected annotation in GFF3 format.
+│       ├── *-AMAP.gff3                  # Final corrected annotation in GFF3 format (spec-compliant).
 │       ├── *-AMAP.gbk                   # Final corrected annotation in GenBank format.
+│       ├── *-AMAP.qc.tsv               # Per-sample QC: genome size, GC%, coding density, hypothetical %, annotation rate.
 │       ├── *-AMAPmastertable.tsv        # Master table combining all annotation info (coordinates, eggNOG, Mycobrowser).
 │       ├── *-AMAP.COG.tsv               # Summary count of COG functional categories.
 │       └── *-AMAP.MycoBrowser.tsv       # Summary count of Mycobrowser functional categories.
@@ -284,7 +303,12 @@ results/
 │   ├── execution_report_*.html          # Nextflow execution report.
 │   ├── execution_timeline_*.html        # Nextflow execution timeline.
 │   ├── pipeline_dag_*.html              # Pipeline dependency graph (DAG).
-│   └── execution_trace_*.txt            # Nextflow execution trace file with resource usage.
+│   ├── execution_trace_*.txt            # Nextflow execution trace file with resource usage.
+│   ├── software_versions.yml            # Exact versions of all tools used (for reproducibility / Methods).
+│   ├── software_versions.tsv            # Same as above in TSV format.
+│   ├── params.yml                       # All pipeline parameters for this run.
+│   ├── validation.log                   # Pre-flight input validation results.
+│   └── run_summary.txt                  # Machine-readable run summary (status, duration, sample counts).
 │
 └── final_report.html                    # Comprehensive HTML report with all analyses (COG, KEGG, PE/PPE,
                                          #   pangenome, duplications, missing genes, quality overview, and more).
@@ -424,17 +448,17 @@ The algorithm's main task is to resolve the conflicts from **Case 4** and filter
 
 As a final validation step (performed by the `check_cds.py` script), the algorithm translates every CDS in the final, corrected set. If a sequence does not end with a valid stop codon, its coordinates are automatically extended to the next in-frame stop codon in the genome. This ensures that all final annotations correspond to complete, translatable proteins.
 ## Citation
->Ruiz-Rodriguez, P., & Coscolla, M. (2025). AMAP (Version 1.0.0) [Computer software]. https://doi.org/10.5281/zenodo.1234
+>Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 2.0.0) [Computer software]. https://doi.org/10.5281/zenodo.8024447
 ```bibtex
-@software{Ruiz-Rodriguez_AMAP_2025,
+@software{Ruiz-Rodriguez_AMAP_2026,
   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},
-  doi = {10.5281/zenodo.1234},
+  doi = {10.5281/zenodo.8024447},
   license = {GPL-3.0},
-  month = oct,
+  month = apr,
   title = {{AMAP}},
   url = {https://github.com/PathoGenOmics-Lab/AMAP},
-  version = {1.0.0},
-  year = {2025}}
+  version = {2.0.0},
+  year = {2026}}
 ```
 ---
 <h2 id="contributors" align="center">
@@ -492,7 +516,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 
 | Software                                                  | Version | Type     | Usage                           |
 |-----------------------------------------------------------|---------|----------|---------------------------------|
-| [Nextflow](https://github.com/nextflow-io/nextflow)       | ≥25.10  | Nextflow | Workflow Management             |
+| [Nextflow](https://github.com/nextflow-io/nextflow)       | ≥23.04  | Nextflow | Workflow Management             |
 | [Bakta](https://github.com/oschwengers/bakta)             | 1.12.0  | Other    | Genome Annotation               |
 | [miniprot](https://github.com/lh3/miniprot)               | 0.18    | Other    | Protein-to-genome Alignment     |
 | [pangene](https://github.com/lh3/pangene)                 | 1.1     | Other    | Pangenome Graph Construction    |

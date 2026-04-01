@@ -59,16 +59,21 @@ process GET_OUTPUTS {
     # Copy input TSV to avoid modifying Nextflow-staged symlink (breaks -resume)
     cp ${amap_tsv} local_amap.tsv
 
-    # Remove header line if present: detect by checking if the first field
-    # of line 1 is NOT a valid coordinate (i.e. not purely numeric after the ID)
-    if head -1 local_amap.tsv | awk -F'\\t' '{exit (\$3 ~ /^[0-9]+\$/) ? 1 : 0}'; then
+    # Remove header line if present: check if line 1 starts with known header
+    # keywords. Avoid heuristic on column content which can misfire.
+    if head -1 local_amap.tsv | grep -qiE '^(id|gene_id|locus|#)'; then
         tail -n +2 local_amap.tsv > local_amap_tmp.tsv && mv local_amap_tmp.tsv local_amap.tsv
     fi
 
-    if [ "${params.skip_mycobrowser}" = "true" ] || [ "${params.skip_mycobrowser}" = "false" -a ! -f "${params.mycobrowser_ref}" ]; then
+    # Determine Mycobrowser argument at runtime (file may not exist outside container)
+    MYCO_REF="${params.mycobrowser_ref}"
+    if [ "${params.skip_mycobrowser}" = "true" ]; then
         MYCO_ARG="NONE"
+    elif [ -f "\$MYCO_REF" ]; then
+        MYCO_ARG="\$MYCO_REF"
     else
-        MYCO_ARG="${params.mycobrowser_ref}"
+        echo "WARNING: Mycobrowser reference not found at \$MYCO_REF — skipping Mycobrowser" >&2
+        MYCO_ARG="NONE"
     fi
 
     python3 ${projectDir}/bin/generate_tsv_gff_gbk.py \\

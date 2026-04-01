@@ -21,7 +21,12 @@ process EGGNOG_DB {
     # ------------------------------------------------------------
     if [ -f "\$EGGNOG_DB_DIR/bacteria.dmnd" ]; then
         echo "==> bacteria.dmnd found – skipping download and build."
-        ln -sfn "\$EGGNOG_DB_DIR" eggnog_db
+        # Use relative symlink when possible for portability with -resume
+        if command -v realpath >/dev/null 2>&1; then
+            ln -sfn "\$(realpath --relative-to=. "\$EGGNOG_DB_DIR")" eggnog_db
+        else
+            ln -sfn "\$EGGNOG_DB_DIR" eggnog_db
+        fi
         exit 0
     fi
 
@@ -49,7 +54,11 @@ process EGGNOG_DB {
     rm -f "\$EGGNOG_DB_DIR"/e5.taxid_info.tsv || true
 
     # Symlink into workdir for Nextflow output channel
-    ln -sfn "\$EGGNOG_DB_DIR" eggnog_db
+    if command -v realpath >/dev/null 2>&1; then
+        ln -sfn "\$(realpath --relative-to=. "\$EGGNOG_DB_DIR")" eggnog_db
+    else
+        ln -sfn "\$EGGNOG_DB_DIR" eggnog_db
+    fi
     """
 }
 

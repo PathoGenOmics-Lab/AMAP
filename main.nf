@@ -223,7 +223,10 @@ workflow {
         if (!params.skip_typing) {
             ref_fastas_ch = PATHOTYPR.out.typed_fasta.map { it[1] }.collect()
         } else {
-            ref_fastas_ch = Channel.empty()
+            // Use a collected empty list instead of Channel.empty() so that
+            // PANGENE still executes (with 0 reference FASTAs → creates
+            // placeholder outputs). Channel.empty() prevents process execution entirely.
+            ref_fastas_ch = Channel.value([])
         }
         PANGENE(ch_for_downstream, ref_fastas_ch)
 

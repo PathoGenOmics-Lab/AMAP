@@ -2,7 +2,7 @@
 
 All notable changes to AMAP are documented in this file.
 
-## [2.0.0] — 2026-04-01
+## [1.0.0] — 2026-04-01
 
 ### 🔬 Correctness
 - **Strand-aware gene dictionary**: `combined_dict` keys changed from `(Start, End)` to `(Start, End, Strand)` — genes on opposite strands at the same coordinates no longer collide silently
@@ -24,7 +24,7 @@ All notable changes to AMAP are documented in this file.
 - **Completion handler**: prints duration, succeeded/failed/ignored counts
 
 ### 📋 Reproducibility
-- **`nextflow.manifest`**: version 2.0.0, Nextflow ≥23.04.0, DOI, homepage
+- **`nextflow.manifest`**: version 1.0.0, Nextflow ≥23.04.0, DOI, homepage
 - **`SOFTWARE_VERSIONS`**: YAML + TSV with exact versions of 12 tools
 - **`DUMP_PARAMS`**: complete parameter dump per run
 - **Diamond sorted output**: deterministic results regardless of thread count
@@ -76,7 +76,7 @@ All notable changes to AMAP are documented in this file.
 - **Sample count at startup**: confirms TSV was parsed correctly
 
 ### 📝 Documentation
-- **README**: updated for v2.0.0 with all new parameters, outputs, and organism-agnostic usage
+- **README**: updated for v1.0.0 with all new parameters, outputs, and organism-agnostic usage
 - **CHANGELOG**: this file
 - **Output tree**: documents `.clean.faa`, `.qc.tsv`, `pipeline_info/` new files
 
@@ -84,7 +84,7 @@ All notable changes to AMAP are documented in this file.
 - 20 critical (🔴) + 65 improvements (🟡)
 - See commit history on `fix` branch for full details
 
-## [1.0.0] — 2025
+## [0.1.0] — 2025
 
 - Initial release
 - MTBC-focused annotation pipeline

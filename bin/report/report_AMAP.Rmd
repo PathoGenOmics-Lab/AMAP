@@ -1,6 +1,6 @@
 ---
 title: "AMAP — Assisted Microbial Annotation Pipeline Report"
-author: "AMAP v2.0.0"
+author: "AMAP v1.0.0"
 date: "`r format(Sys.time(), '%d/%m/%Y')`"
 
 output:

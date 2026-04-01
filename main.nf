@@ -22,7 +22,7 @@ manifest {
     author          = 'Paula Ruiz-Rodriguez'
     description     = 'Assisted Microbial Annotator Pipeline'
     mainScript      = 'main.nf'
-    version         = '2.0.0'
+    version         = '1.0.0'
     nextflowVersion = '>=23.04.0'
     doi             = 'https://doi.org/10.5281/zenodo.8024446'
     homePage        = 'https://github.com/PathoGenOmics-Lab/AMAP'

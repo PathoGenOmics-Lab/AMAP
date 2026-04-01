@@ -1,7 +1,5 @@
 process TYPE_CASES {
     tag "$sampleId"
-    cpus 1
-    memory '1 GB'
 
     publishDir "${params.outdir}/CDS_CASES/summary", pattern: "*-summary.tsv", mode: 'copy'
     publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*-case*.tsv", mode: 'copy'
@@ -36,8 +34,6 @@ process TYPE_CASES {
 
 process FIX_CDS {
     tag "$sampleId"
-    cpus 1
-    memory '1 GB'
 
     publishDir "${params.outdir}/AMAP/${sampleId}", pattern: "*.AMAP.*", mode: 'copy'
 

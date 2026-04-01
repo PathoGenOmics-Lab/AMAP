@@ -1,6 +1,10 @@
 process EGGNOG_DB {
     tag 'eggnog_db_setup'
 
+    // storeDir caches the DB outside the work directory.
+    // Once built, it's reused across ALL pipeline runs — never rebuilt.
+    storeDir "${params.eggnog_db}"
+
     output:
     path "eggnog_db", emit: db_path
 
@@ -117,6 +121,14 @@ process ANNOT_EGGNOGMAP_BATCH {
       echo "# emapper: no input proteins" > batch.emapper.annotations
   else
       echo "==> Annotating \$N_PROTS proteins from ${faa_files.size()} samples..."
+
+      # Optimize Diamond block size based on available memory.
+      # Larger blocks = fewer disk passes = faster. Rule: ~6 GB RAM per block.
+      MEM_GB=\$(echo "${task.memory}" | grep -oP '\\d+' | head -1)
+      BLOCK_SIZE=\$(( MEM_GB / 8 ))
+      [ \$BLOCK_SIZE -lt 2 ] && BLOCK_SIZE=2
+      [ \$BLOCK_SIZE -gt 12 ] && BLOCK_SIZE=12
+
       emapper.py \\
         -i all_proteins.faa \\
         -m diamond \\
@@ -125,6 +137,8 @@ process ANNOT_EGGNOGMAP_BATCH {
         --usemem \\
         --dbmem \\
         --sensmode fast \\
+        --dmnd_block_size \$BLOCK_SIZE \\
+        --dmnd_index_chunks 1 \\
         --tax_scope 2 \\
         --target_orthologs one2one \\
         -o batch \\

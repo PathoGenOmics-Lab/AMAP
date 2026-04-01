@@ -12,8 +12,7 @@
  */
 process PREPARE_REFERENCE {
     tag 'prepare_ref'
-    cpus 8
-    memory '6 GB'
+    // Resources defined in nextflow.config (PREPARE_REFERENCE)
 
     input:
     path ref_annotation

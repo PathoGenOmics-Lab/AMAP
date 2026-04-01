@@ -97,6 +97,10 @@ if (params.help) {
     --bakta_db                  Path to the Bakta database directory. (Default: "${params.bakta_db}")
     --skip_mycobrowser          Skip Mycobrowser functional categories (for non-MTBC organisms). (Default: ${params.skip_mycobrowser})
     --validate_only             Run input validation only (no pipeline execution).
+    --max_cpus                  Maximum CPUs per process. (Default: ${params.max_cpus})
+    --max_memory                Maximum memory per process. (Default: ${params.max_memory})
+    --max_time                  Maximum time per process. (Default: ${params.max_time})
+    --scratch                   Use node-local scratch for I/O-heavy processes. (Default: ${params.scratch})
     --help                      Display this help message.
 
     Custom Reference (replaces built-in H37Rv):

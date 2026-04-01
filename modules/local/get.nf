@@ -22,6 +22,7 @@ process GET_DUPLICATIONS {
         --db renamed_db \\
         -q ${amap_faa}.renamed \\
         --threads ${task.cpus} \\
+        --tmpdir \${TMPDIR:-/tmp} \\
         --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen nident \\
         --very-sensitive \\
         --no-self-hits \\
@@ -141,11 +142,20 @@ process GET_ALLDUP {
         exit 0
     fi
 
+    # Scale Diamond block size with available RAM for faster processing
+    MEM_GB=\$(echo "${task.memory}" | grep -oP '\\d+' | head -1)
+    BLOCK_SIZE=\$(( MEM_GB / 6 ))
+    [ \$BLOCK_SIZE -lt 2 ] && BLOCK_SIZE=2
+    [ \$BLOCK_SIZE -gt 8 ] && BLOCK_SIZE=8
+
     diamond makedb --in all_fastas.fa --db all_fastas_db --threads ${task.cpus}
     diamond blastp \\
         --db all_fastas_db \\
         -q all_fastas.fa \\
         --threads ${task.cpus} \\
+        --tmpdir \${TMPDIR:-/tmp} \\
+        --block-size \$BLOCK_SIZE \\
+        --index-chunks 1 \\
         --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen nident \\
         --very-sensitive \\
         --no-self-hits \\

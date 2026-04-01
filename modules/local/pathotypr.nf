@@ -1,7 +1,5 @@
 process PATHOTYPR {
     tag "$sampleId"
-    cpus 1
-    memory '1 GB'
 
     publishDir "${params.outdir}/PATHOTYPR/typing", pattern: "*_summary.tsv", mode: 'copy'
     publishDir "${params.outdir}/PATHOTYPR/fastas", pattern: "*.fasta", mode: 'copy'

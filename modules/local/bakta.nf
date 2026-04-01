@@ -1,6 +1,6 @@
 process BAKTA_ANNOTATOR {
     tag "$sampleId"
-    publishDir "${params.outdir}/BAKTA", pattern: "${sampleId}", mode: 'copy'
+    publishDir "${params.outdir}/BAKTA", pattern: "${sampleId}", mode: 'link', overwrite: true
 
     input:
     tuple val(sampleId), path(fasta), path(summary_log), val(genus), val(species)
@@ -24,6 +24,12 @@ process BAKTA_ANNOTATOR {
         exit 1
     fi
 
+    # Use node-local temp for Bakta's many small intermediate files
+    # (avoids NFS metadata storms — Bakta creates ~50 temp files per genome)
+    export TMPDIR=\${TMPDIR:-/tmp}/bakta_\$\$
+    mkdir -p "\$TMPDIR"
+    trap "rm -rf \$TMPDIR" EXIT
+
     bakta \\
         --db "${params.bakta_db}" \\
         --skip-trna \\
@@ -34,6 +40,7 @@ process BAKTA_ANNOTATOR {
         --prefix ${sampleId} \\
         --locus-tag ${sampleId} \\
         --proteins "${proteins_ref}" \\
+        --tmp-dir "\$TMPDIR" \\
         ${fasta}
     """
 }

@@ -1,7 +1,5 @@
 process MINIPROT {
     tag "$sampleId"
-    cpus 6
-    memory '2 GB'
 
     input:
     tuple val(sampleId), path(fasta), path(proteins_faa), path(proteins_tsv)

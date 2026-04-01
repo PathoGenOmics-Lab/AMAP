@@ -14,7 +14,7 @@
 # ---------------------------------------------------------------------------
 # STAGE 1: Build tools that need compilation
 # ---------------------------------------------------------------------------
-FROM continuumio/miniconda3:24.1.2-0 AS builder
+FROM --platform=linux/amd64 continuumio/miniconda3:24.1.2-0 AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git build-essential wget tar bzip2 zlib1g-dev && \
@@ -32,7 +32,7 @@ RUN wget -q https://github.com/lh3/pangene/releases/download/v1.1/pangene-1.1-bi
 # ---------------------------------------------------------------------------
 # STAGE 2: Download large datasets (cached independently)
 # ---------------------------------------------------------------------------
-FROM continuumio/miniconda3:24.1.2-0 AS data_downloader
+FROM --platform=linux/amd64 continuumio/miniconda3:24.1.2-0 AS data_downloader
 
 RUN conda install -c conda-forge -c bioconda -y python=3.9 bakta=1.12.0 && \
     apt-get update && apt-get install -y --no-install-recommends wget && \

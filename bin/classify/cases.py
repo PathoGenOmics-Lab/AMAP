@@ -32,7 +32,7 @@ def classify_case2_case3(bakta_df, miniprot_df, base_name=None):
 def classify_case1_case4(bakta_df, miniprot_df, base_name=None):
     """Split non-matching Bakta CDS into case 1 (no overlap) and case 4 (overlap)."""
     bakta_df = bakta_df.copy()
-    bakta_df['Length_nt'] = bakta_df['End'] - bakta_df['Start']
+    bakta_df['Length_nt'] = bakta_df['End'] - bakta_df['Start'] + 1
     merged = pd.merge(bakta_df, miniprot_df, on=['Start', 'End'], how='inner')
 
     common_cols = [c for c in bakta_df.columns if c in merged.columns]

@@ -13,7 +13,7 @@ def read_bakta(bakta_path):
     ]
     bakta_df['Locus Tag'] = bakta_df['Locus Tag'].apply(clean_id)
     bakta_cds = bakta_df[bakta_df['Type'] == 'cds'].copy()
-    bakta_cds['Length_nt'] = bakta_cds['End'] - bakta_cds['Start']
+    bakta_cds['Length_nt'] = bakta_cds['End'] - bakta_cds['Start'] + 1
     return bakta_cds[["Locus Tag", "Start", "End", "Strand", 'Length_nt']]
 
 

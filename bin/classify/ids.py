@@ -1,9 +1,18 @@
-"""Gene ID cleaning and formatting utilities."""
+"""
+Gene ID cleaning and formatting utilities.
+
+Handles the AMAP naming convention where gene IDs may include:
+- Sample prefix: L4_G12345_
+- Gene name: Rv0001, PE_PGRS1, dnaA, etc.
+- Embedded coordinates: _703830-704057
+
+These utilities normalize IDs for consistent downstream processing.
+"""
 
 import re
 
 
-def clean_id(gene_id):
+def clean_id(gene_id: str) -> str:
     """
     Strip trailing embedded coordinates from a protein/gene ID.
     
@@ -22,7 +31,7 @@ def clean_id(gene_id):
     return re.sub(r'_\d+-\d+$', '', gene_id)
 
 
-def format_cluster_id(gene_id, base_name):
+def format_cluster_id(gene_id: str, base_name: str) -> str:
     """
     Formats the final gene ID with consistent sample prefix.
     

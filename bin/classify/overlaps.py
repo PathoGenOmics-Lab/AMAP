@@ -3,13 +3,23 @@ Overlap detection and resolution for case 4 (conflicting coordinates).
 
 Builds IntervalTrees, finds single/multiple overlap groups, and resolves
 conflicts by comparing Bakta vs Miniprot alignment lengths.
+
+Coordinate convention: all coordinates are 1-based inclusive (GFF/GenBank style).
+Length = End - Start + 1. IntervalTree uses half-open [Start, End+1).
 """
+
+from typing import Dict, List, Tuple, Optional
 
 import pandas as pd
 from intervaltree import IntervalTree
 
+# Type aliases
+Coord = Tuple[int, int]           # (Start, End) pair
+Coord3 = Tuple[int, int, str]     # (Start, End, Strand) triple
+CoordDict = Dict[Coord3, str]     # Gene coordinate dictionary
 
-def get_overlap_percentage(range1, range2):
+
+def get_overlap_percentage(range1: Coord, range2: Coord) -> float:
     """Calculate overlap percentage relative to the larger range.
     
     Coordinates are 1-based inclusive: length = End - Start + 1.

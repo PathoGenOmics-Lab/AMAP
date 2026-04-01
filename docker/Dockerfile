@@ -83,7 +83,7 @@ RUN \
     conda config --add channels defaults && \
     conda config --add channels bioconda && \
     conda config --add channels conda-forge && \
-    conda config --set channel_priority strict && \
+    conda config --set channel_priority flexible && \
     \
     conda install -y \
       # --- Python runtime ---
@@ -97,7 +97,6 @@ RUN \
       bakta=1.12.0 \
       eggnog-mapper=2.1.13 \
       diamond=2.1.24 \
-      pathotypr \
       gfatools \
       # --- R runtime (only packages used by report_AMAP.Rmd) ---
       r-base=4.4 \
@@ -131,6 +130,7 @@ RUN \
     rm -rf /root/.cache/pip /tmp/*
 
 # --- R: GitHub-only packages ---
-RUN R -e "remotes::install_github('maximilian-heeg/ggsimplestats', force = TRUE)"
+RUN R -e "remotes::install_github('maximilian-heeg/ggsimplestats', force = TRUE)" && \
+    R -e "remotes::install_github('PathoGenOmics-Lab/pathotypr', force = TRUE)"
 
 WORKDIR /app

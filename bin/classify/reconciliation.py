@@ -18,6 +18,43 @@ def parse_ref_coords_from_id(prot_id):
     return None, None
 
 
+def _extract_gene_name(prot_id):
+    """Extract the base gene name (without coordinates) from a protein ID.
+    
+    Examples:
+        'Rv0001_1-1524' → 'Rv0001'
+        'L8_G26689_Rv0001' → 'Rv0001'
+        'PE_PGRS1_123-456' → 'PE_PGRS1'
+    """
+    prot_id = str(prot_id)
+    # Strip trailing _DIGITS-DIGITS (embedded coords)
+    m = re.match(r'^(.+?)_\d+-\d+$', prot_id)
+    if m:
+        return m.group(1)
+    # Strip sample prefix (e.g., L8_G26689_Rv0001 → Rv0001)
+    parts = prot_id.split('_')
+    if len(parts) >= 3:
+        return '_'.join(parts[2:])
+    return prot_id
+
+
+def _gene_names_match(id_a, id_b):
+    """Check if two protein IDs refer to the SAME gene (not just substring).
+    
+    Compares base gene names after stripping coordinates and sample prefixes.
+    This prevents false matches like Rv3508 ↔ Rv3508c, or Rv1 ↔ Rv10.
+    """
+    name_a = _extract_gene_name(id_a)
+    name_b = _extract_gene_name(id_b)
+    # Exact match after normalization
+    if name_a == name_b:
+        return True
+    # Also check if one is a suffix of the other (for sample-prefixed IDs)
+    # e.g., 'L8_G26689_Rv0001' has name 'Rv0001' which should match 'Rv0001'
+    # But 'Rv3508' should NOT match 'Rv3508c'
+    return False
+
+
 def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
     """
     Replace coordinates with true reference coordinates when available.
@@ -32,6 +69,8 @@ def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
     2. Remove genes placed at wrong positions (embedded coords don't match
        actual position), UNLESS they are multi-copy elements (>2 Miniprot
        hits), where placement at different positions is expected.
+    3. Use exact gene name matching (not substring) to prevent false
+       reconciliation (e.g., Rv3508 ↔ Rv3508c).
     """
     # Build ref coord map
     ref_coords = {}
@@ -49,13 +88,23 @@ def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
         # Check if THIS gene is a paralog placement: if its own ID has embedded
         # coordinates that don't match its current position, it was placed at
         # a paralogous region by Miniprot and should be removed.
-        # Exception: skip check if ANY protein hitting this position in Miniprot
+        # Exception 1: skip check if ANY protein hitting this position in Miniprot
         # has embedded coords that match (proving this IS a real gene locus).
+        # Exception 2: skip check for multi-copy elements (>2 hits), where
+        # placement at different positions is expected (PE/PPE, IS elements).
         own_s, own_e = parse_ref_coords_from_id(str(gene_id))
         if own_s is not None and own_e is not None:
+            # Skip paralog check for multi-copy elements
+            n_hits = hit_counts.get(str(gene_id), 1)
+            # Also check without coords suffix
+            gene_name = _extract_gene_name(str(gene_id))
+            for pid in hit_counts.index:
+                if _extract_gene_name(pid) == gene_name:
+                    n_hits = max(n_hits, hit_counts[pid])
+
             own_ref_len = own_e - own_s
             own_overlap = max(0, min(coord[1], own_e) - max(coord[0], own_s))
-            if own_ref_len > 0 and own_overlap / own_ref_len < 0.5:
+            if own_ref_len > 0 and own_overlap / own_ref_len < 0.5 and n_hits <= 2:
                 # gene_id's embedded coords don't match → check if any OTHER
                 # Miniprot hit at this position validates it as a real locus
                 mp_at_pos = miniprot_df[
@@ -85,7 +134,9 @@ def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
                     continue
 
         for ref_id, ref_coord in ref_coords.items():
-            if ref_id in str(gene_id) or str(gene_id) in ref_id:
+            # Use exact gene name matching — NOT substring!
+            # Prevents Rv3508 matching Rv3508c, Rv1 matching Rv10, etc.
+            if _gene_names_match(ref_id, gene_id):
                 if ref_coord != coord:
                     overlap = max(0, min(coord[1], ref_coord[1]) - max(coord[0], ref_coord[0]))
                     min_len = min(coord[1] - coord[0], ref_coord[1] - ref_coord[0])
@@ -140,6 +191,10 @@ def recover_missing_genes(combined_dict, miniprot_df):
     matches the coordinates embedded in the protein ID. If a protein named
     'Rv1150_1278269-1278820' is placed at position 1164572-1165123, it
     means Miniprot mapped it to a paralogous region — skip it.
+    
+    Tries all placements sorted by Match Nt descending, not just the best.
+    This handles cases where the best hit is a paralog but a weaker hit
+    at the correct position exists.
     """
     all_ref_ids = set(miniprot_df['Prot Id'].unique())
     included_ids = set(combined_dict.values())
@@ -148,35 +203,44 @@ def recover_missing_genes(combined_dict, miniprot_df):
     if not missing:
         return
 
-    df_missing = miniprot_df[miniprot_df['Prot Id'].isin(missing)]
+    df_missing = miniprot_df[miniprot_df['Prot Id'].isin(missing)].copy()
     if df_missing.empty:
         return
 
-    try:
-        best = df_missing.groupby('Prot Id').apply(
-            lambda g: g.loc[g['Match Nt'].idxmax()], include_groups=False).reset_index()
-    except TypeError:
-        best = df_missing.groupby('Prot Id').apply(
-            lambda g: g.loc[g['Match Nt'].idxmax()]).reset_index(drop=True)
+    # Sort by Match Nt descending so we try best placements first
+    df_missing = df_missing.sort_values('Match Nt', ascending=False)
 
-    for _, row in best.iterrows():
+    recovered = set()
+    for _, row in df_missing.iterrows():
+        prot_id = row['Prot Id']
+        if prot_id in recovered:
+            continue  # Already recovered this gene from a better hit
+
         coord = (row['Start'], row['End'])
-        if coord not in combined_dict:
-            # Verify placement matches embedded coordinates in Prot Id.
-            # If the protein has embedded coords (e.g., Rv1150_1278269-1278820),
-            # the alignment should be near those coords, not at a paralog.
-            ref_s, ref_e = parse_ref_coords_from_id(row['Prot Id'])
-            if ref_s is not None and ref_e is not None:
-                ref_len = ref_e - ref_s
-                placement_overlap = max(0, min(coord[1], ref_e) - max(coord[0], ref_s))
-                if ref_len > 0 and placement_overlap / ref_len < 0.5:
-                    # Placement doesn't match embedded coords → paralog mapping
-                    continue
-            combined_dict[coord] = row['Prot Id']
+        if coord in combined_dict:
+            continue  # Position already occupied
+
+        # Verify placement matches embedded coordinates in Prot Id.
+        ref_s, ref_e = parse_ref_coords_from_id(prot_id)
+        if ref_s is not None and ref_e is not None:
+            ref_len = ref_e - ref_s
+            placement_overlap = max(0, min(coord[1], ref_e) - max(coord[0], ref_s))
+            if ref_len > 0 and placement_overlap / ref_len < 0.5:
+                # Placement doesn't match embedded coords → paralog mapping
+                # Don't give up — try the next hit for this protein
+                continue
+
+        combined_dict[coord] = prot_id
+        recovered.add(prot_id)
 
 
 def deduplicate(combined_dict):
-    """Remove duplicate gene entries that are subsets of other entries."""
+    """Remove duplicate gene entries that are subsets of other entries.
+    
+    When a gene appears at multiple coordinates, remove entries that are
+    100% subsets of a DIFFERENT gene's coordinates. But always keep at
+    least ONE entry per gene to prevent total gene loss.
+    """
     all_vals = list(combined_dict.values())
     duplicates = {x for x in all_vals if all_vals.count(x) > 1}
     if not duplicates:
@@ -189,11 +253,23 @@ def deduplicate(combined_dict):
 
     to_delete = set()
     for dup_val, dup_coords in coords_by_val.items():
+        # Collect which coords of this gene are subsets of other genes
+        subset_coords = set()
         for dc in dup_coords:
             for coord, value in combined_dict.items():
                 if value not in duplicates:
                     if get_subset_overlap_percentage(dc, coord) == 100:
-                        to_delete.add(dc)
+                        subset_coords.add(dc)
+
+        # Only delete subset coords if at least one coord survives
+        # This prevents total gene loss when ALL coords are subsets
+        surviving = [c for c in dup_coords if c not in subset_coords]
+        if surviving:
+            to_delete.update(subset_coords)
+        elif subset_coords:
+            # All are subsets — keep the largest one
+            best = max(dup_coords, key=lambda c: c[1] - c[0])
+            to_delete.update(subset_coords - {best})
 
     for c in to_delete:
         combined_dict.pop(c, None)

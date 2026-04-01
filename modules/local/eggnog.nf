@@ -117,7 +117,8 @@ process ANNOT_EGGNOGMAP_BATCH {
 
   # 3. Split results back into per-sample annotation files
   #    All in one awk pass — O(N) instead of O(N×M) subprocesses
-  head -n 5 batch.emapper.annotations | grep '^#' > header.txt || true
+  # Capture ALL header lines (any number of #-prefixed lines)
+  grep '^#' batch.emapper.annotations > header.txt || true
 
   # Create per-sample files with headers
   for faa in ${faa_files}; do

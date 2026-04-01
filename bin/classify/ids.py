@@ -16,22 +16,35 @@ def clean_id(gene_id):
 
 def format_cluster_id(gene_id, base_name):
     """
-    Formats the final gene ID.
-    - Single part (e.g., 'Rv1234') → 'Sample1_Rv1234'
-    - 2 parts where second looks like embedded coords (e.g., 'Rv0001_1-1524')
-      → 'Sample1_Rv0001' (strip the coordinates)
-    - 3+ parts → keep first 3
-    - Otherwise → return as-is
+    Formats the final gene ID with consistent sample prefix.
+    
+    Rules:
+    - Strip embedded coordinates (trailing _DIGITS-DIGITS)
+    - Ensure result always has the sample base_name prefix
+    - Preserve multi-part gene names (e.g., PE_PGRS1)
+    
+    Examples:
+        ('Rv0001', 'L8_G26689')           → 'L8_G26689_Rv0001'
+        ('Rv0001_1-1524', 'L8_G26689')    → 'L8_G26689_Rv0001'
+        ('PE_PGRS1', 'L8_G26689')         → 'L8_G26689_PE_PGRS1'
+        ('L8_G26689_Rv0001', 'L8_G26689') → 'L8_G26689_Rv0001'
+        ('L8_G26689_00042', 'L8_G26689')  → 'L8_G26689_00042'
     """
     import re
-    parts = str(gene_id).split('_')
-    if len(parts) == 1:
-        return f"{base_name}_{parts[0]}"
-    elif len(parts) == 2:
-        # Check if second part is embedded coordinates (digits-digits)
-        if re.match(r'^\d+-\d+$', parts[1]):
-            return f"{base_name}_{parts[0]}"
+    gene_id = str(gene_id)
+
+    # 1. Strip trailing embedded coordinates (_DIGITS-DIGITS)
+    gene_id = re.sub(r'_\d+-\d+$', '', gene_id)
+
+    # 2. If already starts with base_name, return as-is
+    if gene_id.startswith(base_name):
         return gene_id
-    elif len(parts) >= 3:
+
+    # 3. If it has 3+ underscore parts and the first two look like a sample prefix
+    #    (e.g., L8_G26689_Rv0001), keep first 3
+    parts = gene_id.split('_')
+    if len(parts) >= 3:
         return '_'.join(parts[:3])
-    return gene_id
+
+    # 4. Otherwise prepend base_name (handles 'Rv0001', 'PE_PGRS1', etc.)
+    return f"{base_name}_{gene_id}"

@@ -24,7 +24,12 @@ def _custom_filter(group):
 
 
 def read_miniprot(miniprot_path):
-    """Read Miniprot PAF output, apply best-match filtering per protein."""
+    """Read Miniprot PAF output, apply best-match filtering per protein.
+    
+    For multi-copy genes (PE/PPE, IS elements), the same protein can map
+    to multiple genomic positions. We deduplicate per (Prot Id, Start, End),
+    keeping the row with the highest Match Nt, and prefer perfect matches.
+    """
     miniprot_df = pd.read_csv(miniprot_path, sep='\t', header=None)
     miniprot_df.columns = [
         "Prot Id", "Prot len", "Prot Start", "ProtStop", "Strand",
@@ -34,17 +39,20 @@ def read_miniprot(miniprot_path):
     miniprot_df['Prot Id'] = miniprot_df['Prot Id'].apply(clean_id)
     miniprot_df['Start'] = miniprot_df['Start'] + 1  # 0-based → 1-based
 
-    last = miniprot_df[["Prot Id", "Prot len", "Strand", "Start", "End", "Match Nt", "Num nt"]]
+    last = miniprot_df[["Prot Id", "Prot len", "Strand", "Start", "End", "Match Nt", "Num nt"]].copy()
 
-    def _apply_filter(group):
-        result = _custom_filter(group)
-        return result.drop(columns=['Prot Id'], errors='ignore')
+    # Mark perfect matches (aligned nt == total nt)
+    last['_is_perfect'] = (last['Num nt'] - last['Match Nt'] == 0).astype(int)
 
-    try:
-        return last.groupby('Prot Id').apply(_apply_filter, include_groups=False).reset_index()
-    except TypeError:
-        # pandas < 2.2 compatibility
-        return last.groupby('Prot Id').apply(_apply_filter).reset_index()
+    # Sort so perfect matches and highest Match Nt come first
+    last = last.sort_values(['Prot Id', 'Start', 'End', '_is_perfect', 'Match Nt'],
+                            ascending=[True, True, True, False, False])
+
+    # Keep best hit per unique (Prot Id, Start, End) — preserves multi-copy placements
+    last = last.drop_duplicates(subset=['Prot Id', 'Start', 'End'], keep='first')
+    last = last.drop(columns=['_is_perfect']).reset_index(drop=True)
+
+    return last
 
 
 def read_miniprot_unfiltered(miniprot_path):

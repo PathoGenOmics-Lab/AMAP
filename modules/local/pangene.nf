@@ -52,16 +52,21 @@ process PANGENE {
     MAX_JOBS=\$(( ${task.cpus} / THREADS_PER_JOB ))
     [ \$MAX_JOBS -lt 1 ] && MAX_JOBS=1
 
+    pids=()
     running=0
     for ref in "\${refs[@]}"; do
         base=\$(basename "\$ref" .fasta)
         miniprot --outs=0.97 --no-cs -S -Iut\${THREADS_PER_JOB} \\
                  "\$ref" ${fixfaa} \\
                  > "\${base}_${sampleId}.paf" &
+        pids+=(\$!)
         running=\$((running + 1))
+        # When at capacity, wait for ALL current jobs before next batch
+        # (portable — works on bash 3.2+, unlike wait -n which needs 4.3+)
         if [ \$running -ge \$MAX_JOBS ]; then
-            wait -n  # wait for any one job to finish
-            running=\$((running - 1))
+            wait "\${pids[@]}"
+            pids=()
+            running=0
         fi
     done
     wait  # wait for remaining jobs

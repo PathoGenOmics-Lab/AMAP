@@ -85,9 +85,9 @@ process GET_OUTPUTS {
         ${fasta}
     python3 ${projectDir}/bin/to_panaroo.py --id ${sampleId}
 
-    # Symlink instead of copy — avoids redundant I/O for large proteomes
-    ln -sf ${amap_faa} ${sampleId}-AMAP.faa
-    ln -sf ${amap_fna} ${sampleId}-AMAP.fna
+    # Hard link (same inode, no extra I/O) — avoids broken symlinks with publishDir
+    ln -f ${amap_faa} ${sampleId}-AMAP.faa || cp ${amap_faa} ${sampleId}-AMAP.faa
+    ln -f ${amap_fna} ${sampleId}-AMAP.fna || cp ${amap_fna} ${sampleId}-AMAP.fna
     """
 }
 

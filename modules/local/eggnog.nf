@@ -91,12 +91,12 @@ process ANNOT_EGGNOGMAP_BATCH {
   mkdir -p tmp scr_tmp split
 
   # 1. Concatenate all FAAs with sample-prefixed headers
-  #    Original header: >L8_G26689_Rv0001;+;0-1524
-  #    Tagged header:   >SAMPLE=L8_G26689|||L8_G26689_Rv0001;+;0-1524
+  #    Delimiter: @@SMPL@@ (safe — no protein ID contains this)
+  #    Original:  >L8_G26689_Rv0001;+;0-1524
+  #    Tagged:    >SAMPLE@@SMPL@@L8_G26689@@SMPL@@L8_G26689_Rv0001;+;0-1524
   for faa in ${faa_files}; do
-      # Extract sampleId from filename: {sampleId}.AMAP.faa
       sid=\$(basename "\$faa" .AMAP.faa)
-      awk -v sid="\$sid" '/^>/{sub(/^>/, ""); print ">SAMPLE=" sid "|||" \$0; next} {print}' "\$faa"
+      awk -v sid="\$sid" '/^>/{sub(/^>/, ""); print ">SAMPLE@@SMPL@@" sid "@@SMPL@@" \$0; next} {print}' "\$faa"
   done > all_proteins.faa
 
   # 2. Run eggNOG-mapper ONCE on the combined file
@@ -116,8 +116,7 @@ process ANNOT_EGGNOGMAP_BATCH {
     --scratch_dir scr_tmp
 
   # 3. Split results back into per-sample annotation files
-  #    - Strip the SAMPLE=xxx||| prefix from the query column
-  #    - Route each line to the correct sample file
+  #    All in one awk pass — O(N) instead of O(N×M) subprocesses
   head -n 5 batch.emapper.annotations | grep '^#' > header.txt || true
 
   # Create per-sample files with headers
@@ -126,33 +125,23 @@ process ANNOT_EGGNOGMAP_BATCH {
       cp header.txt "split/\${sid}.emapper.annotations"
   done
 
-  # Split annotation lines by sample prefix
-  grep -v '^#' batch.emapper.annotations | while IFS=\$'\\t' read -r query rest; do
-      # Extract sample ID from SAMPLE=xxx|||original_query
-      sid=\$(echo "\$query" | sed 's/^SAMPLE=//; s/|||.*//')
-      # Restore original query name
-      orig_query=\$(echo "\$query" | sed 's/^SAMPLE=[^|]*|||//')
-      echo -e "\${orig_query}\\t\${rest}" >> "split/\${sid}.emapper.annotations"
-  done
+  # Split annotation lines by sample — single awk pass over the file
+  # Handles empty results gracefully (grep -v returns 1 if no lines → || true)
+  grep -v '^#' batch.emapper.annotations 2>/dev/null | awk -F'\\t' '
+  {
+      # Parse query: SAMPLE@@SMPL@@sampleId@@SMPL@@original_query
+      query = \$1
+      # Extract sampleId (between first and second @@SMPL@@)
+      split(query, parts, "@@SMPL@@")
+      sid = parts[2]
+      orig_query = parts[3]
+      # Reconstruct line with original query
+      \$1 = orig_query
+      print >> ("split/" sid ".emapper.annotations")
+  }
+  ' OFS='\\t' || true
   """
 }
 
-/*
- * Reshape batch output back into per-sample tuples for downstream joins.
- */
-process SPLIT_EGGNOGMAP {
-  tag "$sampleId"
 
-  input:
-  tuple val(sampleId), path(annotation)
-
-  output:
-  tuple val(sampleId), path("${sampleId}.emapper.annotations")
-
-  script:
-  """
-  # Just rename/copy — the file is already split by ANNOT_EGGNOGMAP_BATCH
-  cp ${annotation} ${sampleId}.emapper.annotations
-  """
-}
 

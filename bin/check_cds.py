@@ -159,16 +159,18 @@ def extract_and_translate_cds(fasta_file, annotation_df):
             continue
 
         # Select the correct contig for this gene.
-        # For multi-contig: find the smallest contig where the gene fits,
-        # BUT prefer an exact Bakta Sequence Id match if available in the
-        # corrected TSV. Since corrected_tsv lacks contig info, we use the
-        # heuristic of smallest-fitting-contig (sorted desc, last match wins).
+        # For multi-contig: find the smallest contig where the gene fits.
+        # Sorted desc by length, so we iterate and keep the LAST match
+        # (= smallest fitting contig, tightest fit).
         # WARNING: This is ambiguous when contigs overlap in coordinate ranges.
         if is_multi_contig:
             fasta_seq = default_contig
+            best_len = float('inf')
             for contig in sorted_contigs:
-                if start >= 0 and end <= len(contig.seq):
+                clen = len(contig.seq)
+                if start >= 0 and end <= clen and clen < best_len:
                     fasta_seq = contig
+                    best_len = clen
         else:
             fasta_seq = default_contig
         

@@ -59,6 +59,9 @@ def load_and_filter_blast_results(blast_filepath: Path) -> pd.DataFrame:
     except FileNotFoundError:
         print(f"Error: Input file not found at {blast_filepath}")
         exit(1)
+    except pd.errors.EmptyDataError:
+        print(f"No BLAST hits in {blast_filepath} — returning empty results.")
+        return pd.DataFrame(columns=column_names + ['query_coverage', 'subject_coverage'])
 
     # Calculate query and subject coverage percentages
     df['query_coverage'] = (df['nident'] / df['qlen']) * 100
@@ -331,6 +334,16 @@ def main():
     # --- Workflow ---
     # 1. Load and filter data
     blast_df = load_and_filter_blast_results(input_path)
+
+    if blast_df.empty:
+        print("No significant BLAST hits — creating empty outputs.")
+        pd.DataFrame().to_csv(output_tsv, sep="\t", index=False)
+        # Create minimal HTML
+        net = Network(height='100vh', width='100%', bgcolor='#FFFFFF', notebook=False)
+        net.show(str(output_html), notebook=False)
+        print(f"Empty report at {output_tsv} and {output_html}")
+        return
+
     genome_ids = get_genome_ids(blast_df)
 
     # 2. Build networks and detect communities

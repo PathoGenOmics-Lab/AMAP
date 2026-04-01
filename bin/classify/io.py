@@ -23,6 +23,27 @@ def _custom_filter(group):
     return perfect if len(perfect) > 0 else group
 
 
+def _read_paf(path):
+    """Read a PAF file robustly, handling variable numbers of tag columns.
+    
+    PAF has 12 fixed columns; columns 13+ are optional SAM-style tags
+    whose count varies by aligner version and parameters. We read all
+    columns and rename only the first 12 that we actually use.
+    """
+    # Read with no fixed column count — pandas auto-detects
+    df = pd.read_csv(path, sep='\t', header=None, comment='#')
+    # Rename the 12 standard PAF columns
+    paf_cols = [
+        "Prot Id", "Prot len", "Prot Start", "ProtStop", "Strand",
+        "fasta Tag", "fasta len", "Start", "End", "Match Nt", "Num nt",
+        "mapping qual"
+    ]
+    # Rename first 12 columns; keep remaining as-is (tag columns)
+    rename_map = {i: name for i, name in enumerate(paf_cols) if i < len(df.columns)}
+    df = df.rename(columns=rename_map)
+    return df
+
+
 def read_miniprot(miniprot_path):
     """Read Miniprot PAF output, apply best-match filtering per protein.
     
@@ -30,12 +51,7 @@ def read_miniprot(miniprot_path):
     to multiple genomic positions. We deduplicate per (Prot Id, Start, End),
     keeping the row with the highest Match Nt, and prefer perfect matches.
     """
-    miniprot_df = pd.read_csv(miniprot_path, sep='\t', header=None)
-    miniprot_df.columns = [
-        "Prot Id", "Prot len", "Prot Start", "ProtStop", "Strand",
-        "fasta Tag", "fasta len", "Start", "End", "Match Nt", "Num nt",
-        "mapping qual", "AS", "MS", "NP", "FS", "ST", "DA", "DO", "CG", "CS"
-    ]
+    miniprot_df = _read_paf(miniprot_path)
     miniprot_df['Prot Id'] = miniprot_df['Prot Id'].apply(clean_id)
     miniprot_df['Start'] = miniprot_df['Start'] + 1  # 0-based → 1-based
 
@@ -57,12 +73,7 @@ def read_miniprot(miniprot_path):
 
 def read_miniprot_unfiltered(miniprot_path):
     """Read Miniprot PAF without best-match filtering (for 'bad bakta' alignments)."""
-    miniprot_df = pd.read_csv(miniprot_path, sep='\t', header=None)
-    miniprot_df.columns = [
-        "Prot Id", "Prot len", "Prot Start", "ProtStop", "Strand",
-        "fasta Tag", "fasta len", "Start", "End", "Match Nt", "Num nt",
-        "mapping qual", "AS", "MS", "NP", "FS", "ST", "DA", "DO", "CG", "CS"
-    ]
+    miniprot_df = _read_paf(miniprot_path)
     miniprot_df['Prot Id'] = miniprot_df['Prot Id'].apply(clean_id)
     miniprot_df['Start'] = miniprot_df['Start'] + 1
     return miniprot_df[["Prot Id", "Prot len", "Strand", "Start", "End", "Match Nt", "Num nt"]]

@@ -130,6 +130,9 @@ process ANNOT_EGGNOGMAP_BATCH {
 
   # Split annotation lines by sample — single awk pass over the file
   # Handles empty results gracefully (grep -v returns 1 if no lines → || true)
+  # NOTE: close() after each print >> to avoid hitting ulimit -n (open files)
+  # on large runs (500+ samples). Without close(), awk keeps all output files
+  # open simultaneously which fails at ~256-1024 samples on most systems.
   grep -v '^#' batch.emapper.annotations 2>/dev/null | awk -F'\\t' '
   {
       # Parse query: SAMPLE@@SMPL@@sampleId@@SMPL@@original_query
@@ -140,7 +143,9 @@ process ANNOT_EGGNOGMAP_BATCH {
       orig_query = parts[3]
       # Reconstruct line with original query
       \$1 = orig_query
-      print >> ("split/" sid ".emapper.annotations")
+      outfile = "split/" sid ".emapper.annotations"
+      print >> outfile
+      close(outfile)
   }
   ' OFS='\\t' || true
   """

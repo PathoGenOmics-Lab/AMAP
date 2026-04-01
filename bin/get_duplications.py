@@ -22,7 +22,14 @@ __lab__ = 'PathoGenOmics (I2SysBio)'
 
 
 def read_and_create(p_file):
-    df = pd.read_csv(p_file, sep='\t', comment='#')
+    try:
+        df = pd.read_csv(p_file, sep='\t', comment='#')
+    except pd.errors.EmptyDataError:
+        # No hits at all — return empty DataFrame with expected columns
+        return pd.DataFrame(columns=["qseqid", "sseqid", "pident", "length", "mismatch",
+                                      "gaps", "qstart", "qend", "sstart", "send",
+                                      "evalue", "bitscore", "qlen", "slen", "nident",
+                                      "same_seq", "p_query", "p_subject"])
     names_columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gaps", "qstart", "qend", "sstart", "send", "evalue", "bitscore", "qlen", "slen", "nident"]
     df.columns = names_columns
     df['same_seq'] = df.iloc[:, 0] == df.iloc[:, 1]
@@ -153,6 +160,22 @@ def main():
     args = parser.parse_args()
 
     df = read_and_create(args.file)
+
+    if df.empty:
+        print("No significant duplications found — creating empty outputs.")
+        pd.DataFrame(columns=['Group', 'Members', 'Length']).to_csv(
+            args.file + "_groups.tsv", sep='\t', index=False)
+        # Create empty plot
+        fig, ax = plt.subplots(figsize=(10, 10))
+        ax.text(0.5, 0.5, 'No duplications found', ha='center', va='center', fontsize=16)
+        ax.axis('off')
+        plt.savefig(args.file + "_network.png", format='png', dpi=300)
+        plt.close()
+        # Create empty interactive plot
+        net = Network(height='1080px', width='100%', bgcolor='#FFFFFF')
+        net.show(args.file + "_network_interactive.html", notebook=False)
+        return
+
     df_with_groups = group_related_pairs(df)
 
     # Save the groups to a file

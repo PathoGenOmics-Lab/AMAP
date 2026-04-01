@@ -72,6 +72,18 @@ def main():
     # Define the output file name by appending '.dup' to the input CDS file name.
     output_file = args.cds + ".dup"
     
+    # Check if the groups file has any data rows
+    try:
+        df_check = pd.read_csv(args.tsv, sep='\t', nrows=1)
+        if df_check.empty:
+            print("No duplication groups — creating empty output.")
+            open(output_file, 'w').close()
+            return
+    except (pd.errors.EmptyDataError, KeyError):
+        print("No duplication groups — creating empty output.")
+        open(output_file, 'w').close()
+        return
+
     # Call the function to perform the extraction.
     extract_sequences(args.tsv, args.cds, output_file)
 

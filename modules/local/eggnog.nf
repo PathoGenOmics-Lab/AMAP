@@ -62,36 +62,97 @@ process EGGNOG_DB {
     """
 }
 
-process ANNOT_EGGNOGMAP {
+/*
+ * BATCH eggNOG annotation — runs eggNOG-mapper ONCE on all samples combined.
+ *
+ * WHY: On HPC clusters with shared filesystems (NFS/Lustre), running N
+ * parallel eggNOG-mapper jobs that each load the ~3 GB Diamond database
+ * causes I/O contention. With 200+ concurrent jobs, the filesystem becomes
+ * the bottleneck and annotation is slower than serial.
+ *
+ * HOW: Concatenate all per-sample FAA files with sample-prefixed headers,
+ * run eggNOG-mapper once with all CPUs, then split the output back by sample.
+ * The DB is loaded into memory once (--dbmem), and Diamond uses all cores.
+ */
+process ANNOT_EGGNOGMAP_BATCH {
+  tag "batch_${faa_files.size()}_samples"
+
+  input:
+  path faa_files    // collected FAA files from all samples
+  val  sample_ids   // list of sampleIds in matching order
+  path eggnog_db
+
+  output:
+  path "split/*.emapper.annotations", emit: split_annotations
+
+  script:
+  """
+  set -euo pipefail
+  mkdir -p tmp scr_tmp split
+
+  # 1. Concatenate all FAAs with sample-prefixed headers
+  #    Original header: >L8_G26689_Rv0001;+;0-1524
+  #    Tagged header:   >SAMPLE=L8_G26689|||L8_G26689_Rv0001;+;0-1524
+  for faa in ${faa_files}; do
+      # Extract sampleId from filename: {sampleId}.AMAP.faa
+      sid=\$(basename "\$faa" .AMAP.faa)
+      awk -v sid="\$sid" '/^>/{sub(/^>/, ""); print ">SAMPLE=" sid "|||" \$0; next} {print}' "\$faa"
+  done > all_proteins.faa
+
+  # 2. Run eggNOG-mapper ONCE on the combined file
+  emapper.py \\
+    -i all_proteins.faa \\
+    -m diamond \\
+    --dmnd_db eggnog_db/bacteria.dmnd \\
+    --cpu ${task.cpus} \\
+    --usemem \\
+    --dbmem \\
+    --sensmode fast \\
+    --tax_scope 2 \\
+    --target_orthologs one2one \\
+    -o batch \\
+    --data_dir eggnog_db \\
+    --temp_dir tmp \\
+    --scratch_dir scr_tmp
+
+  # 3. Split results back into per-sample annotation files
+  #    - Strip the SAMPLE=xxx||| prefix from the query column
+  #    - Route each line to the correct sample file
+  head -n 5 batch.emapper.annotations | grep '^#' > header.txt || true
+
+  # Create per-sample files with headers
+  for faa in ${faa_files}; do
+      sid=\$(basename "\$faa" .AMAP.faa)
+      cp header.txt "split/\${sid}.emapper.annotations"
+  done
+
+  # Split annotation lines by sample prefix
+  grep -v '^#' batch.emapper.annotations | while IFS=\$'\\t' read -r query rest; do
+      # Extract sample ID from SAMPLE=xxx|||original_query
+      sid=\$(echo "\$query" | sed 's/^SAMPLE=//; s/|||.*//')
+      # Restore original query name
+      orig_query=\$(echo "\$query" | sed 's/^SAMPLE=[^|]*|||//')
+      echo -e "\${orig_query}\\t\${rest}" >> "split/\${sid}.emapper.annotations"
+  done
+  """
+}
+
+/*
+ * Reshape batch output back into per-sample tuples for downstream joins.
+ */
+process SPLIT_EGGNOGMAP {
   tag "$sampleId"
 
   input:
-  tuple val(sampleId), path(fixfaa)
-  path eggnog_db
+  tuple val(sampleId), path(annotation)
 
   output:
   tuple val(sampleId), path("${sampleId}.emapper.annotations")
 
   script:
   """
-  set -euo pipefail
-  mkdir -p tmp
-  mkdir -p scr_tmp
-
-  emapper.py \
-    -i ${fixfaa} \
-    -m diamond \
-    --dmnd_db eggnog_db/bacteria.dmnd \
-    --cpu ${task.cpus} \
-    --usemem \
-    --dbmem \
-    --sensmode fast \
-    --tax_scope 2 \
-    --target_orthologs one2one \
-    -o ${sampleId} \
-    --data_dir eggnog_db \
-    --temp_dir tmp \
-    --scratch_dir scr_tmp
+  # Just rename/copy — the file is already split by ANNOT_EGGNOGMAP_BATCH
+  cp ${annotation} ${sampleId}.emapper.annotations
   """
 }
 

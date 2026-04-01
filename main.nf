@@ -125,8 +125,8 @@ include { BAKTA_ANNOTATOR }     from './modules/local/bakta'
 include { MINIPROT }            from './modules/local/miniprot'
 include { TYPE_CASES }          from './modules/local/cases'
 include { FIX_CDS }             from './modules/local/cases'
-include { EGGNOG_DB }           from './modules/local/eggnog'
-include { ANNOT_EGGNOGMAP }     from './modules/local/eggnog'
+include { EGGNOG_DB }               from './modules/local/eggnog'
+include { ANNOT_EGGNOGMAP_BATCH }   from './modules/local/eggnog'
 include { GET_COUNT }           from './modules/local/get'
 include { GET_DUPLICATIONS }    from './modules/local/get'
 include { GET_OUTPUTS }         from './modules/local/get'
@@ -206,11 +206,25 @@ workflow {
     // --- FUNCTIONAL ANNOTATION AND DOWNSTREAM ANALYSIS ---
     // This entire block will be skipped if --skip_functional_annotation is used
     if (!params.skip_functional_annotation) {
-        // 7. Annotate corrected proteins with eggNOG-mapper
-        ANNOT_EGGNOGMAP(FIX_CDS.out.for_eggnog, EGGNOG_DB.out.db_path)
+        // 7. Annotate corrected proteins with eggNOG-mapper (BATCH mode)
+        //    Collects all FAA files, runs eggNOG ONCE, splits results back.
+        //    This avoids N parallel jobs competing for the same Diamond DB on
+        //    shared filesystems — critical for HPC with NFS/Lustre.
+        eggnog_faa_ch = FIX_CDS.out.for_eggnog.map { it[1] }.collect()
+        eggnog_ids_ch = FIX_CDS.out.for_eggnog.map { it[0] }.collect()
+
+        ANNOT_EGGNOGMAP_BATCH(eggnog_faa_ch, eggnog_ids_ch, EGGNOG_DB.out.db_path)
+
+        // Flatten batch output back to per-sample tuples: [sampleId, annotation]
+        eggnog_results_ch = ANNOT_EGGNOGMAP_BATCH.out.split_annotations
+            .flatten()
+            .map { f ->
+                def sid = f.baseName.replace('.emapper', '')
+                tuple(sid, f)
+            }
 
         // Combine results for downstream processing
-        ch_for_downstream = FIX_CDS.out.for_downstream.join(ANNOT_EGGNOGMAP.out)
+        ch_for_downstream = FIX_CDS.out.for_downstream.join(eggnog_results_ch)
 
         // 8. Generate final output files (GFF, GBK, Master Table)
         GET_OUTPUTS(ch_for_downstream)

@@ -20,7 +20,7 @@ nextflow.enable.dsl=2
 manifest {
     name            = 'PathoGenOmics-Lab/AMAP'
     author          = 'Paula Ruiz-Rodriguez'
-    description     = 'Assisted MTBC Annotator Pipeline'
+    description     = 'Assisted Microbial Annotator Pipeline'
     mainScript      = 'main.nf'
     version         = '2.0.0'
     nextflowVersion = '>=23.04.0'
@@ -103,11 +103,18 @@ if (params.help) {
     --scratch                   Use node-local scratch for I/O-heavy processes. (Default: ${params.scratch})
     --help                      Display this help message.
 
-    Custom Reference (replaces built-in H37Rv):
+    Organism-Agnostic Mode:
     --ref_annotation            Path to a trusted reference annotation (GFF3 or GenBank).
     --ref_genome                Path to the trusted reference genome (FASTA).
                                 Both must be set together. When used, the pipeline extracts
                                 proteins from your reference and uses them instead of H37Rv.
+    --skip_mycobrowser          Auto-enabled when genus is not Mycobacterium.
+    --skip_typing               Required for non-MTBC organisms (Pathotypr is MTBC-specific).
+    
+    Example — annotating E. coli:
+      nextflow run PathoGenOmics-Lab/AMAP -profile docker \\
+        --tsv samples.tsv --genus Escherichia --species "Escherichia coli" \\
+        --ref_annotation ref.gbk --ref_genome ref.fasta --skip_typing
 
     Reference & Database Arguments:
     --eggnog_db                 Path to the pre-formatted eggNOG database directory. (Default: "${params.eggnog_db}")
@@ -192,6 +199,21 @@ workflow.onError {
 // Validate custom reference params
 if ((params.ref_annotation && !params.ref_genome) || (!params.ref_annotation && params.ref_genome)) {
     error "Both --ref_annotation and --ref_genome must be provided together. You set one but not the other."
+}
+
+// Auto-detect organism-agnostic mode:
+// When using a custom reference AND genus is not Mycobacterium, auto-enable
+// --skip_mycobrowser to avoid referencing MTBC-specific categories.
+if (params.ref_annotation && params.genus != 'Mycobacterium' && !params.skip_mycobrowser) {
+    log.info "Auto-enabling --skip_mycobrowser (genus '${params.genus}' is not Mycobacterium)"
+    params.skip_mycobrowser = true
+}
+
+// Suggest --skip_typing when genus is not Mycobacterium
+if (params.genus != 'Mycobacterium' && !params.skip_typing) {
+    log.warn "Genus '${params.genus}' is not Mycobacterium but --skip_typing is not set. " +
+             "Pathotypr lineage typing is MTBC-specific and will likely fail for other organisms. " +
+             "Consider adding --skip_typing to your command."
 }
 
 // validate_only handled in workflow block below

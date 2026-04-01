@@ -59,20 +59,16 @@ process REPORT_INPUTS {
         fi
     done
 
-    # Pangene Rtab — concatenate if available (strip duplicate headers)
-    touch input_pangene.txt
-    first_rtab=true
-    for f in \$(echo ${pangene_rtab_files} | tr ' ' '\\n' | safe_grep '.Rtab\$'); do
-        if [ -s "\$f" ]; then
-            if \$first_rtab; then
-                cat "\$f" >> input_pangene.txt
-                first_rtab=false
-            else
-                # Skip header line (first line) from subsequent files
-                tail -n +2 "\$f" >> input_pangene.txt
-            fi
-        fi
-    done
+    # Pangene Rtab — merge per-sample Rtab files into unified matrix
+    # Each Rtab has different gene families and columns; simple concatenation
+    # produces misaligned data. The merge script performs an outer join on
+    # gene family names, filling absent entries with 0.
+    RTAB_FILES=\$(echo ${pangene_rtab_files} | tr ' ' '\\n' | safe_grep '.Rtab\$' || true)
+    if [ -n "\$RTAB_FILES" ]; then
+        python3 ${projectDir}/bin/merge_rtabs.py --output input_pangene.txt \$RTAB_FILES
+    else
+        touch input_pangene.txt
+    fi
     """
 }
 

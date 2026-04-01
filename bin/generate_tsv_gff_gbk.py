@@ -108,6 +108,13 @@ def generate_master_table(eggnog_pd, correctedtsv_pd, bakta_pd_cds, myco_pd, bas
     merged_df = pd.merge(merged_df, bakta_pd_cds, left_on='simple_id', right_on='Locus Tag', how='left')
     merged_df = merged_df.drop(columns=['query'])
     merged_df.drop_duplicates(subset='simple_id', inplace=True)
+
+    # Add explicit lineage column for downstream R report.
+    # base_name is "L4_G26689" (typed) or "G26689" (untyped).
+    # Without this column, the R report extracts lineage from the first column
+    # using sub("_.*", ""), which fails for untyped samples (returns genome ID).
+    parts = base_name.split("_")
+    merged_df['lineage'] = parts[0] if len(parts) >= 2 else "Untyped"
     merged_df.reset_index(drop=True, inplace=True)
     merged_df['Locus'] = merged_df['rvs'].str.split('_').str[0]
     merged_df = pd.merge(merged_df, myco_pd, on='Locus', how='left')

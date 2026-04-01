@@ -283,6 +283,11 @@ if (has_mastertable) {
     read.table(params$mastertable_file, sep="\t", header=T, fill=T, stringsAsFactors=F, quote="", comment.char=""),
     error = function(e) NULL)
   if (is.null(mastertable)) has_mastertable <- FALSE
+  # Use explicit 'lineage' column if present (added by generate_master_table);
+  # otherwise fall back to extracting from the first column (legacy compat).
+  if (has_mastertable && !"lineage" %in% colnames(mastertable)) {
+    mastertable$lineage <- sub("_.*", "", mastertable[[colnames(mastertable)[1]]])
+  }
 }
 
 # Pangene Rtab
@@ -627,7 +632,7 @@ make_dt(stats_h37rv, "h37rv_comparison")
 ```{r peppe, echo=FALSE, fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE}
 if (!has_mycobrowser_data) { cat("PE/PPE analysis requires Mycobrowser data.\n") } else if (has_mastertable && "Functional_Category" %in% colnames(mastertable)) {
   peppe_count <- mastertable %>%
-    mutate(lineage = sub("_.*", "", .data[[colnames(mastertable)[1]]])) %>%
+    
     group_by(lineage) %>%
     summarise(
       total = n(),
@@ -665,7 +670,7 @@ Distribution of KEGG pathway annotations across lineages.
 if (has_mastertable && "KEGG_Pathway" %in% colnames(mastertable)) {
   kegg_data <- mastertable %>%
     filter(!is.na(KEGG_Pathway) & KEGG_Pathway != "" & KEGG_Pathway != "-") %>%
-    mutate(lineage = sub("_.*", "", .data[[colnames(mastertable)[1]]])) %>%
+    
     separate_rows(KEGG_Pathway, sep=",") %>%
     mutate(KEGG_Pathway = trimws(KEGG_Pathway))
   
@@ -717,7 +722,7 @@ if (has_mastertable) {
   has_amap_pseudo <- "pseudogene" %in% colnames(mastertable)
   if (has_myco_pseudo || has_amap_pseudo) {
     pseudo_data <- mastertable %>%
-      mutate(lineage = sub("_.*", "", .data[[colnames(mastertable)[1]]])) %>%
+      
       filter(
         (if (has_myco_pseudo) (Is_Pseudogene %in% c("yes","Yes","TRUE",TRUE)) else FALSE) |
         (if (has_amap_pseudo) (pseudogene %in% c("yes","Yes","TRUE",TRUE)) else FALSE)

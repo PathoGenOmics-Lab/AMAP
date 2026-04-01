@@ -122,6 +122,17 @@ def resolve_multiple_overlaps(multiple_groups, miniprot_df, combined_dict):
         _insert_with_dedup(combined_dict, chosen_coord, chosen_id, threshold=550)
 
 
+def _is_reference_gene(gene_id):
+    """Check if a gene ID looks like a reference gene (has embedded coordinates).
+    
+    Reference proteins from extract_ref_proteins.py always have the format
+    GENE_ID_START-END (e.g., Rv0001_1-1524, GENE_001_1234-5678).
+    This replaces the hardcoded "Rv" check to support organism-agnostic mode.
+    """
+    import re
+    return bool(re.search(r'_\d+-\d+$', str(gene_id)))
+
+
 def _insert_with_dedup(combined_dict, new_coord, new_id, threshold=550):
     """Insert a coordinate into the dict, resolving overlaps with existing entries."""
     coords_to_add = {new_coord: new_id}
@@ -139,7 +150,7 @@ def _insert_with_dedup(combined_dict, new_coord, new_id, threshold=550):
             len_exist = _range_length(exist_coord)
             if len_new > len_exist and (len_new - len_exist) > threshold:
                 coords_to_remove.add(exist_coord)
-            elif (len_exist - len_new) < threshold and "Rv" not in str(exist_id):
+            elif (len_exist - len_new) < threshold and not _is_reference_gene(exist_id):
                 coords_to_remove.add(exist_coord)
             else:
                 coords_to_add.clear()

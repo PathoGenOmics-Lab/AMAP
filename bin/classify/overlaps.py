@@ -73,7 +73,10 @@ def resolve_single_overlaps(single_groups, miniprot_df, combined_dict, new_group
     """
     for key, value in single_groups.items():
         bakta_len = value['case4'][0][1] - value['case4'][0][0]
-        rv_len = miniprot_df.loc[miniprot_df['Prot Id'] == value['Prot Id']].iloc[0]['Match Nt']
+        # Use genomic span (End - Start) for fair comparison, not Match Nt
+        # which only counts aligned bases and is always <= span
+        mp_row = miniprot_df.loc[miniprot_df['Prot Id'] == value['Prot Id']].iloc[0]
+        rv_len = mp_row['End'] - mp_row['Start']
 
         locus_tag = value['Locus Tags'][0]
         n_overlaps = len(new_groups[locus_tag]['Locus Tags']) if locus_tag in new_groups else 0

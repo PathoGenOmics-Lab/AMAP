@@ -56,18 +56,21 @@ def load_bakta_cds(bakta_tsv):
     return cds
 
 
-def find_false_positives(bakta_cds, curated_tree, min_overlap_bp=30):
+def find_false_positives(bakta_cds, curated_tree, min_overlap_frac=0.1):
     """
     Find Bakta CDS that don't overlap with ANY curated gene.
     
     A Bakta CDS is a false positive if there is no curated gene
-    overlapping its coordinates by at least min_overlap_bp.
+    overlapping its coordinates by at least min_overlap_frac of the
+    Bakta gene length (default 10%). This prevents large spurious
+    Bakta genes that barely touch a real gene from being kept.
     """
     false_positives = []
     for _, row in bakta_cds.iterrows():
         start = int(row['Start'])
         end = int(row['End'])
         locus_tag = row['Locus Tag']
+        gene_len = end - start
 
         # Query the interval tree for overlapping curated genes
         overlaps = curated_tree[start:end]
@@ -76,11 +79,12 @@ def find_false_positives(bakta_cds, curated_tree, min_overlap_bp=30):
             # No overlap at all → definitely a false positive
             false_positives.append(locus_tag)
         else:
-            # Check if any overlap is substantial
+            # Check if any overlap is substantial relative to Bakta gene length
             has_substantial = False
+            min_bp = max(30, gene_len * min_overlap_frac)
             for iv in overlaps:
                 overlap_bp = min(end, iv.end) - max(start, iv.begin)
-                if overlap_bp >= min_overlap_bp:
+                if overlap_bp >= min_bp:
                     has_substantial = True
                     break
             if not has_substantial:

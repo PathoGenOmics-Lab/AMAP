@@ -142,6 +142,7 @@ def extract_and_translate_cds(fasta_file, annotation_df):
     default_contig = sorted_contigs[0]
     cds_amino_acids = {}
     cds_nts = {}
+    pseudogene_ids = set()  # Track genes without terminal stop / with internal stops
 
     indices_to_drop = []
     for index, row in annotation_df.iterrows():
@@ -222,6 +223,7 @@ def extract_and_translate_cds(fasta_file, annotation_df):
                 cds_id = f"{ide};{strand};{start}-{end}"
                 cds_amino_acids[cds_id] = translated_seq
                 cds_nts[cds_id] = sequence
+                pseudogene_ids.add(ide)
             else:
                 new_start, new_end, strand = get_goodseq(fasta_seq, start, end, strand)
                 
@@ -251,12 +253,14 @@ def extract_and_translate_cds(fasta_file, annotation_df):
                         cds_id = f"{ide};{strand};{start}-{end}"
                         cds_amino_acids[cds_id] = sequence_nt.translate()
                         cds_nts[cds_id] = sequence_nt
+                        pseudogene_ids.add(ide)
                 else:
                     logging.warning(f"Could not find valid stop codon for {ide}, keeping original")
                     start, end = orig_start, orig_end
                     cds_id = f"{ide};{strand};{start}-{end}"
                     cds_amino_acids[cds_id] = translated_seq
                     cds_nts[cds_id] = sequence
+                    pseudogene_ids.add(ide)
         else:
             logging.warning(f"Empty translation for {ide}, skipping")
             continue
@@ -267,7 +271,12 @@ def extract_and_translate_cds(fasta_file, annotation_df):
 
     # Drop invalid rows collected during iteration (avoids mutation during iterrows)
     annotation_df.drop(indices_to_drop, inplace=True)
-    logging.info(f"CDS extraction and translation complete")
+    # Mark pseudogenes in annotation
+    annotation_df['pseudogene'] = annotation_df['id'].apply(
+        lambda x: 'yes' if str(x).split(';')[0] in pseudogene_ids else 'no'
+    )
+
+    logging.info(f"CDS extraction and translation complete ({len(pseudogene_ids)} pseudogenes detected)")
     return cds_amino_acids, cds_nts, annotation_df
 
 def main():

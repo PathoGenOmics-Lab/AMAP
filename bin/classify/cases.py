@@ -20,7 +20,7 @@ def classify_case2_case3(bakta_df, miniprot_df, base_name=None):
     case2 = merged[merged['Difference'] == 0]
     case3 = merged[merged['Difference'] != 0]
 
-    case2 = case2[["Locus Tag", "Start", "End", "Strand_x", 'Length_nt']].drop_duplicates()
+    case2 = case2.rename(columns={'Strand_x': 'Strand'})[["Locus Tag", "Start", "End", "Strand", 'Length_nt']].drop_duplicates()
 
     if base_name:
         case3.to_csv(f"{base_name}-case3.tsv", sep='\t', index=False)
@@ -40,15 +40,21 @@ def classify_case1_case4(bakta_df, miniprot_df, base_name=None):
     not_in_merged = indicator[indicator['_merge'] == 'left_only'].drop('_merge', axis=1)
     not_in_merged = not_in_merged[["Locus Tag", "Start", "End", "Strand", 'Length_nt']]
 
-    # Build IntervalTree for fast overlap queries
-    tree = IntervalTree()
+    # Build strand-aware IntervalTrees for overlap queries
+    tree_plus = IntervalTree()
+    tree_minus = IntervalTree()
     for _, row in miniprot_df.iterrows():
         if row['Start'] < row['End']:
-            tree[row['Start']:row['End']] = True
+            if row['Strand'] == '-':
+                tree_minus[row['Start']:row['End']] = True
+            else:
+                tree_plus[row['Start']:row['End']] = True
 
     not_in_merged = not_in_merged.copy()
-    not_in_merged['Overlaps'] = not_in_merged.apply(
-        lambda r: len(tree[r['Start']:r['End']]) > 0, axis=1)
+    def _has_strand_overlap(r):
+        t = tree_minus if r['Strand'] == '-' else tree_plus
+        return len(t[r['Start']:r['End']]) > 0
+    not_in_merged['Overlaps'] = not_in_merged.apply(_has_strand_overlap, axis=1)
 
     case4 = not_in_merged[not_in_merged['Overlaps']][["Locus Tag", "Start", "End", "Strand", 'Length_nt']]
     case1 = not_in_merged[~not_in_merged['Overlaps']][["Locus Tag", "Start", "End", "Strand", 'Length_nt']]
@@ -61,14 +67,21 @@ def classify_case1_case4(bakta_df, miniprot_df, base_name=None):
 
 
 def find_rv_missing(miniprot_df, bakta_df, base_name=None):
-    """Find Miniprot hits with no overlap to any Bakta CDS (missing reference genes)."""
-    tree = IntervalTree()
+    """Find Miniprot hits with no overlap to any Bakta CDS on the same strand."""
+    tree_plus = IntervalTree()
+    tree_minus = IntervalTree()
     for _, row in bakta_df.iterrows():
         if row['Start'] < row['End']:
-            tree[row['Start']:row['End']] = True
+            if row['Strand'] == '-':
+                tree_minus[row['Start']:row['End']] = True
+            else:
+                tree_plus[row['Start']:row['End']] = True
 
     mp = miniprot_df.copy()
-    mp['Overlaps'] = mp.apply(lambda r: len(tree[r['Start']:r['End']]) > 0, axis=1)
+    mp['Overlaps'] = mp.apply(
+        lambda r: len((tree_minus if r['Strand'] == '-' else tree_plus)[r['Start']:r['End']]) > 0,
+        axis=1
+    )
 
     no_overlap = mp[~mp['Overlaps']]
     no_overlap = no_overlap[~((no_overlap['Match Nt'] == 0) & (no_overlap['Num nt'] == 0))]

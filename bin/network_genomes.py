@@ -124,8 +124,8 @@ def detect_and_label_communities(networks: Dict[str, nx.Graph]) -> Dict[str, Dic
     """
     labeled_communities = {}
     for genome_id, G in networks.items():
-        # Use networkx's implementation of the Louvain method
-        communities = nx.community.louvain_communities(G)
+        # Use fixed seed for reproducibility across runs
+        communities = nx.community.louvain_communities(G, seed=42)
         labeled_communities[genome_id] = {
             f"Community_{i}": comm for i, comm in enumerate(communities)
         }

@@ -712,11 +712,16 @@ Genes without a stop codon in their annotated coordinates — potential pseudoge
 if (has_mastertable) {
   # Pseudogenes can be detected from genes with internal stops or no terminal stop
   # Using the rvs column: genes with known Rv ID that were flagged as pseudogenes
-  pseudo_cols <- intersect(c("Is_Pseudogene"), colnames(mastertable))
-  if (length(pseudo_cols) > 0) {
+  # Check both Mycobrowser's Is_Pseudogene and AMAP's pseudogene columns
+  has_myco_pseudo <- "Is_Pseudogene" %in% colnames(mastertable)
+  has_amap_pseudo <- "pseudogene" %in% colnames(mastertable)
+  if (has_myco_pseudo || has_amap_pseudo) {
     pseudo_data <- mastertable %>%
       mutate(lineage = sub("_.*", "", .data[[colnames(mastertable)[1]]])) %>%
-      filter(Is_Pseudogene == "yes" | Is_Pseudogene == "Yes" | Is_Pseudogene == TRUE)
+      filter(
+        (if (has_myco_pseudo) (Is_Pseudogene %in% c("yes","Yes","TRUE",TRUE)) else FALSE) |
+        (if (has_amap_pseudo) (pseudogene %in% c("yes","Yes","TRUE",TRUE)) else FALSE)
+      )
     
     if (nrow(pseudo_data) > 0) {
       pseudo_count <- pseudo_data %>%
@@ -734,7 +739,7 @@ if (has_mastertable) {
       cat("No pseudogenes detected in the dataset.\n")
     }
   } else {
-    cat("Is_Pseudogene column not found in master table.\n")
+    cat("No pseudogene columns found in master table (neither Is_Pseudogene nor pseudogene).\n")
   }
 } else {
   cat("Master table not available.\n")
@@ -1007,7 +1012,7 @@ Interactive explorer for the full annotation master table with all functional an
 if (has_mastertable) {
   # Show a subset of the most useful columns
   display_cols <- intersect(
-    c("id","strand","start","end","rvs","COG_category","Description","Preferred_name",
+    c("id","strand","start","end","rvs","pseudogene","COG_category","Description","Preferred_name",
       "Gene","Product_x","KEGG_Pathway","KEGG_ko","GOs","EC","PFAMs","CAZy",
       "Functional_Category","Is_Pseudogene","Locus"),
     colnames(mastertable))

@@ -68,8 +68,13 @@ def main():
             # Extract the sequence ID (e.g., 'L8_G26689_Rv0001' from 'L8_G26689_Rv0001;+;0-1524')
             seq_id = record.id.split(';')[0]
 
-            # Find the row corresponding to our sequence ID
-            cog_row = df[df['id'] == seq_id]
+            # Match by stripping semicolons from both sides.
+            # eggNOG query preserves the full FAA header (e.g., 'L8_G26689_Rv0001;+;0-1524')
+            # while FASTA record.id also has the full header. We need to match the
+            # base ID (before first ';') from both.
+            if 'simple_id' not in df.columns:
+                df['simple_id'] = df['id'].astype(str).str.split(';').str[0]
+            cog_row = df[df['simple_id'] == seq_id]
 
             # If we find a match in the annotation file
             if not cog_row.empty:

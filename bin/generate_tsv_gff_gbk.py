@@ -61,7 +61,17 @@ def tsv_to_gbk(tsv_file, fasta_file, gbk_file, molecule_type='DNA'):
                 sequence = secuencias[seq_id].seq[start:end]
                 if strand_int == -1:
                     sequence = sequence.reverse_complement()
-                qualifiers['translation'] = [str(sequence.translate(to_stop=True))]
+                # Use full translation (not to_stop) to handle pseudogenes
+                # with internal stop codons. Strip trailing * if present.
+                full_translation = str(sequence.translate()).rstrip('*')
+                # If there are internal stops, mark as pseudogene in qualifiers
+                if '*' in full_translation:
+                    qualifiers['pseudo'] = ['']
+                    qualifiers['note'] = [f'contains {full_translation.count("*")} internal stop codon(s)']
+                    # GenBank convention: pseudogenes use to_stop translation
+                    qualifiers['translation'] = [str(sequence.translate(to_stop=True))]
+                else:
+                    qualifiers['translation'] = [full_translation]
             feature = SeqFeature(FeatureLocation(start, end, strand=strand_int), type=feature_type, qualifiers=qualifiers)
             secuencias[seq_id].features.append(feature)
 
@@ -76,7 +86,7 @@ def columns():
     "KEGG_TC", "CAZy", "BiGG_Reaction", "PFAMs"
     ]
     name_correctedtsv = [
-    "id", "strand", "start", "end", "rvs"
+    "id", "strand", "start", "end", "rvs", "pseudogene"
     ]
     name_bakta = [
         "Sequence Id","Type", "Start","Stop","Strand","Locus Tag", "Gene","Product","DbXrefs"

@@ -34,6 +34,8 @@ process FIX_CDS {
     cpus 1
     memory '1 GB'
 
+    publishDir "${params.outdir}/AMAP/${sampleId}", pattern: "*.AMAP.*", mode: 'copy'
+
     input:
     tuple val(sampleId), path(corrected_tsv), path(fasta), path(bakta_tsv)
 

@@ -28,7 +28,12 @@ process PATHOTYPR {
         -r "${params.pathotyper_ref}" \\
         --output-prefix "${sampleId}" || true
 
-    # 2. Check if the summary file was created and is not empty.
+    # 2. Ensure summary file exists (even if empty) — Nextflow output glob requires it.
+    if [ ! -f "${sampleId}_summary.tsv" ]; then
+        echo -e "Sample\\tLineage\\tName" > "${sampleId}_summary.tsv"
+    fi
+
+    # 3. Check if the summary file was created and is not empty.
     if [ -s "${sampleId}_summary.tsv" ]; then
         # 3. Extract the new name: <lineage>_<sampleId>
         newName=\$(awk -F'\\t' 'NR==2 {print \$NF"_"\$1}' "${sampleId}_summary.tsv")

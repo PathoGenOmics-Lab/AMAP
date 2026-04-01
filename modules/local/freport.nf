@@ -48,12 +48,17 @@ process REPORT_INPUTS {
     done
 
     # Master tables — concatenate with headers for first file only
+    # Use the first NON-EMPTY file for the header to handle edge cases
+    # where the first sample has 0 genes (empty master table).
     touch input_mastertables.txt
-    first=true
+    header_written=false
     for f in \$(echo ${mastertable_files} | tr ' ' '\\n' | safe_grep 'AMAPmastertable.tsv\$'); do
-        if \$first; then
+        if [ ! -s "\$f" ]; then
+            continue  # skip empty files
+        fi
+        if ! \$header_written; then
             cat "\$f" >> input_mastertables.txt
-            first=false
+            header_written=true
         else
             tail -n +2 "\$f" >> input_mastertables.txt
         fi

@@ -126,6 +126,16 @@ process GET_ALLDUP {
     cat *.dup > all_fastas.fa
     rm *.dup
 
+    # Handle case where no samples have duplicated genes (empty concatenated FASTA)
+    if [ ! -s all_fastas.fa ]; then
+        echo "No duplicated genes across any sample — creating empty outputs."
+        echo -e "" > all_vs_all.diamond
+        echo -e "" > homologous_communities.tsv
+        # Minimal valid HTML for the network visualization
+        echo "<html><body><p>No homologous communities found</p></body></html>" > homologous_communities.html
+        exit 0
+    fi
+
     diamond makedb --in all_fastas.fa --db all_fastas_db --threads ${task.cpus}
     diamond blastp \\
         --db all_fastas_db \\

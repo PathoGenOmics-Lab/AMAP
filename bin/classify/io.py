@@ -31,13 +31,16 @@ def _read_paf(path):
     columns and rename only the first 12 that we actually use.
     """
     # Read with no fixed column count — pandas auto-detects
-    df = pd.read_csv(path, sep='\t', header=None, comment='#')
-    # Rename the 12 standard PAF columns
     paf_cols = [
         "Prot Id", "Prot len", "Prot Start", "ProtStop", "Strand",
         "fasta Tag", "fasta len", "Start", "End", "Match Nt", "Num nt",
         "mapping qual"
     ]
+    try:
+        df = pd.read_csv(path, sep='\t', header=None, comment='#')
+    except pd.errors.EmptyDataError:
+        # Empty PAF (e.g., empty bad_bakta.faa → no alignments)
+        return pd.DataFrame(columns=paf_cols)
     # Rename first 12 columns; keep remaining as-is (tag columns)
     rename_map = {i: name for i, name in enumerate(paf_cols) if i < len(df.columns)}
     df = df.rename(columns=rename_map)

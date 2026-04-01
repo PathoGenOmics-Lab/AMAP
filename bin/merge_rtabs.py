@@ -66,8 +66,10 @@ def merge_rtab_files(rtab_paths, output_path):
     # Fill NaN (genes absent in some samples) with 0
     merged = merged.fillna(0).astype(int)
 
-    # Write output
-    merged.to_csv(output_path, sep='\t')
+    # Write output — use index_label='Gene' so R reads it correctly
+    # (without a named index column, R treats the first data column as row.names,
+    #  breaking downstream pa_matrix = pangene_raw[, -1] logic)
+    merged.to_csv(output_path, sep='\t', index_label='Gene')
     print(f"Merged {n_files} Rtab files: {merged.shape[0]} gene families × {merged.shape[1]} samples")
     return merged.shape[0]
 

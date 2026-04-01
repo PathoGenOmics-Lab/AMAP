@@ -97,6 +97,7 @@ RUN \
       bakta=1.12.0 \
       eggnog-mapper=2.1.13 \
       diamond=2.1.24 \
+      pathotypr \
       gfatools \
       # --- R runtime (only packages used by report_AMAP.Rmd) ---
       r-base=4.4 \
@@ -130,7 +131,6 @@ RUN \
     rm -rf /root/.cache/pip /tmp/*
 
 # --- R: GitHub-only packages ---
-RUN R -e "remotes::install_github('maximilian-heeg/ggsimplestats', force = TRUE)" && \
-    R -e "remotes::install_github('PathoGenOmics-Lab/pathotypr', force = TRUE)"
+RUN R -e "remotes::install_github('maximilian-heeg/ggsimplestats', force = TRUE)"
 
 WORKDIR /app

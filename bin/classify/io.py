@@ -72,11 +72,19 @@ def write_summary(base_name, data_frames, case_types):
     """Write a summary TSV with counts per case type."""
     # Extract lineage from base_name: "L4_G26689" → "L4", "G26689" → "Untyped"
     parts = base_name.split("_")
-    lineage = parts[0] if len(parts) >= 2 else "Untyped"
+    if len(parts) >= 2:
+        lineage = parts[0]
+        sequence = base_name
+    else:
+        # Untyped samples have no lineage prefix (e.g., just "G26689").
+        # Emit Sequence as "Untyped_G26689" so downstream process_id() in
+        # the R report can parse it as lineage="Untyped", genome="G26689".
+        lineage = "Untyped"
+        sequence = f"Untyped_{base_name}"
     summary_data = {
         "Type": case_types,
         "Number": [len(df) for df in data_frames],
-        "Sequence": base_name,
+        "Sequence": sequence,
         "Lineage": lineage
     }
     pd.DataFrame(summary_data).to_csv(f"{base_name}-summary.tsv", sep='\t', index=False)

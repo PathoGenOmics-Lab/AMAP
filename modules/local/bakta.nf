@@ -12,6 +12,10 @@ process BAKTA_ANNOTATOR {
     tuple val(sampleId), path(fasta), path("${sampleId}/${sampleId}.tsv"), emit: for_fix
 
     script:
+    // Use custom reference annotation for --proteins if provided;
+    // otherwise fall back to the default H37Rv proteins.
+    // Bakta accepts GBK, GFF3, EMBL, and FASTA as --proteins input.
+    def proteins_ref = params.ref_annotation ? params.ref_annotation : params.bakta_proteins
     """
     bakta \\
         --db "${params.bakta_db}" \\
@@ -22,7 +26,7 @@ process BAKTA_ANNOTATOR {
         --output ${sampleId} \\
         --prefix ${sampleId} \\
         --locus-tag ${sampleId} \\
-        --proteins "${params.bakta_proteins}" \\
+        --proteins "${proteins_ref}" \\
         ${fasta}
     """
 }

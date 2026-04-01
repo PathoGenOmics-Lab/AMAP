@@ -197,16 +197,9 @@ def main():
     # Assign 'genome' column
     # For reference genes, prepend the sample's genome ID.
     # For sample genes, use everything after the first underscore.
-    if len(sample_ids.iloc[0].split('_')) >= 3 if not sample_ids.empty else False:
-        # Standard 3-part format
-        df['genome'] = np.where(
-            is_ref_gene,
-            sample_genome_id + '_' + id_source.str.split('_').str[0],
-            id_source.str.split('_', n=1).str[1]
-        )
-    else:
-        # 2-part or untyped format
-        df['genome'] = sample_genome_id
+    # All genes in one master table belong to the same sample.
+    # Use the consistent sample_genome_id for ALL genes.
+    df['genome'] = sample_genome_id
     # --- END: ID PROCESSING LOGIC ---
 
     # Process COG categories (always available from eggNOG)

@@ -142,36 +142,84 @@ To set up your environment with Nextflow and Singularity, follow these straightf
 These steps ensure that you have a robust setup for running reproducible data analysis workflows using Nextflow, Conda, and Singularity.
 
 ### Running AMAP
-Nextflow facilitates the direct execution of pipelines from GitHub repositories. This approach simplifies the process and does not require cloning the repository locally.
 
-To run the AMAP pipeline hosted on GitHub by PathoGenOmics-Lab, follow these simple steps:
+Nextflow runs the pipeline directly from GitHub — no need to clone the repository.
 
-1. **Prepare Your Environment**:
-   Ensure that Nextflow and Singularity are installed and properly configured in your Conda environment as previously detailed.
 > [!NOTE]
-> If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/usage/installation) on how to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/usage/introduction#how-to-run-a-pipeline) with `-profile test` before running the workflow on actual data.
+> If you are new to Nextflow, refer to [this page](https://nf-co.re/docs/usage/installation) on how to set it up. Test your setup with `-profile test` before running on real data.
 
-2. **Run the Pipeline**:
-   Execute the AMAP pipeline directly from GitHub with Nextflow. Replace `[parameters]` with the specific parameters needed for your analysis.
-   ```bash
-   nextflow run PathoGenOmics-Lab/AMAP --tsv test_file.tsv
-   ```
+#### 🖥️ On a local machine (laptop / workstation)
+
+```bash
+# With Docker (recommended for local use):
+nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv
+
+# With Singularity (if Docker is not available):
+nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv
+```
+
+The pipeline auto-detects available CPUs and sets `max_memory` to 16 GB. Override if needed:
+
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile docker \
+    --tsv samples.tsv --max_cpus 8 --max_memory 32.GB
+```
+
+#### 🏗️ On an HPC cluster (SLURM)
+
+Combine a container profile with the `slurm` profile:
+
+```bash
+nextflow run PathoGenOmics-Lab/AMAP \
+    -profile singularity,slurm \
+    --tsv samples.tsv
+```
+
+This submits each process as a separate SLURM job. Default resources: up to 48 CPUs, 128 GB RAM per job. Each process has time limits to prevent zombie jobs.
+
+**Customize for your cluster:**
+
+```bash
+# Custom partition and account:
+nextflow run PathoGenOmics-Lab/AMAP \
+    -profile singularity,slurm \
+    --tsv samples.tsv \
+    --max_cpus 64 --max_memory 256.GB \
+    -process.queue long \
+    -process.clusterOptions '--account=mygroup'
+```
+
+> [!TIP]
+> For large datasets (>100 genomes), SLURM is strongly recommended. The pipeline will submit up to 200 concurrent jobs, parallelizing Bakta, Miniprot, and eggNOG across all samples simultaneously.
+
+**Other schedulers:** Profiles for SGE (`-profile singularity,sge`) and PBS (`-profile singularity,pbs`) are also available.
+
+#### 🧬 Non-MTBC organisms
+
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile docker \
+    --tsv samples.tsv \
+    --skip_typing --skip_mycobrowser \
+    --genus Escherichia --species "Escherichia coli" \
+    --ref_annotation my_reference.gbk --ref_genome my_reference.fasta
+```
+
 ### Advanced Usage
 
 #### Resuming a run
-If your run is interrupted for any reason, you can resume it from the last successfully completed step by adding the `-resume` flag to your command:
+If your run is interrupted, resume from the last checkpoint with `-resume`:
 
 ```bash
-nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv test_file.tsv -resume
+nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
+    --tsv samples.tsv -resume
 ```
 
-#### Running on a SLURM Cluster
-The pipeline includes a `slurm` profile for execution on HPC clusters using the SLURM workload manager. To use it, combine it with a container profile like `singularity`:
+#### Test profile
+Run the pipeline with a small test dataset to verify installation:
 
 ```bash
-nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv test_file.tsv
+nextflow run PathoGenOmics-Lab/AMAP -profile docker,test
 ```
-The default Quality of Service (QoS) is set to `short` in the `nextflow.config` file. You can modify this file to change the `clusterOptions` to suit your cluster's configuration (e.g., specifying a different partition or account).
 
 
 # Detailed Outputs

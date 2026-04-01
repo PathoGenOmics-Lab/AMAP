@@ -26,7 +26,12 @@ process GET_DUPLICATIONS {
         --very-sensitive \\
         --no-self-hits \\
         --header \\
-        > duplications_${sampleId}
+        > duplications_${sampleId}.raw
+
+    # Sort for reproducibility (Diamond multi-thread output order is non-deterministic)
+    grep '^#' duplications_${sampleId}.raw > duplications_${sampleId} || true
+    grep -v '^#' duplications_${sampleId}.raw | sort -k1,1 -k2,2 -k12,12gr >> duplications_${sampleId}
+    rm duplications_${sampleId}.raw
 
     python3 ${projectDir}/bin/get_duplications.py duplications_${sampleId}
     python3 ${projectDir}/bin/dup_ex_multifasta.py duplications_${sampleId}_groups.tsv ${amap_faa}.renamed
@@ -145,7 +150,12 @@ process GET_ALLDUP {
         --very-sensitive \\
         --no-self-hits \\
         --header \\
-        > all_vs_all.diamond
+        > all_vs_all.raw
+
+    # Sort for reproducibility (Diamond multi-thread output order is non-deterministic)
+    grep '^#' all_vs_all.raw > all_vs_all.diamond || true
+    grep -v '^#' all_vs_all.raw | sort -k1,1 -k2,2 -k12,12gr >> all_vs_all.diamond
+    rm all_vs_all.raw
 
     python3 ${projectDir}/bin/network_genomes.py all_vs_all.diamond
     """

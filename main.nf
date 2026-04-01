@@ -16,6 +16,19 @@
 // Enable Nextflow DSL 2
 nextflow.enable.dsl=2
 
+// --- MANIFEST ---
+manifest {
+    name            = 'PathoGenOmics-Lab/AMAP'
+    author          = 'Paula Ruiz-Rodriguez'
+    description     = 'Assisted MTBC Annotator Pipeline'
+    mainScript      = 'main.nf'
+    version         = '2.0.0'
+    nextflowVersion = '>=23.04.0'
+    doi             = 'https://doi.org/10.5281/zenodo.8024446'
+    homePage        = 'https://github.com/PathoGenOmics-Lab/AMAP'
+    defaultBranch   = 'main'
+}
+
 //
 // --- PARAMS ---
 //
@@ -128,17 +141,43 @@ workflow.onComplete {
     =======================================
     ${status}
     =======================================
+    Pipeline    : ${manifest.name} v${manifest.version}
+    Nextflow    : ${nextflow.version}
+    Profile     : ${workflow.profile}
     Duration    : ${duration}
     Succeeded   : ${succeeded}
     Failed      : ${failed}
     Ignored     : ${ignored}
     Output      : ${params.outdir}
+    Work dir    : ${workflow.workDir}
+    Command     : ${workflow.commandLine}
     =======================================
     """.stripIndent()
 
     if (failed > 0) {
         log.warn "${failed} process(es) failed. Check .nextflow.log and ${params.outdir}/pipeline_info/ for details."
     }
+    
+    // Write machine-readable run summary
+    def summary_file = new File("${params.outdir}/pipeline_info/run_summary.txt")
+    summary_file.parentFile.mkdirs()
+    summary_file.text = """\
+    pipeline=${manifest.name}
+    version=${manifest.version}
+    nextflow=${nextflow.version}
+    profile=${workflow.profile}
+    status=${workflow.success ? 'COMPLETED' : 'FAILED'}
+    duration=${duration}
+    succeeded=${succeeded}
+    failed=${failed}
+    ignored=${ignored}
+    start=${workflow.start}
+    complete=${workflow.complete}
+    command=${workflow.commandLine}
+    workDir=${workflow.workDir}
+    launchDir=${workflow.launchDir}
+    projectDir=${workflow.projectDir}
+    """.stripIndent()
 }
 
 workflow.onError {
@@ -171,6 +210,8 @@ include { REPORT_INPUTS }       from './modules/local/freport'
 include { FINAL_REPORT }        from './modules/local/freport'
 include { PREPARE_REFERENCE }   from './modules/local/reference'
 include { VALIDATE_INPUTS }     from './modules/local/validation'
+include { SOFTWARE_VERSIONS }   from './modules/local/versions'
+include { DUMP_PARAMS }         from './modules/local/versions'
 //
 // --- INPUT CHANNEL ---
 //
@@ -194,8 +235,10 @@ Channel
 // --- WORKFLOW ---
 //
 workflow {
-    // 0. Input validation — always runs as first step
+    // 0. Input validation + reproducibility — always runs first
     VALIDATE_INPUTS(Channel.value(file(params.tsv)))
+    SOFTWARE_VERSIONS()
+    DUMP_PARAMS()
 
     // If validate_only mode, stop here
     if (params.validate_only) {

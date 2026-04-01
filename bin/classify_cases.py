@@ -107,7 +107,7 @@ def main():
     resolve_multiple_overlaps(multiple_groups, miniprot_df, combined)
 
     # --- 8. Reconciliation + recovery + dedup ---
-    reconcile_coordinates(combined, miniprot_df)
+    reconcile_coordinates(combined, miniprot_df, bakta_df)
     recover_missing_genes(combined, miniprot_df)
     deduplicate(combined)
 

@@ -18,13 +18,20 @@ def parse_ref_coords_from_id(prot_id):
     return None, None
 
 
-def reconcile_coordinates(combined_dict, miniprot_df):
+def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
     """
     Replace coordinates with true reference coordinates when available.
     
     For each gene in the dict, check if the protein ID contains embedded
     coordinates (e.g., Rv1234_12345-67890). If the embedded coordinates
     differ from the current ones but overlap significantly, replace them.
+    
+    Safety checks:
+    1. Only reconcile when lengths are comparable (within 2×) to prevent
+       paralog-driven coordinate replacement.
+    2. Remove genes placed at wrong positions (embedded coords don't match
+       actual position), UNLESS they are multi-copy elements (>2 Miniprot
+       hits), where placement at different positions is expected.
     """
     # Build ref coord map
     ref_coords = {}
@@ -33,28 +40,101 @@ def reconcile_coordinates(combined_dict, miniprot_df):
         if s and e:
             ref_coords[prot_id] = (s, e)
 
+    # Count hits per protein to identify multi-copy elements
+    hit_counts = miniprot_df.groupby('Prot Id').size()
+
     to_remove = set()
     to_add = {}
     for coord, gene_id in list(combined_dict.items()):
+        # Check if THIS gene is a paralog placement: if its own ID has embedded
+        # coordinates that don't match its current position, it was placed at
+        # a paralogous region by Miniprot and should be removed.
+        # Exception: skip check if ANY protein hitting this position in Miniprot
+        # has embedded coords that match (proving this IS a real gene locus).
+        own_s, own_e = parse_ref_coords_from_id(str(gene_id))
+        if own_s is not None and own_e is not None:
+            own_ref_len = own_e - own_s
+            own_overlap = max(0, min(coord[1], own_e) - max(coord[0], own_s))
+            if own_ref_len > 0 and own_overlap / own_ref_len < 0.5:
+                # gene_id's embedded coords don't match → check if any OTHER
+                # Miniprot hit at this position validates it as a real locus
+                mp_at_pos = miniprot_df[
+                    (miniprot_df['Start'] == coord[0]) & (miniprot_df['End'] == coord[1])
+                ]
+                position_validated = False
+                for _, mp_row in mp_at_pos.iterrows():
+                    mp_s, mp_e = parse_ref_coords_from_id(mp_row['Prot Id'])
+                    if mp_s is not None and mp_e is not None:
+                        mp_len = mp_e - mp_s
+                        mp_ov = max(0, min(coord[1], mp_e) - max(coord[0], mp_s))
+                        if mp_len > 0 and mp_ov / mp_len >= 0.5:
+                            position_validated = True
+                            break
+                # Also validate if Bakta has a gene at these exact coordinates
+                # (Bakta gene caller is independent of Miniprot, so a gene
+                # with matching coords confirms a real coding region)
+                if not position_validated and bakta_df is not None:
+                    bk_at_pos = bakta_df[
+                        (bakta_df['Start'] == coord[0]) &
+                        (bakta_df['End'] == coord[1])
+                    ]
+                    if not bk_at_pos.empty:
+                        position_validated = True
+                if not position_validated:
+                    to_remove.add(coord)
+                    continue
+
         for ref_id, ref_coord in ref_coords.items():
             if ref_id in str(gene_id) or str(gene_id) in ref_id:
                 if ref_coord != coord:
                     overlap = max(0, min(coord[1], ref_coord[1]) - max(coord[0], ref_coord[0]))
                     min_len = min(coord[1] - coord[0], ref_coord[1] - ref_coord[0])
-                    if min_len > 0 and overlap / min_len > 0.5:
+                    max_len = max(coord[1] - coord[0], ref_coord[1] - ref_coord[0])
+                    # Only reconcile if: significant overlap AND lengths are
+                    # comparable (ref not >2× longer/shorter than current).
+                    # This prevents paralog-driven coordinate replacement
+                    # (e.g., Rv1003720new replacing Rv3508 coords).
+                    if min_len > 0 and overlap / min_len > 0.5 and max_len < 2 * min_len:
                         to_remove.add(coord)
                         to_add[ref_coord] = ref_id
                         break
+
+    # When removing paralog placements, check if a Bakta gene at that position
+    # should be restored (e.g., PE_PGRS genes where Miniprot fails to align
+    # the correct protein but Bakta calls the gene correctly).
+    bakta_restore = {}
+    if bakta_df is not None:
+        for c in to_remove:
+            if c not in to_add:  # Only for pure removals, not replacements
+                bk_overlap = bakta_df[
+                    (bakta_df['Start'] <= c[0] + 50) &
+                    (bakta_df['End'] >= c[1] - 50)
+                ]
+                if not bk_overlap.empty:
+                    bk = bk_overlap.iloc[0]
+                    bk_coord = (bk['Start'], bk['End'])
+                    if bk_coord not in combined_dict and bk_coord not in to_add:
+                        bakta_restore[bk_coord] = bk['Locus Tag']
 
     for c in to_remove:
         combined_dict.pop(c, None)
     for c, v in to_add.items():
         if c not in combined_dict:
             combined_dict[c] = v
+    for c, v in bakta_restore.items():
+        if c not in combined_dict:
+            combined_dict[c] = v
 
 
 def recover_missing_genes(combined_dict, miniprot_df):
-    """Add reference genes that are completely absent from the coordinate dict."""
+    """
+    Add reference genes that are completely absent from the coordinate dict.
+    
+    Safety: for each candidate, verify that the Miniprot alignment position
+    matches the coordinates embedded in the protein ID. If a protein named
+    'Rv1150_1278269-1278820' is placed at position 1164572-1165123, it
+    means Miniprot mapped it to a paralogous region — skip it.
+    """
     all_ref_ids = set(miniprot_df['Prot Id'].unique())
     included_ids = set(combined_dict.values())
     missing = all_ref_ids - included_ids
@@ -76,6 +156,16 @@ def recover_missing_genes(combined_dict, miniprot_df):
     for _, row in best.iterrows():
         coord = (row['Start'], row['End'])
         if coord not in combined_dict:
+            # Verify placement matches embedded coordinates in Prot Id.
+            # If the protein has embedded coords (e.g., Rv1150_1278269-1278820),
+            # the alignment should be near those coords, not at a paralog.
+            ref_s, ref_e = parse_ref_coords_from_id(row['Prot Id'])
+            if ref_s is not None and ref_e is not None:
+                ref_len = ref_e - ref_s
+                placement_overlap = max(0, min(coord[1], ref_e) - max(coord[0], ref_s))
+                if ref_len > 0 and placement_overlap / ref_len < 0.5:
+                    # Placement doesn't match embedded coords → paralog mapping
+                    continue
             combined_dict[coord] = row['Prot Id']
 
 

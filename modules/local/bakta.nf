@@ -1,5 +1,6 @@
 process BAKTA_ANNOTATOR {
     tag "$sampleId"
+    cache 'lenient'  // resume-friendly: reuse if same input sizes/names (tolerates NFS timestamp drift)
     publishDir "${params.outdir}/BAKTA", pattern: "${sampleId}", mode: 'link', overwrite: true
 
     input:

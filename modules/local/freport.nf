@@ -17,60 +17,42 @@ process REPORT_INPUTS {
 
     script:
     """
-    # Helper: safe grep that doesn't fail with set -e when no matches found
-    safe_grep() { grep "\$@" || true; }
+    # --- SCALABLE FILE COLLECTION ---
+    # Uses find + glob instead of echo|tr|grep (which breaks at ~500 files
+    # due to ARG_MAX and is O(N²) with string splitting).
 
-    # COG: grab every *AMAP.COG.tsv in the bundle, strip header lines exactly
-    for f in \$(echo ${summaries_annot} | tr ' ' '\\n' | safe_grep 'AMAP.COG.tsv\$'); do
-        tail -n +2 "\$f"
-    done > input_cog.txt
-
-    # MycoBrowser: every *AMAP.MycoBrowser.tsv
-    for f in \$(echo ${summaries_annot} | tr ' ' '\\n' | safe_grep 'AMAP.MycoBrowser.tsv\$'); do
-        tail -n +2 "\$f"
-    done > input_myco.txt
-
-    for f in \$(echo ${summaries_annot} | tr ' ' '\\n' | safe_grep 'AMAP.noRef.tsv\$'); do
-        tail -n +2 "\$f"
-    done > input_noref.txt
+    # COG / MycoBrowser / noRef — find by suffix, strip headers, concatenate
+    find . -maxdepth 1 -name '*AMAP.COG.tsv' -print0 | sort -z | xargs -0 -I{} tail -n +2 {} > input_cog.txt
+    find . -maxdepth 1 -name '*AMAP.MycoBrowser.tsv' -print0 | sort -z | xargs -0 -I{} tail -n +2 {} > input_myco.txt
+    find . -maxdepth 1 -name '*AMAP.noRef.tsv' -print0 | sort -z | xargs -0 -I{} tail -n +2 {} > input_noref.txt
 
     # Case summaries — strip header from each file
-    for f in ${summaries_cases}; do
-        tail -n +2 "\$f"
-    done > input_summary.txt
+    find . -maxdepth 1 -name '*-summary.tsv' -print0 | sort -z | xargs -0 -I{} tail -n +2 {} > input_summary.txt
 
-    # Rv missing — concatenate all rvmissing TSVs (strip headers, add sample column)
+    # Rv missing — add sample column (extracted from filename)
     touch input_rvmissing.txt
-    for f in \$(echo ${rvmissing_files} | tr ' ' '\\n' | safe_grep 'rvmissing.tsv\$'); do
-        # Extract sample name from filename: {sampleId}-rvmissing.tsv
-        sample=\$(basename "\$f" -rvmissing.tsv)
-        tail -n +2 "\$f" | awk -v s="\$sample" -F'\\t' '{print \$0 "\\t" s}' >> input_rvmissing.txt
-    done
+    find . -maxdepth 1 -name '*-rvmissing.tsv' -print0 | sort -z | while IFS= read -r -d '' f; do
+        sample=\$(basename "\$f" -rvmissing.tsv | sed 's|^\\./||')
+        tail -n +2 "\$f" | awk -v s="\$sample" -F'\\t' '{print \$0 "\\t" s}'
+    done >> input_rvmissing.txt
 
-    # Master tables — concatenate with headers for first file only
-    # Use the first NON-EMPTY file for the header to handle edge cases
-    # where the first sample has 0 genes (empty master table).
+    # Master tables — use first NON-EMPTY file for header, strip rest
     touch input_mastertables.txt
     header_written=false
-    for f in \$(echo ${mastertable_files} | tr ' ' '\\n' | safe_grep 'AMAPmastertable.tsv\$'); do
-        if [ ! -s "\$f" ]; then
-            continue  # skip empty files
-        fi
+    find . -maxdepth 1 -name '*AMAPmastertable.tsv' -print0 | sort -z | while IFS= read -r -d '' f; do
+        [ ! -s "\$f" ] && continue
         if ! \$header_written; then
-            cat "\$f" >> input_mastertables.txt
+            cat "\$f"
             header_written=true
         else
-            tail -n +2 "\$f" >> input_mastertables.txt
+            tail -n +2 "\$f"
         fi
-    done
+    done >> input_mastertables.txt
 
-    # Pangene Rtab — merge per-sample Rtab files into unified matrix
-    # Each Rtab has different gene families and columns; simple concatenation
-    # produces misaligned data. The merge script performs an outer join on
-    # gene family names, filling absent entries with 0.
-    RTAB_FILES=\$(echo ${pangene_rtab_files} | tr ' ' '\\n' | safe_grep '.Rtab\$' || true)
-    if [ -n "\$RTAB_FILES" ]; then
-        python3 ${projectDir}/bin/merge_rtabs.py --output input_pangene.txt \$RTAB_FILES
+    # Pangene Rtab — merge with outer join (handles different gene families)
+    RTAB_COUNT=\$(find . -maxdepth 1 -name '*.Rtab' | wc -l)
+    if [ "\$RTAB_COUNT" -gt 0 ]; then
+        find . -maxdepth 1 -name '*.Rtab' -print0 | sort -z | xargs -0 python3 ${projectDir}/bin/merge_rtabs.py --output input_pangene.txt
     else
         touch input_pangene.txt
     fi

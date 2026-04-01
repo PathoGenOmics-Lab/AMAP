@@ -1,8 +1,8 @@
 process PATHOTYPR {
     tag "$sampleId"
 
-    publishDir "${params.outdir}/PATHOTYPR/typing", pattern: "*_summary.tsv", mode: 'copy'
-    publishDir "${params.outdir}/PATHOTYPR/fastas", pattern: "*.fasta", mode: 'copy'
+    publishDir "${params.outdir}/PATHOTYPR/typing", pattern: "*_summary.tsv", mode: 'link', overwrite: true
+    publishDir "${params.outdir}/PATHOTYPR/fastas", pattern: "*.fasta", mode: 'link', overwrite: true
 
     input:
     tuple val(sampleId), path(fasta)

@@ -1,11 +1,11 @@
 process TYPE_CASES {
     tag "$sampleId"
 
-    publishDir "${params.outdir}/CDS_CASES/summary", pattern: "*-summary.tsv", mode: 'copy'
-    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*-case*.tsv", mode: 'copy'
-    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*-rvmissing.tsv", mode: 'copy'
-    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*.html", mode: 'copy'
-    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*_corrected.tsv", mode: 'copy'
+    publishDir "${params.outdir}/CDS_CASES/summary", pattern: "*-summary.tsv", mode: 'link', overwrite: true
+    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*-case*.tsv", mode: 'link', overwrite: true
+    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*-rvmissing.tsv", mode: 'link', overwrite: true
+    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*.html", mode: 'link', overwrite: true
+    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*_corrected.tsv", mode: 'link', overwrite: true
 
     input:
     tuple val(sampleId), path(miniprot_paf), path(badbakta_paf), path(h37rv_paf), path(fasta), path(bakta_tsv), path(bakta_faa)
@@ -35,7 +35,7 @@ process TYPE_CASES {
 process FIX_CDS {
     tag "$sampleId"
 
-    publishDir "${params.outdir}/AMAP/${sampleId}", pattern: "*.AMAP.*", mode: 'copy'
+    publishDir "${params.outdir}/AMAP/${sampleId}", pattern: "*.AMAP.*", mode: 'link', overwrite: true
 
     input:
     tuple val(sampleId), path(corrected_tsv), path(fasta), path(bakta_tsv)

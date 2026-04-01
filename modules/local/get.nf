@@ -2,7 +2,7 @@ process GET_DUPLICATIONS {
     tag "$sampleId"
 
     publishDir "${params.outdir}/DUPLICATIONS/${sampleId}",
-           mode: 'copy',
+           mode: 'link', overwrite: true,
            pattern: "duplications*"                  
 
     input:
@@ -43,7 +43,7 @@ process GET_OUTPUTS {
     tag "$sampleId"
 
     publishDir "${params.outdir}/AMAP/${sampleId}",
-               mode: 'copy',
+               mode: 'link', overwrite: true,
                pattern: "*AMAP*"
 
     input:
@@ -101,7 +101,7 @@ process GET_COUNT {
     tag "$sampleId"
 
     publishDir "${params.outdir}/AMAP/${sampleId}",
-               mode: 'copy',
+               mode: 'link', overwrite: true,
                pattern: "*-AMAP.*.tsv"
 
     input:
@@ -119,7 +119,7 @@ process GET_COUNT {
 }
 
 process GET_ALLDUP {
-    publishDir "${params.outdir}/DUPLICATIONS", mode: 'copy'
+    publishDir "${params.outdir}/DUPLICATIONS", mode: 'link', overwrite: true
 
     input:
     path dup_fastas
@@ -129,8 +129,10 @@ process GET_ALLDUP {
 
     script:
     """
-    cat *.dup > all_fastas.fa
-    rm *.dup
+    # Concatenate all per-sample duplication FASTAs
+    # Use find+xargs instead of glob to avoid ARG_MAX with 500+ files
+    find . -maxdepth 1 -name '*.dup' -print0 | xargs -0 cat > all_fastas.fa
+    find . -maxdepth 1 -name '*.dup' -delete
 
     # Handle case where no samples have duplicated genes (empty concatenated FASTA)
     if [ ! -s all_fastas.fa ]; then

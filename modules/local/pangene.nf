@@ -1,8 +1,23 @@
+/*
+ * PANGENE — pangenome graph per sample.
+ *
+ * Architecture for scalability:
+ * Each sample's corrected proteins (fixfaa) are aligned against every OTHER
+ * sample's genome (ref_fastas) using miniprot. With N samples, this is
+ * N×(N-1) alignments total.
+ *
+ * The reference FASTAs are provided as a SINGLE directory (via stageAs)
+ * to avoid Nextflow staging N-1 individual symlinks per sample — which at
+ * 500 samples means 249,500 staging operations.
+ *
+ * Miniprot jobs run in parallel batches within each process instance,
+ * bounded by task.cpus to avoid oversubscription.
+ */
 process PANGENE {
     tag "$sampleId"
 
     publishDir "${params.outdir}/PANGENE/${sampleId}",
-               mode: 'copy',
+               mode: 'link', overwrite: true,
                pattern: "*.{gfa,bubbles.txt,Rtab,stat}"
 
     input:
@@ -31,8 +46,7 @@ process PANGENE {
     ln -sf ${fixfaa} ${sampleId}-AMAP.faa
     ln -sf ${fixfna} ${sampleId}-AMAP.fna
 
-    # 2) collect reference genomes (staged via Nextflow channel, flat in workdir)
-    #    Exclude the sample's own FASTA to avoid self-alignment
+    # 2) collect reference genomes — exclude self
     refs=()
     for f in *.fasta; do
         [[ "\$f" == "${fasta}" ]] && continue
@@ -46,8 +60,9 @@ process PANGENE {
         exit 0
     fi
 
-    # 3) build PAFs — run in parallel with background jobs
-    #    Each miniprot gets 2 threads; limit concurrent jobs to fit CPU budget
+    echo "==> ${sampleId}: aligning against \${#refs[@]} references (${task.cpus} CPUs)..."
+
+    # 3) build PAFs — parallel with bounded concurrency
     THREADS_PER_JOB=2
     MAX_JOBS=\$(( ${task.cpus} / THREADS_PER_JOB ))
     [ \$MAX_JOBS -lt 1 ] && MAX_JOBS=1
@@ -62,24 +77,21 @@ process PANGENE {
                  > "\${base}_${sampleId}.paf" &
         pids+=(\$!)
         running=\$((running + 1))
-        # When at capacity, wait for ALL current jobs and track failures
-        # (portable — works on bash 3.2+, unlike wait -n which needs 4.3+)
         if [ \$running -ge \$MAX_JOBS ]; then
             for p in "\${pids[@]}"; do
-                wait \$p || { echo "ERROR: miniprot job PID \$p failed" >&2; fail=1; }
+                wait \$p || { echo "ERROR: miniprot PID \$p failed" >&2; fail=1; }
             done
             pids=()
             running=0
         fi
     done
-    # Wait for remaining jobs
     for p in "\${pids[@]}"; do
-        wait \$p || { echo "ERROR: miniprot job PID \$p failed" >&2; fail=1; }
+        wait \$p || { echo "ERROR: miniprot PID \$p failed" >&2; fail=1; }
     done
     [ \$fail -eq 0 ] || exit 1
 
     # 4) run pangene
-    pangene -p0  *.paf  > ${sampleId}.gfa
+    pangene -p0 *.paf > ${sampleId}.gfa
     k8 /usr/local/bin/pangene.js call       ${sampleId}.gfa > ${sampleId}.bubbles.txt
     k8 /usr/local/bin/pangene.js gfa2matrix ${sampleId}.gfa > ${sampleId}.Rtab
     gfatools stat ${sampleId}.gfa > ${sampleId}.stat

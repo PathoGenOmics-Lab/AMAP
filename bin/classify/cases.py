@@ -119,7 +119,9 @@ def filter_case1(case1, bakta_df_bad, cds_path):
     def calc_overlap(start, end):
         total = 0
         for iv in bad_tree[start:end+1]:
-            total += max(0, min(end, iv.end) - max(start, iv.begin))
+            # iv.begin = Start (1-based), iv.end = End+1 (half-open)
+            # Use end+1 and iv.end directly for half-open interval math
+            total += max(0, min(end + 1, iv.end) - max(start, iv.begin))
         return total
 
     case1 = case1.copy()

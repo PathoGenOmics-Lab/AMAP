@@ -188,21 +188,36 @@ def generate_tsv(merged_df, bakta_rest_df, fasta_file_path, output_file_path):
 
 def generate_gff(new_df, gff_file_path, fasta_file_path):
     new_df = new_df.copy()
-    # Use apply to create the 'Attributes' column
-    new_df['Attributes'] = new_df.apply(lambda row: f"ID={row['Locus Tag']};Name={row['Gene']};product={row['Product']};Dbxref={row['DbXrefs']}", axis=1)
-    new_df = new_df[['Sequence Id', 'Type', 'Start', 'Stop', 'Strand', 'Attributes']]
-    # Use loc to set new values
-    new_df.loc[:, 'Source'] = 'AMAP'
-    new_df.loc[:, 'Score'] = '.'
-    new_df.loc[:, 'Phase'] = new_df['Type'].apply(lambda t: '0' if t == 'CDS' else '.')
 
-    # Rearrange columns
-    new_df = new_df[['Sequence Id', 'Source', 'Type', 'Start', 'Stop', 'Score', 'Strand', 'Phase', 'Attributes']]
-   
     # Writing the DataFrame to a GFF3 file with proper header
+    # GFF3 spec: CDS features should have Parent=gene, so we emit
+    # a gene feature before each CDS.
     with open(gff_file_path, 'w') as file_gff:
         file_gff.write("##gff-version 3\n")
-        new_df.to_csv(file_gff, sep='\t', index=False, header=False)
+        for _, row in new_df.iterrows():
+            seq_id = row['Sequence Id']
+            feat_type = row['Type']
+            start = row['Start']
+            stop = row['Stop']
+            strand = row['Strand']
+            locus_tag = row['Locus Tag']
+            gene = row['Gene']
+            product = row['Product']
+            dbxrefs = row['DbXrefs']
+            phase = '0' if feat_type == 'CDS' else '.'
+
+            if feat_type == 'CDS':
+                # Emit gene feature first (GFF3 spec compliance)
+                gene_id = f"gene-{locus_tag}"
+                gene_attrs = f"ID={gene_id};Name={gene};locus_tag={locus_tag}"
+                file_gff.write(f"{seq_id}\tAMAP\tgene\t{start}\t{stop}\t.\t{strand}\t.\t{gene_attrs}\n")
+                # Emit CDS with Parent pointing to gene
+                cds_attrs = f"ID={locus_tag};Parent={gene_id};Name={gene};product={product};Dbxref={dbxrefs}"
+                file_gff.write(f"{seq_id}\tAMAP\t{feat_type}\t{start}\t{stop}\t.\t{strand}\t{phase}\t{cds_attrs}\n")
+            else:
+                # Non-CDS features (tRNA, rRNA, etc.)
+                attrs = f"ID={locus_tag};Name={gene};product={product};Dbxref={dbxrefs}"
+                file_gff.write(f"{seq_id}\tAMAP\t{feat_type}\t{start}\t{stop}\t.\t{strand}\t{phase}\t{attrs}\n")
 
         # Append FASTA sequences
         file_gff.write("##FASTA\n")

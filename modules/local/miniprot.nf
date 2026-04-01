@@ -1,6 +1,6 @@
 process MINIPROT {
     tag "$sampleId"
-    cpus 4
+    cpus 6
     memory '2 GB'
 
     input:
@@ -15,12 +15,15 @@ process MINIPROT {
     script:
     """
     # Run all three alignments in parallel (independent inputs/outputs)
-    # Track PIDs individually so we can report which one fails
-    miniprot --outs=0.95 -Iut${task.cpus} -S ${fasta} ${ref_proteome} > ${sampleId}.paf &
+    # Each gets task.cpus/3 threads to stay within the CPU allocation
+    THREADS_PER_JOB=\$(( ${task.cpus} / 3 ))
+    [ \$THREADS_PER_JOB -lt 1 ] && THREADS_PER_JOB=1
+
+    miniprot --outs=0.95 -Iut\${THREADS_PER_JOB} -S ${fasta} ${ref_proteome} > ${sampleId}.paf &
     pid1=\$!
-    miniprot --outs=0.95 -Iut${task.cpus} -S ${fasta} ${bad_bakta_faa} > ${sampleId}-badbakta.paf &
+    miniprot --outs=0.95 -Iut\${THREADS_PER_JOB} -S ${fasta} ${bad_bakta_faa} > ${sampleId}-badbakta.paf &
     pid2=\$!
-    miniprot --outs=0.95 -Iut${task.cpus} -S ${ref_genome_fasta} ${proteins_faa} > ${sampleId}-ref.paf &
+    miniprot --outs=0.95 -Iut\${THREADS_PER_JOB} -S ${ref_genome_fasta} ${proteins_faa} > ${sampleId}-ref.paf &
     pid3=\$!
 
     # Wait for each and collect exit codes (don't fail on first error)

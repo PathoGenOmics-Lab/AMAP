@@ -54,6 +54,7 @@ process PANGENE {
 
     pids=()
     running=0
+    fail=0
     for ref in "\${refs[@]}"; do
         base=\$(basename "\$ref" .fasta)
         miniprot --outs=0.97 --no-cs -S -Iut\${THREADS_PER_JOB} \\
@@ -61,15 +62,21 @@ process PANGENE {
                  > "\${base}_${sampleId}.paf" &
         pids+=(\$!)
         running=\$((running + 1))
-        # When at capacity, wait for ALL current jobs before next batch
+        # When at capacity, wait for ALL current jobs and track failures
         # (portable — works on bash 3.2+, unlike wait -n which needs 4.3+)
         if [ \$running -ge \$MAX_JOBS ]; then
-            wait "\${pids[@]}"
+            for p in "\${pids[@]}"; do
+                wait \$p || { echo "ERROR: miniprot job PID \$p failed" >&2; fail=1; }
+            done
             pids=()
             running=0
         fi
     done
-    wait  # wait for remaining jobs
+    # Wait for remaining jobs
+    for p in "\${pids[@]}"; do
+        wait \$p || { echo "ERROR: miniprot job PID \$p failed" >&2; fail=1; }
+    done
+    [ \$fail -eq 0 ] || exit 1
 
     # 4) run pangene
     pangene -p0  *.paf  > ${sampleId}.gfa

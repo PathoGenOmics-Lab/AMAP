@@ -16,18 +16,7 @@
 // Enable Nextflow DSL 2
 nextflow.enable.dsl=2
 
-// --- MANIFEST ---
-manifest {
-    name            = 'PathoGenOmics-Lab/AMAP'
-    author          = 'Paula Ruiz-Rodriguez'
-    description     = 'Assisted Microbial Annotator Pipeline'
-    mainScript      = 'main.nf'
-    version         = '1.0.0'
-    nextflowVersion = '>=23.04.0'
-    doi             = 'https://doi.org/10.5281/zenodo.8024446'
-    homePage        = 'https://github.com/PathoGenOmics-Lab/AMAP'
-    defaultBranch   = 'main'
-}
+// Manifest is defined in nextflow.config
 
 //
 // --- PARAMS ---
@@ -130,17 +119,10 @@ if (params.help) {
     exit 0
 }
 
-// --- VERSION FLAG ---
-if (args.containsKey('version') || args.containsKey('v')) {
-    log.info "${manifest.name} v${manifest.version}"
-    log.info "Nextflow ${nextflow.version}"
-    System.exit(0)
-}
-
 log.info logo
 log.info """
     ┌─────────────────────────────────────────────────┐
-    │  Pipeline    : ${manifest.name} v${manifest.version}
+    │  Pipeline    : ${workflow.manifest.name} v${workflow.manifest.version}
     │  Nextflow    : ${nextflow.version}
     │  Profile     : ${workflow.profile ?: 'standard'}
     ├─────────────────────────────────────────────────┤
@@ -173,7 +155,7 @@ workflow.onComplete {
     =======================================
     ${status}
     =======================================
-    Pipeline    : ${manifest.name} v${manifest.version}
+    Pipeline    : ${workflow.manifest.name} v${workflow.manifest.version}
     Nextflow    : ${nextflow.version}
     Profile     : ${workflow.profile}
     Duration    : ${duration}
@@ -215,8 +197,8 @@ workflow.onComplete {
     def summary_file = new File("${params.outdir}/pipeline_info/run_summary.txt")
     summary_file.parentFile.mkdirs()
     summary_file.text = """\
-    pipeline=${manifest.name}
-    version=${manifest.version}
+    pipeline=${workflow.manifest.name}
+    version=${workflow.manifest.version}
     nextflow=${nextflow.version}
     profile=${workflow.profile}
     status=${workflow.success ? 'COMPLETED' : 'FAILED'}

@@ -21,8 +21,8 @@ process SOFTWARE_VERSIONS {
     """
     cat <<-YAML > software_versions.yml
     pipeline:
-      name: "${manifest.name ?: 'AMAP'}"
-      version: "${manifest.version ?: 'dev'}"
+      name: "${workflow.manifest.name ?: 'AMAP'}"
+      version: "${workflow.manifest.version ?: 'dev'}"
       nextflow: "${nextflow.version}"
       nextflow_build: "${nextflow.build}"
     tools:
@@ -57,7 +57,7 @@ process SOFTWARE_VERSIONS {
 
     # TSV for easy parsing
     echo -e "Tool\\tVersion" > software_versions.tsv
-    echo -e "AMAP\\t${manifest.version ?: 'dev'}" >> software_versions.tsv
+    echo -e "AMAP\\t${workflow.manifest.version ?: 'dev'}" >> software_versions.tsv
     echo -e "Nextflow\\t${nextflow.version}" >> software_versions.tsv
     echo -e "Bakta\\t\$bakta_ver" >> software_versions.tsv
     echo -e "Miniprot\\t\$miniprot_ver" >> software_versions.tsv
@@ -96,7 +96,7 @@ process DUMP_PARAMS {
     # AMAP Pipeline Parameters
     # Run: ${new java.util.Date()}
     # Nextflow: ${nextflow.version}
-    # Pipeline: ${manifest.version ?: 'dev'}
+    # Pipeline: ${workflow.manifest.version ?: 'dev'}
     # Command: ${workflow.commandLine}
     # Profile: ${workflow.profile}
     # Work dir: ${workflow.workDir}

@@ -311,7 +311,9 @@ def main():
     logging.info(f"Saving translated sequences to {base_name + '.AMAP.faa'} and {base_name + '.AMAP.fna'}")
     with open(base_name + '.AMAP.faa', 'w') as file:
         for id, amino_acid_seq in cds_amino_acids.items():
-            file.write(f">{id}\n{amino_acid_seq}\n")
+            # Strip trailing stop codon '*' for tool compatibility (HMMER, InterProScan)
+            seq_str = str(amino_acid_seq).rstrip('*')
+            file.write(f">{id}\n{seq_str}\n")
     with open(base_name + '.AMAP.fna', 'w') as file:
         for id, amino_acid_seq in cds_nts.items():
             file.write(f">{id}\n{amino_acid_seq}\n")

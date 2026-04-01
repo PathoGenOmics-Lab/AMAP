@@ -99,7 +99,7 @@ def generate_master_table(eggnog_pd, correctedtsv_pd, bakta_pd_cds, myco_pd, bas
     merged_df = merged_df.drop(columns=['query'])
     merged_df.drop_duplicates(subset='simple_id', inplace=True)
     merged_df.reset_index(drop=True, inplace=True)
-    merged_df['Locus'] = correctedtsv_pd['rvs'].str.split('_').str[0]
+    merged_df['Locus'] = merged_df['rvs'].str.split('_').str[0]
     merged_df = pd.merge(merged_df, myco_pd, on='Locus', how='left')
     columns_to_drop = ['Start_x', 'Stop_x', 'Start_y', 'Stop_y', 'Strand_x', 'Strand_y', 
                        'Product_y', 'Sequence Id', 'Type', 'Locus Tag']
@@ -126,7 +126,7 @@ def generate_tsv(merged_df, bakta_rest_df, fasta_file_path, output_file_path):
 
     # Dropping columns
     new_df.drop(columns=['Gene', 'Preferred_name', 'Product_x', 'Description'], inplace=True)
-    new_df.loc[:, 'rvs'] = 'AMAP_ids:' + new_df['rvs'].astype(str)
+    new_df.loc[:, 'rvs'] = 'AMAP_ids:' + new_df['rvs'].fillna('').astype(str)
     
     # Renaming columns
     new_column_names = {'id': 'Locus Tag', 'strand': 'Strand', 'start': 'Start', 'end': 'Stop', 'Combined_Gene': 'Gene', 'Combined_Description': 'Product', 'rvs': 'DbXrefs'}
@@ -180,7 +180,7 @@ def generate_gff(new_df, gff_file_path, fasta_file_path):
     # Use loc to set new values
     new_df.loc[:, 'Source'] = 'AMAP'
     new_df.loc[:, 'Score'] = '.'
-    new_df.loc[:, 'Phase'] = '.'
+    new_df.loc[:, 'Phase'] = new_df['Type'].apply(lambda t: '0' if t == 'CDS' else '.')
 
     # Rearrange columns
     new_df = new_df[['Sequence Id', 'Source', 'Type', 'Start', 'Stop', 'Score', 'Strand', 'Phase', 'Attributes']]

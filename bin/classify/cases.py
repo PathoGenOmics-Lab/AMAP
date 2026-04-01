@@ -112,8 +112,9 @@ def filter_case1(case1, bakta_df_bad, cds_path):
     locus_ref = read_miniprot_unfiltered(cds_path)
     tags_to_check = low_overlap['Locus Tag'].tolist()
     matches = locus_ref[locus_ref['Prot Id'].isin(tags_to_check)].copy()
-    matches['match_per'] = 100 - ((matches['Num nt'] - matches['Match Nt']) / matches['Num nt']) * 100
-    matches['match_per'] = matches['match_per'].fillna(0)
+    matches['match_per'] = matches.apply(
+        lambda r: (r['Match Nt'] / r['Num nt']) * 100 if r['Num nt'] > 0 else 0, axis=1
+    )
 
     remove_ids = set(matches[matches['match_per'] >= 80]['Prot Id'])
     keep_ids = set(matches[matches['match_per'] < 80]['Prot Id'])

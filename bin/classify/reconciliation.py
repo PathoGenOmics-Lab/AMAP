@@ -113,7 +113,13 @@ def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
                 if not bk_overlap.empty:
                     bk = bk_overlap.iloc[0]
                     bk_coord = (bk['Start'], bk['End'])
-                    if bk_coord not in combined_dict and bk_coord not in to_add:
+                    # Only restore if sizes are comparable (within 2×)
+                    removed_len = c[1] - c[0]
+                    bk_len = bk_coord[1] - bk_coord[0]
+                    if (bk_len > 0 and removed_len > 0
+                            and max(bk_len, removed_len) < 2 * min(bk_len, removed_len)
+                            and bk_coord not in combined_dict
+                            and bk_coord not in to_add):
                         bakta_restore[bk_coord] = bk['Locus Tag']
 
     for c in to_remove:

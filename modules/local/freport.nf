@@ -5,6 +5,7 @@ process REPORT_INPUTS {
     path rvmissing_files
     path mastertable_files
     path pangene_rtab_files
+    path qc_stats_files
 
     output:
     tuple path("input_cog.txt"),
@@ -13,7 +14,8 @@ process REPORT_INPUTS {
           path("input_noref.txt"),
           path("input_rvmissing.txt"),
           path("input_mastertables.txt"),
-          path("input_pangene.txt")
+          path("input_pangene.txt"),
+          path("input_qc.txt")
 
     script:
     """
@@ -56,6 +58,19 @@ process REPORT_INPUTS {
     else
         touch input_pangene.txt
     fi
+
+    # QC stats — concatenate per-sample QC TSVs (keep first header only)
+    touch input_qc.txt
+    header_written=false
+    find . -maxdepth 1 -name '*.qc.tsv' -print0 | sort -z | while IFS= read -r -d '' f; do
+        [ ! -s "\$f" ] && continue
+        sample=\$(basename "\$f" -AMAP.qc.tsv)
+        if ! \$header_written; then
+            head -1 "\$f" | awk '{print "sample\\t" \$0}'
+            header_written=true
+        fi
+        tail -n +2 "\$f" | awk -v s="\$sample" '{print s "\\t" \$0}'
+    done >> input_qc.txt
     """
 }
 
@@ -64,7 +79,7 @@ process FINAL_REPORT {
 
     input:
     tuple path(input_cog), path(input_myco), path(input_summary), path(input_noref),
-          path(input_rvmissing), path(input_mastertables), path(input_pangene)
+          path(input_rvmissing), path(input_mastertables), path(input_pangene), path(input_qc)
     tuple path(dup_communities_tsv), path(dup_communities_html)
 
     output:
@@ -78,7 +93,7 @@ process FINAL_REPORT {
     cp ${projectDir}/bin/report/report_AMAP.Rmd .
     WORK_DIR=`pwd`
     echo \$WORK_DIR
-    Rscript -e "rmarkdown::render('report_AMAP.Rmd', output_file='final_report.html',params=list(cog_file='\$WORK_DIR/${input_cog}', myco_file='\$WORK_DIR/${input_myco}', summary_file='\$WORK_DIR/${input_summary}', empty_file='\$WORK_DIR/${input_noref}', rvmissing_file='\$WORK_DIR/${input_rvmissing}', mastertable_file='\$WORK_DIR/${input_mastertables}', pangene_file='\$WORK_DIR/${input_pangene}', dup_file='\$WORK_DIR/${dup_communities_tsv}'))"
+    Rscript -e "rmarkdown::render('report_AMAP.Rmd', output_file='final_report.html',params=list(cog_file='\$WORK_DIR/${input_cog}', myco_file='\$WORK_DIR/${input_myco}', summary_file='\$WORK_DIR/${input_summary}', empty_file='\$WORK_DIR/${input_noref}', rvmissing_file='\$WORK_DIR/${input_rvmissing}', mastertable_file='\$WORK_DIR/${input_mastertables}', pangene_file='\$WORK_DIR/${input_pangene}', dup_file='\$WORK_DIR/${dup_communities_tsv}', qc_file='\$WORK_DIR/${input_qc}'))"
     # Keep copied files for -resume compatibility
     """
 }

@@ -372,8 +372,9 @@ workflow {
 
         // Collect pangene Rtab files (or empty if skipped)
         pangene_rtab_ch = PANGENE.out.pangene_out.map { it[3] }.collect().ifEmpty( file('NO_PANGENE') )
+        qc_stats_ch = GET_OUTPUTS.out.qc_stats.collect()
 
-        REPORT_INPUTS(summaries_annot_ch, summaries_cases_ch, rvmissing_ch, mastertables_ch, pangene_rtab_ch)
+        REPORT_INPUTS(summaries_annot_ch, summaries_cases_ch, rvmissing_ch, mastertables_ch, pangene_rtab_ch, qc_stats_ch)
 
         // 14. Analyze duplications across all samples
         GET_ALLDUP(GET_DUPLICATIONS.out.dup_fastas.collect())

@@ -24,6 +24,7 @@ params:
   mastertable_file: "input_mastertables.txt"
   pangene_file: "input_pangene.txt"
   dup_file: "homologous_communities.tsv"
+  qc_file: "input_qc.txt"
 
 header-includes:
   - |
@@ -399,6 +400,59 @@ quality_data <- data %>%
   arrange(Lineage, Genome)
 
 make_dt(quality_data, "sample_quality_overview")
+```
+
+## Annotation Quality Metrics {.tabset}
+
+Per-sample assembly and annotation quality: genome size, GC%, coding density, hypothetical %, and functional annotation rate.
+
+### Overview Table
+```{r qc_table, echo=FALSE, message=FALSE, warning=FALSE}
+has_qc <- file.exists(params$qc_file) && file.info(params$qc_file)$size > 10
+if (has_qc) {
+  qc_data <- tryCatch(read.table(params$qc_file, sep="\t", header=TRUE, fill=TRUE, stringsAsFactors=FALSE, quote=""), error = function(e) NULL)
+  if (!is.null(qc_data) && nrow(qc_data) > 0) {
+    make_dt(qc_data, "annotation_qc")
+  } else { cat("No QC data available.\n") }
+} else { cat("QC data not available.\n") }
+```
+
+### Coding Density
+```{r qc_coding_density, echo=FALSE, fig.align='center', fig.width=10, fig.height=5, message=FALSE, warning=FALSE}
+if (has_qc && !is.null(qc_data) && nrow(qc_data) > 0 && "coding_density_pct" %in% colnames(qc_data)) {
+  p <- ggplot(qc_data, aes(x=reorder(sample, coding_density_pct), y=coding_density_pct)) +
+    geom_col(fill="#2196F3", alpha=0.7) +
+    geom_hline(yintercept=mean(qc_data$coding_density_pct, na.rm=TRUE), linetype="dashed", color="red") +
+    labs(x="Sample", y="Coding Density (%)") + theme_pubr() +
+    theme(axis.text.x=element_text(angle=90, hjust=1, size=6))
+  if (nrow(qc_data) > 30) p <- p + theme(axis.text.x=element_blank())
+  print(p)
+} else { cat("Not available.\n") }
+```
+
+### Hypothetical %
+```{r qc_hypothetical, echo=FALSE, fig.align='center', fig.width=10, fig.height=5, message=FALSE, warning=FALSE}
+if (has_qc && !is.null(qc_data) && nrow(qc_data) > 0 && "hypothetical_pct" %in% colnames(qc_data)) {
+  p <- ggplot(qc_data, aes(x=reorder(sample, -hypothetical_pct), y=hypothetical_pct)) +
+    geom_col(fill="#FF9800", alpha=0.7) +
+    geom_hline(yintercept=mean(qc_data$hypothetical_pct, na.rm=TRUE), linetype="dashed", color="red") +
+    labs(x="Sample", y="Hypothetical Proteins (%)") + theme_pubr() +
+    theme(axis.text.x=element_text(angle=90, hjust=1, size=6))
+  if (nrow(qc_data) > 30) p <- p + theme(axis.text.x=element_blank())
+  print(p)
+} else { cat("Not available.\n") }
+```
+
+### Genome Size Distribution
+```{r qc_genome_size, echo=FALSE, fig.align='center', fig.width=10, fig.height=5, message=FALSE, warning=FALSE}
+if (has_qc && !is.null(qc_data) && nrow(qc_data) > 0 && "genome_size" %in% colnames(qc_data)) {
+  qc_data$genome_mb <- qc_data$genome_size / 1e6
+  p <- ggplot(qc_data, aes(x=genome_mb)) +
+    geom_histogram(fill="#4CAF50", alpha=0.7, bins=30) +
+    geom_vline(xintercept=mean(qc_data$genome_mb, na.rm=TRUE), linetype="dashed", color="red") +
+    labs(x="Genome Size (Mb)", y="Count") + theme_pubr()
+  print(p)
+} else { cat("Not available.\n") }
 ```
 
 # AMAP Annotation Results

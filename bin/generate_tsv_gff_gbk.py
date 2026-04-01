@@ -193,24 +193,56 @@ def generate_tsv(merged_df, bakta_rest_df, fasta_file_path, output_file_path):
 
     return new_df
 
-def generate_gff(new_df, gff_file_path, fasta_file_path):
-    new_df = new_df.copy()
+def _escape_gff3(value):
+    """Escape special characters in GFF3 attribute values (spec §2.1)."""
+    if pd.isna(value) or value is None:
+        return ''
+    value = str(value)
+    # GFF3 requires URL-encoding of: tab, newline, carriage return, %, ;, =, &, ,
+    for char, enc in [('%', '%25'), ('\t', '%09'), ('\n', '%0A'), ('\r', '%0D'),
+                      (';', '%3B'), ('=', '%3D'), ('&', '%26'), (',', '%2C')]:
+        value = value.replace(char, enc)
+    return value
 
-    # Writing the DataFrame to a GFF3 file with proper header
-    # GFF3 spec: CDS features should have Parent=gene, so we emit
-    # a gene feature before each CDS.
+
+def generate_gff(new_df, gff_file_path, fasta_file_path):
+    """Generate a GFF3 file with proper spec compliance.
+    
+    Follows GFF3 specification (https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md):
+    - ##gff-version 3 header
+    - ##sequence-region pragmas for each contig
+    - Gene features as parents of CDS features
+    - Proper attribute escaping (special chars URL-encoded)
+    - ##FASTA section with embedded sequences
+    - Sorted by coordinate within each contig
+    """
+    new_df = new_df.copy()
+    
+    # Sort by contig and start position for spec compliance
+    new_df['Start_int'] = pd.to_numeric(new_df['Start'], errors='coerce').fillna(0).astype(int)
+    new_df = new_df.sort_values(['Sequence Id', 'Start_int']).drop(columns=['Start_int'])
+
+    # Parse FASTA for sequence-region pragmas
+    fasta_records = list(SeqIO.parse(fasta_file_path, "fasta"))
+    contig_lengths = {rec.id: len(rec.seq) for rec in fasta_records}
+
     with open(gff_file_path, 'w') as file_gff:
         file_gff.write("##gff-version 3\n")
+        
+        # Write ##sequence-region pragmas (GFF3 spec §4.1)
+        for contig_id in sorted(contig_lengths.keys()):
+            file_gff.write(f"##sequence-region {contig_id} 1 {contig_lengths[contig_id]}\n")
+
         for _, row in new_df.iterrows():
             seq_id = row['Sequence Id']
             feat_type = row['Type']
             start = row['Start']
             stop = row['Stop']
             strand = row['Strand']
-            locus_tag = row['Locus Tag']
-            gene = row['Gene']
-            product = row['Product']
-            dbxrefs = row['DbXrefs']
+            locus_tag = _escape_gff3(row['Locus Tag'])
+            gene = _escape_gff3(row['Gene'])
+            product = _escape_gff3(row['Product'])
+            dbxrefs = _escape_gff3(row['DbXrefs'])
             phase = '0' if feat_type == 'CDS' else '.'
 
             if feat_type == 'CDS':
@@ -226,9 +258,9 @@ def generate_gff(new_df, gff_file_path, fasta_file_path):
                 attrs = f"ID={locus_tag};Name={gene};product={product};Dbxref={dbxrefs}"
                 file_gff.write(f"{seq_id}\tAMAP\t{feat_type}\t{start}\t{stop}\t.\t{strand}\t{phase}\t{attrs}\n")
 
-        # Append FASTA sequences
+        # Append FASTA sequences (GFF3 spec §4.2)
         file_gff.write("##FASTA\n")
-        for sequence in SeqIO.parse(fasta_file_path, "fasta"):
+        for sequence in fasta_records:
             file_gff.write(f">{sequence.id}\n{sequence.seq}\n")
 
     return new_df

@@ -57,7 +57,9 @@ process GET_OUTPUTS {
 
     output:
     tuple val(sampleId), path("*-AMAPmastertable.tsv"), emit: master_table
-    path "*AMAP*"                                           
+    path "*AMAP*"
+    path "${sampleId}-AMAP.clean.faa", emit: clean_proteome
+    path "${sampleId}-AMAP.qc.tsv", emit: qc_stats
 
     script:
     """
@@ -94,6 +96,22 @@ process GET_OUTPUTS {
     # Hard link (same inode, no extra I/O) — avoids broken symlinks with publishDir
     ln -f ${amap_faa} ${sampleId}-AMAP.faa || cp ${amap_faa} ${sampleId}-AMAP.faa
     ln -f ${amap_fna} ${sampleId}-AMAP.fna || cp ${amap_fna} ${sampleId}-AMAP.fna
+
+    # --- CLEAN PROTEOME ---
+    # Export protein sequences WITHOUT pseudogenes and WITHOUT internal stop codons.
+    # This is the proteome suitable for downstream analyses (phylogenomics, dN/dS,
+    # pangenome tools, orthology) that require valid translations.
+    python3 ${projectDir}/bin/export_clean_proteome.py \\
+        ${sampleId}-AMAP.faa \\
+        *-AMAPmastertable.tsv \\
+        ${sampleId}-AMAP.clean.faa
+
+    # --- QC STATS ---
+    # Per-sample annotation quality metrics
+    python3 ${projectDir}/bin/annotation_qc.py \\
+        *-AMAPmastertable.tsv \\
+        ${fasta} \\
+        ${sampleId}-AMAP.qc.tsv
     """
 }
 

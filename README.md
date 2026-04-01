@@ -375,14 +375,6 @@ The algorithm's main task is to resolve the conflicts from **Case 4** and filter
 #### 3. Final Quality Control: Stop Codon Check
 
 As a final validation step (performed by the `check_cds.py` script), the algorithm translates every CDS in the final, corrected set. If a sequence does not end with a valid stop codon, its coordinates are automatically extended to the next in-frame stop codon in the genome. This ensures that all final annotations correspond to complete, translatable proteins.
-## Benchmark
-
-AMAP has been validated against the **H37Rv Sanger gold standard** annotation (AL123456.3, 4031 CDS), achieving **100% coordinate accuracy** (4031/4031 exact matches, 0 false positives).
-
-The benchmark also documents why correction is necessary: Prodigal fails on **26.3% of H37Rv genes**, primarily due to a systematic ATG start codon bias (+16pp over-selection vs Sanger truth).
-
-📊 **[Full benchmark report with figures →](docs/benchmark/README.md)**
-
 ## Citation
 >Ruiz-Rodriguez, P., & Coscolla, M. (2025). AMAP (Version 1.0.0) [Computer software]. https://doi.org/10.5281/zenodo.1234
 ```bibtex

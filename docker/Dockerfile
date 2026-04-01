@@ -92,6 +92,7 @@ RUN \
       matplotlib \
       eggnog-mapper=2.1.13 \
       bakta=1.12.0 \
+      pathotypr \
       plotly \
       diamond=2.1.24 \
       gfatools \

@@ -39,10 +39,12 @@ process REPORT_INPUTS {
         tail -n +2 "\$f"
     done > input_summary.txt
 
-    # Rv missing — concatenate all rvmissing TSVs (strip headers)
+    # Rv missing — concatenate all rvmissing TSVs (strip headers, add sample column)
     touch input_rvmissing.txt
     for f in \$(echo ${rvmissing_files} | tr ' ' '\\n' | safe_grep 'rvmissing.tsv\$'); do
-        tail -n +2 "\$f" >> input_rvmissing.txt
+        # Extract sample name from filename: {sampleId}-rvmissing.tsv
+        sample=\$(basename "\$f" -rvmissing.tsv)
+        tail -n +2 "\$f" | awk -v s="\$sample" -F'\\t' '{print \$0 "\\t" s}' >> input_rvmissing.txt
     done
 
     # Master tables — concatenate with headers for first file only

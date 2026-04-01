@@ -231,7 +231,10 @@ merged_data$Ratio_Percentage <- (merged_data$Count / merged_data$count) * 100
 
 # Case summary data
 data_raw <- read.table(params$summary_file, header=F, sep="\t", col.names=c("V1","V2","V3","ID"), fill=T, stringsAsFactors=F, quote="")
-processed_ids <- lapply(data_raw$ID, process_id)
+# Use V3 (Sequence = full sample name like "L8_G26689") for ID parsing,
+# NOT ID (Lineage = just "L8"). The Lineage column from write_summary
+# has no genome info, causing genome=NA and table collapse.
+processed_ids <- lapply(data_raw$V3, process_id)
 data <- tibble(
   V1=data_raw$V1, V2=data_raw$V2, V3=data_raw$V3,
   V4=sapply(processed_ids, `[`, 1), genome=sapply(processed_ids, `[`, 2))
@@ -253,8 +256,23 @@ if (has_rvmissing) {
     read.table(params$rvmissing_file, sep="\t", header=F, fill=T, stringsAsFactors=F, quote=""),
     error = function(e) NULL)
   if (!is.null(rvmissing_raw) && ncol(rvmissing_raw) >= 5) {
-    colnames(rvmissing_raw)[1:5] <- c("Prot_Id","Prot_len","Strand","Start","End")
+    # Columns: Prot_Id, Prot_len, Strand, Start, End, [Match_Nt, Num_nt], Sample
+    # The last column is the sample name appended by REPORT_INPUTS
+    n_cols <- ncol(rvmissing_raw)
+    base_names <- c("Prot_Id","Prot_len","Strand","Start","End")
+    if (n_cols == 8) {
+      colnames(rvmissing_raw) <- c(base_names, "Match_Nt", "Num_nt", "Sample")
+    } else if (n_cols >= 6) {
+      colnames(rvmissing_raw)[1:5] <- base_names
+      colnames(rvmissing_raw)[n_cols] <- "Sample"
+    } else {
+      colnames(rvmissing_raw)[1:5] <- base_names
+    }
     rvmissing_raw$Rv_gene <- sub("_\\d+-\\d+$", "", rvmissing_raw$Prot_Id)
+    # Extract lineage from sample name
+    if ("Sample" %in% colnames(rvmissing_raw)) {
+      rvmissing_raw$Lineage <- sub("_.*", "", rvmissing_raw$Sample)
+    }
   } else { has_rvmissing <- FALSE }
 }
 
@@ -388,10 +406,11 @@ print(p_false_cds)
 
 ```{r cds_correction_summary, echo=FALSE, fig.align='center', fig.width=12, message=FALSE, warning=FALSE}
 correction_data <- data %>%
-  filter(V1 %in% c("case1_kept","case4","case2","case3")) %>%
+  filter(V1 %in% c("case4","case2","case3","rv_missing")) %>%
   mutate(CorrectionStatus = case_when(
-    V1 %in% c("case1_kept","case4","rv_missing") ~ "Corrected",
-    V1 %in% c("case2","case3") ~ "Uncorrected")) %>%
+    V1 %in% c("case4","rv_missing") ~ "Corrected by AMAP",
+    V1 %in% c("case2","case3") ~ "Matched Reference",
+    TRUE ~ "Other")) %>%
   group_by(V4, CorrectionStatus) %>%
   summarise(TotalCDS=sum(V2), .groups='drop') %>%
   group_by(V4) %>%
@@ -417,12 +436,7 @@ Which Rv genes are missing in which lineages? Darker = missing in more genomes o
 
 ```{r rvmissing_heatmap, echo=FALSE, fig.align='center', fig.height=12, fig.width=14, message=FALSE, warning=FALSE}
 if (has_rvmissing) {
-  # Extract lineage from the source file name embedded in upstream processing
-  # We need to match rvmissing entries to lineages via the summary data
-  # Build lineage map from the case summary data
-  genome_lineage_map <- data %>% select(V4, genome) %>% distinct()
-  
-  # Count how many genomes are missing each Rv gene
+  # Count how many genomes are missing each Rv gene, broken down by lineage
   rv_counts <- rvmissing_raw %>%
     group_by(Rv_gene) %>%
     summarise(n_missing = n(), .groups = 'drop') %>%
@@ -431,12 +445,27 @@ if (has_rvmissing) {
   # Show top 50 most frequently missing genes
   top_missing <- head(rv_counts, 50)
   
-  p <- ggplot(top_missing, aes(x = reorder(Rv_gene, n_missing), y = n_missing)) +
-    geom_col(fill = "#3da68d") +
-    coord_flip() +
-    labs(title = "Top 50 Most Frequently Missing Rv Genes",
-         x = "Reference Gene", y = "Number of Genomes Missing This Gene") +
-    theme_pubr()
+  # If we have lineage info, show stacked bars by lineage
+  if ("Lineage" %in% colnames(rvmissing_raw)) {
+    rv_by_lineage <- rvmissing_raw %>%
+      filter(Rv_gene %in% top_missing$Rv_gene) %>%
+      count(Rv_gene, Lineage)
+    
+    p <- ggplot(rv_by_lineage, aes(x = reorder(Rv_gene, -n, FUN=sum), y = n, fill = Lineage)) +
+      geom_col() +
+      scale_fill_manual(values = colors) +
+      coord_flip() +
+      labs(title = "Top 50 Most Frequently Missing Reference Genes",
+           x = "Reference Gene", y = "Number of Genomes Missing This Gene") +
+      theme_pubr()
+  } else {
+    p <- ggplot(top_missing, aes(x = reorder(Rv_gene, n_missing), y = n_missing)) +
+      geom_col(fill = "#3da68d") +
+      coord_flip() +
+      labs(title = "Top 50 Most Frequently Missing Reference Genes",
+           x = "Reference Gene", y = "Number of Genomes Missing This Gene") +
+      theme_pubr()
+  }
   print(p)
 } else {
   cat("No Rv missing data available.\n")
@@ -452,6 +481,8 @@ if (has_rvmissing) {
     summarise(
       Times_Missing = n(),
       Avg_Length_bp = round(mean(as.numeric(End) - as.numeric(Start), na.rm=T)),
+      Lineages_Affected = if ("Lineage" %in% colnames(rvmissing_raw))
+        paste(sort(unique(Lineage)), collapse=", ") else "N/A",
       .groups = 'drop') %>%
     arrange(desc(Times_Missing))
   make_dt(rv_summary, "rv_missing_genes")
@@ -595,13 +626,6 @@ make_dt(stats_h37rv, "h37rv_comparison")
 ### Distribution per Lineage
 ```{r peppe, echo=FALSE, fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE}
 if (!has_mycobrowser_data) { cat("PE/PPE analysis requires Mycobrowser data.\n") } else if (has_mastertable && "Functional_Category" %in% colnames(mastertable)) {
-  peppe <- mastertable %>%
-    filter(grepl("PE/PPE", Functional_Category, ignore.case=TRUE)) %>%
-    mutate(
-      sample_id = mastertable$id[match(row_number(), row_number())],
-      lineage = sub("_.*", "", .data[[colnames(mastertable)[1]]])
-    )
-  
   peppe_count <- mastertable %>%
     mutate(lineage = sub("_.*", "", .data[[colnames(mastertable)[1]]])) %>%
     group_by(lineage) %>%

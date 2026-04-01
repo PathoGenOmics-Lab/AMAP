@@ -161,38 +161,52 @@ def main():
     is_sample_gene = df['rvs'].isna()
     is_ref_gene = ~is_sample_gene
 
-    # Determine the primary lineage and genome ID from the sample genes (where 'rvs' is empty)
+    # Determine the primary lineage and genome ID from the sample genes.
+    # ID format: "LINEAGE_GENOME_GENEID" (e.g., "L8_G26689_00042")
+    # For non-typed samples (skip_typing), format may be just "GENOME_GENEID"
+    # (e.g., "G26689_00042") with no lineage prefix.
     sample_ids = id_source[is_sample_gene]
     if not sample_ids.empty:
-        # Find the first valid sample ID to extract lineage and genome
         first_sample_id_parts = sample_ids.iloc[0].split('_')
-        if len(first_sample_id_parts) >= 2:
+        if len(first_sample_id_parts) >= 3:
+            # Standard format: LINEAGE_GENOME_GENEID
             sample_lineage = first_sample_id_parts[0]
             sample_genome_id = first_sample_id_parts[1]
+        elif len(first_sample_id_parts) == 2:
+            # No lineage prefix (skip_typing): GENOME_GENEID
+            sample_lineage = 'Untyped'
+            sample_genome_id = first_sample_id_parts[0]
         else:
-            sample_lineage = 'Unknown_Lineage'
-            sample_genome_id = 'Unknown_Genome'
+            sample_lineage = 'Unknown'
+            sample_genome_id = first_sample_id_parts[0] if first_sample_id_parts else 'Unknown'
     else:
-        # Fallback if no sample genes are found
-        sample_lineage = 'Unknown_Lineage'
-        sample_genome_id = 'Unknown_Genome'
+        # All genes are reference genes — extract from the first reference ID
+        ref_ids = id_source[is_ref_gene]
+        if not ref_ids.empty:
+            ref_parts = ref_ids.iloc[0].split('_')
+            sample_lineage = ref_parts[0] if len(ref_parts) >= 2 else 'Unknown'
+            sample_genome_id = ref_parts[1] if len(ref_parts) >= 2 else ref_parts[0]
+        else:
+            sample_lineage = 'Unknown'
+            sample_genome_id = 'Unknown'
 
     # Assign 'lineage' column
-    # For reference genes, use the sample's primary lineage. For others, extract it from their ID.
-    df['lineage'] = np.where(
-        is_ref_gene,
-        sample_lineage,
-        id_source.str.split('_').str[0]
-    )
+    # All genes in one file belong to the same sample → same lineage
+    df['lineage'] = sample_lineage
 
     # Assign 'genome' column
     # For reference genes, prepend the sample's genome ID.
     # For sample genes, use everything after the first underscore.
-    df['genome'] = np.where(
-        is_ref_gene,
-        sample_genome_id + '_' + id_source.str.split('_').str[0], # e.g., G26689_Rv0029
-        id_source.str.split('_', n=1).str[1] # e.g., 'G26689_2049' from 'L8_G26689_2049'
-    )
+    if len(sample_ids.iloc[0].split('_')) >= 3 if not sample_ids.empty else False:
+        # Standard 3-part format
+        df['genome'] = np.where(
+            is_ref_gene,
+            sample_genome_id + '_' + id_source.str.split('_').str[0],
+            id_source.str.split('_', n=1).str[1]
+        )
+    else:
+        # 2-part or untyped format
+        df['genome'] = sample_genome_id
     # --- END: ID PROCESSING LOGIC ---
 
     # Process COG categories (always available from eggNOG)

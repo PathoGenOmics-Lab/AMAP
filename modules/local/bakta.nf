@@ -16,6 +16,7 @@ process BAKTA_ANNOTATOR {
     bakta \\
         --db "${params.bakta_db}" \\
         --skip-trna \\
+        --threads ${task.cpus} \\
         --genus "${genus}" \\
         --species "${species}" \\
         --output ${sampleId} \\

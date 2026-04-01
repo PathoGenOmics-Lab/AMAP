@@ -17,10 +17,11 @@ process GET_DUPLICATIONS {
     python3 ${projectDir}/bin/rename_fastas.py ${emapper} ${amap_faa}
 
     # Build Diamond DB first, then query against it
-    diamond makedb --in ${amap_faa}.renamed --db renamed_db
+    diamond makedb --in ${amap_faa}.renamed --db renamed_db --threads ${task.cpus}
     diamond blastp \\
         --db renamed_db \\
         -q ${amap_faa}.renamed \\
+        --threads ${task.cpus} \\
         --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen nident \\
         --very-sensitive \\
         --no-self-hits \\
@@ -84,8 +85,9 @@ process GET_OUTPUTS {
         ${fasta}
     python3 ${projectDir}/bin/to_panaroo.py --id ${sampleId}
 
-    cat ${amap_faa} > ${sampleId}-AMAP.faa
-    cat ${amap_fna} > ${sampleId}-AMAP.fna
+    # Symlink instead of copy — avoids redundant I/O for large proteomes
+    ln -sf ${amap_faa} ${sampleId}-AMAP.faa
+    ln -sf ${amap_fna} ${sampleId}-AMAP.fna
     """
 }
 
@@ -124,10 +126,11 @@ process GET_ALLDUP {
     cat *.dup > all_fastas.fa
     rm *.dup
 
-    diamond makedb --in all_fastas.fa --db all_fastas_db
+    diamond makedb --in all_fastas.fa --db all_fastas_db --threads ${task.cpus}
     diamond blastp \\
         --db all_fastas_db \\
         -q all_fastas.fa \\
+        --threads ${task.cpus} \\
         --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen nident \\
         --very-sensitive \\
         --no-self-hits \\

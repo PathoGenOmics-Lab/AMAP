@@ -12,6 +12,8 @@
  */
 process PREPARE_REFERENCE {
     tag 'prepare_ref'
+    cpus 8
+    memory '6 GB'
 
     input:
     path ref_annotation
@@ -37,6 +39,7 @@ process PREPARE_REFERENCE {
     bakta \
         --db "${params.bakta_db}" \
         --skip-trna \
+        --threads ${task.cpus} \
         --genus "${params.genus}" \
         --species "${params.species}" \
         --output bakta_ref \

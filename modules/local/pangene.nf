@@ -46,13 +46,25 @@ process PANGENE {
         exit 0
     fi
 
-    # 3) build PAFs
+    # 3) build PAFs — run in parallel with background jobs
+    #    Each miniprot gets 2 threads; limit concurrent jobs to fit CPU budget
+    THREADS_PER_JOB=2
+    MAX_JOBS=\$(( ${task.cpus} / THREADS_PER_JOB ))
+    [ \$MAX_JOBS -lt 1 ] && MAX_JOBS=1
+
+    running=0
     for ref in "\${refs[@]}"; do
         base=\$(basename "\$ref" .fasta)
-        miniprot --outs=0.97 --no-cs -S -Iut${task.cpus} \
-                 "\$ref"  ${fixfaa} \
-                 > "\${base}_${sampleId}.paf"
+        miniprot --outs=0.97 --no-cs -S -Iut\${THREADS_PER_JOB} \\
+                 "\$ref" ${fixfaa} \\
+                 > "\${base}_${sampleId}.paf" &
+        running=\$((running + 1))
+        if [ \$running -ge \$MAX_JOBS ]; then
+            wait -n  # wait for any one job to finish
+            running=\$((running - 1))
+        fi
     done
+    wait  # wait for remaining jobs
 
     # 4) run pangene
     pangene -p0  *.paf  > ${sampleId}.gfa

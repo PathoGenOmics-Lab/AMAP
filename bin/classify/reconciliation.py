@@ -85,6 +85,9 @@ def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
     to_remove = set()
     to_add = {}
     for coord, gene_id in list(combined_dict.items()):
+        # coord is (Start, End, Strand) — extract components
+        c_start, c_end, c_strand = coord[0], coord[1], coord[2] if len(coord) > 2 else '+'
+
         # Check if THIS gene is a paralog placement: if its own ID has embedded
         # coordinates that don't match its current position, it was placed at
         # a paralogous region by Miniprot and should be removed.
@@ -102,30 +105,28 @@ def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
                 if _extract_gene_name(pid) == gene_name:
                     n_hits = max(n_hits, hit_counts[pid])
 
-            own_ref_len = own_e - own_s
-            own_overlap = max(0, min(coord[1], own_e) - max(coord[0], own_s))
+            own_ref_len = own_e - own_s + 1
+            own_overlap = max(0, min(c_end, own_e) - max(c_start, own_s) + 1)
             if own_ref_len > 0 and own_overlap / own_ref_len < 0.5 and n_hits <= 2:
                 # gene_id's embedded coords don't match → check if any OTHER
                 # Miniprot hit at this position validates it as a real locus
                 mp_at_pos = miniprot_df[
-                    (miniprot_df['Start'] == coord[0]) & (miniprot_df['End'] == coord[1])
+                    (miniprot_df['Start'] == c_start) & (miniprot_df['End'] == c_end)
                 ]
                 position_validated = False
                 for _, mp_row in mp_at_pos.iterrows():
                     mp_s, mp_e = parse_ref_coords_from_id(mp_row['Prot Id'])
                     if mp_s is not None and mp_e is not None:
-                        mp_len = mp_e - mp_s
-                        mp_ov = max(0, min(coord[1], mp_e) - max(coord[0], mp_s))
+                        mp_len = mp_e - mp_s + 1
+                        mp_ov = max(0, min(c_end, mp_e) - max(c_start, mp_s) + 1)
                         if mp_len > 0 and mp_ov / mp_len >= 0.5:
                             position_validated = True
                             break
                 # Also validate if Bakta has a gene at these exact coordinates
-                # (Bakta gene caller is independent of Miniprot, so a gene
-                # with matching coords confirms a real coding region)
                 if not position_validated and bakta_df is not None:
                     bk_at_pos = bakta_df[
-                        (bakta_df['Start'] == coord[0]) &
-                        (bakta_df['End'] == coord[1])
+                        (bakta_df['Start'] == c_start) &
+                        (bakta_df['End'] == c_end)
                     ]
                     if not bk_at_pos.empty:
                         position_validated = True
@@ -135,19 +136,16 @@ def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
 
         for ref_id, ref_coord in ref_coords.items():
             # Use exact gene name matching — NOT substring!
-            # Prevents Rv3508 matching Rv3508c, Rv1 matching Rv10, etc.
             if _gene_names_match(ref_id, gene_id):
-                if ref_coord != coord:
-                    overlap = max(0, min(coord[1], ref_coord[1]) - max(coord[0], ref_coord[0]))
-                    min_len = min(coord[1] - coord[0], ref_coord[1] - ref_coord[0])
-                    max_len = max(coord[1] - coord[0], ref_coord[1] - ref_coord[0])
-                    # Only reconcile if: significant overlap AND lengths are
-                    # comparable (ref not >2× longer/shorter than current).
-                    # This prevents paralog-driven coordinate replacement
-                    # (e.g., Rv1003720new replacing Rv3508 coords).
+                # ref_coord is (Start, End) — add strand for dict key
+                ref_key = (ref_coord[0], ref_coord[1], c_strand)
+                if ref_coord != (c_start, c_end):
+                    overlap = max(0, min(c_end, ref_coord[1]) - max(c_start, ref_coord[0]) + 1)
+                    min_len = min(c_end - c_start + 1, ref_coord[1] - ref_coord[0] + 1)
+                    max_len = max(c_end - c_start + 1, ref_coord[1] - ref_coord[0] + 1)
                     if min_len > 0 and overlap / min_len > 0.5 and max_len < 2 * min_len:
                         to_remove.add(coord)
-                        to_add[ref_coord] = ref_id
+                        to_add[ref_key] = ref_id
                         break
 
     # When removing paralog placements, check if a Bakta gene at that position
@@ -157,16 +155,17 @@ def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
     if bakta_df is not None:
         for c in to_remove:
             if c not in to_add:  # Only for pure removals, not replacements
+                c_start, c_end = c[0], c[1]
                 bk_overlap = bakta_df[
-                    (bakta_df['Start'] <= c[0] + 50) &
-                    (bakta_df['End'] >= c[1] - 50)
+                    (bakta_df['Start'] <= c_start + 50) &
+                    (bakta_df['End'] >= c_end - 50)
                 ]
                 if not bk_overlap.empty:
                     bk = bk_overlap.iloc[0]
-                    bk_coord = (bk['Start'], bk['End'])
-                    # Only restore if sizes are comparable (within 2×)
-                    removed_len = c[1] - c[0]
-                    bk_len = bk_coord[1] - bk_coord[0]
+                    bk_strand = bk.get('Strand', c[2] if len(c) > 2 else '+')
+                    bk_coord = (bk['Start'], bk['End'], bk_strand)
+                    removed_len = c_end - c_start + 1
+                    bk_len = bk_coord[1] - bk_coord[0] + 1
                     if (bk_len > 0 and removed_len > 0
                             and max(bk_len, removed_len) < 2 * min(bk_len, removed_len)
                             and bk_coord not in combined_dict
@@ -216,15 +215,16 @@ def recover_missing_genes(combined_dict, miniprot_df):
         if prot_id in recovered:
             continue  # Already recovered this gene from a better hit
 
-        coord = (row['Start'], row['End'])
+        strand = row.get('Strand', '+')
+        coord = (row['Start'], row['End'], strand)
         if coord in combined_dict:
             continue  # Position already occupied
 
         # Verify placement matches embedded coordinates in Prot Id.
         ref_s, ref_e = parse_ref_coords_from_id(prot_id)
         if ref_s is not None and ref_e is not None:
-            ref_len = ref_e - ref_s
-            placement_overlap = max(0, min(coord[1], ref_e) - max(coord[0], ref_s))
+            ref_len = ref_e - ref_s + 1
+            placement_overlap = max(0, min(coord[1], ref_e) - max(coord[0], ref_s) + 1)
             if ref_len > 0 and placement_overlap / ref_len < 0.5:
                 # Placement doesn't match embedded coords → paralog mapping
                 # Don't give up — try the next hit for this protein
@@ -282,19 +282,21 @@ def write_corrected_tsv(combined_dict, miniprot_df, bakta_df, base_name):
     Filters out entries with start=0 or end=0, assigns strands from
     miniprot/bakta matches, and formats IDs.
     """
-    # Sort and filter
-    sorted_dict = dict(sorted(combined_dict.items()))
+    # Sort by start coordinate and filter invalid entries
+    sorted_dict = dict(sorted(combined_dict.items(), key=lambda x: (x[0][0], x[0][1])))
     filtered = {
-        (s, e): v for (s, e), v in sorted_dict.items()
-        if s != 0 and e != 0
+        k: v for k, v in sorted_dict.items()
+        if k[0] != 0 and k[1] != 0
     }
 
     singles = []
     multis = []
     dup_counter = 1
 
-    for (start, end), value in filtered.items():
-        strand = _find_strand(start, end, miniprot_df, bakta_df)
+    for coord_key, value in filtered.items():
+        start, end = coord_key[0], coord_key[1]
+        # Use strand from key if available, otherwise derive from data
+        strand = coord_key[2] if len(coord_key) > 2 else _find_strand(start, end, miniprot_df, bakta_df)
 
         mp_matches = miniprot_df[(miniprot_df['Start'] == start) & (miniprot_df['End'] == end)]
         bk_matches = bakta_df[(bakta_df['Start'] == start) & (bakta_df['End'] == end)]
@@ -346,7 +348,7 @@ def _find_strand(start, end, miniprot_df, bakta_df):
         if ov.empty:
             return None
         ov['_ov_len'] = ov.apply(
-            lambda r: min(end, r['End']) - max(start, r['Start']), axis=1)
+            lambda r: min(end, r['End']) - max(start, r['Start']) + 1, axis=1)
         return ov.loc[ov['_ov_len'].idxmax(), 'Strand']
 
     mp_strand = _best_overlap_strand(miniprot_df)

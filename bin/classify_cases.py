@@ -41,10 +41,16 @@ __lab__ = 'PathoGenOmics (I2SysBio)'
 
 
 def create_coords_dict(df, id_col):
-    """Create a coordinate→ID dict. First occurrence wins for duplicate coordinates."""
+    """Create a (Start, End, Strand)→ID dict.
+    
+    Keys include Strand to prevent collisions between genes at the same
+    coordinates on opposite strands (e.g., antisense overlapping genes).
+    First occurrence wins for duplicate coordinates.
+    """
     result = {}
     for _, row in df.iterrows():
-        key = (row['Start'], row['End'])
+        strand = row.get('Strand', '+')
+        key = (row['Start'], row['End'], strand)
         if key not in result:
             result[key] = row[id_col]
     return result
@@ -105,9 +111,9 @@ def main():
         combined.update(new_entries)
     if len(combined) < n_before:
         n_lost = n_before - len(combined)
-        print(f"WARNING: {n_lost} genes lost to coordinate collisions. "
-              f"This may indicate a multi-contig assembly where genes on "
-              f"different contigs share the same coordinates.")
+        print(f"WARNING: {n_lost} genes lost to (Start, End, Strand) collisions. "
+              f"This may indicate duplicate entries or a multi-contig assembly "
+              f"where genes on different contigs share the same coordinates.")
 
     # --- 7. Resolve overlaps ---
     # NOTE: case4_mp_overlaps stores case4 indices, but create_overlap_groups

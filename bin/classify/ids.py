@@ -1,17 +1,25 @@
 """Gene ID cleaning and formatting utilities."""
 
+import re
+
 
 def clean_id(gene_id):
     """
-    Cleans a gene ID based on the 4-part rule.
-    If the ID split by '_' has 4 elements, it removes the last one.
-    Example: 'L8_G26689_Rv0609A_703830-704057' becomes 'L8_G26689_Rv0609A'.
+    Strip trailing embedded coordinates from a protein/gene ID.
+    
+    Reference proteins have format GENE_ID_START-END (e.g., Rv0609A_703830-704057).
+    When the protein is from a typed sample, the full ID is:
+    L8_G26689_Rv0609A_703830-704057 (sample prefix + gene + coords).
+    
+    This function removes the trailing _DIGITS-DIGITS suffix if present.
+    It's safe for IDs without coordinates (e.g., L8_G26689_00042 → unchanged).
+    
+    Old behavior: stripped the last underscore part only when exactly 4 parts
+    existed. This was brittle and failed for PE_PGRS genes (5+ parts).
     """
     gene_id = str(gene_id)
-    parts = gene_id.split('_')
-    if len(parts) == 4:
-        return '_'.join(parts[:-1])
-    return gene_id
+    # Only strip trailing _DIGITS-DIGITS (embedded coordinates)
+    return re.sub(r'_\d+-\d+$', '', gene_id)
 
 
 def format_cluster_id(gene_id, base_name):

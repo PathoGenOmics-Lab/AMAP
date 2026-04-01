@@ -10,21 +10,29 @@ from intervaltree import IntervalTree
 
 
 def get_overlap_percentage(range1, range2):
-    """Calculate overlap percentage relative to the larger range."""
-    intersection = max(0, min(range1[1], range2[1]) - max(range1[0], range2[0]))
-    max_length = max(range1[1] - range1[0], range2[1] - range2[0])
+    """Calculate overlap percentage relative to the larger range.
+    
+    Coordinates are 1-based inclusive: length = End - Start + 1.
+    Overlap of [100,200] and [150,300] = min(200,300) - max(100,150) + 1 = 51 bp.
+    """
+    intersection = max(0, min(range1[1], range2[1]) - max(range1[0], range2[0]) + 1)
+    max_length = max(range1[1] - range1[0] + 1, range2[1] - range2[0] + 1)
     return (intersection / max_length) * 100 if max_length > 0 else 0
 
 
 def get_subset_overlap_percentage(range1, range2):
-    """Calculate overlap percentage relative to the smaller range."""
-    intersection = max(0, min(range1[1], range2[1]) - max(range1[0], range2[0]))
-    min_length = min(range1[1] - range1[0], range2[1] - range2[0])
+    """Calculate overlap percentage relative to the smaller range.
+    
+    Coordinates are 1-based inclusive: length = End - Start + 1.
+    """
+    intersection = max(0, min(range1[1], range2[1]) - max(range1[0], range2[0]) + 1)
+    min_length = min(range1[1] - range1[0] + 1, range2[1] - range2[0] + 1)
     return (intersection / min_length) * 100 if min_length > 0 else 0
 
 
 def _range_length(r):
-    return r[1] - r[0]
+    """Length of a 1-based inclusive coordinate range."""
+    return r[1] - r[0] + 1
 
 
 def build_overlap_tree(tree_df, overlap_df, tree_id_col, overlap_id_col):
@@ -72,23 +80,22 @@ def resolve_single_overlaps(single_groups, miniprot_df, combined_dict, new_group
     - Remove existing entries with ≥70% overlap if the new one is longer
     """
     for key, value in single_groups.items():
-        bakta_len = value['case4'][0][1] - value['case4'][0][0]
-        # Use genomic span (End - Start) for fair comparison, not Match Nt
-        # which only counts aligned bases and is always <= span
+        bakta_len = value['case4'][0][1] - value['case4'][0][0] + 1
         mp_row = miniprot_df.loc[miniprot_df['Prot Id'] == value['Prot Id']].iloc[0]
-        rv_len = mp_row['End'] - mp_row['Start']
+        rv_len = mp_row['End'] - mp_row['Start'] + 1
+        strand = mp_row.get('Strand', '+')
 
         locus_tag = value['Locus Tags'][0]
         n_overlaps = len(new_groups[locus_tag]['Locus Tags']) if locus_tag in new_groups else 0
 
         if n_overlaps > 1:
-            new_coord, new_id = value['miniprot_df'][0], value['Prot Id']
+            new_coord, new_id = (*value['miniprot_df'][0], strand), value['Prot Id']
         elif rv_len > bakta_len:
-            new_coord, new_id = value['miniprot_df'][0], value['Prot Id']
+            new_coord, new_id = (*value['miniprot_df'][0], strand), value['Prot Id']
         elif rv_len < bakta_len and abs(bakta_len - rv_len) > 550:
-            new_coord, new_id = value['case4'][0], value['Locus Tags'][0]
+            new_coord, new_id = (*value['case4'][0], strand), value['Locus Tags'][0]
         else:
-            new_coord, new_id = value['miniprot_df'][0], value['Prot Id']
+            new_coord, new_id = (*value['miniprot_df'][0], strand), value['Prot Id']
 
         _insert_with_dedup(combined_dict, new_coord, new_id)
 
@@ -103,6 +110,10 @@ def resolve_multiple_overlaps(multiple_groups, miniprot_df, combined_dict):
         miniprot_range = value['miniprot_df'][0]
         prot_id = value['Prot Id']
 
+        # Get strand from miniprot
+        mp_row = miniprot_df.loc[miniprot_df['Prot Id'] == prot_id]
+        strand = mp_row.iloc[0]['Strand'] if not mp_row.empty else '+'
+
         best = (None, None, -1)
         for i, r in enumerate(value['case4']):
             pct = get_overlap_percentage(r, miniprot_range)
@@ -115,9 +126,9 @@ def resolve_multiple_overlaps(multiple_groups, miniprot_df, combined_dict):
 
         if _range_length(miniprot_range) >= _range_length(best[0]) or \
            (_range_length(best[0]) - _range_length(miniprot_range)) < 500:
-            chosen_coord, chosen_id = miniprot_range, prot_id
+            chosen_coord, chosen_id = (*miniprot_range, strand), prot_id
         else:
-            chosen_coord, chosen_id = best[0], best[1]
+            chosen_coord, chosen_id = (*best[0], strand), best[1]
 
         _insert_with_dedup(combined_dict, chosen_coord, chosen_id, threshold=550)
 
@@ -134,20 +145,31 @@ def _is_reference_gene(gene_id):
 
 
 def _insert_with_dedup(combined_dict, new_coord, new_id, threshold=550):
-    """Insert a coordinate into the dict, resolving overlaps with existing entries."""
+    """Insert a coordinate into the dict, resolving overlaps with existing entries.
+    
+    Coordinates are (Start, End, Strand) 3-tuples. Overlap checks only
+    compare genes on the SAME strand — opposite-strand genes never conflict.
+    """
+    new_start, new_end = new_coord[0], new_coord[1]
+    new_strand = new_coord[2] if len(new_coord) > 2 else '+'
     coords_to_add = {new_coord: new_id}
     coords_to_remove = set()
 
     for exist_coord, exist_id in list(combined_dict.items()):
         if new_coord == exist_coord:
             continue
-        if new_coord[1] <= exist_coord[0] or new_coord[0] >= exist_coord[1]:
+        exist_start, exist_end = exist_coord[0], exist_coord[1]
+        exist_strand = exist_coord[2] if len(exist_coord) > 2 else '+'
+        # Only compare genes on the same strand
+        if new_strand != exist_strand:
+            continue
+        if new_end <= exist_start or new_start >= exist_end:
             continue  # no overlap
 
-        pct = get_overlap_percentage(new_coord, exist_coord)
+        pct = get_overlap_percentage((new_start, new_end), (exist_start, exist_end))
         if pct >= 70:
-            len_new = _range_length(new_coord)
-            len_exist = _range_length(exist_coord)
+            len_new = _range_length((new_start, new_end))
+            len_exist = _range_length((exist_start, exist_end))
             if len_new > len_exist and (len_new - len_exist) > threshold:
                 coords_to_remove.add(exist_coord)
             elif (len_exist - len_new) < threshold and not _is_reference_gene(exist_id):

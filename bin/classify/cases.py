@@ -91,7 +91,7 @@ def find_rv_missing(miniprot_df, bakta_df, base_name=None):
         axis=1
     )
 
-    no_overlap = mp[~mp['Overlaps']]
+    no_overlap = mp[~mp['Overlaps']].drop(columns=['Overlaps'])
     no_overlap = no_overlap[~((no_overlap['Match Nt'] == 0) & (no_overlap['Num nt'] == 0))]
 
     if base_name:

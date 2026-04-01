@@ -256,8 +256,10 @@ if (has_rvmissing) {
     read.table(params$rvmissing_file, sep="\t", header=F, fill=T, stringsAsFactors=F, quote=""),
     error = function(e) NULL)
   if (!is.null(rvmissing_raw) && ncol(rvmissing_raw) >= 5) {
-    # Columns: Prot_Id, Prot_len, Strand, Start, End, [Match_Nt, Num_nt], Sample
-    # The last column is the sample name appended by REPORT_INPUTS
+    # Columns: Prot_Id, Prot_len, Strand, Start, End, Match_Nt, Num_nt, Sample
+    # The last column is the sample name appended by REPORT_INPUTS.
+    # After Overlaps column removal (fix), rvmissing has 7 data cols + 1 sample = 8.
+    # Legacy files with Overlaps column would have 9 columns.
     n_cols <- ncol(rvmissing_raw)
     base_names <- c("Prot_Id","Prot_len","Strand","Start","End")
     if (n_cols == 8) {

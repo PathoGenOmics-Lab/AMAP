@@ -19,6 +19,7 @@ process TYPE_CASES {
 
     script:
     """
+    echo "▸ [CLASSIFY] Processing ${sampleId}..." >&2
     python3 ${projectDir}/bin/classify_cases.py \\
         -b ${bakta_tsv} \\
         -p ${miniprot_paf} \\

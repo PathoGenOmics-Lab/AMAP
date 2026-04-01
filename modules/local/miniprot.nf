@@ -12,6 +12,8 @@ process MINIPROT {
 
     script:
     """
+    echo "▸ [MINIPROT] Aligning ${sampleId}..." >&2
+
     # Pre-check: verify input files are not empty
     for f in ${ref_proteome} ${bad_bakta_faa} ${proteins_faa}; do
         if [ ! -s "\$f" ] && [ "\$f" != "${bad_bakta_faa}" ]; then

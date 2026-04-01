@@ -93,7 +93,24 @@ process FINAL_REPORT {
     cp ${projectDir}/bin/report/report_AMAP.Rmd .
     WORK_DIR=`pwd`
     echo \$WORK_DIR
-    Rscript -e "rmarkdown::render('report_AMAP.Rmd', output_file='final_report.html',params=list(cog_file='\$WORK_DIR/${input_cog}', myco_file='\$WORK_DIR/${input_myco}', summary_file='\$WORK_DIR/${input_summary}', empty_file='\$WORK_DIR/${input_noref}', rvmissing_file='\$WORK_DIR/${input_rvmissing}', mastertable_file='\$WORK_DIR/${input_mastertables}', pangene_file='\$WORK_DIR/${input_pangene}', dup_file='\$WORK_DIR/${dup_communities_tsv}', qc_file='\$WORK_DIR/${input_qc}'))"
+    echo "▸ [REPORT] Rendering HTML report..." >&2
+    Rscript -e "rmarkdown::render('report_AMAP.Rmd', output_file='final_report.html',params=list(cog_file='\$WORK_DIR/${input_cog}', myco_file='\$WORK_DIR/${input_myco}', summary_file='\$WORK_DIR/${input_summary}', empty_file='\$WORK_DIR/${input_noref}', rvmissing_file='\$WORK_DIR/${input_rvmissing}', mastertable_file='\$WORK_DIR/${input_mastertables}', pangene_file='\$WORK_DIR/${input_pangene}', dup_file='\$WORK_DIR/${dup_communities_tsv}', qc_file='\$WORK_DIR/${input_qc}'))" \
+    || {
+        echo "" >&2
+        echo "╔══════════════════════════════════════════════════╗" >&2
+        echo "║  ERROR: HTML report generation failed.           ║" >&2
+        echo "║                                                  ║" >&2
+        echo "║  Common causes:                                  ║" >&2
+        echo "║  • Missing R packages (ggplot2, dplyr, plotly)   ║" >&2
+        echo "║  • Empty input files (0 samples completed)       ║" >&2
+        echo "║  • Incompatible R version (need >= 4.1)          ║" >&2
+        echo "║                                                  ║" >&2
+        echo "║  The annotation outputs (.faa, .gff, .gbk) are  ║" >&2
+        echo "║  still valid — only the summary report failed.   ║" >&2
+        echo "╚══════════════════════════════════════════════════╝" >&2
+        exit 1
+    }
+    echo "✓ [REPORT] Done: final_report.html" >&2
     # Keep copied files for -resume compatibility
     """
 }

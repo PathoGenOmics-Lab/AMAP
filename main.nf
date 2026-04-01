@@ -102,6 +102,7 @@ if (params.help) {
     --max_time                  Maximum time per process. (Default: ${params.max_time})
     --scratch                   Use node-local scratch for I/O-heavy processes. (Default: ${params.scratch})
     --help                      Display this help message.
+    --version                   Print pipeline version and exit.
 
     Organism-Agnostic Mode:
     --ref_annotation            Path to a trusted reference annotation (GFF3 or GenBank).
@@ -129,15 +130,35 @@ if (params.help) {
     exit 0
 }
 
+// --- VERSION FLAG ---
+if (args.containsKey('version') || args.containsKey('v')) {
+    log.info "${manifest.name} v${manifest.version}"
+    log.info "Nextflow ${nextflow.version}"
+    System.exit(0)
+}
+
 log.info logo
 log.info """
-    fastas                      : ${params.tsv}
-    output                      : ${params.outdir}
-    eggnog_db                   : ${params.eggnog_db}
-    skip_typing                 : ${params.skip_typing}
-    skip_functional_annotation  : ${params.skip_functional_annotation}
-    validate_only               : ${params.validate_only}
-    custom_reference            : ${params.ref_annotation ? params.ref_annotation + ' + ' + params.ref_genome : 'H37Rv (default)'}
+    ┌─────────────────────────────────────────────────┐
+    │  Pipeline    : ${manifest.name} v${manifest.version}
+    │  Nextflow    : ${nextflow.version}
+    │  Profile     : ${workflow.profile ?: 'standard'}
+    ├─────────────────────────────────────────────────┤
+    │  Input TSV   : ${params.tsv}
+    │  Output      : ${params.outdir}
+    │  Reference   : ${params.ref_annotation ? 'Custom (' + params.ref_annotation + ')' : 'H37Rv (built-in)'}
+    │  Organism    : ${params.genus} ${params.species}
+    ├─────────────────────────────────────────────────┤
+    │  Typing      : ${params.skip_typing ? '⏭  skipped' : '✓  Pathotypr'}
+    │  Annotation  : ${params.skip_functional_annotation ? '⏭  skipped' : '✓  eggNOG + Bakta'}
+    │  Mycobrowser : ${params.skip_mycobrowser ? '⏭  skipped' : '✓  enabled'}
+    │  Validate    : ${params.validate_only ? '🔍 only (dry run)' : '✓  pre-flight'}
+    ├─────────────────────────────────────────────────┤
+    │  Max CPUs    : ${params.max_cpus}
+    │  Max Memory  : ${params.max_memory}
+    │  Max Time    : ${params.max_time}
+    │  Scratch     : ${params.scratch ? '✓  node-local' : '✗  disabled'}
+    └─────────────────────────────────────────────────┘
 """
 
 // --- COMPLETION HANDLER ---
@@ -165,8 +186,29 @@ workflow.onComplete {
     =======================================
     """.stripIndent()
 
-    if (failed > 0) {
-        log.warn "${failed} process(es) failed. Check .nextflow.log and ${params.outdir}/pipeline_info/ for details."
+    if (failed > 0 && ignored > 0) {
+        log.warn """
+    ${failed} process(es) failed, ${ignored} ignored (non-critical samples).
+    
+    To investigate:
+      1. Check execution report: ${params.outdir}/pipeline_info/execution_report_*.html
+      2. Check trace file:       ${params.outdir}/pipeline_info/execution_trace_*.txt
+      3. Full log:               .nextflow.log
+      
+    To retry failed samples only:
+      nextflow run PathoGenOmics-Lab/AMAP -resume [same params]
+        """.stripIndent()
+    } else if (failed > 0) {
+        log.error """
+    ${failed} process(es) failed.
+    
+    To investigate:
+      1. Check execution report: ${params.outdir}/pipeline_info/execution_report_*.html
+      2. Full log:               .nextflow.log
+      
+    To retry:
+      nextflow run PathoGenOmics-Lab/AMAP -resume [same params]
+        """.stripIndent()
     }
     
     // Write machine-readable run summary
@@ -243,19 +285,54 @@ include { DUMP_PARAMS }         from './modules/local/versions'
 //
 Channel
     .fromPath(params.tsv)
-    .ifEmpty { error "Input TSV file not found: ${params.tsv}" }
+    .ifEmpty { error """
+    ╔══════════════════════════════════════════════════════════╗
+    ║  Input TSV file not found: ${params.tsv}
+    ║
+    ║  Make sure the path is correct and the file exists.
+    ║  Use --tsv to specify the input file.
+    ╚══════════════════════════════════════════════════════════╝
+    """.stripIndent() }
     .splitCsv(header: true, sep: '\t')
     .map { row ->
         if (!row.containsKey('sampleId') || !row.containsKey('fasta')) {
-            error "Input TSV must have columns 'sampleId' and 'fasta' (tab-separated). Found: ${row.keySet()}"
+            error """
+    ╔══════════════════════════════════════════════════════════╗
+    ║  Invalid TSV format!
+    ║
+    ║  Expected columns: sampleId  fasta
+    ║  Found columns:    ${row.keySet().join('  ')}
+    ║
+    ║  Your TSV should look like:
+    ║    sampleId\\tfasta
+    ║    sample1\\t/path/to/sample1.fasta
+    ║    sample2\\t/path/to/sample2.fasta
+    ╚══════════════════════════════════════════════════════════╝
+    """.stripIndent()
         }
         def f = file(row.fasta)
         if (!f.exists()) {
-            error "FASTA file not found for sample '${row.sampleId}': ${row.fasta}"
+            error """
+    ╔══════════════════════════════════════════════════════════╗
+    ║  FASTA file not found!
+    ║
+    ║  Sample:  ${row.sampleId}
+    ║  Path:    ${row.fasta}
+    ║
+    ║  Check that the path is correct (absolute or relative
+    ║  to where you launched nextflow).
+    ╚══════════════════════════════════════════════════════════╝
+    """.stripIndent()
         }
         tuple(row.sampleId, f)
     }
     .set { fasta_ch }
+
+// Count samples for the user
+fasta_ch.count().subscribe { n ->
+    log.info "    ✓ Loaded ${n} sample(s) from ${params.tsv}"
+    if (n == 0) log.warn "    ⚠ No samples found! Check your TSV file."
+}
 
 //
 // --- WORKFLOW ---

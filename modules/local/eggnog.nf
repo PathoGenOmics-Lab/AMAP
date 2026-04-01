@@ -103,6 +103,8 @@ process ANNOT_EGGNOGMAP_BATCH {
   set -euo pipefail
   mkdir -p tmp scr_tmp split
 
+  echo "▸ [eggNOG] Preparing batch annotation for ${faa_files.size()} samples..." >&2
+
   # 1. Concatenate all FAAs with sample-prefixed headers
   #    Delimiter: @@SMPL@@ (safe — no protein ID contains this)
   #    Original:  >L8_G26689_Rv0001;+;0-1524

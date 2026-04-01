@@ -18,6 +18,8 @@ process BAKTA_ANNOTATOR {
     // Bakta accepts GBK, GFF3, EMBL, and FASTA as --proteins input.
     def proteins_ref = params.ref_annotation ? params.ref_annotation : params.bakta_proteins
     """
+    echo "▸ [BAKTA] Annotating ${sampleId}..." >&2
+
     # Pre-check: verify Bakta DB path exists
     if [ ! -d "${params.bakta_db}" ]; then
         echo "ERROR: Bakta database not found at '${params.bakta_db}'" >&2

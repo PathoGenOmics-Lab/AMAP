@@ -322,16 +322,23 @@ def main():
     print(f"{'=' * 60}")
 
     if all_errors:
-        print(f"\nFAILED: {len(all_errors)} critical error(s) — fix before running AMAP")
+        print(f"\n{'=' * 60}")
+        print(f"  ✗ FAILED: {len(all_errors)} critical error(s)")
+        print(f"")
+        print(f"  Fix the issues above and re-run validation:")
+        print(f"    nextflow run PathoGenOmics-Lab/AMAP --validate_only --tsv {args.tsv}")
+        print(f"{'=' * 60}")
         sys.exit(2)
     elif all_warnings and args.strict:
-        print(f"\nFAILED (strict mode): {len(all_warnings)} warning(s)")
+        print(f"\n  ✗ FAILED (strict mode): {len(all_warnings)} warning(s)")
+        print(f"  Re-run without --strict to proceed, or fix the warnings.")
         sys.exit(1)
     elif all_warnings:
-        print(f"\nPASSED with {len(all_warnings)} warning(s)")
+        print(f"\n  ✓ PASSED with {len(all_warnings)} warning(s)")
+        print(f"  Warnings are non-blocking but worth reviewing.")
         sys.exit(0)
     else:
-        print(f"\nPASSED — all inputs look good ✓")
+        print(f"\n  ✓ PASSED — all {n_samples} samples look good")
         sys.exit(0)
 
 

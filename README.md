@@ -516,24 +516,39 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 
 | Software                                                  | Version | Type     | Usage                           |
 |-----------------------------------------------------------|---------|----------|---------------------------------|
-| [Nextflow](https://github.com/nextflow-io/nextflow)       | ≥23.04  | Nextflow | Workflow Management             |
-| [Bakta](https://github.com/oschwengers/bakta)             | 1.12.0  | Other    | Genome Annotation               |
-| [miniprot](https://github.com/lh3/miniprot)               | 0.18    | Other    | Protein-to-genome Alignment     |
-| [pangene](https://github.com/lh3/pangene)                 | 1.1     | Other    | Pangenome Graph Construction    |
-| [DIAMOND](https://github.com/bbuchfink/diamond)           | 2.1.24  | Other    | Fast Protein Alignment          |
-| [gfatools](https://github.com/lh3/gfatools)              | 0.5     | Other    | GFA Graph Utilities             |
-| [eggnog-mapper](https://github.com/eggnogdb/eggnog-mapper)| 2.1.13  | Python   | Functional Annotation           |
-| [Python](https://www.python.org/)                         | 3.9     | Python   | Programming Language            |
-| [R](https://www.R-project.org/)                           | 4.4     | R        | Statistical Computing           |
-| [pandas](https://github.com/pandas-dev/pandas)            | ≥2.0    | Python   | Data Analysis                   |
-| [Biopython](https://biopython.org/)                       | ≥1.83   | Python   | Sequence Manipulation           |
-| [intervaltree](https://github.com/chaimleib/intervaltree) | ≥3.1    | Python   | Overlap Detection               |
-| [plotly.py](https://github.com/plotly/plotly.py)          | ≥5.0    | Python   | Interactive Visualization       |
-| [networkx](https://networkx.org/)                         | ≥3.0    | Python   | Network Analysis                |
-| [ggplot2](https://ggplot2.tidyverse.org/)                 | ≥3.5    | R        | Data Visualization              |
-| [pheatmap](https://cran.r-project.org/package=pheatmap)   | ≥1.0    | R        | Heatmap Visualization           |
-| [DT](https://rstudio.github.io/DT/)                      | ≥0.30   | R        | Interactive Tables              |
-| [Singularity](https://sylabs.io/singularity/)             | ≥3.11   | Other    | Containerization                |
-| [Docker](https://www.docker.com/)                         | ≥25.0   | Other    | Containerization                |
+| **Pipeline & Orchestration** | | | |
+| [Nextflow](https://github.com/nextflow-io/nextflow)       | ≥23.04  | Workflow | Pipeline orchestration          |
+| [Docker](https://www.docker.com/)                         | ≥25.0   | Container| Containerization                |
+| [Singularity](https://sylabs.io/singularity/)             | ≥3.11   | Container| Containerization (HPC)          |
+| **Bioinformatics Tools** | | | |
+| [Bakta](https://github.com/oschwengers/bakta)             | 1.12.0  | Tool     | Genome Annotation               |
+| [miniprot](https://github.com/lh3/miniprot)               | 0.18    | Tool     | Protein-to-genome Alignment     |
+| [pangene](https://github.com/lh3/pangene)                 | 1.1     | Tool     | Pangenome Graph Construction    |
+| [DIAMOND](https://github.com/bbuchfink/diamond)           | 2.1.24  | Tool     | Fast Protein Alignment          |
+| [eggNOG-mapper](https://github.com/eggnogdb/eggnog-mapper)| 2.1.13  | Tool     | Functional Annotation           |
+| [Pathotypr](https://github.com/PathoGenOmics-Lab/pathotypr)| 1.0.0  | Tool     | MTBC Lineage Typing             |
+| [gfatools](https://github.com/lh3/gfatools)              | 0.5     | Tool     | GFA Graph Utilities             |
+| **Python** | | | |
+| [Python](https://www.python.org/)                         | 3.9     | Runtime  | Programming Language            |
+| [pandas](https://github.com/pandas-dev/pandas)            | ≥2.0    | Library  | Data Analysis                   |
+| [NumPy](https://numpy.org/)                               | ≥1.24   | Library  | Numerical Computing             |
+| [Biopython](https://biopython.org/)                       | ≥1.83   | Library  | Sequence Manipulation           |
+| [matplotlib](https://matplotlib.org/)                     | ≥3.7    | Library  | Static Visualization            |
+| [plotly.py](https://github.com/plotly/plotly.py)          | ≥5.0    | Library  | Interactive Visualization       |
+| [NetworkX](https://networkx.org/)                         | ≥3.0    | Library  | Network Analysis                |
+| [intervaltree](https://github.com/chaimleib/intervaltree) | ≥3.1    | Library  | Overlap Detection               |
+| [python-louvain](https://github.com/taynaud/python-louvain)| ≥0.16  | Library  | Community Detection             |
+| [pyvis](https://github.com/WestHealth/pyvis)             | 0.3.2   | Library  | Network Visualization           |
+| **R** | | | |
+| [R](https://www.R-project.org/)                           | 4.4     | Runtime  | Statistical Computing           |
+| [ggplot2](https://ggplot2.tidyverse.org/)                 | ≥3.5    | Package  | Data Visualization              |
+| [dplyr](https://dplyr.tidyverse.org/)                     | ≥1.1    | Package  | Data Manipulation               |
+| [tidyr](https://tidyr.tidyverse.org/)                     | ≥1.3    | Package  | Data Tidying                    |
+| [plotly (R)](https://plotly-r.com/)                        | ≥4.10   | Package  | Interactive Plots               |
+| [ggpubr](https://rpkgs.datanovia.com/ggpubr/)            | ≥0.6    | Package  | Publication-ready Plots         |
+| [pheatmap](https://cran.r-project.org/package=pheatmap)   | ≥1.0    | Package  | Heatmap Visualization           |
+| [DT](https://rstudio.github.io/DT/)                      | ≥0.30   | Package  | Interactive Tables              |
+| [rmarkdown](https://rmarkdown.rstudio.com/)              | ≥2.25   | Package  | Report Rendering                |
+| [ggsimplestats](https://github.com/maximilian-heeg/ggsimplestats) | latest | Package | Statistical Annotations  |
 
 <div align="justify">

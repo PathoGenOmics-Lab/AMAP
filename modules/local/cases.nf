@@ -25,7 +25,12 @@ process TYPE_CASES {
         -b ${bakta_tsv} \\
         -p ${miniprot_paf} \\
         -bb ${badbakta_paf} \\
-        -c ${h37rv_paf}
+        -c ${h37rv_paf} \\
+    || {
+        echo "ERROR: Classification failed for sample ${sampleId}" >&2
+        echo "Input sizes: bakta=\$(wc -l < ${bakta_tsv})L miniprot=\$(wc -l < ${miniprot_paf})L" >&2
+        exit 1
+    }
     """
 }
 

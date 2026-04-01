@@ -14,6 +14,14 @@ process MINIPROT {
 
     script:
     """
+    # Pre-check: verify input files are not empty
+    for f in ${ref_proteome} ${bad_bakta_faa} ${proteins_faa}; do
+        if [ ! -s "\$f" ] && [ "\$f" != "${bad_bakta_faa}" ]; then
+            echo "ERROR: Required input file is empty: \$f" >&2
+            exit 1
+        fi
+    done
+
     # Run all three alignments in parallel (independent inputs/outputs)
     # Each gets task.cpus/3 threads to stay within the CPU allocation
     THREADS_PER_JOB=\$(( ${task.cpus} / 3 ))

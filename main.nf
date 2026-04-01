@@ -23,6 +23,7 @@ params.tsv = 'example_files/test.tsv'
 params.outdir = 'results'
 params.eggnog_db = 'eggnog_db'
 params.help = false
+params.validate_only = false
 params.skip_typing = false
 params.skip_functional_annotation = false
 params.genus = "Mycobacterium"
@@ -82,6 +83,7 @@ if (params.help) {
     --species                   Species for Bakta annotation. (Default: "${params.species}")
     --bakta_db                  Path to the Bakta database directory. (Default: "${params.bakta_db}")
     --skip_mycobrowser          Skip Mycobrowser functional categories (for non-MTBC organisms). (Default: ${params.skip_mycobrowser})
+    --validate_only             Run input validation only (no pipeline execution).
     --help                      Display this help message.
 
     Custom Reference (replaces built-in H37Rv):
@@ -110,13 +112,46 @@ log.info """
     eggnog_db                   : ${params.eggnog_db}
     skip_typing                 : ${params.skip_typing}
     skip_functional_annotation  : ${params.skip_functional_annotation}
+    validate_only               : ${params.validate_only}
     custom_reference            : ${params.ref_annotation ? params.ref_annotation + ' + ' + params.ref_genome : 'H37Rv (default)'}
 """
+
+// --- COMPLETION HANDLER ---
+workflow.onComplete {
+    def duration = workflow.duration
+    def succeeded = workflow.stats.succeededCount
+    def failed = workflow.stats.failedCount
+    def ignored = workflow.stats.ignoredCount
+    def status = workflow.success ? "✓ COMPLETED" : "✗ FAILED"
+
+    log.info """
+    =======================================
+    ${status}
+    =======================================
+    Duration    : ${duration}
+    Succeeded   : ${succeeded}
+    Failed      : ${failed}
+    Ignored     : ${ignored}
+    Output      : ${params.outdir}
+    =======================================
+    """.stripIndent()
+
+    if (failed > 0) {
+        log.warn "${failed} process(es) failed. Check .nextflow.log and ${params.outdir}/pipeline_info/ for details."
+    }
+}
+
+workflow.onError {
+    log.error "Pipeline failed: ${workflow.errorMessage}"
+    log.error "Check .nextflow.log for full stack trace."
+}
 
 // Validate custom reference params
 if ((params.ref_annotation && !params.ref_genome) || (!params.ref_annotation && params.ref_genome)) {
     error "Both --ref_annotation and --ref_genome must be provided together. You set one but not the other."
 }
+
+// validate_only handled in workflow block below
 //
 // --- MODULE INCLUDES ---
 //
@@ -135,6 +170,7 @@ include { PANGENE }             from './modules/local/pangene'
 include { REPORT_INPUTS }       from './modules/local/freport'
 include { FINAL_REPORT }        from './modules/local/freport'
 include { PREPARE_REFERENCE }   from './modules/local/reference'
+include { VALIDATE_INPUTS }     from './modules/local/validation'
 //
 // --- INPUT CHANNEL ---
 //
@@ -158,6 +194,14 @@ Channel
 // --- WORKFLOW ---
 //
 workflow {
+    // 0. Input validation — always runs as first step
+    VALIDATE_INPUTS(Channel.value(file(params.tsv)))
+
+    // If validate_only mode, stop here
+    if (params.validate_only) {
+        return
+    }
+
     // 1. Setup eggNOG database if not present
     if (!params.skip_functional_annotation) {
         EGGNOG_DB()

@@ -22,14 +22,21 @@ process EGGNOG_DB {
     # 0) Quick exit if the bacteria DB already exists
     # ------------------------------------------------------------
     if [ -f "\$EGGNOG_DB_DIR/bacteria.dmnd" ]; then
-        echo "==> bacteria.dmnd found – skipping download and build."
-        # Use relative symlink when possible for portability with -resume
-        if command -v realpath >/dev/null 2>&1; then
-            ln -sfn "\$(realpath --relative-to=. "\$EGGNOG_DB_DIR")" eggnog_db
+        # Integrity check: Diamond DB should be >100 MB
+        DB_SIZE=\$(stat -f%z "\$EGGNOG_DB_DIR/bacteria.dmnd" 2>/dev/null || stat -c%s "\$EGGNOG_DB_DIR/bacteria.dmnd" 2>/dev/null || echo 0)
+        if [ "\$DB_SIZE" -lt 100000000 ]; then
+            echo "WARNING: bacteria.dmnd is only \${DB_SIZE} bytes (expected >100 MB) — may be corrupted, rebuilding..." >&2
+            rm -f "\$EGGNOG_DB_DIR/bacteria.dmnd"
         else
-            ln -sfn "\$EGGNOG_DB_DIR" eggnog_db
+            echo "==> bacteria.dmnd found (\${DB_SIZE} bytes) – skipping download and build."
+            # Use relative symlink when possible for portability with -resume
+            if command -v realpath >/dev/null 2>&1; then
+                ln -sfn "\$(realpath --relative-to=. "\$EGGNOG_DB_DIR")" eggnog_db
+            else
+                ln -sfn "\$EGGNOG_DB_DIR" eggnog_db
+            fi
+            exit 0
         fi
-        exit 0
     fi
 
     # ------------------------------------------------------------
@@ -102,20 +109,29 @@ process ANNOT_EGGNOGMAP_BATCH {
   done > all_proteins.faa
 
   # 2. Run eggNOG-mapper ONCE on the combined file
-  emapper.py \\
-    -i all_proteins.faa \\
-    -m diamond \\
-    --dmnd_db eggnog_db/bacteria.dmnd \\
-    --cpu ${task.cpus} \\
-    --usemem \\
-    --dbmem \\
-    --sensmode fast \\
-    --tax_scope 2 \\
-    --target_orthologs one2one \\
-    -o batch \\
-    --data_dir eggnog_db \\
-    --temp_dir tmp \\
-    --scratch_dir scr_tmp
+  # Check if there's anything to annotate (all samples might have 0 CDS)
+  N_PROTS=\$(grep -c '^>' all_proteins.faa || echo 0)
+  if [ "\$N_PROTS" -eq 0 ]; then
+      echo "WARNING: No proteins to annotate (all samples have 0 CDS)" >&2
+      # Create minimal output so split step works
+      echo "# emapper: no input proteins" > batch.emapper.annotations
+  else
+      echo "==> Annotating \$N_PROTS proteins from ${faa_files.size()} samples..."
+      emapper.py \\
+        -i all_proteins.faa \\
+        -m diamond \\
+        --dmnd_db eggnog_db/bacteria.dmnd \\
+        --cpu ${task.cpus} \\
+        --usemem \\
+        --dbmem \\
+        --sensmode fast \\
+        --tax_scope 2 \\
+        --target_orthologs one2one \\
+        -o batch \\
+        --data_dir eggnog_db \\
+        --temp_dir tmp \\
+        --scratch_dir scr_tmp
+  fi
 
   # 3. Split results back into per-sample annotation files
   #    All in one awk pass — O(N) instead of O(N×M) subprocesses

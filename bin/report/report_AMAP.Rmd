@@ -160,11 +160,13 @@ datos_cog$Lineages[is.na(datos_cog$Lineages) | datos_cog$Lineages == ""] <- "NA"
 datos_cog <- datos_cog %>% filter(!is.na(Lineages) & Lineages != "")
 datos_cog$Functional_Category[datos_cog$Functional_Category == "" | datos_cog$Functional_Category == "NaN"] <- "NA"
 datos_cog$sequences <- paste(datos_cog$Lineages, datos_cog$genome, sep="_")
-datos_cog <- datos_cog %>%
-  count(Lineages, genome, sequences, Functional_Category, name="Count") %>%
-  group_by(sequences) %>% mutate(Percentage = Count / sum(Count)) %>% ungroup()
-datos_cog$Percentage <- as.numeric(datos_cog$Percentage)
+# Use the real Count values from count_annot.py, not row-counts
 datos_cog$Count <- as.integer(datos_cog$Count)
+datos_cog <- datos_cog %>%
+  group_by(sequences) %>%
+  mutate(Percentage = Count / sum(Count)) %>%
+  ungroup()
+datos_cog$Percentage <- as.numeric(datos_cog$Percentage)
 datos_cog1 <- datos_cog
 lvl_cogs <- c("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","S","T","U","V","NA")
 datos_cog1$Functional_Category <- factor(datos_cog1$Functional_Category, levels = lvl_cogs)
@@ -203,11 +205,13 @@ datos_myco$Lineages[is.na(datos_myco$Lineages) | datos_myco$Lineages == ""] <- "
 datos_myco <- datos_myco %>% filter(!is.na(Lineages) & Lineages != "")
 datos_myco$Functional_Category[datos_myco$Functional_Category == "" | datos_myco$Functional_Category == "Unassigned"] <- "NA"
 datos_myco$sequences <- paste(datos_myco$Lineages, datos_myco$genome, sep="_")
-datos_myco <- datos_myco %>%
-  count(Lineages, genome, sequences, Functional_Category, name="Count") %>%
-  group_by(sequences) %>% mutate(Percentage = Count / sum(Count)) %>% ungroup()
-datos_myco$Percentage <- as.numeric(datos_myco$Percentage)
+# Use the real Count values from count_annot.py, not row-counts
 datos_myco$Count <- as.integer(datos_myco$Count)
+datos_myco <- datos_myco %>%
+  group_by(sequences) %>%
+  mutate(Percentage = Count / sum(Count)) %>%
+  ungroup()
+datos_myco$Percentage <- as.numeric(datos_myco$Percentage)
 
 # H37Rv reference comparison (MTBC-specific)
 my_myco <- data.frame(

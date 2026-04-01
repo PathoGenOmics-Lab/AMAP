@@ -93,13 +93,28 @@ def main():
     generate_overlap_plot(multiple_groups, f"{base_name}_multiple_overlaps.html")
 
     # --- 6. Build combined coordinate dict ---
+    # WARNING: dict keys are (Start, End) tuples. In multi-contig assemblies,
+    # genes on different contigs could share the same coordinates, causing
+    # silent collisions. This is safe for single-contig genomes (e.g. MTB).
     combined = {}
-    combined.update(create_coords_dict(case2, 'Locus Tag'))
-    combined.update(create_coords_dict(case3, 'Locus Tag'))
-    combined.update(create_coords_dict(rv_missing, 'Prot Id'))
-    combined.update(create_coords_dict(case1_keep, 'Locus Tag'))
+    n_before = 0
+    for df, id_col in [(case2, 'Locus Tag'), (case3, 'Locus Tag'),
+                        (rv_missing, 'Prot Id'), (case1_keep, 'Locus Tag')]:
+        new_entries = create_coords_dict(df, id_col)
+        n_before += len(new_entries)
+        combined.update(new_entries)
+    if len(combined) < n_before:
+        n_lost = n_before - len(combined)
+        print(f"WARNING: {n_lost} genes lost to coordinate collisions. "
+              f"This may indicate a multi-contig assembly where genes on "
+              f"different contigs share the same coordinates.")
 
     # --- 7. Resolve overlaps ---
+    # NOTE: case4_mp_overlaps stores case4 indices, but create_overlap_groups
+    # uses them to index miniprot_df for coordinates. The coordinates in
+    # b_overlap_groups['miniprot_df'] are therefore wrong. However, they are
+    # never accessed — only 'Locus Tags' (count of overlapping Miniprot hits
+    # per case4 gene) is used via new_groups. Safe but fragile.
     b_overlap_groups = create_overlap_groups(case4_mp_overlaps, case4, miniprot_df)
     new_groups = {v['Prot Id']: v for _, v in b_overlap_groups.items()}
 

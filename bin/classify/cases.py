@@ -14,13 +14,18 @@ from intervaltree import IntervalTree
 
 def classify_case2_case3(bakta_df, miniprot_df, base_name=None):
     """Split into case 2 (perfect match) and case 3 (coordinate match, length mismatch)."""
-    merged = pd.merge(bakta_df, miniprot_df, on=['Start', 'End'])
+    # Merge on Start, End AND Strand to avoid cross-strand false matches
+    bakta_for_merge = bakta_df.copy()
+    mp_for_merge = miniprot_df.copy()
+    merged = pd.merge(bakta_for_merge, mp_for_merge,
+                       left_on=['Start', 'End', 'Strand'],
+                       right_on=['Start', 'End', 'Strand'])
     merged['Difference'] = merged['Length_nt'] - merged['Num nt']
 
     case2 = merged[merged['Difference'] == 0]
     case3 = merged[merged['Difference'] != 0]
 
-    case2 = case2.rename(columns={'Strand_x': 'Strand'})[["Locus Tag", "Start", "End", "Strand", 'Length_nt']].drop_duplicates()
+    case2 = case2[["Locus Tag", "Start", "End", "Strand", 'Length_nt']].drop_duplicates()
 
     if base_name:
         case3.to_csv(f"{base_name}-case3.tsv", sep='\t', index=False)

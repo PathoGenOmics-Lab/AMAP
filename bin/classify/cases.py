@@ -54,14 +54,14 @@ def classify_case1_case4(bakta_df, miniprot_df, base_name=None):
     for _, row in miniprot_df.iterrows():
         if row['Start'] < row['End']:
             if row['Strand'] == '-':
-                tree_minus[row['Start']:row['End']] = True
+                tree_minus[row['Start']:row['End']+1] = True
             else:
-                tree_plus[row['Start']:row['End']] = True
+                tree_plus[row['Start']:row['End']+1] = True
 
     not_in_merged = not_in_merged.copy()
     def _has_strand_overlap(r):
         t = tree_minus if r['Strand'] == '-' else tree_plus
-        return len(t[r['Start']:r['End']]) > 0
+        return len(t[r['Start']:r['End']+1]) > 0
     not_in_merged['Overlaps'] = not_in_merged.apply(_has_strand_overlap, axis=1)
 
     case4 = not_in_merged[not_in_merged['Overlaps']][["Locus Tag", "Start", "End", "Strand", 'Length_nt']]
@@ -81,13 +81,13 @@ def find_rv_missing(miniprot_df, bakta_df, base_name=None):
     for _, row in bakta_df.iterrows():
         if row['Start'] < row['End']:
             if row['Strand'] == '-':
-                tree_minus[row['Start']:row['End']] = True
+                tree_minus[row['Start']:row['End']+1] = True
             else:
-                tree_plus[row['Start']:row['End']] = True
+                tree_plus[row['Start']:row['End']+1] = True
 
     mp = miniprot_df.copy()
     mp['Overlaps'] = mp.apply(
-        lambda r: len((tree_minus if r['Strand'] == '-' else tree_plus)[r['Start']:r['End']]) > 0,
+        lambda r: len((tree_minus if r['Strand'] == '-' else tree_plus)[r['Start']:r['End']+1]) > 0,
         axis=1
     )
 
@@ -114,11 +114,11 @@ def filter_case1(case1, bakta_df_bad, cds_path):
     bad_tree = IntervalTree()
     for _, row in bakta_df_bad.iterrows():
         if row['Start'] < row['End']:
-            bad_tree[row['Start']:row['End']] = True
+            bad_tree[row['Start']:row['End']+1] = True
 
     def calc_overlap(start, end):
         total = 0
-        for iv in bad_tree[start:end]:
+        for iv in bad_tree[start:end+1]:
             total += max(0, min(end, iv.end) - max(start, iv.begin))
         return total
 

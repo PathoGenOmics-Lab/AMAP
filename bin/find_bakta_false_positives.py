@@ -39,7 +39,7 @@ def load_curated_coords(curated_faa):
             start = int(m.group(1))
             end = int(m.group(2))
             if start < end:
-                tree[start:end] = record.id
+                tree[start:end+1] = record.id
                 count += 1
     print(f"Loaded {count} curated gene coordinates")
     return tree
@@ -73,7 +73,7 @@ def find_false_positives(bakta_cds, curated_tree, min_overlap_frac=0.1):
         gene_len = end - start
 
         # Query the interval tree for overlapping curated genes
-        overlaps = curated_tree[start:end]
+        overlaps = curated_tree[start:end+1]
 
         if len(overlaps) == 0:
             # No overlap at all → definitely a false positive

@@ -32,11 +32,11 @@ def build_overlap_tree(tree_df, overlap_df, tree_id_col, overlap_id_col):
     tree = IntervalTree()
     for idx, row in tree_df.iterrows():
         if row['Start'] < row['End']:
-            tree[row['Start']:row['End']] = (idx, row[tree_id_col])
+            tree[row['Start']:row['End']+1] = (idx, row[tree_id_col])
 
     overlap_counts = {}
     for _, row in overlap_df.iterrows():
-        for iv in tree[row['Start']:row['End']]:
+        for iv in tree[row['Start']:row['End']+1]:
             tree_idx, tree_id = iv.data
             if tree_idx not in overlap_counts:
                 overlap_counts[tree_idx] = {'count': 1, 'Prot Id': tree_id,

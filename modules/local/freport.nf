@@ -59,10 +59,19 @@ process REPORT_INPUTS {
         fi
     done
 
-    # Pangene Rtab — concatenate if available
+    # Pangene Rtab — concatenate if available (strip duplicate headers)
     touch input_pangene.txt
+    first_rtab=true
     for f in \$(echo ${pangene_rtab_files} | tr ' ' '\\n' | safe_grep '.Rtab\$'); do
-        cat "\$f" >> input_pangene.txt
+        if [ -s "\$f" ]; then
+            if \$first_rtab; then
+                cat "\$f" >> input_pangene.txt
+                first_rtab=false
+            else
+                # Skip header line (first line) from subsequent files
+                tail -n +2 "\$f" >> input_pangene.txt
+            fi
+        fi
     done
     """
 }

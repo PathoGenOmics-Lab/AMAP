@@ -158,11 +158,16 @@ def extract_and_translate_cds(fasta_file, annotation_df):
             indices_to_drop.append(index)
             continue
 
-        # Select the correct contig for this gene
+        # Select the correct contig for this gene.
+        # For multi-contig: find the smallest contig where the gene fits,
+        # BUT prefer an exact Bakta Sequence Id match if available in the
+        # corrected TSV. Since corrected_tsv lacks contig info, we use the
+        # heuristic of smallest-fitting-contig (sorted desc, last match wins).
+        # WARNING: This is ambiguous when contigs overlap in coordinate ranges.
         if is_multi_contig:
             fasta_seq = default_contig
             for contig in sorted_contigs:
-                if end <= len(contig.seq):
+                if start >= 0 and end <= len(contig.seq):
                     fasta_seq = contig
         else:
             fasta_seq = default_contig
@@ -198,10 +203,14 @@ def extract_and_translate_cds(fasta_file, annotation_df):
         orig_end = end
 
         if len(translated_seq) > 0 and translated_seq[-1] == "*":
-            # Gene already ends with a stop codon — good as is
+            # Gene ends with a stop codon — check for internal stops
             cds_id = f"{ide};{strand};{start}-{end}"
             cds_amino_acids[cds_id] = translated_seq
             cds_nts[cds_id] = sequence
+            if "*" in str(translated_seq)[:-1]:
+                n_internal = str(translated_seq)[:-1].count("*")
+                logging.warning(f"Gene {ide} has {n_internal} internal stop codon(s) — likely pseudogene or frameshift")
+                pseudogene_ids.add(ide)
         elif len(translated_seq) > 0:
             # No terminal stop codon — try to extend to find one
             # Check if this is a reference gene whose coordinates match the ID-embedded

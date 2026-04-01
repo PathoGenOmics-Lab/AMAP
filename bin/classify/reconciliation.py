@@ -252,7 +252,10 @@ def write_corrected_tsv(combined_dict, miniprot_df, bakta_df, base_name):
 
 
 def _find_strand(start, end, miniprot_df, bakta_df):
-    """Determine strand for a coordinate pair from miniprot or bakta."""
+    """Determine strand for a coordinate pair from miniprot or bakta.
+    
+    Priority: exact match > best overlapping (by overlap length).
+    """
     mp = miniprot_df[(miniprot_df['Start'] == start) & (miniprot_df['End'] == end)]
     if not mp.empty:
         return mp.iloc[0]['Strand']
@@ -261,14 +264,22 @@ def _find_strand(start, end, miniprot_df, bakta_df):
     if not bk.empty:
         return bk.iloc[0]['Strand']
 
-    # Try overlapping
-    mp_ov = miniprot_df[(miniprot_df['Start'] <= end) & (miniprot_df['End'] >= start)]
-    if not mp_ov.empty:
-        return mp_ov.iloc[0]['Strand']
+    # Try overlapping — pick the one with the largest overlap
+    def _best_overlap_strand(df):
+        ov = df[(df['Start'] <= end) & (df['End'] >= start)].copy()
+        if ov.empty:
+            return None
+        ov['_ov_len'] = ov.apply(
+            lambda r: min(end, r['End']) - max(start, r['Start']), axis=1)
+        return ov.loc[ov['_ov_len'].idxmax(), 'Strand']
 
-    bk_ov = bakta_df[(bakta_df['Start'] <= end) & (bakta_df['End'] >= start)]
-    if not bk_ov.empty:
-        return bk_ov.iloc[0]['Strand']
+    mp_strand = _best_overlap_strand(miniprot_df)
+    if mp_strand is not None:
+        return mp_strand
+
+    bk_strand = _best_overlap_strand(bakta_df)
+    if bk_strand is not None:
+        return bk_strand
 
     print(f"WARNING: No strand found for gene at {start}-{end}, defaulting to '+'")
     return "+"

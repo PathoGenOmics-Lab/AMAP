@@ -141,10 +141,11 @@ def generate_tsv(merged_df, bakta_rest_df, fasta_file_path, output_file_path):
         # Sort contigs by length desc, assign each gene to the smallest fitting contig
         sorted_contigs = sorted(fasta_records, key=lambda r: len(r.seq), reverse=True)
         def find_contig_id(row):
-            end = row['Stop'] if not pd.isna(row['Stop']) else 0
+            start = int(row['Start']) if not pd.isna(row['Start']) else 0
+            end = int(row['Stop']) if not pd.isna(row['Stop']) else 0
             best = sorted_contigs[0].id
             for contig in sorted_contigs:
-                if int(end) <= len(contig.seq):
+                if start >= 1 and end <= len(contig.seq):
                     best = contig.id
             return best
         new_df['Sequence Id'] = new_df.apply(find_contig_id, axis=1)

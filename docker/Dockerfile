@@ -17,10 +17,20 @@
 FROM --platform=linux/amd64 continuumio/miniconda3:24.1.2-0 AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        git build-essential wget tar bzip2 zlib1g-dev && \
+        git build-essential wget tar bzip2 zlib1g-dev \
+        curl pkg-config libssl-dev && \
     rm -rf /var/lib/apt/lists/*
 
+# Install Rust toolchain
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
 WORKDIR /build
+
+# Compile pathotypr
+RUN git clone --depth 1 https://github.com/PathoGenOmics-Lab/pathotypr && \
+    cd pathotypr && cargo build --release && \
+    cp target/release/pathotypr /usr/local/bin/
 
 # Compile miniprot v0.18
 RUN git clone --branch v0.18 --depth 1 https://github.com/lh3/miniprot && \
@@ -71,6 +81,7 @@ RUN mkdir -p /miniprot /data/bakta_db /reference /app/matplotlib_config && \
 
 # Copy compiled tools and databases from previous stages
 COPY --from=builder /build/miniprot/miniprot /miniprot/
+COPY --from=builder /usr/local/bin/pathotypr /usr/local/bin/pathotypr
 COPY --from=builder /build/pangene-1.1-bin/bin_x64-linux/* /usr/local/bin/
 COPY --from=builder /build/pangene-1.1-bin/scripts/pangene.js /usr/local/bin/
 RUN chmod +x /miniprot/miniprot /usr/local/bin/*
@@ -97,7 +108,6 @@ RUN \
       bakta=1.12.0 \
       eggnog-mapper=2.1.13 \
       diamond=2.1.24 \
-      pathotypr \
       gfatools \
       # --- R runtime (only packages used by report_AMAP.Rmd) ---
       r-base=4.4 \

@@ -67,7 +67,7 @@ RUN mkdir /reference && \
 # ---------------------------------------------------------------------------
 # STAGE 3: Final production image
 # ---------------------------------------------------------------------------
-FROM continuumio/miniconda3:24.1.2-0
+FROM --platform=linux/amd64 continuumio/miniconda3:24.1.2-0
 
 LABEL maintainer="Paula Ruiz-Rodriguez <paururo@github>" \
       version="1.0.0" \
@@ -94,7 +94,7 @@ RUN \
     conda config --add channels defaults && \
     conda config --add channels bioconda && \
     conda config --add channels conda-forge && \
-    conda config --set channel_priority flexible && \
+    conda config --set channel_priority strict && \
     \
     conda install -y \
       # --- Python runtime ---

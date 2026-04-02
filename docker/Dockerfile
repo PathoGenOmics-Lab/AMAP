@@ -17,20 +17,15 @@
 FROM --platform=linux/amd64 continuumio/miniconda3:24.1.2-0 AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        git build-essential wget tar bzip2 zlib1g-dev \
-        curl pkg-config libssl-dev && \
+        git build-essential wget tar bzip2 zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
-
-# Install Rust toolchain
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /build
 
-# Compile pathotypr
-RUN git clone --depth 1 https://github.com/PathoGenOmics-Lab/pathotypr && \
-    cd pathotypr && cargo build --release && \
-    cp target/release/pathotypr /usr/local/bin/
+# Download pathotypr binary from Bioconda (pre-compiled for linux-64)
+RUN conda install -c bioconda -c conda-forge -y pathotypr=1.0.0 && \
+    cp $(which pathotypr) /usr/local/bin/pathotypr && \
+    conda clean -afy
 
 # Compile miniprot v0.18
 RUN git clone --branch v0.18 --depth 1 https://github.com/lh3/miniprot && \

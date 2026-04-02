@@ -56,8 +56,11 @@ RUN mkdir /reference && \
     wget -q -O /reference/new_refH37Rv.fasta 'https://docs.google.com/uc?export=download&id=1ZvlTVwp3RVPqZPgIaTONg1IQEm6c98P8' && \
     wget -q -O /reference/nt_correctedH37Rv.fa 'https://docs.google.com/uc?export=download&id=1_wWCduMeJW4PHV084K8X3BzivaSAmbo8' && \
     wget -q -O /reference/sequence.gb 'https://docs.google.com/uc?export=download&id=1l0MnOZUWM6t7gYjWgfbt-1SuXOEMi7MQ' && \
-    wget -q -O /reference/snps_lineages.tsv 'https://docs.google.com/uc?export=download&id=1C7BcWzpLnbFwMA-uTyiD_FSi-LkVSHAj' && \
-    wget -q -O /reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt 'https://docs.google.com/uc?export=download&id=1_yWmTKd3FRykoT7RYI74ksyDm9gyHmpM'
+    wget -q -O /reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt 'https://docs.google.com/uc?export=download&id=1_yWmTKd3FRykoT7RYI74ksyDm9gyHmpM' && \
+    # --- Pathotypr lineage markers (Zenodo DOI: 10.5281/zenodo.19210044) ---
+    wget -q -O /reference/pathotypr_lineage_markers.tsv 'https://zenodo.org/records/19210044/files/pathotypr_lineage_markers_v1.0.0.tsv?download=1' && \
+    # Keep legacy name as symlink for backward compatibility
+    ln -s pathotypr_lineage_markers.tsv /reference/snps_lineages.tsv
 
 # ---------------------------------------------------------------------------
 # STAGE 3: Final production image

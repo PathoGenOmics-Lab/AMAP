@@ -40,6 +40,7 @@ process BAKTA_ANNOTATOR {
         --threads ${task.cpus} \\
         --genus "${genus}" \\
         --species "${species}" \\
+        --force \
         --output ${sampleId} \\
         --prefix ${sampleId} \\
         --locus-tag ${sampleId} \\

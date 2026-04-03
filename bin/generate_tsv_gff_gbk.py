@@ -205,22 +205,40 @@ def _escape_gff3(value):
     return value
 
 
-def generate_gff(new_df, gff_file_path, fasta_file_path):
-    """Generate a GFF3 file with proper spec compliance.
+def generate_gff(merged_df, tsv_df, gff_file_path, fasta_file_path):
+    """Generate a GFF3 file with proper spec compliance and eggNOG annotation.
     
     Follows GFF3 specification (https://github.com/The-Sequence-Ontology/Specifications/blob/master/gff3.md):
     - ##gff-version 3 header
     - ##sequence-region pragmas for each contig
     - Gene features as parents of CDS features
+    - eggNOG functional attributes: Ontology_term, eC_number, COG, KEGG, PFAMs
     - Proper attribute escaping (special chars URL-encoded)
     - ##FASTA section with embedded sequences
     - Sorted by coordinate within each contig
     """
-    new_df = new_df.copy()
+    tsv_df = tsv_df.copy()
     
+    # Build a lookup from locus tag to eggNOG annotations
+    eggnog_lookup = {}
+    if merged_df is not None:
+        for _, row in merged_df.iterrows():
+            gene_id = str(row.get('id', '')) if not pd.isna(row.get('id', np.nan)) else ''
+            if not gene_id:
+                continue
+            info = {}
+            for col in ['GOs', 'EC', 'COG_category', 'Description', 'KEGG_ko',
+                        'KEGG_Pathway', 'PFAMs']:
+                val = row.get(col, '')
+                if pd.isna(val) or str(val).strip() in ('', '-'):
+                    continue
+                info[col] = str(val).strip()
+            if info:
+                eggnog_lookup[gene_id] = info
+
     # Sort by contig and start position for spec compliance
-    new_df['Start_int'] = pd.to_numeric(new_df['Start'], errors='coerce').fillna(0).astype(int)
-    new_df = new_df.sort_values(['Sequence Id', 'Start_int']).drop(columns=['Start_int'])
+    tsv_df['Start_int'] = pd.to_numeric(tsv_df['Start'], errors='coerce').fillna(0).astype(int)
+    tsv_df = tsv_df.sort_values(['Sequence Id', 'Start_int']).drop(columns=['Start_int'])
 
     # Parse FASTA for sequence-region pragmas
     fasta_records = list(SeqIO.parse(fasta_file_path, "fasta"))
@@ -233,7 +251,7 @@ def generate_gff(new_df, gff_file_path, fasta_file_path):
         for contig_id in sorted(contig_lengths.keys()):
             file_gff.write(f"##sequence-region {contig_id} 1 {contig_lengths[contig_id]}\n")
 
-        for _, row in new_df.iterrows():
+        for _, row in tsv_df.iterrows():
             seq_id = row['Sequence Id']
             feat_type = row['Type']
             start = row['Start']
@@ -250,8 +268,27 @@ def generate_gff(new_df, gff_file_path, fasta_file_path):
                 gene_id = f"gene-{locus_tag}"
                 gene_attrs = f"ID={gene_id};Name={gene};locus_tag={locus_tag}"
                 file_gff.write(f"{seq_id}\tAMAP\tgene\t{start}\t{stop}\t.\t{strand}\t.\t{gene_attrs}\n")
-                # Emit CDS with Parent pointing to gene
+
+                # Build CDS attributes with eggNOG functional annotation
                 cds_attrs = f"ID={locus_tag};Parent={gene_id};Name={gene};product={product};Dbxref={dbxrefs}"
+
+                # Add eggNOG attributes if available
+                einfo = eggnog_lookup.get(row['Locus Tag'], {})
+                if 'GOs' in einfo:
+                    cds_attrs += f";Ontology_term={_escape_gff3(einfo['GOs'])}"
+                if 'EC' in einfo:
+                    cds_attrs += f";eC_number={_escape_gff3(einfo['EC'])}"
+                if 'COG_category' in einfo:
+                    cds_attrs += f";COG_category={_escape_gff3(einfo['COG_category'])}"
+                if 'Description' in einfo:
+                    cds_attrs += f";Note={_escape_gff3(einfo['Description'])}"
+                if 'KEGG_ko' in einfo:
+                    cds_attrs += f";KEGG_ko={_escape_gff3(einfo['KEGG_ko'])}"
+                if 'KEGG_Pathway' in einfo:
+                    cds_attrs += f";KEGG_Pathway={_escape_gff3(einfo['KEGG_Pathway'])}"
+                if 'PFAMs' in einfo:
+                    cds_attrs += f";PFAMs={_escape_gff3(einfo['PFAMs'])}"
+
                 file_gff.write(f"{seq_id}\tAMAP\t{feat_type}\t{start}\t{stop}\t.\t{strand}\t{phase}\t{cds_attrs}\n")
             else:
                 # Non-CDS features (tRNA, rRNA, etc.)
@@ -263,7 +300,7 @@ def generate_gff(new_df, gff_file_path, fasta_file_path):
         for sequence in fasta_records:
             file_gff.write(f">{sequence.id}\n{sequence.seq}\n")
 
-    return new_df
+    return tsv_df
 
 def main():
     parser = argparse.ArgumentParser(description="")
@@ -295,7 +332,7 @@ def main():
 
     merged_df = generate_master_table(eggnog_pd, correctedtsv_pd, bakta_pd_cds, myco_pd, base_name)
     nuevo_df = generate_tsv(merged_df,bakta_pd_rest,ruta_archivo_fasta, ruta_archivo)
-    generate_gff(nuevo_df, ruta_archivo_gff,ruta_archivo_fasta)
+    generate_gff(merged_df, nuevo_df, ruta_archivo_gff,ruta_archivo_fasta)
     tsv_to_gbk(ruta_archivo, ruta_archivo_fasta, base_name + '-AMAP.gbk')
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ process PANGENE {
           path(baktatsv),
           path(fasta),
           path(emapper)
-    path ref_fastas  // staged reference FASTA files from PATHOTYPR
+    path ref_fastas, stageAs: 'refs/*'  // staged reference FASTA files from PATHOTYPR
 
     output:
     tuple val(sampleId),
@@ -48,8 +48,8 @@ process PANGENE {
 
     # 2) collect reference genomes — exclude self
     refs=()
-    for f in *.fasta; do
-        [[ "\$f" == "${fasta}" ]] && continue
+    for f in refs/*.fasta; do
+        [[ "\$(basename \$f)" == "${fasta}" ]] && continue
         refs+=("\$f")
     done
 

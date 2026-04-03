@@ -49,5 +49,11 @@ process FIX_CDS {
     def baseName = corrected_tsv.baseName.replace('_corrected', '')
     """
     python3 ${projectDir}/bin/check_cds.py ${fasta} ${corrected_tsv}
+
+    # Deduplicate genes with the same Rv assignment
+    python3 ${projectDir}/bin/deduplicate_rvs.py \\
+        *.AMAP.tsv \\
+        --faa *.AMAP.faa \\
+        --fna *.AMAP.fna
     """
 }

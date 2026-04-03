@@ -31,6 +31,7 @@ process BAKTA_ANNOTATOR {
     # (avoids NFS metadata storms — Bakta creates ~50 temp files per genome)
     export TMPDIR=\${TMPDIR:-/tmp}/bakta_\$\$
     mkdir -p "\$TMPDIR"
+    export MPLCONFIGDIR="\$TMPDIR"
     trap "rm -rf \$TMPDIR" EXIT
 
     bakta \\

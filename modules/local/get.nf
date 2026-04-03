@@ -66,12 +66,13 @@ process GET_OUTPUTS {
     set -euo pipefail
 
     # Copy input TSV to avoid modifying Nextflow-staged symlink (breaks -resume)
-    cp ${amap_tsv} local_amap.tsv
+    # Use sampleId-based name so generate_tsv_gff_gbk.py derives correct output names
+    cp ${amap_tsv} ${sampleId}.AMAP.tsv
 
     # Remove header line if present: check if line 1 starts with known header
     # keywords. Avoid heuristic on column content which can misfire.
-    if head -1 local_amap.tsv | grep -qiE '^(id|gene_id|locus|#)'; then
-        tail -n +2 local_amap.tsv > local_amap_tmp.tsv && mv local_amap_tmp.tsv local_amap.tsv
+    if head -1 ${sampleId}.AMAP.tsv | grep -qiE '^(id|gene_id|locus|#)'; then
+        tail -n +2 ${sampleId}.AMAP.tsv > tmp_amap.tsv && mv tmp_amap.tsv ${sampleId}.AMAP.tsv
     fi
 
     # Determine Mycobrowser argument at runtime (file may not exist outside container)
@@ -87,7 +88,7 @@ process GET_OUTPUTS {
 
     python3 ${projectDir}/bin/generate_tsv_gff_gbk.py \\
         ${emapper} \\
-        local_amap.tsv \\
+        ${sampleId}.AMAP.tsv \\
         ${bakta_tsv} \\
         "\$MYCO_ARG" \\
         ${fasta}

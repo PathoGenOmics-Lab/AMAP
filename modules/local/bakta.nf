@@ -29,7 +29,7 @@ process BAKTA_ANNOTATOR {
 
     # Use node-local temp for Bakta's many small intermediate files
     # (avoids NFS metadata storms — Bakta creates ~50 temp files per genome)
-    export TMPDIR=\${TMPDIR:-/tmp}/bakta_\$\$
+    export TMPDIR=\${TMPDIR:-/tmp}/bakta_${sampleId}_\$(date +%s%N)
     mkdir -p "\$TMPDIR"
     export MPLCONFIGDIR="\$TMPDIR"
     trap "rm -rf \$TMPDIR" EXIT

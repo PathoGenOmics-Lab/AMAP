@@ -385,7 +385,12 @@ workflow {
         eggnog_faa_ch = FIX_CDS.out.for_eggnog.map { it[1] }.collect()
         eggnog_ids_ch = FIX_CDS.out.for_eggnog.map { it[0] }.collect()
 
-        ANNOT_EGGNOGMAP_BATCH(eggnog_faa_ch, eggnog_ids_ch, EGGNOG_DB.out.db_path)
+        // Wait for EGGNOG_DB to complete, then pass the actual DB directory
+        eggnog_db_ch = EGGNOG_DB.out.db_path.map {
+            def p = params.eggnog_db
+            file(p).isAbsolute() ? file(p) : file("${launchDir}/${p}")
+        }
+        ANNOT_EGGNOGMAP_BATCH(eggnog_faa_ch, eggnog_ids_ch, eggnog_db_ch)
 
         // Flatten batch output back to per-sample tuples: [sampleId, annotation]
         eggnog_results_ch = ANNOT_EGGNOGMAP_BATCH.out.split_annotations

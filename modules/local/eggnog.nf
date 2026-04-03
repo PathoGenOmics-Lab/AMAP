@@ -6,7 +6,7 @@ process EGGNOG_DB {
     storeDir "${params.eggnog_db}"
 
     output:
-    path "eggnog_db", emit: db_path
+    path "eggnog_db.ok", emit: db_path
 
     script:
     """
@@ -33,12 +33,7 @@ process EGGNOG_DB {
             rm -f "\$EGGNOG_DB_DIR/bacteria.dmnd"
         else
             echo "==> bacteria.dmnd found (\${DB_SIZE} bytes) – skipping download and build."
-            # Use relative symlink when possible for portability with -resume
-            if command -v realpath >/dev/null 2>&1; then
-                ln -sfn "\$(realpath --relative-to=. "\$EGGNOG_DB_DIR")" eggnog_db
-            else
-                ln -sfn "\$EGGNOG_DB_DIR" eggnog_db
-            fi
+            touch eggnog_db.ok
             exit 0
         fi
     fi
@@ -66,12 +61,7 @@ process EGGNOG_DB {
     rm -f "\$EGGNOG_DB_DIR"/e5.proteomes.faa  || true
     rm -f "\$EGGNOG_DB_DIR"/e5.taxid_info.tsv || true
 
-    # Symlink into workdir for Nextflow output channel
-    if command -v realpath >/dev/null 2>&1; then
-        ln -sfn "\$(realpath --relative-to=. "\$EGGNOG_DB_DIR")" eggnog_db
-    else
-        ln -sfn "\$EGGNOG_DB_DIR" eggnog_db
-    fi
+    touch eggnog_db.ok
     """
 }
 

@@ -139,7 +139,6 @@ process ANNOT_EGGNOGMAP_BATCH {
         --usemem \\
         --dbmem \\
         --sensmode fast \\
-
         --tax_scope 2 \\
         --target_orthologs one2one \\
         -o batch \\

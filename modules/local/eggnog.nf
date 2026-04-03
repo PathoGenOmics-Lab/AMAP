@@ -136,9 +136,11 @@ process ANNOT_EGGNOGMAP_BATCH {
         -m diamond \\
         --dmnd_db eggnog_db/bacteria.dmnd \\
         --cpu ${task.cpus} \\
+        --usemem \\
+        --dbmem \\
         --sensmode fast \\
-        --dmnd_block_size 2 \\
-        --dmnd_index_chunks 4 \\
+        --dmnd_block_size \$BLOCK_SIZE \\
+        --dmnd_index_chunks 1 \\
         --tax_scope 2 \\
         --target_orthologs one2one \\
         -o batch \\

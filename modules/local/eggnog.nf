@@ -95,7 +95,9 @@ process ANNOT_EGGNOGMAP_BATCH {
 
   echo "▸ [eggNOG] Preparing batch annotation for ${faa_files.size()} samples..." >&2
 
+  # ================================================================
   # 1. Concatenate all FAAs with sample-prefixed headers
+  # ================================================================
   #    Delimiter: @@SMPL@@ (safe — no protein ID contains this)
   #    Original:  >L8_G26689_Rv0001;+;0-1524
   #    Tagged:    >SAMPLE@@SMPL@@L8_G26689@@SMPL@@L8_G26689_Rv0001;+;0-1524
@@ -104,25 +106,87 @@ process ANNOT_EGGNOGMAP_BATCH {
       awk -v sid="\$sid" '/^>/{sub(/^>/, ""); print ">SAMPLE@@SMPL@@" sid "@@SMPL@@" \$0; next} {print}' "\$faa"
   done > all_proteins.faa
 
-  # 2. Run eggNOG-mapper ONCE on the combined file
-  # Check if there's anything to annotate (all samples might have 0 CDS)
   N_PROTS=\$(grep -c '^>' all_proteins.faa || echo 0)
   if [ "\$N_PROTS" -eq 0 ]; then
       echo "WARNING: No proteins to annotate (all samples have 0 CDS)" >&2
-      # Create minimal output so split step works
       echo "# emapper: no input proteins" > batch.emapper.annotations
   else
-      echo "==> Annotating \$N_PROTS proteins from ${faa_files.size()} samples..."
+      # ================================================================
+      # 2. Deduplicate by sequence — run eggNOG only on unique proteins
+      # ================================================================
+      #    With N closely-related genomes (e.g. 480 MTB strains), most
+      #    proteins are identical across samples. Deduplicating reduces
+      #    the Diamond search from N_total to N_unique (typically 5-20×
+      #    fewer queries).
+      #
+      #    Strategy:
+      #    - Hash each protein sequence → pick one representative header
+      #    - Build a mapping: representative → all duplicate headers
+      #    - Run eggNOG on representatives only
+      #    - Propagate annotations to all duplicates
 
-      # Optimize Diamond block size based on available memory.
-      # Larger blocks = fewer disk passes = faster. Rule: ~6 GB RAM per block.
+      echo "==> Deduplicating \$N_PROTS proteins by sequence..." >&2
+
+      # dedup_proteins.py: reads FASTA, groups by sequence, writes
+      #   unique.faa (representatives) and header_map.tsv (rep → dups)
+      python3 - <<'PYEOF'
+import sys
+from collections import OrderedDict
+
+seq_to_headers = OrderedDict()   # sequence → [header1, header2, ...]
+header_to_seq = {}               # header → sequence (for ordering)
+
+current_header = None
+chunks = []
+
+with open("all_proteins.faa") as fh:
+    for line in fh:
+        if line.startswith(">"):
+            if current_header is not None:
+                seq = "".join(chunks)
+                header_to_seq[current_header] = seq
+                seq_to_headers.setdefault(seq, []).append(current_header)
+            current_header = line[1:].rstrip()
+            chunks = []
+        else:
+            chunks.append(line.strip())
+    # last record
+    if current_header is not None:
+        seq = "".join(chunks)
+        header_to_seq[current_header] = seq
+        seq_to_headers.setdefault(seq, []).append(current_header)
+
+# Write unique representatives
+with open("unique.faa", "w") as out_faa:
+    for seq, headers in seq_to_headers.items():
+        rep = headers[0]
+        out_faa.write(f">{rep}\n{seq}\n")
+
+# Write mapping: rep<TAB>dup1<TAB>dup2<TAB>...
+with open("header_map.tsv", "w") as out_map:
+    for seq, headers in seq_to_headers.items():
+        rep = headers[0]
+        out_map.write(rep + "\t" + "\t".join(headers[1:]) + "\n")
+
+n_unique = len(seq_to_headers)
+n_total = sum(len(h) for h in seq_to_headers.values())
+ratio = n_total / n_unique if n_unique > 0 else 0
+print(f"    Unique: {n_unique} / {n_total} ({ratio:.1f}× redundancy)", file=sys.stderr)
+PYEOF
+
+      N_UNIQUE=\$(grep -c '^>' unique.faa || echo 0)
+      echo "==> Annotating \$N_UNIQUE unique proteins (from \$N_PROTS total)..." >&2
+
+      # ================================================================
+      # 3. Run eggNOG-mapper on unique sequences only
+      # ================================================================
       MEM_GB=\$(echo "${task.memory}" | grep -oP '\\d+' | head -1)
       BLOCK_SIZE=\$(( MEM_GB / 8 ))
       [ \$BLOCK_SIZE -lt 2 ] && BLOCK_SIZE=2
       [ \$BLOCK_SIZE -gt 12 ] && BLOCK_SIZE=12
 
       emapper.py \\
-        -i all_proteins.faa \\
+        -i unique.faa \\
         -m diamond \\
         --dmnd_db eggnog_db/bacteria.dmnd \\
         --cpu ${task.cpus} \\
@@ -137,11 +201,55 @@ process ANNOT_EGGNOGMAP_BATCH {
         --data_dir eggnog_db \\
         --temp_dir tmp \\
         --scratch_dir scr_tmp
+
+      # ================================================================
+      # 4. Expand annotations back to all duplicate headers
+      # ================================================================
+      #    For each annotation line, check if the query is a representative
+      #    that has duplicates → emit one line per duplicate with its
+      #    original header restored.
+      echo "==> Expanding annotations to all \$N_PROTS proteins..." >&2
+
+      python3 - <<'PYEOF'
+import sys
+
+# Load representative → duplicates mapping
+rep_to_dups = {}  # rep_header → [dup1, dup2, ...]
+with open("header_map.tsv") as fh:
+    for line in fh:
+        parts = line.rstrip("\n").split("\t")
+        rep = parts[0]
+        dups = [d for d in parts[1:] if d]  # skip empty fields
+        if dups:
+            rep_to_dups[rep] = dups
+
+# Read batch annotations, expand duplicates
+with open("batch.emapper.annotations") as fin, \
+     open("batch_expanded.emapper.annotations", "w") as fout:
+    for line in fin:
+        # Pass through header/comment lines
+        if line.startswith("#"):
+            fout.write(line)
+            continue
+        fields = line.rstrip("\n").split("\t")
+        query = fields[0]
+        # Write the original line (representative)
+        fout.write(line)
+        # Write duplicates with their own headers
+        if query in rep_to_dups:
+            for dup in rep_to_dups[query]:
+                fields[0] = dup
+                fout.write("\t".join(fields) + "\n")
+PYEOF
+
+      # Replace batch output with expanded version
+      mv batch_expanded.emapper.annotations batch.emapper.annotations
   fi
 
-  # 3. Split results back into per-sample annotation files
+  # ================================================================
+  # 5. Split results back into per-sample annotation files
+  # ================================================================
   #    All in one awk pass — O(N) instead of O(N×M) subprocesses
-  # Capture ALL header lines (any number of #-prefixed lines)
   grep '^#' batch.emapper.annotations > header.txt || true
 
   # Create per-sample files with headers
@@ -151,19 +259,13 @@ process ANNOT_EGGNOGMAP_BATCH {
   done
 
   # Split annotation lines by sample — single awk pass over the file
-  # Handles empty results gracefully (grep -v returns 1 if no lines → || true)
   # NOTE: close() after each print >> to avoid hitting ulimit -n (open files)
-  # on large runs (500+ samples). Without close(), awk keeps all output files
-  # open simultaneously which fails at ~256-1024 samples on most systems.
   grep -v '^#' batch.emapper.annotations 2>/dev/null | awk -F'\\t' '
   {
-      # Parse query: SAMPLE@@SMPL@@sampleId@@SMPL@@original_query
       query = \$1
-      # Extract sampleId (between first and second @@SMPL@@)
       split(query, parts, "@@SMPL@@")
       sid = parts[2]
       orig_query = parts[3]
-      # Reconstruct line with original query
       \$1 = orig_query
       outfile = "split/" sid ".emapper.annotations"
       print >> outfile

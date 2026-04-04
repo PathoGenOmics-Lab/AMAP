@@ -66,14 +66,27 @@ def build_overlap_tree(tree_df, overlap_df, tree_id_col, overlap_id_col):
 
 
 def create_overlap_groups(filtered_overlaps, case4_df, miniprot_df):
-    """Create a dict of overlapping gene groups for resolution."""
+    """Create a dict of overlapping gene groups for resolution.
+    
+    Note: `filtered_overlaps` keys may come from either miniprot_df or case4_df
+    indices (depending on which was the tree vs query in build_overlap_tree).
+    When the key is a case4 index, it may not exist in miniprot_df — in that
+    case we use (0, 0) as placeholder coords (callers that use case4 indices
+    only need 'Prot Id' and 'Locus Tags', never the coordinates).
+    """
     overlaps_df = pd.DataFrame.from_dict(filtered_overlaps, orient='index')
     groups = {}
     for i, row in overlaps_df.iterrows():
         case4_rows = case4_df[case4_df['Locus Tag'].isin(row['Locus Tags'])]
+        # Safely access miniprot_df coords — index may not exist when
+        # filtered_overlaps was built with case4 as the tree source
+        if i in miniprot_df.index:
+            mp_coords = [(miniprot_df.at[i, 'Start'], miniprot_df.at[i, 'End'])]
+        else:
+            mp_coords = [(0, 0)]
         groups[i] = {
             'case4': [(r['Start'], r['End']) for _, r in case4_rows.iterrows()],
-            'miniprot_df': [(miniprot_df.at[i, 'Start'], miniprot_df.at[i, 'End'])],
+            'miniprot_df': mp_coords,
             'Prot Id': row['Prot Id'],
             'Locus Tags': row['Locus Tags']
         }

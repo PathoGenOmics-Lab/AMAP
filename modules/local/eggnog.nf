@@ -160,18 +160,18 @@ with open("all_proteins.faa") as fh:
 with open("unique.faa", "w") as out_faa:
     for seq, headers in seq_to_headers.items():
         rep = headers[0]
-        out_faa.write(f">{rep}\n{seq}\n")
+        out_faa.write(">" + rep + chr(10) + seq + chr(10))
 
 # Write mapping: rep<TAB>dup1<TAB>dup2<TAB>...
 with open("header_map.tsv", "w") as out_map:
     for seq, headers in seq_to_headers.items():
         rep = headers[0]
-        out_map.write(rep + "\t" + "\t".join(headers[1:]) + "\n")
+        out_map.write(rep + chr(9) + chr(9).join(headers[1:]) + chr(10))
 
 n_unique = len(seq_to_headers)
 n_total = sum(len(h) for h in seq_to_headers.values())
 ratio = n_total / n_unique if n_unique > 0 else 0
-print(f"    Unique: {n_unique} / {n_total} ({ratio:.1f}× redundancy)", file=sys.stderr)
+print("    Unique: " + str(n_unique) + " / " + str(n_total) + " (" + str(round(ratio, 1)) + "x redundancy)", file=sys.stderr)
 PYEOF
 
       N_UNIQUE=\$(grep -c '^>' unique.faa || echo 0)
@@ -217,7 +217,7 @@ import sys
 rep_to_dups = {}  # rep_header → [dup1, dup2, ...]
 with open("header_map.tsv") as fh:
     for line in fh:
-        parts = line.rstrip("\n").split("\t")
+        parts = line.rstrip(chr(10)).split(chr(9))
         rep = parts[0]
         dups = [d for d in parts[1:] if d]  # skip empty fields
         if dups:
@@ -231,7 +231,7 @@ with open("batch.emapper.annotations") as fin, \
         if line.startswith("#"):
             fout.write(line)
             continue
-        fields = line.rstrip("\n").split("\t")
+        fields = line.rstrip(chr(10)).split(chr(9))
         query = fields[0]
         # Write the original line (representative)
         fout.write(line)
@@ -239,7 +239,7 @@ with open("batch.emapper.annotations") as fin, \
         if query in rep_to_dups:
             for dup in rep_to_dups[query]:
                 fields[0] = dup
-                fout.write("\t".join(fields) + "\n")
+                fout.write(chr(9).join(fields) + chr(10))
 PYEOF
 
       # Replace batch output with expanded version

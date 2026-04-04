@@ -65,15 +65,21 @@ process GET_OUTPUTS {
     """
     set -euo pipefail
 
-    # Copy input TSV to avoid modifying Nextflow-staged symlink (breaks -resume)
-    # Use sampleId-based name so generate_tsv_gff_gbk.py derives correct output names
-    cp ${amap_tsv} ${sampleId}.AMAP.tsv
+    # Create a writable local copy of the staged symlink.
+    # The staged file is already named ${sampleId}.AMAP.tsv so we cannot
+    # cp to the same name — use a temp name, then replace the symlink.
+    cp -L ${amap_tsv} _writable_amap.tsv
 
     # Remove header line if present: check if line 1 starts with known header
     # keywords. Avoid heuristic on column content which can misfire.
-    if head -1 ${sampleId}.AMAP.tsv | grep -qiE '^(id|gene_id|locus|#)'; then
-        tail -n +2 ${sampleId}.AMAP.tsv > tmp_amap.tsv && mv tmp_amap.tsv ${sampleId}.AMAP.tsv
+    if head -1 _writable_amap.tsv | grep -qiE '^(id|gene_id|locus|#)'; then
+        tail -n +2 _writable_amap.tsv > _writable_amap_tmp.tsv && mv _writable_amap_tmp.tsv _writable_amap.tsv
     fi
+
+    # Replace staged symlink with the writable copy so generate_tsv_gff_gbk.py
+    # derives the correct sampleId-based output names
+    rm -f ${sampleId}.AMAP.tsv
+    mv _writable_amap.tsv ${sampleId}.AMAP.tsv
 
     # Determine Mycobrowser argument at runtime (file may not exist outside container)
     MYCO_REF="${params.mycobrowser_ref}"

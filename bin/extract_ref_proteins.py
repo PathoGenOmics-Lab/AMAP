@@ -36,7 +36,8 @@ def extract_from_genbank(gbk_path, output_faa):
 
             start = int(feat.location.start) + 1  # 0-based → 1-based
             end = int(feat.location.end)
-            strand = "+" if feat.strand == 1 else "-"
+            # feat.strand was removed in Biopython 1.85; read it off the location.
+            strand = "+" if feat.location.strand == 1 else "-"
 
             # Use pre-computed translation if available
             translation = feat.qualifiers.get("translation", [None])[0]

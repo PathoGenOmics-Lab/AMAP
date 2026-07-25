@@ -97,7 +97,9 @@ def convert_gbk_to_panaroo_gff3(gbk_path: Path, gff3_path: Path):
 
                 start = feature.location.start + 1
                 end = feature.location.end
-                strand = '+' if feature.strand == 1 else '-'
+                # feature.strand was removed in Biopython 1.85; the strand now
+                # lives on the location object.
+                strand = '+' if feature.location.strand == 1 else '-'
                 score = '.'
                 source = "AMAP"
 

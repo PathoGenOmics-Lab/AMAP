@@ -25,6 +25,12 @@ REPO_DIR="${2:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 
 # The checkout goes in read-only and is copied to a scratch dir inside the
 # container, because py_compile and pytest both want to write next to it.
+#
+# Note the plain `bash -c` below rather than `bash -lc`. A login shell sources
+# /etc/profile, which rebuilds PATH from scratch and drops the entries the
+# Dockerfile put there, so /miniprot disappears and a different miniprot wins.
+# Nextflow runs task scripts with a non-login shell, so this has to match or the
+# test is checking an environment the pipeline never runs in.
 run() { docker run --rm -v "${REPO_DIR}:/src:ro" "$IMAGE" "$@"; }
 
 echo "Testing image: $IMAGE"
@@ -32,13 +38,34 @@ echo "Against repo:  $REPO_DIR"
 echo
 
 echo "== command line tools =="
-run bash -lc '
+run bash -c '
   set -e
   for t in miniprot pathotypr diamond bakta emapper.py pangene gfatools pandoc; do
     command -v "$t" >/dev/null || { echo "  MISSING: $t"; exit 1; }
     echo "  ok  $t  ($(command -v "$t"))"
   done
   echo "  ok  $(R --version | head -1)"
+'
+
+echo
+echo "== tool versions match the Dockerfile =="
+# pangene ships its own miniprot inside bin_x64-linux, and the Dockerfile copies
+# that whole directory into /usr/local/bin. The compiled 0.18 in /miniprot only
+# wins because the Dockerfile puts /miniprot earlier on PATH, so pin the version
+# here: if the resolution order ever changes, an older aligner would otherwise
+# take over silently and nothing else would notice.
+run bash -c '
+  set -e
+  check() {
+    got=$("$1" --version 2>&1 | head -1)
+    case "$got" in
+      *"$2"*) echo "  ok  $1 $got" ;;
+      *) echo "  WRONG VERSION: $1 is $got, expected $2 (resolved to $(command -v "$1"))"; exit 1 ;;
+    esac
+  }
+  check miniprot 0.18
+  check bakta 1.12.0
+  check diamond 2.1.24
 '
 
 echo
@@ -73,7 +100,7 @@ run Rscript -e '
 
 echo
 echo "== bundled reference data =="
-run bash -lc '
+run bash -c '
   set -e
   for f in /reference/MTB_ancestor_reference.fasta \
            /reference/aa_H37Rv.translated.fas \
@@ -94,7 +121,7 @@ echo
 echo "== repository code against the image interpreter =="
 # The scripts live in the repo, not the image, and Nextflow runs them from
 # projectDir. This is where the image and the code get checked together.
-run bash -lc '
+run bash -c '
   set -e
   cp -r /src /work
   cd /work

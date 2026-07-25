@@ -268,6 +268,82 @@ class TestGeneNamesMatch:
         assert _gene_names_match('Rv0001', 'Rv9999') is False
 
 
+class TestReconcileCoordinates:
+    """Behaviour locked in around the gene-name indexed lookups.
+
+    reconcile_coordinates used to scan every protein and every reference for
+    each gene; it now indexes both by gene name up front. These cases pin the
+    semantics that indexing must preserve.
+    """
+
+    @staticmethod
+    def _mp(rows):
+        return pd.DataFrame(rows, columns=['Prot Id', 'Start', 'End', 'Strand',
+                                           'Match Nt', 'Num nt'])
+
+    def test_replaces_with_reference_coordinates(self):
+        from classify.reconciliation import reconcile_coordinates
+        combined = {(1000, 1900, '+'): 'Rv0001_1010-1910'}
+        mp = self._mp([['Rv0001_1010-1910', 1010, 1910, '+', 900, 900]])
+        reconcile_coordinates(combined, mp)
+        assert combined == {(1010, 1910, '+'): 'Rv0001_1010-1910'}
+
+    def test_does_not_reconcile_similar_names(self):
+        """Rv3508 must not be pulled onto Rv3508c's coordinates."""
+        from classify.reconciliation import reconcile_coordinates
+        combined = {(1000, 1900, '+'): 'Rv3508_1000-1900'}
+        mp = self._mp([['Rv3508c_1010-1910', 1010, 1910, '+', 900, 900],
+                       ['Rv3508_1000-1900', 1000, 1900, '+', 900, 900]])
+        reconcile_coordinates(combined, mp)
+        assert combined == {(1000, 1900, '+'): 'Rv3508_1000-1900'}
+
+    def test_multi_copy_element_survives_paralog_check(self):
+        """>2 miniprot hits means placement away from the embedded coords is expected."""
+        from classify.reconciliation import reconcile_coordinates
+        combined = {(500000, 500600, '+'): 'PE_PGRS1_1000-1600'}
+        mp = self._mp([['PE_PGRS1_1000-1600', 1000, 1600, '+', 600, 600],
+                       ['PE_PGRS1_1000-1600', 500000, 500600, '+', 600, 600],
+                       ['PE_PGRS1_1000-1600', 900000, 900600, '+', 600, 600]])
+        reconcile_coordinates(combined, mp)
+        assert (500000, 500600, '+') in combined
+
+    def test_bakta_validates_position(self):
+        """A Bakta call at the exact coordinates rescues a mismatched placement."""
+        from classify.reconciliation import reconcile_coordinates
+        combined = {(500000, 500600, '+'): 'Rv0001_1000-1600'}
+        mp = self._mp([['Rv0001_1000-1600', 500000, 500600, '+', 600, 600]])
+        bk = pd.DataFrame([['L4_G1_00001', 500000, 500600, '+', 601]],
+                          columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt'])
+        without_bakta = dict(combined)
+        reconcile_coordinates(without_bakta, mp, None)
+        with_bakta = dict(combined)
+        reconcile_coordinates(with_bakta, mp, bk)
+        assert (500000, 500600, '+') not in without_bakta
+        assert (500000, 500600, '+') in with_bakta
+
+
+class TestDeduplicate:
+    """deduplicate must never drop a gene entirely."""
+
+    def test_keeps_one_entry_per_gene(self):
+        from classify.reconciliation import deduplicate
+        combined = {
+            (100, 200, '+'): 'geneA',
+            (100, 200, '-'): 'geneA',       # same gene, both fully inside geneB
+            (50, 500, '+'): 'geneB',
+        }
+        deduplicate(combined)
+        assert 'geneA' in combined.values()
+        assert 'geneB' in combined.values()
+
+    def test_no_duplicates_is_a_noop(self):
+        from classify.reconciliation import deduplicate
+        combined = {(100, 200, '+'): 'geneA', (300, 400, '+'): 'geneB'}
+        before = dict(combined)
+        deduplicate(combined)
+        assert combined == before
+
+
 # =============================================================================
 # INTEGRATION-STYLE TESTS
 # =============================================================================

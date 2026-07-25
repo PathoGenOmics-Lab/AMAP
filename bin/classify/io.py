@@ -29,17 +29,39 @@ def _read_paf(path):
     PAF has 12 fixed columns; columns 13+ are optional SAM-style tags
     whose count varies by aligner version and parameters. We read all
     columns and rename only the first 12 that we actually use.
+
+    The tag count also varies BETWEEN ROWS of a single file: miniprot emits
+    fs:i only for frameshifted alignments, and cg:Z/cs:Z depend on the run
+    flags. pandas infers the column count from the first row, so a later row
+    with more tags aborts the parse with a ParserError. We therefore scan the
+    file for the widest row first and read with that many explicit columns;
+    shorter rows are padded with NaN.
     """
-    # Read with no fixed column count — pandas auto-detects
     paf_cols = [
         "Prot Id", "Prot len", "Prot Start", "ProtStop", "Strand",
         "fasta Tag", "fasta len", "Start", "End", "Match Nt", "Num nt",
         "mapping qual"
     ]
     try:
-        df = pd.read_csv(path, sep='\t', header=None, comment='#')
-    except pd.errors.EmptyDataError:
+        with open(path) as fh:
+            n_cols = max(
+                (line.count('\t') + 1 for line in fh
+                 if line.strip() and not line.startswith('#')),
+                default=0
+            )
+    except OSError:
+        n_cols = 0
+
+    if n_cols == 0:
         # Empty PAF (e.g., empty bad_bakta.faa → no alignments)
+        return pd.DataFrame(columns=paf_cols)
+
+    try:
+        # index_col=False keeps pandas from promoting leading columns to the
+        # index when `names` is wider than a given row.
+        df = pd.read_csv(path, sep='\t', header=None, comment='#',
+                         names=range(n_cols), index_col=False)
+    except pd.errors.EmptyDataError:
         return pd.DataFrame(columns=paf_cols)
     # Rename first 12 columns; keep remaining as-is (tag columns)
     rename_map = {i: name for i, name in enumerate(paf_cols) if i < len(df.columns)}

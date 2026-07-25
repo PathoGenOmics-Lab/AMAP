@@ -189,6 +189,21 @@ class TestInsertWithDedup:
         _insert_with_dedup(d, (500, 600, '+'), 'gene2')
         assert len(d) == 2
 
+    def test_rejected_insert_does_not_delete_existing(self):
+        """A discarded candidate must not take other genes down with it.
+
+        The candidate overlaps two entries: the first is queued for removal,
+        the second (a reference gene) wins and aborts the insert. The queued
+        removal was only valid as a replacement, so nothing may be deleted.
+        """
+        d = {
+            (100, 900, '+'): 'baktaGene_short',
+            (150, 950, '+'): 'Rv0001_150-950',
+        }
+        _insert_with_dedup(d, (120, 920, '+'), 'newGene')
+        assert (120, 920, '+') not in d          # candidate rejected
+        assert set(d.values()) == {'baktaGene_short', 'Rv0001_150-950'}
+
 
 # =============================================================================
 # RECONCILIATION MODULE
@@ -460,6 +475,161 @@ class TestMergeRtabs:
         assert result.shape == (3, 2)  # 3 genes, 2 samples
         assert result.loc['geneA', 'sample2'] == 0  # filled with 0
         assert result.loc['geneB', 'sample1'] == 1
+
+
+# =============================================================================
+# PAF PARSING TESTS
+# =============================================================================
+
+class TestReadPaf:
+    """Tests for _read_paf: miniprot PAF has a variable number of tag columns."""
+
+    def _write(self, content):
+        f = tempfile.NamedTemporaryFile(mode='w', suffix='.paf', delete=False)
+        f.write(content)
+        f.close()
+        return f.name
+
+    def test_variable_tag_columns(self):
+        """Rows with different tag counts must not abort the parse.
+
+        miniprot emits fs:i only for frameshifted alignments, so the widest
+        row is not necessarily the first one.
+        """
+        from classify.io import _read_paf
+        path = self._write(
+            "Rv0001_1-1524\t507\t0\t507\t+\tchr\t4411532\t0\t1524\t1524\t1524\t60\tAS:i:100\tms:i:100\n"
+            "Rv0002_2052-3260\t402\t0\t402\t+\tchr\t4411532\t2051\t3260\t1209\t1209\t60"
+            "\tAS:i:90\tms:i:90\tfs:i:1\tcg:Z:402M\n"
+        )
+        df = _read_paf(path)
+        os.unlink(path)
+        assert len(df) == 2
+        assert list(df['Prot Id']) == ['Rv0001_1-1524', 'Rv0002_2052-3260']
+        assert list(df['Start']) == [0, 2051]
+
+    def test_empty_paf(self):
+        from classify.io import _read_paf
+        path = self._write("")
+        df = _read_paf(path)
+        os.unlink(path)
+        assert len(df) == 0
+        assert 'Prot Id' in df.columns
+
+    def test_comment_only_paf(self):
+        from classify.io import _read_paf
+        path = self._write("# no alignments\n")
+        df = _read_paf(path)
+        os.unlink(path)
+        assert len(df) == 0
+        assert 'Prot Id' in df.columns
+
+
+# =============================================================================
+# MASTER TABLE / MYCOBROWSER TESTS
+# =============================================================================
+
+class TestGenerateTsvGffGbk:
+    """Tests for generate_tsv_gff_gbk.py."""
+
+    def test_myco_columns_are_unique(self):
+        """The empty Mycobrowser frame must have a unique 'Locus' merge key.
+
+        name_myco already contains 'Locus'; prepending it again made
+        pd.merge(on='Locus') raise and broke every --skip_mycobrowser run.
+        """
+        from generate_tsv_gff_gbk import columns
+        _, _, _, name_myco = columns()
+        myco_pd = pd.DataFrame(columns=name_myco)
+        assert list(myco_pd.columns).count('Locus') == 1
+
+        merged = pd.DataFrame({'simple_id': ['g1'], 'Locus': ['Rv0001']})
+        out = pd.merge(merged, myco_pd, on='Locus', how='left')
+        assert len(out) == 1
+
+    def test_read_pandas_skips_header_row(self):
+        from generate_tsv_gff_gbk import read_pandas, columns
+        _, name_correctedtsv, _, _ = columns()
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tsv', delete=False) as f:
+            f.write("id\tstrand\tstart\tend\trvs\tpseudogene\n")
+            f.write("L4_G1_Rv0001\t+\t1\t1524\tRv0001_1-1524\tno\n")
+            f.flush()
+            df = read_pandas(f.name, name_correctedtsv)
+        os.unlink(f.name)
+        assert len(df) == 1
+        assert df.iloc[0]['id'] == 'L4_G1_Rv0001'
+        assert pd.api.types.is_numeric_dtype(df['start'])
+
+    def test_read_pandas_keeps_headerless_rows(self):
+        """GET_OUTPUTS strips the header before calling; that row must survive."""
+        from generate_tsv_gff_gbk import read_pandas, columns
+        _, name_correctedtsv, _, _ = columns()
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tsv', delete=False) as f:
+            f.write("L4_G1_Rv0001\t+\t1\t1524\tRv0001_1-1524\tno\n")
+            f.flush()
+            df = read_pandas(f.name, name_correctedtsv)
+        os.unlink(f.name)
+        assert len(df) == 1
+        assert df.iloc[0]['id'] == 'L4_G1_Rv0001'
+
+
+# =============================================================================
+# DIAMOND OUTPUT PARSING TESTS
+# =============================================================================
+
+class TestGetDuplications:
+    """Tests for get_duplications.py."""
+
+    def test_first_hit_is_not_eaten_as_header(self):
+        """Diamond runs with --header, so all headers start with '#'.
+
+        Without header=None pandas promotes the first alignment to column
+        names and that duplication pair disappears.
+        """
+        pytest.importorskip('pyvis')
+        pytest.importorskip('community')
+        from get_duplications import read_and_create
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.diamond', delete=False) as f:
+            f.write("# Fields: qseqid, sseqid, pident\n")
+            for q, s, bits in [('gA', 'gB', 200), ('gC', 'gD', 190), ('gE', 'gF', 180)]:
+                f.write(f"{q}\t{s}\t99.0\t100\t0\t0\t1\t100\t1\t100\t1e-50\t{bits}\t100\t100\t99\n")
+            f.flush()
+            df = read_and_create(f.name)
+        os.unlink(f.name)
+        assert len(df) == 3
+        assert set(df['qseqid']) == {'gA', 'gC', 'gE'}
+
+
+# =============================================================================
+# BIOPYTHON COMPATIBILITY TESTS
+# =============================================================================
+
+class TestBiopythonCompat:
+    """SeqFeature.strand was removed in Biopython 1.85; use location.strand."""
+
+    def test_to_panaroo_reads_strand_from_location(self):
+        pytest.importorskip('Bio')
+        from pathlib import Path
+        from Bio import SeqIO
+        from Bio.Seq import Seq
+        from Bio.SeqRecord import SeqRecord
+        from Bio.SeqFeature import SeqFeature, SimpleLocation
+        from to_panaroo import convert_gbk_to_panaroo_gff3
+
+        rec = SeqRecord(Seq("ATG" * 20 + "TAA"), id="chr1", name="chr1", description="")
+        rec.annotations['molecule_type'] = 'DNA'
+        rec.features = [SeqFeature(SimpleLocation(0, 63, strand=-1), type="CDS",
+                                   qualifiers={"locus_tag": ["g1"], "product": ["thing"]})]
+        gbk = tempfile.mktemp(suffix='.gbk')
+        gff = tempfile.mktemp(suffix='.gff')
+        SeqIO.write([rec], gbk, "genbank")
+        convert_gbk_to_panaroo_gff3(Path(gbk), Path(gff))
+        with open(gff) as f:
+            content = f.read()
+        os.unlink(gbk)
+        os.unlink(gff)
+        assert "\tCDS\t1\t63\t.\t-\t" in content
+        assert "ID=g1;Parent=g1_gene" in content
 
 
 if __name__ == '__main__':

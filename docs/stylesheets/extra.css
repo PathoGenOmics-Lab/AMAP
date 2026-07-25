@@ -1,0 +1,58 @@
+/* AMAP brand: the teal of the logo, wired through Material's `custom` palette
+   colour so it wins at body scope in both themes. */
+:root {
+  --amap-teal:  #2f9e8a;
+  --amap-aqua:  #39baa3;
+}
+
+[data-md-color-primary="custom"] {
+  --md-primary-fg-color:        #2f9e8a;
+  --md-primary-fg-color--light: #56c9b3;
+  --md-primary-fg-color--dark:  #21786a;
+}
+
+[data-md-color-accent="custom"] {
+  --md-accent-fg-color: #17879e;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: hsl(190, 15%, 12%);
+}
+[data-md-color-scheme="slate"][data-md-color-accent="custom"] {
+  --md-accent-fg-color: #58d5c4;
+}
+
+/* The logo is a square PNG with a light background; round it a touch so it
+   sits well in the header. */
+.md-header__button.md-logo img {
+  border-radius: 6px;
+}
+
+/* Landing-page feature grid (used with attr_list / md_in_html). */
+.grid.cards > ul > li,
+.grid > .card {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.6rem;
+  padding: 0.8rem 1rem;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.grid.cards > ul > li:hover {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 0 0 1px var(--md-accent-fg-color);
+}
+
+/* The pipeline map and the algorithm figure are wide SVGs. Let them use the
+   full column and scroll rather than overflowing the page. */
+.amap-figure {
+  overflow-x: auto;
+  margin: 1.2rem 0;
+}
+.amap-figure img {
+  min-width: 640px;
+  width: 100%;
+}
+
+/* Parameter tables carry long default values; stop them wrapping mid-path. */
+.md-typeset table:not([class]) td code {
+  white-space: nowrap;
+}

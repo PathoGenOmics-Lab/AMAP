@@ -572,6 +572,42 @@ class TestAnnotationQC:
 
 
 # =============================================================================
+# REFERENCE PROTEIN EXTRACTION TESTS
+# =============================================================================
+
+class TestAppendStopCodon:
+    """The reference proteome has to carry the stop codon.
+
+    The bundled H37Rv file does: 3 * len(protein) equals the coordinate span
+    and the sequence ends in '*'. A protein written without it aligns three
+    bases short of the CDS Bakta called, so no gene can ever reach case 2.
+    """
+
+    def test_appends_when_span_is_one_codon_longer(self):
+        from extract_ref_proteins import append_stop_codon
+        # 1-36 is 36 nt, 12 codons; an 11 residue protein leaves one spare
+        assert append_stop_codon('M' * 11, 1, 36) == 'M' * 11 + '*'
+
+    def test_leaves_matching_lengths_alone(self):
+        from extract_ref_proteins import append_stop_codon
+        # 12 residues already account for all 36 nt
+        assert append_stop_codon('M' * 12, 1, 36) == 'M' * 12
+
+    def test_does_not_double_up_an_existing_stop(self):
+        from extract_ref_proteins import append_stop_codon
+        assert append_stop_codon('M' * 11 + '*', 1, 36) == 'M' * 11 + '*'
+
+    def test_leaves_other_mismatches_alone(self):
+        """Joined or frameshifted features span more than their translation."""
+        from extract_ref_proteins import append_stop_codon
+        assert append_stop_codon('M' * 11, 1, 300) == 'M' * 11
+
+    def test_handles_empty(self):
+        from extract_ref_proteins import append_stop_codon
+        assert append_stop_codon('', 1, 36) == ''
+
+
+# =============================================================================
 # CHECK CDS TESTS
 # =============================================================================
 

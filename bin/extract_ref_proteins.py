@@ -18,6 +18,30 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 
 
+def append_stop_codon(translation, start, end):
+    """Match the convention the bundled H37Rv proteome uses.
+
+    There, the coordinates in the header span the stop codon and the protein
+    carries it as a trailing '*', so 3 * len(protein) equals the span. Both a
+    GenBank /translation qualifier and Bio.Seq.translate(to_stop=True) leave the
+    stop out, which makes the protein three bases shorter than the region its
+    own header names.
+
+    That matters because miniprot aligns the protein: a query without the stop
+    ends three bases before the CDS that Bakta called, so classify_cases can
+    never see an exact coordinate match. Every gene lands in case 4 instead of
+    case 2, and the case counts stop meaning anything.
+
+    Only appends when the span is exactly one codon longer than the protein,
+    which is the stop-codon case and nothing else.
+    """
+    if not translation or translation.endswith('*'):
+        return translation
+    if (end - start + 1) == (len(translation) + 1) * 3:
+        return translation + '*'
+    return translation
+
+
 def extract_from_genbank(gbk_path, output_faa):
     """Extract CDS translations from a GenBank file."""
     proteins = []
@@ -48,6 +72,8 @@ def extract_from_genbank(gbk_path, output_faa):
                     translation = str(seq.translate(to_stop=True))
                 except Exception:
                     continue
+
+            translation = append_stop_codon(translation, start, end)
 
             if translation:
                 header = f"{gene_id}_{start}-{end}"
@@ -109,6 +135,8 @@ def extract_from_gff3(gff_path, fasta_path, output_faa):
                 translation = str(seq.translate(to_stop=True))
             except Exception:
                 continue
+
+            translation = append_stop_codon(translation, start, end)
 
             if translation and len(translation) > 10:  # Skip tiny fragments
                 header = f"{gene_id}_{start}-{end}"

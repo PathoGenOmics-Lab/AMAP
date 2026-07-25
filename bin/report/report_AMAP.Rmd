@@ -1,5 +1,5 @@
 ---
-title: "AMAP — Assisted Microbial Annotation Pipeline Report"
+title: "AMAP: Assisted Microbial Annotation Pipeline Report"
 author: "AMAP v1.0.0"
 date: "`r format(Sys.time(), '%d/%m/%Y')`"
 
@@ -13,6 +13,9 @@ output:
     toc_depth: 4
     highlight: tango
     css: styles.css
+    # Everything is inlined, so the file opens with no network and survives
+    # being emailed around. Nothing here may reference a remote URL.
+    self_contained: true
     includes:
       before_body: header.html
 params:
@@ -25,33 +28,66 @@ params:
   pangene_file: "input_pangene.txt"
   dup_file: "homologous_communities.tsv"
   qc_file: "input_qc.txt"
-
-header-includes:
-  - |
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 ---
 
-```{js zoom-jquery, echo = FALSE}
-$(document).ready(function() {
-    if (window.jQuery) {
-        $('body').prepend('<div class="zoomDiv"><img src="" class="zoomImg"></div>');
-        $('body').on('click', 'img:not(.zoomImg)', function() {
-            $('.zoomImg').attr('src', $(this).attr('src')).css({width: '100%'});
-            $('.zoomDiv').css({opacity: '1', width: 'auto', border: '1px solid white', borderRadius: '5px', position: 'fixed', top: '50%', left: '50%', marginRight: '-50%', transform: 'translate(-50%, -50%)', boxShadow: '0px 0px 50px #888888', zIndex: '50', overflow: 'auto', maxHeight: '100%'});
-        });
-        $('body').on('click', 'img.zoomImg', function() {
-            $('.zoomDiv').css({opacity: '0', width: '0%'});
-        });
+```{js zoom, echo = FALSE}
+// Click a figure to blow it up, click again to dismiss. This used to be
+// jQuery pulled from a CDN, which meant the report only worked with a network
+// connection and quietly did nothing without one, despite being advertised as
+// self-contained. Plain DOM APIs, no dependency.
+(function () {
+  function ready(fn) {
+    if (document.readyState !== "loading") fn();
+    else document.addEventListener("DOMContentLoaded", fn);
+  }
+
+  ready(function () {
+    var overlay = document.createElement("div");
+    overlay.className = "zoomDiv";
+    var big = document.createElement("img");
+    big.className = "zoomImg";
+    overlay.appendChild(big);
+    document.body.insertBefore(overlay, document.body.firstChild);
+
+    function close() {
+      overlay.style.opacity = "0";
+      overlay.style.width = "0%";
     }
-    document.addEventListener("DOMContentLoaded", function () {
-      const titleText = document.querySelector("h1.title")?.textContent || "AMAP Report";
-      const toc = document.getElementById("TOC");
-      if (!toc) return;
-      let header = toc.querySelector(".tocify-header");
-      if (!header) { header = document.createElement("div"); header.className = "tocify-header"; toc.prepend(header); }
-      header.textContent = titleText;
+
+    document.body.addEventListener("click", function (ev) {
+      var t = ev.target;
+      if (t.tagName !== "IMG") return;
+      if (t.classList.contains("zoomImg")) { close(); return; }
+      big.src = t.getAttribute("src");
+      big.style.width = "100%";
+      Object.assign(overlay.style, {
+        opacity: "1", width: "auto", border: "1px solid white",
+        borderRadius: "5px", position: "fixed", top: "50%", left: "50%",
+        marginRight: "-50%", transform: "translate(-50%, -50%)",
+        boxShadow: "0 0 50px #888", zIndex: "50", overflow: "auto",
+        maxHeight: "100%"
+      });
     });
-});
+
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") close();
+    });
+
+    // Put the report title above the table of contents.
+    var titleEl = document.querySelector("h1.title");
+    var toc = document.getElementById("TOC");
+    if (!toc) return;
+    // Deliberately not "tocify-header": tocify gives that class to every
+    // top-level group in the index, so styling it also restyles the entries.
+    var header = toc.querySelector(".amap-toc-title");
+    if (!header) {
+      header = document.createElement("div");
+      header.className = "amap-toc-title";
+      toc.insertBefore(header, toc.firstChild);
+    }
+    header.textContent = titleEl ? titleEl.textContent : "AMAP Report";
+  });
+})();
 ```
 
 ```{r setup, message=FALSE, warning=FALSE, include=FALSE}
@@ -68,6 +104,13 @@ library(ggrepel)
 library(scales)
 library(pheatmap)
 library(RColorBrewer)
+
+# Every figure is base64'd into the single output file, so their pixel count is
+# the file size. knitr defaults to fig.retina = 2, which renders each one at
+# twice the requested size, and with this many panels that alone accounted for
+# roughly half the report. At 1x and 96 dpi they still look right on screen and
+# the file becomes something you can actually attach to an email.
+knitr::opts_chunk$set(fig.retina = 1, dpi = 96)
 
 # ------------- GLOBAL VARIABLES -------------
 # Lineage color palette — includes MTBC lineages and a broad auto-extension

@@ -88,6 +88,7 @@ process FINAL_REPORT {
     script:
     """
     cp ${projectDir}/bin/report/AMAP.png .
+    cp ${projectDir}/bin/report/PGO.png .
     cp ${projectDir}/bin/report/header.html .
     cp ${projectDir}/bin/report/styles.css .
     cp ${projectDir}/bin/report/report_AMAP.Rmd .

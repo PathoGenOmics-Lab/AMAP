@@ -1,85 +1,178 @@
 /* ==============================================================
- * 1. PAGE-WIDE SETTINGS
+ * AMAP report
+ *
+ * Note on specificity: rmarkdown inlines its own bootstrap rules after this
+ * file, and its `.main-container { max-width: 1200px; margin: auto }` was
+ * beating the rules here. That left the article starting 40px from the left
+ * edge, underneath a table of contents fixed at 100px, and the left logo
+ * pinned at left:350px sat directly on top of the title. Everything that has
+ * to win is qualified with `body` so it outranks the theme.
  * ============================================================== */
+
 :root{
-  --tocW: 400px;  /* TOC width                               */
-  --gap :  100px;  /* space between TOC and article           */
+  --tocW: 300px;   /* table of contents width                    */
+  --tocGap: 24px;  /* distance from the left edge                */
+  --headerH: 108px;/* room reserved for the logo strip           */
+
+  --amap-teal:      #2f9e8a;
+  --amap-teal-dark: #21786a;
+  --amap-ink:       #14312c;
 }
+
 html,body{
   font-size:16px;
-  line-height:1.5;
+  line-height:1.55;
   margin:0;
-  overflow-x:hidden;        /* never show a horiz. scrollbar    */
+  overflow-x:hidden;
 }
 
 /* ==============================================================
- * 2. MAIN CONTAINER – centred by default
+ * 1. LOGO STRIP
+ * A band across the top rather than two free-floating images, so nothing
+ * can land on the title no matter how long the title wraps.
  * ============================================================== */
-.main-container{
-  max-width:1000px;
-  margin:0 auto;            /* centred when no TOC margin       */
-  transition:margin-left .25s ease;
-}
-
-/* When viewport ≥ 992 px → show TOC & push article right        */
-@media(min-width:992px){
-  .main-container{
-    margin-left:calc(var(--tocW) + var(--gap));
-  }
-}
-
-/* ==============================================================
- * 3. FLOATING TOC
- * ============================================================== */
-#TOC.tocify{
+body #logo-left-fixed,
+body #logo-right-fixed{
   position:fixed;
-  top:100px;                /* below the logos                  */
-  left:var(--gap);
-  width:var(--tocW)!important;
-  min-width:var(--tocW)!important;
-  max-height:80vh;
-  overflow-y:auto;
-  box-shadow:0 0 12px rgba(0,0,0,.15);
-}
-
-/* Hide TOC on viewports < 992 px and restore centred article   */
-@media(max-width:991.98px){
-  #TOC.tocify{display:none!important;}
-  .main-container{margin-left:auto;}
-}
-
-/* ==============================================================
- * 4. CORNER LOGOS (adjust size here)
- * ============================================================== */
-#logo-left-fixed,
-#logo-right-fixed{
-  position:fixed;
-  top:40px;
-  max-height:120px;          /* enlarge / shrink as you like     */
+  top:14px;
+  max-height:78px;
   width:auto;
   height:auto;
   object-fit:contain;
+  z-index:1001;
+}
+body #logo-left-fixed { left:var(--tocGap); }
+body #logo-right-fixed{ right:var(--tocGap); }
+
+/* The band itself, so the fixed logos never sit on scrolling text. */
+body::before{
+  content:"";
+  position:fixed;
+  top:0; left:0; right:0;
+  height:var(--headerH);
+  background:#fff;
+  border-bottom:1px solid rgba(0,0,0,.08);
   z-index:1000;
 }
-#logo-left-fixed {left:350px;}
-#logo-right-fixed{right:30px;}
 
-@media(max-width:575px){
-  #logo-left-fixed,#logo-right-fixed{
-    top:35px;
-    max-height:60px;
+/* ==============================================================
+ * 2. ARTICLE
+ * ============================================================== */
+body .main-container{
+  max-width:1000px;
+  margin-left:auto;
+  margin-right:auto;
+  padding-top:calc(var(--headerH) + 12px);
+  transition:margin-left .25s ease;
+}
+
+/* Wide enough for the table of contents: push the article clear of it. */
+@media(min-width:992px){
+  body .main-container{
+    margin-left:calc(var(--tocW) + var(--tocGap) * 2);
+    margin-right:var(--tocGap);
+    max-width:calc(100vw - var(--tocW) - var(--tocGap) * 4);
   }
 }
 
 /* ==============================================================
- * 5. REMOVE LEGACY BLUE HEADER IF STILL PRESENT
+ * 3. TABLE OF CONTENTS
  * ============================================================== */
-#custom-header{display:none!important;}
+body #TOC.tocify{
+  position:fixed;
+  top:calc(var(--headerH) + 12px);
+  left:var(--tocGap);
+  width:var(--tocW)!important;
+  min-width:var(--tocW)!important;
+  max-height:calc(100vh - var(--headerH) - 36px);
+  overflow-y:auto;
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:8px;
+  box-shadow:0 4px 16px rgba(0,0,0,.07);
+  z-index:900;
+}
+body #TOC .amap-toc-title{
+  font-weight:700;
+  font-size:.9rem;
+  padding:.7rem .9rem;
+  color:#fff;
+  background:var(--amap-teal-dark);
+  border-radius:7px 7px 0 0;
+}
+body #TOC .tocify-item.active,
+body #TOC .list-group-item.active{
+  background:var(--amap-teal)!important;
+  border-color:var(--amap-teal)!important;
+  color:#fff!important;
+}
+body #TOC .list-group-item:hover{
+  background:rgba(47,158,138,.10);
+}
+
+/* Narrow: no room for a fixed column, so drop it and centre the article. */
+@media(max-width:991.98px){
+  body #TOC.tocify{display:none!important;}
+  body .main-container{
+    margin-left:auto;
+    margin-right:auto;
+    max-width:100%;
+  }
+}
 
 /* ==============================================================
- * 6. IMAGE ZOOM OVERLAY
+ * 4. BRANDING
+ * ============================================================== */
+body h1.title{
+  font-weight:700;
+  letter-spacing:-.02em;
+  color:var(--amap-ink);
+}
+body .main-container h1{
+  color:var(--amap-ink);
+  border-bottom:2px solid var(--amap-teal);
+  padding-bottom:.25em;
+  margin-top:1.8em;
+}
+body .main-container h2{
+  color:var(--amap-teal-dark);
+  margin-top:1.5em;
+}
+
+/* Tabsets */
+body .nav-tabs > li.active > a,
+body .nav-tabs > li.active > a:hover,
+body .nav-tabs > li.active > a:focus{
+  border-top:2px solid var(--amap-teal);
+  color:var(--amap-ink);
+  font-weight:600;
+}
+body .nav-tabs > li > a{ color:var(--amap-teal-dark); }
+body .nav-tabs > li > a:hover{ background:rgba(47,158,138,.08); }
+
+/* Tables */
+body table.dataTable thead th{
+  background:var(--amap-teal-dark)!important;
+  color:#fff!important;
+}
+body .table > thead > tr > th{
+  border-bottom:2px solid var(--amap-teal);
+}
+
+body a{ color:var(--amap-teal-dark); }
+body a:hover{ color:var(--amap-teal); }
+
+/* ==============================================================
+ * 5. IMAGE ZOOM OVERLAY
  * ============================================================== */
 .zoomDiv{
-  background:rgba(0,0,0,.8);
+  background:rgba(0,0,0,.85);
   transition:opacity .3s ease;
+}
+.zoomImg{ cursor:zoom-out; }
+body .main-container img{ cursor:zoom-in; max-width:100%; }
+
+@media(max-width:575px){
+  :root{ --headerH:76px; }
+  body #logo-left-fixed,
+  body #logo-right-fixed{ top:10px; max-height:52px; }
 }

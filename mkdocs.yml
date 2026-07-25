@@ -136,6 +136,7 @@ nav:
       - user-guide/parameters.md
       - user-guide/running.md
       - user-guide/outputs.md
+      - user-guide/report.md
       - user-guide/custom-reference.md
   - How it works:
       - how-it-works/index.md

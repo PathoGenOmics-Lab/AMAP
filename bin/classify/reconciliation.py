@@ -4,29 +4,35 @@ deduplication, and final corrected TSV output.
 """
 
 import re
+from collections import Counter
+from functools import lru_cache
+
 import pandas as pd
 
 from .ids import format_cluster_id
 from .overlaps import get_subset_overlap_percentage
 
+# Both helpers below are pure functions of a single string and are called
+# millions of times over a few thousand distinct IDs, so memoising them turns
+# the regex work into a dict lookup.
+_ID_CACHE_SIZE = 200_000
 
-def parse_ref_coords_from_id(prot_id):
-    """Extract 1-based start and end from IDs like 'Rv2427A_2725571-2726087'."""
-    m = re.search(r'_(\d+)-(\d+)$', str(prot_id))
+
+@lru_cache(maxsize=_ID_CACHE_SIZE)
+def _parse_ref_coords_cached(prot_id):
+    m = re.search(r'_(\d+)-(\d+)$', prot_id)
     if m:
         return int(m.group(1)), int(m.group(2))
     return None, None
 
 
-def _extract_gene_name(prot_id):
-    """Extract the base gene name (without coordinates) from a protein ID.
-    
-    Examples:
-        'Rv0001_1-1524' → 'Rv0001'
-        'L8_G26689_Rv0001' → 'Rv0001'
-        'PE_PGRS1_123-456' → 'PE_PGRS1'
-    """
-    prot_id = str(prot_id)
+def parse_ref_coords_from_id(prot_id):
+    """Extract 1-based start and end from IDs like 'Rv2427A_2725571-2726087'."""
+    return _parse_ref_coords_cached(str(prot_id))
+
+
+@lru_cache(maxsize=_ID_CACHE_SIZE)
+def _extract_gene_name_cached(prot_id):
     # Strip trailing _DIGITS-DIGITS (embedded coords)
     m = re.match(r'^(.+?)_\d+-\d+$', prot_id)
     if m:
@@ -36,6 +42,17 @@ def _extract_gene_name(prot_id):
     if len(parts) >= 3:
         return '_'.join(parts[2:])
     return prot_id
+
+
+def _extract_gene_name(prot_id):
+    """Extract the base gene name (without coordinates) from a protein ID.
+
+    Examples:
+        'Rv0001_1-1524' → 'Rv0001'
+        'L8_G26689_Rv0001' → 'Rv0001'
+        'PE_PGRS1_123-456' → 'PE_PGRS1'
+    """
+    return _extract_gene_name_cached(str(prot_id))
 
 
 def _gene_names_match(id_a, id_b):
@@ -82,6 +99,36 @@ def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
     # Count hits per protein to identify multi-copy elements
     hit_counts = miniprot_df.groupby('Prot Id').size()
 
+    # --- Lookup tables ---
+    # The per-gene work below used to scan every protein in hit_counts and
+    # every entry in ref_coords, calling _extract_gene_name on each one. That
+    # is O(genes x proteins) with a regex in the inner loop (~47M calls for a
+    # 4000-gene genome). Both scans only ever ask "which proteins share this
+    # gene name?", so index by gene name once up front.
+    hit_counts_map = hit_counts.to_dict()
+
+    max_hits_by_name = {}
+    for pid, cnt in hit_counts_map.items():
+        name = _extract_gene_name(pid)
+        if cnt > max_hits_by_name.get(name, 0):
+            max_hits_by_name[name] = cnt
+
+    # Preserves ref_coords insertion order within each name bucket, so the
+    # "first acceptable reference wins" behaviour is unchanged.
+    ref_by_name = {}
+    for ref_id, ref_coord in ref_coords.items():
+        ref_by_name.setdefault(_extract_gene_name(ref_id), []).append((ref_id, ref_coord))
+
+    # Position lookups replacing repeated full-DataFrame boolean scans.
+    mp_ids_by_pos = {}
+    for mp_start, mp_end, mp_pid in zip(miniprot_df['Start'], miniprot_df['End'],
+                                        miniprot_df['Prot Id']):
+        mp_ids_by_pos.setdefault((mp_start, mp_end), []).append(mp_pid)
+
+    bakta_positions = set()
+    if bakta_df is not None:
+        bakta_positions = set(zip(bakta_df['Start'], bakta_df['End']))
+
     to_remove = set()
     to_add = {}
     for coord, gene_id in list(combined_dict.items()):
@@ -96,26 +143,21 @@ def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
         # Exception 2: skip check for multi-copy elements (>2 hits), where
         # placement at different positions is expected (PE/PPE, IS elements).
         own_s, own_e = parse_ref_coords_from_id(str(gene_id))
+        gene_name = _extract_gene_name(str(gene_id))
         if own_s is not None and own_e is not None:
             # Skip paralog check for multi-copy elements
-            n_hits = hit_counts.get(str(gene_id), 1)
+            n_hits = hit_counts_map.get(str(gene_id), 1)
             # Also check without coords suffix
-            gene_name = _extract_gene_name(str(gene_id))
-            for pid in hit_counts.index:
-                if _extract_gene_name(pid) == gene_name:
-                    n_hits = max(n_hits, hit_counts[pid])
+            n_hits = max(n_hits, max_hits_by_name.get(gene_name, 0))
 
             own_ref_len = own_e - own_s + 1
             own_overlap = max(0, min(c_end, own_e) - max(c_start, own_s) + 1)
             if own_ref_len > 0 and own_overlap / own_ref_len < 0.5 and n_hits <= 2:
                 # gene_id's embedded coords don't match → check if any OTHER
                 # Miniprot hit at this position validates it as a real locus
-                mp_at_pos = miniprot_df[
-                    (miniprot_df['Start'] == c_start) & (miniprot_df['End'] == c_end)
-                ]
                 position_validated = False
-                for _, mp_row in mp_at_pos.iterrows():
-                    mp_s, mp_e = parse_ref_coords_from_id(mp_row['Prot Id'])
+                for mp_pid in mp_ids_by_pos.get((c_start, c_end), ()):
+                    mp_s, mp_e = parse_ref_coords_from_id(mp_pid)
                     if mp_s is not None and mp_e is not None:
                         mp_len = mp_e - mp_s + 1
                         mp_ov = max(0, min(c_end, mp_e) - max(c_start, mp_s) + 1)
@@ -124,29 +166,26 @@ def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
                             break
                 # Also validate if Bakta has a gene at these exact coordinates
                 if not position_validated and bakta_df is not None:
-                    bk_at_pos = bakta_df[
-                        (bakta_df['Start'] == c_start) &
-                        (bakta_df['End'] == c_end)
-                    ]
-                    if not bk_at_pos.empty:
+                    if (c_start, c_end) in bakta_positions:
                         position_validated = True
                 if not position_validated:
                     to_remove.add(coord)
                     continue
 
-        for ref_id, ref_coord in ref_coords.items():
-            # Use exact gene name matching — NOT substring!
-            if _gene_names_match(ref_id, gene_id):
-                # ref_coord is (Start, End) — add strand for dict key
-                ref_key = (ref_coord[0], ref_coord[1], c_strand)
-                if ref_coord != (c_start, c_end):
-                    overlap = max(0, min(c_end, ref_coord[1]) - max(c_start, ref_coord[0]) + 1)
-                    min_len = min(c_end - c_start + 1, ref_coord[1] - ref_coord[0] + 1)
-                    max_len = max(c_end - c_start + 1, ref_coord[1] - ref_coord[0] + 1)
-                    if min_len > 0 and overlap / min_len > 0.5 and max_len < 2 * min_len:
-                        to_remove.add(coord)
-                        to_add[ref_key] = ref_id
-                        break
+        # Exact gene name matching, NOT substring. ref_by_name holds exactly
+        # the references _gene_names_match would have accepted, so the
+        # non-matching entries the old loop walked over are simply skipped.
+        for ref_id, ref_coord in ref_by_name.get(gene_name, ()):
+            # ref_coord is (Start, End), add strand for dict key
+            ref_key = (ref_coord[0], ref_coord[1], c_strand)
+            if ref_coord != (c_start, c_end):
+                overlap = max(0, min(c_end, ref_coord[1]) - max(c_start, ref_coord[0]) + 1)
+                min_len = min(c_end - c_start + 1, ref_coord[1] - ref_coord[0] + 1)
+                max_len = max(c_end - c_start + 1, ref_coord[1] - ref_coord[0] + 1)
+                if min_len > 0 and overlap / min_len > 0.5 and max_len < 2 * min_len:
+                    to_remove.add(coord)
+                    to_add[ref_key] = ref_id
+                    break
 
     # When removing paralog placements, check if a Bakta gene at that position
     # should be restored (e.g., PE_PGRS genes where Miniprot fails to align
@@ -241,25 +280,31 @@ def deduplicate(combined_dict):
     100% subsets of a DIFFERENT gene's coordinates. But always keep at
     least ONE entry per gene to prevent total gene loss.
     """
-    all_vals = list(combined_dict.values())
-    duplicates = {x for x in all_vals if all_vals.count(x) > 1}
+    # Counter instead of list.count() per element, which was O(genes^2).
+    val_counts = Counter(combined_dict.values())
+    duplicates = {v for v, n in val_counts.items() if n > 1}
     if not duplicates:
         return
 
-    coords_by_val = {
-        val: [k for k, v in combined_dict.items() if v == val]
-        for val in duplicates
-    }
+    # Single pass instead of one full scan per duplicated gene.
+    coords_by_val = {}
+    for k, v in combined_dict.items():
+        if v in duplicates:
+            coords_by_val.setdefault(v, []).append(k)
+
+    # The set of non-duplicated coordinates is the same for every comparison,
+    # so build it once rather than re-filtering combined_dict in the inner loop.
+    non_dup_coords = [k for k, v in combined_dict.items() if v not in duplicates]
 
     to_delete = set()
     for dup_val, dup_coords in coords_by_val.items():
         # Collect which coords of this gene are subsets of other genes
         subset_coords = set()
         for dc in dup_coords:
-            for coord, value in combined_dict.items():
-                if value not in duplicates:
-                    if get_subset_overlap_percentage(dc, coord) == 100:
-                        subset_coords.add(dc)
+            for coord in non_dup_coords:
+                if get_subset_overlap_percentage(dc, coord) == 100:
+                    subset_coords.add(dc)
+                    break
 
         # Only delete subset coords if at least one coord survives
         # This prevents total gene loss when ALL coords are subsets

@@ -36,17 +36,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+          cache-dependency-path: requirements-test.txt
 
-      # Everything bin/ imports, not just what the tests import directly.
-      # classify/plotting.py pulls in plotly and classify_cases.py imports it,
-      # so a shorter list fails at collection; get_duplications.py needs the
-      # network stack, and without it its regression test silently skips.
+      # The list lives in requirements-test.txt so CI and a local checkout
+      # install the same thing. Keeping it inline here is how it drifted out of
+      # step with what bin/ actually imports.
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest \
-            pandas numpy biopython intervaltree plotly \
-            networkx matplotlib pyvis python-louvain
+          pip install -r requirements-test.txt
 
       - name: Run tests
         run: python -m pytest tests/ -v --tb=short

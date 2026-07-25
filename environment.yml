@@ -27,6 +27,9 @@ dependencies:
   - matplotlib>=3.7
   - numpy>=1.24
   - networkx>=3.0
+  # classify/plotting.py imports this. Note r-plotly below is the R package,
+  # which does not provide it.
+  - plotly
   - pip
   - pip:
     - intervaltree>=3.1

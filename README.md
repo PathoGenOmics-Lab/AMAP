@@ -138,7 +138,7 @@ documented under
 ```bash
 git clone https://github.com/PathoGenOmics-Lab/AMAP
 cd AMAP
-pip install pytest pandas numpy biopython intervaltree
+pip install -r requirements-test.txt
 python -m pytest tests/ -v
 ```
 

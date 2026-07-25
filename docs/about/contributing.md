@@ -24,9 +24,14 @@ first.
 ```bash
 git clone https://github.com/PathoGenOmics-Lab/AMAP
 cd AMAP
-pip install pytest pandas numpy biopython intervaltree
+pip install -r requirements-test.txt
 python -m pytest tests/ -v
 ```
+
+`requirements-test.txt` covers everything `bin/` imports, not only what the
+tests import directly, and CI installs from the same file. A shorter list
+appears to work until a test touches `classify_cases.py`, which pulls in
+plotly through `classify/plotting.py`.
 
 The suite covers ID handling, overlap arithmetic, case classification, the
 reconciliation rules, and the parsers, and it runs in about a second. Anything

@@ -23,7 +23,11 @@ __lab__ = 'PathoGenOmics (I2SysBio)'
 
 def read_and_create(p_file):
     try:
-        df = pd.read_csv(p_file, sep='\t', comment='#')
+        # header=None is required: Diamond is run with --header, so every real
+        # header line starts with '#' and is stripped by comment='#'. Without
+        # header=None pandas then promotes the FIRST HIT to column names and
+        # that alignment is silently dropped from the duplication analysis.
+        df = pd.read_csv(p_file, sep='\t', comment='#', header=None)
     except pd.errors.EmptyDataError:
         # No hits at all — return empty DataFrame with expected columns
         return pd.DataFrame(columns=["qseqid", "sseqid", "pident", "length", "mismatch",

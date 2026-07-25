@@ -19,7 +19,19 @@ __status__ = 'finished'
 __lab__ = 'PathoGenOmics (I2SysBio)'
 
 def read_pandas(open_file, name_columns):
-    df = pd.read_csv(open_file, comment='#',names=name_columns, sep='\t')
+    df = pd.read_csv(open_file, comment='#', names=name_columns, sep='\t')
+    # `names=` disables header inference, so a file that DOES carry a header
+    # row yields it as a data row (a phantom gene named "id", and Start/Stop
+    # parsed as text). GET_OUTPUTS strips the header before calling this, but
+    # the script is also run standalone, so drop it here when it is present.
+    if len(df) > 0 and list(df.iloc[0].astype(str)) == list(name_columns):
+        df = df.iloc[1:].reset_index(drop=True)
+        # The stray header row forced every column to object dtype; restore
+        # numeric typing so coordinates sort numerically instead of as text.
+        for col in df.columns:
+            converted = pd.to_numeric(df[col], errors='coerce')
+            if converted.notna().equals(df[col].notna()):
+                df[col] = converted
     return df
 
 def filter_bakta(bakta_pd):
@@ -328,7 +340,11 @@ def main():
     if use_mycobrowser:
         myco_pd = read_pandas(args.myco, name_myco)
     else:
-        myco_pd = pd.DataFrame(columns=['Locus'] + name_myco)
+        # name_myco already contains 'Locus' (the merge key). Prepending it
+        # again produced a duplicate column label, and pd.merge(on='Locus')
+        # then raised "The column label 'Locus' is not unique", killing every
+        # run without Mycobrowser (--skip_mycobrowser / organism-agnostic mode).
+        myco_pd = pd.DataFrame(columns=name_myco)
 
     merged_df = generate_master_table(eggnog_pd, correctedtsv_pd, bakta_pd_cds, myco_pd, base_name)
     nuevo_df = generate_tsv(merged_df,bakta_pd_rest,ruta_archivo_fasta, ruta_archivo)

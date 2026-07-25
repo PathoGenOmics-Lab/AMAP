@@ -526,6 +526,50 @@ class TestAnnotationQC:
         # Actually: A-T-G-C-G-C-G-C → A=1, T=1, G=3, C=3 → GC = 6/8 = 75%
         assert 74 < stats['gc_pct'] < 76
 
+    def test_annotation_rate_ignores_emapper_dashes(self):
+        """emapper writes '-' for fields it could not fill.
+
+        Those survive into the master table, so counting with notna() alone
+        scored every unannotated gene as annotated and the rate sat at 100%.
+        """
+        from annotation_qc import compute_qc
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.fasta', delete=False) as fa:
+            fa.write(">chr1\n" + "ATGC" * 250000 + "\n")
+            fa.flush()
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tsv', delete=False) as mt:
+            mt.write("simple_id\tCOG_category\tIs_Pseudogene\tstart\tend\n")
+            for i in range(10):
+                cog = 'S' if i < 4 else '-'      # 4 of 10 genuinely annotated
+                mt.write(f"g{i}\t{cog}\tFalse\t{i * 1000 + 1}\t{i * 1000 + 900}\n")
+            mt.flush()
+        outf = tempfile.mktemp(suffix='.qc.tsv')
+        compute_qc(mt.name, fa.name, outf)
+        qc = pd.read_csv(outf, sep='\t')
+        os.unlink(fa.name)
+        os.unlink(mt.name)
+        os.unlink(outf)
+        assert qc['eggnog_annotation_pct'].iloc[0] == 40.0
+        assert qc['total_cds'].iloc[0] == 10
+
+    def test_annotation_rate_counts_real_annotations(self):
+        """With nothing missing the rate must still reach 100%."""
+        from annotation_qc import compute_qc
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.fasta', delete=False) as fa:
+            fa.write(">chr1\n" + "ATGC" * 250000 + "\n")
+            fa.flush()
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tsv', delete=False) as mt:
+            mt.write("simple_id\tCOG_category\tIs_Pseudogene\tstart\tend\n")
+            for i in range(5):
+                mt.write(f"g{i}\tS\tFalse\t{i * 1000 + 1}\t{i * 1000 + 900}\n")
+            mt.flush()
+        outf = tempfile.mktemp(suffix='.qc.tsv')
+        compute_qc(mt.name, fa.name, outf)
+        qc = pd.read_csv(outf, sep='\t')
+        os.unlink(fa.name)
+        os.unlink(mt.name)
+        os.unlink(outf)
+        assert qc['eggnog_annotation_pct'].iloc[0] == 100.0
+
 
 # =============================================================================
 # MERGE RTABS TESTS
@@ -635,6 +679,38 @@ class TestGenerateTsvGffGbk:
         assert len(df) == 1
         assert df.iloc[0]['id'] == 'L4_G1_Rv0001'
         assert pd.api.types.is_numeric_dtype(df['start'])
+
+    def test_locus_keeps_multi_part_gene_names(self):
+        """Splitting rvs on '_' truncated any gene name containing one.
+
+        PE_PGRS1_703830-704057 became 'PE', so every PE/PPE gene of a sample
+        collapsed onto one Mycobrowser join key.
+        """
+        from generate_tsv_gff_gbk import locus_from_rvs
+        assert locus_from_rvs('PE_PGRS1_703830-704057') == 'PE_PGRS1'
+        assert locus_from_rvs('PPE_MPTR1_100-200') == 'PPE_MPTR1'
+        assert locus_from_rvs('ECOLI_thrA_337-2799') == 'ECOLI_thrA'
+
+    def test_locus_unchanged_for_rv_numbers(self):
+        """The common MTBC case must be untouched by the fix."""
+        from generate_tsv_gff_gbk import locus_from_rvs
+        assert locus_from_rvs('Rv0001_1-1524') == 'Rv0001'
+        assert locus_from_rvs('Rv0609A_703830-704057') == 'Rv0609A'
+
+    def test_locus_does_not_collide_across_pe_genes(self):
+        from generate_tsv_gff_gbk import locus_from_rvs
+        genes = ['PE_PGRS1_100-200', 'PE_PGRS2_300-400', 'PE_PGRS3_500-600']
+        assert len({locus_from_rvs(g) for g in genes}) == 3
+
+    def test_locus_takes_first_of_several(self):
+        """A gene mapping to more than one reference keeps the first, as before."""
+        from generate_tsv_gff_gbk import locus_from_rvs
+        assert locus_from_rvs('Rv0001_1-1524, Rv0002_2052-3260') == 'Rv0001'
+
+    def test_locus_passes_missing_values_through(self):
+        from generate_tsv_gff_gbk import locus_from_rvs
+        assert pd.isna(locus_from_rvs(np.nan))
+        assert locus_from_rvs('') == ''
 
     def test_read_pandas_keeps_headerless_rows(self):
         """GET_OUTPUTS strips the header before calling; that row must survive."""

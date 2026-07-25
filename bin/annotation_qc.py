@@ -119,12 +119,19 @@ def compute_qc(mastertable_path, fasta_path, output_path):
 
     coding_density = round(total_coding_bp / asm['genome_size'] * 100, 1) if asm['genome_size'] > 0 else 0
 
-    # eggNOG annotation rate
+    # eggNOG annotation rate.
+    # emapper writes '-' for every field it could not fill, and those survive
+    # into the master table (count_annot.py normalises them on read, this did
+    # not). notna() therefore counted an unannotated gene as annotated and the
+    # rate sat near 100% regardless of how the run had actually gone, which is
+    # the opposite of useful in a QC metric.
     eggnog_cols = ['COG_category', 'seed_ortholog', 'Description']
     annotated = 0
     for col in eggnog_cols:
         if col in df.columns:
-            annotated = df[col].notna().sum()
+            values = df[col]
+            missing = values.isna() | values.astype(str).str.strip().isin(['', '-'])
+            annotated = int((~missing).sum())
             break
     annot_rate = round(annotated / total_cds * 100, 1) if total_cds > 0 else 0
 

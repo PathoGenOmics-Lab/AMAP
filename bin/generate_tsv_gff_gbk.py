@@ -3,11 +3,17 @@
 
 import argparse
 import os
+import sys
 import pandas as pd
 import numpy as np
 from Bio import SeqIO
 import csv
 from Bio.SeqFeature import SeqFeature, FeatureLocation
+
+# Allow importing from bin/classify/ when run as a script, the same way
+# classify_cases.py does. classify.ids only needs `re`, so this stays cheap.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from classify.ids import clean_id
 
 __author__ = 'Paula Ruiz-Rodriguez'
 __credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
@@ -115,6 +121,28 @@ def columns():
     ]
     return name_eggnog, name_correctedtsv, name_bakta, name_myco
 
+def locus_from_rvs(value):
+    """Build the Mycobrowser join key from an entry of the `rvs` column.
+
+    `rvs` holds reference protein IDs of the form GENE_START-END, comma
+    separated when a gene maps to more than one, e.g.
+    'Rv0001_1-1524' or 'Rv0001_1-1524, Rv0002_2052-3260'.
+
+    This used to be rvs.split('_')[0], which truncates any gene whose name
+    itself contains an underscore: PE_PGRS1_703830-704057 became 'PE', so every
+    PE/PPE gene of a sample collapsed onto the same key and joined against
+    whatever Mycobrowser had under 'PE'. Prefixed identifiers in
+    organism-agnostic mode broke the same way (ECOLI_thrA_337-2799 -> 'ECOLI').
+
+    Take the first ID and strip only the trailing coordinates, which is what
+    clean_id already does for the rest of the pipeline.
+    """
+    if pd.isna(value):
+        return value
+    first = str(value).split(',')[0].strip()
+    return clean_id(first)
+
+
 def generate_master_table(eggnog_pd, correctedtsv_pd, bakta_pd_cds, myco_pd, base_name):
     merged_df = pd.merge(correctedtsv_pd, eggnog_pd, on='simple_id', how='left')
     merged_df = pd.merge(merged_df, bakta_pd_cds, left_on='simple_id', right_on='Locus Tag', how='left')
@@ -128,7 +156,7 @@ def generate_master_table(eggnog_pd, correctedtsv_pd, bakta_pd_cds, myco_pd, bas
     parts = base_name.split("_")
     merged_df['lineage'] = parts[0] if len(parts) >= 2 else "Untyped"
     merged_df.reset_index(drop=True, inplace=True)
-    merged_df['Locus'] = merged_df['rvs'].str.split('_').str[0]
+    merged_df['Locus'] = merged_df['rvs'].apply(locus_from_rvs)
     merged_df = pd.merge(merged_df, myco_pd, on='Locus', how='left')
     columns_to_drop = ['Start_x', 'Stop_x', 'Start_y', 'Stop_y', 'Strand_x', 'Strand_y', 
                        'Product_y', 'Sequence Id', 'Type', 'Locus Tag']

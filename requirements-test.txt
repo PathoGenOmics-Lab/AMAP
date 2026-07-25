@@ -1,0 +1,18 @@
+# Python dependencies for the test suite. Install with:
+#   pip install -r requirements-test.txt
+#   python -m pytest tests/ -v
+#
+# This is everything bin/ imports, not just what tests/ imports directly:
+# classify/plotting.py needs plotly and classify_cases.py pulls it in, and
+# get_duplications.py needs the network stack or its regression test skips.
+# Bounds match environment.yml.
+pytest
+pandas>=2.0
+numpy>=1.24
+biopython>=1.80
+matplotlib>=3.7
+networkx>=3.0
+plotly
+intervaltree>=3.1
+python-louvain>=0.16
+pyvis>=0.3

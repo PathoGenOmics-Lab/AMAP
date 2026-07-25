@@ -11,6 +11,8 @@ category distributions.
 import argparse
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')  # Headless backend — must be set before pyplot import
 import matplotlib.pyplot as plt
 from pathlib import Path
 from typing import Tuple
@@ -18,7 +20,7 @@ from typing import Tuple
 __author__ = 'Paula Ruiz-Rodriguez'
 __credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
 __license__ = ['GPL 3']
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __maintainer__ = '@paururo'
 __email__ = 'paula.ruiz.rodriguez@csic.es'
 __status__ = 'finished'
@@ -56,8 +58,12 @@ def process_cog_categories(df: pd.DataFrame) -> pd.DataFrame:
         ['lineage', 'genome', 'COG_category']
     ).size().reset_index(name='count')
 
-    # Calculate percentage based on the total number of genes
-    cog_counts['percentage'] = (cog_counts['count'] / total_genes) * 100
+    # Calculate percentage based on the total number of genes.
+    # NOTE: Multi-letter COG categories (e.g. "JKS") are exploded to individual
+    # letters, so a gene can contribute to multiple categories. This means the
+    # sum of percentages across all categories can exceed 100% — this is expected
+    # behaviour and matches eggNOG-mapper convention.
+    cog_counts['percentage_of_genes'] = (cog_counts['count'] / total_genes) * 100
     
     return cog_counts
 
@@ -155,43 +161,56 @@ def main():
     is_sample_gene = df['rvs'].isna()
     is_ref_gene = ~is_sample_gene
 
-    # Determine the primary lineage and genome ID from the sample genes (where 'rvs' is empty)
+    # Determine the primary lineage and genome ID from the sample genes.
+    # ID format: "LINEAGE_GENOME_GENEID" (e.g., "L8_G26689_00042")
+    # For non-typed samples (skip_typing), format may be just "GENOME_GENEID"
+    # (e.g., "G26689_00042") with no lineage prefix.
     sample_ids = id_source[is_sample_gene]
     if not sample_ids.empty:
-        # Find the first valid sample ID to extract lineage and genome
         first_sample_id_parts = sample_ids.iloc[0].split('_')
-        if len(first_sample_id_parts) >= 2:
+        if len(first_sample_id_parts) >= 3:
+            # Standard format: LINEAGE_GENOME_GENEID
             sample_lineage = first_sample_id_parts[0]
             sample_genome_id = first_sample_id_parts[1]
+        elif len(first_sample_id_parts) == 2:
+            # No lineage prefix (skip_typing): GENOME_GENEID
+            sample_lineage = 'Untyped'
+            sample_genome_id = first_sample_id_parts[0]
         else:
-            sample_lineage = 'Unknown_Lineage'
-            sample_genome_id = 'Unknown_Genome'
+            sample_lineage = 'Unknown'
+            sample_genome_id = first_sample_id_parts[0] if first_sample_id_parts else 'Unknown'
     else:
-        # Fallback if no sample genes are found
-        sample_lineage = 'Unknown_Lineage'
-        sample_genome_id = 'Unknown_Genome'
+        # All genes are reference genes — extract from the first reference ID
+        ref_ids = id_source[is_ref_gene]
+        if not ref_ids.empty:
+            ref_parts = ref_ids.iloc[0].split('_')
+            sample_lineage = ref_parts[0] if len(ref_parts) >= 2 else 'Unknown'
+            sample_genome_id = ref_parts[1] if len(ref_parts) >= 2 else ref_parts[0]
+        else:
+            sample_lineage = 'Unknown'
+            sample_genome_id = 'Unknown'
 
     # Assign 'lineage' column
-    # For reference genes, use the sample's primary lineage. For others, extract it from their ID.
-    df['lineage'] = np.where(
-        is_ref_gene,
-        sample_lineage,
-        id_source.str.split('_').str[0]
-    )
+    # All genes in one file belong to the same sample → same lineage
+    df['lineage'] = sample_lineage
 
     # Assign 'genome' column
     # For reference genes, prepend the sample's genome ID.
     # For sample genes, use everything after the first underscore.
-    df['genome'] = np.where(
-        is_ref_gene,
-        sample_genome_id + '_' + id_source.str.split('_').str[0], # e.g., G26689_Rv0029
-        id_source.str.split('_', n=1).str[1] # e.g., 'G26689_2049' from 'L8_G26689_2049'
-    )
+    # All genes in one master table belong to the same sample.
+    # Use the consistent sample_genome_id for ALL genes.
+    df['genome'] = sample_genome_id
     # --- END: ID PROCESSING LOGIC ---
 
-    # Process COG and Mycobrowser categories
+    # Process COG categories (always available from eggNOG)
     cog_summary = process_cog_categories(df)
-    mycobrowser_summary = process_mycobrowser_categories(df)
+
+    # Process Mycobrowser categories (only if column exists)
+    has_mycobrowser = 'Functional_Category' in df.columns and df['Functional_Category'].notna().any()
+    if has_mycobrowser:
+        mycobrowser_summary = process_mycobrowser_categories(df)
+    else:
+        mycobrowser_summary = pd.DataFrame(columns=['lineage','genome','Functional_Category','count','percentage'])
 
     # --- START: SAVE ALL OUTPUT FILES ---
     print("Saving output files...")
@@ -204,8 +223,13 @@ def main():
 
     # Save summary tables
     cog_summary.to_csv(cog_output_path, sep='\t', index=False)
-    mycobrowser_summary.to_csv(myco_output_path, sep='\t', index=False)
-    print(f"Successfully saved summary files: {cog_output_path.name}, {myco_output_path.name}")
+    if has_mycobrowser:
+        mycobrowser_summary.to_csv(myco_output_path, sep='\t', index=False)
+        print(f"Successfully saved summary files: {cog_output_path.name}, {myco_output_path.name}")
+    else:
+        # Write empty file so downstream doesn't crash
+        pd.DataFrame().to_csv(myco_output_path, sep='\t', index=False)
+        print(f"Mycobrowser data not available — wrote empty {myco_output_path.name}")
 
     # Save non-reference gene list (where 'rvs' was empty)
     no_ref_df = df.loc[is_sample_gene, ['genome', 'lineage']]
@@ -213,7 +237,21 @@ def main():
     print(f"Successfully generated non-reference file: {no_ref_output_path.name}")
 
     # Generate and save plots
-    create_summary_plots(cog_summary, mycobrowser_summary, plot_output_path)
+    if has_mycobrowser:
+        create_summary_plots(cog_summary, mycobrowser_summary, plot_output_path)
+    else:
+        # COG-only plot
+        fig, ax1 = plt.subplots(1, 1, figsize=(12, 7))
+        cog_plot = cog_summary.groupby('COG_category')['count'].sum().reset_index()
+        ax1.bar(cog_plot['COG_category'], cog_plot['count'],
+                color=plt.cm.viridis(np.linspace(0, 1, len(cog_plot))))
+        ax1.set_title('eggNOG Functional Category Distribution', fontsize=14)
+        ax1.set_ylabel('Total Gene Count', fontsize=12)
+        ax1.tick_params(axis='x', rotation=45)
+        ax1.grid(axis='y', linestyle='--', alpha=0.7)
+        plt.tight_layout()
+        plt.savefig(plot_output_path, dpi=300, bbox_inches='tight')
+        print(f"Generated COG-only plot at {plot_output_path}")
     # --- END: SAVE ALL OUTPUT FILES ---
 
 if __name__ == "__main__":

@@ -1,11 +1,24 @@
+/*
+ * PANGENE — pangenome graph per sample.
+ *
+ * Architecture for scalability:
+ * Each sample's corrected proteins (fixfaa) are aligned against every OTHER
+ * sample's genome (ref_fastas) using miniprot. With N samples, this is
+ * N×(N-1) alignments total.
+ *
+ * The reference FASTAs are provided as a SINGLE directory (via stageAs)
+ * to avoid Nextflow staging N-1 individual symlinks per sample — which at
+ * 500 samples means 249,500 staging operations.
+ *
+ * Miniprot jobs run in parallel batches within each process instance,
+ * bounded by task.cpus to avoid oversubscription.
+ */
 process PANGENE {
     tag "$sampleId"
-    cpus   16
-    memory '16 GB'
 
     publishDir "${params.outdir}/PANGENE/${sampleId}",
-               mode: 'copy',
-               pattern: "*.gfa,*.bubbles.txt,*.Rtab,*.stat"
+               mode: 'link', overwrite: true,
+               pattern: "*.{gfa,bubbles.txt,Rtab,stat}"
 
     input:
     tuple val(sampleId),
@@ -15,6 +28,7 @@ process PANGENE {
           path(baktatsv),
           path(fasta),
           path(emapper)
+    path ref_fastas, stageAs: 'refs/*'  // staged reference FASTA files from PATHOTYPR
 
     output:
     tuple val(sampleId),
@@ -32,9 +46,12 @@ process PANGENE {
     ln -sf ${fixfaa} ${sampleId}-AMAP.faa
     ln -sf ${fixfna} ${sampleId}-AMAP.fna
 
-    # 2) collect reference genomes
-    ref_dir="${projectDir}/${params.outdir}/PATHOTYPR/fastas"
-    refs=( \$ref_dir/*.fasta )
+    # 2) collect reference genomes — exclude self
+    refs=()
+    for f in refs/*.fasta; do
+        [[ "\$(basename \$f)" == "${fasta}" ]] && continue
+        refs+=("\$f")
+    done
 
     if [ \${#refs[@]} -eq 0 ]; then
         echo "No reference FASTA files – skipping pangene for ${sampleId}"
@@ -43,16 +60,38 @@ process PANGENE {
         exit 0
     fi
 
-    # 3) build PAFs
+    echo "==> ${sampleId}: aligning against \${#refs[@]} references (${task.cpus} CPUs)..."
+
+    # 3) build PAFs — parallel with bounded concurrency
+    THREADS_PER_JOB=2
+    MAX_JOBS=\$(( ${task.cpus} / THREADS_PER_JOB ))
+    [ \$MAX_JOBS -lt 1 ] && MAX_JOBS=1
+
+    pids=()
+    running=0
+    fail=0
     for ref in "\${refs[@]}"; do
         base=\$(basename "\$ref" .fasta)
-        miniprot --outs=0.97 --no-cs -S -Iut${task.cpus} \
-                 "\$ref"  ${fixfaa} \
-                 > "\${base}_${sampleId}.paf"
+        miniprot --outs=0.97 --no-cs -S -Iut\${THREADS_PER_JOB} \\
+                 "\$ref" ${fixfaa} \\
+                 > "\${base}_${sampleId}.paf" &
+        pids+=(\$!)
+        running=\$((running + 1))
+        if [ \$running -ge \$MAX_JOBS ]; then
+            for p in "\${pids[@]}"; do
+                wait \$p || { echo "ERROR: miniprot PID \$p failed" >&2; fail=1; }
+            done
+            pids=()
+            running=0
+        fi
     done
+    for p in "\${pids[@]}"; do
+        wait \$p || { echo "ERROR: miniprot PID \$p failed" >&2; fail=1; }
+    done
+    [ \$fail -eq 0 ] || exit 1
 
     # 4) run pangene
-    pangene -p0  *.paf  > ${sampleId}.gfa
+    pangene -p0 *.paf > ${sampleId}.gfa
     k8 /usr/local/bin/pangene.js call       ${sampleId}.gfa > ${sampleId}.bubbles.txt
     k8 /usr/local/bin/pangene.js gfa2matrix ${sampleId}.gfa > ${sampleId}.Rtab
     gfatools stat ${sampleId}.gfa > ${sampleId}.stat

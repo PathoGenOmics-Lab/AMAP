@@ -1,6 +1,0 @@
-sampleId	fasta
-G48908	test_nextflow/mis_fastas/G48908.fasta
-G49012	test_nextflow/mis_fastas/G49012.fasta
-G49273	test_nextflow/mis_fastas/G49273.fasta
-h37rv	test_nextflow/mis_fastas/h37rv.fasta
-ancestor	test_nextflow/mis_fastas/ancestor.fasta

@@ -27,13 +27,20 @@ def main():
 
     try:
         # Loading the EggNOG annotation.
-        # The emapper file has 4 header/comment lines that we need to skip.
-        # We use skiprows=4 to start reading from the table's header line.
-        df = pd.read_csv(args.egg_nog, sep='\t', skiprows=4)
-        
-        # The first column in the emapper file is named '#query'.
-        # We rename it to 'id' to match the rest of the script that searches for 'id'.
-        df.rename(columns={'#query': 'id'}, inplace=True)
+        # Use comment='#' to skip all comment/header lines regardless of version,
+        # then manually set column names from the emapper format.
+        df = pd.read_csv(args.egg_nog, sep='\t', comment='#', header=None)
+        emapper_columns = [
+            "id", "seed_ortholog", "evalue", "score", "eggNOG_OGs", "max_annot_lvl",
+            "COG_category", "Description", "Preferred_name", "GOs", "EC", "KEGG_ko",
+            "KEGG_Pathway", "KEGG_Module", "KEGG_Reaction", "KEGG_rclass", "BRITE",
+            "KEGG_TC", "CAZy", "BiGG_Reaction", "PFAMs"
+        ]
+        # Handle files with more or fewer columns than expected
+        if len(df.columns) >= len(emapper_columns):
+            df.columns = emapper_columns + [f"extra_{i}" for i in range(len(df.columns) - len(emapper_columns))]
+        else:
+            df.columns = emapper_columns[:len(df.columns)]
 
     except FileNotFoundError:
         print(f"Error: Annotation file not found at path: {args.egg_nog}")
@@ -61,8 +68,13 @@ def main():
             # Extract the sequence ID (e.g., 'L8_G26689_Rv0001' from 'L8_G26689_Rv0001;+;0-1524')
             seq_id = record.id.split(';')[0]
 
-            # Find the row corresponding to our sequence ID
-            cog_row = df[df['id'] == seq_id]
+            # Match by stripping semicolons from both sides.
+            # eggNOG query preserves the full FAA header (e.g., 'L8_G26689_Rv0001;+;0-1524')
+            # while FASTA record.id also has the full header. We need to match the
+            # base ID (before first ';') from both.
+            if 'simple_id' not in df.columns:
+                df['simple_id'] = df['id'].astype(str).str.split(';').str[0]
+            cog_row = df[df['simple_id'] == seq_id]
 
             # If we find a match in the annotation file
             if not cog_row.empty:
@@ -71,11 +83,14 @@ def main():
                 
                 # Check that the value is not null (it could be a '-' we replaced with NaN)
                 if pd.notna(cog_value):
-                    if "dup" in seq_id:
-                        new_id = seq_id + ";" + str(cog_value)
-                    else:
-                        new_id = "_".join(seq_id.split("_")[0:3]) + ";" + str(cog_value)
-                    
+                    # Keep the full seq_id. Truncating to the first three
+                    # underscore-separated parts mangled multi-part gene names
+                    # (L8_G26689_PE_PGRS1 -> L8_G26689_PE) and collapsed every
+                    # PE/PPE gene of a sample onto one identifier, so Diamond
+                    # and dup_ex_multifasta.py silently lost sequences.
+                    # seq_id is already stripped of the ';strand;coords' suffix.
+                    new_id = seq_id + ";" + str(cog_value)
+
                     record.id = new_id
                     record.description = ''  # Clear the description for a clean header
                     renamed_count += 1

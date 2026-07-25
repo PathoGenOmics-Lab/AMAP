@@ -1,0 +1,180 @@
+name: Docker image
+
+# Builds docker/Dockerfile and publishes it to Docker Hub as paururo/amap,
+# which is what the docker and singularity profiles in nextflow.config expect.
+#
+# The build takes roughly an hour: it downloads the Bakta light database and
+# solves a conda environment with R, so it is not wired to every push. Run it
+# by hand from the Actions tab, or push a v* tag.
+#
+# Required repository secrets:
+#   DOCKERHUB_USERNAME  Docker Hub account name
+#   DOCKERHUB_TOKEN     access token from Docker Hub (Account Settings ->
+#                       Personal access tokens), not the account password
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to publish, without the leading v (e.g. 1.0.0)'
+        required: true
+      latest:
+        description: 'Also move the :latest tag to this build'
+        type: boolean
+        default: true
+  push:
+    tags:
+      - 'v*'
+
+env:
+  IMAGE: paururo/amap
+
+# Nothing here needs the GITHUB_TOKEN; publishing uses the Docker Hub secrets.
+permissions:
+  contents: read
+
+# One build at a time. These are long and they all push the same tags.
+concurrency:
+  group: docker-image
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Check the Docker Hub secrets are set
+        env:
+          USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          missing=""
+          [ -n "$USERNAME" ] || missing="$missing DOCKERHUB_USERNAME"
+          [ -n "$TOKEN" ] || missing="$missing DOCKERHUB_TOKEN"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing"
+            echo "Add them under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "Both secrets are present."
+
+      # Values reach the shell through the environment rather than through
+      # ${{ }} interpolation. A tag name or a dispatch input is attacker
+      # controlled text, and interpolating it would paste it straight into
+      # the script.
+      - name: Work out the tags
+        id: tags
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_LATEST: ${{ inputs.latest }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "push" ]; then
+            version="${REF_NAME#v}"
+            latest="true"
+          else
+            version="$INPUT_VERSION"
+            latest="$INPUT_LATEST"
+          fi
+          if [ -z "$version" ]; then
+            echo "::error::No version to tag with."
+            exit 1
+          fi
+          # Docker tags allow letters, digits, dot, dash and underscore.
+          # Rejecting anything else also keeps odd input out of later steps.
+          if ! printf '%s' "$version" | grep -qE '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'; then
+            echo "::error::Refusing to build: '$version' is not a valid image tag."
+            exit 1
+          fi
+          tags="${IMAGE}:${version}"
+          if [ "$latest" = "true" ]; then
+            tags="${tags} ${IMAGE}:latest"
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "tags=${tags}" >> "$GITHUB_OUTPUT"
+          echo "Will publish: ${tags}"
+
+      # The image carries the Bakta light database and a full conda stack with
+      # R, so the default ~14 GB of free space on the runner is not enough.
+      # Dropping the preinstalled toolchains buys back around 25 GB.
+      - name: Free up disk space
+        run: |
+          echo "Before:"
+          df -h /
+          sudo rm -rf \
+            /usr/share/dotnet \
+            /usr/local/lib/android \
+            /opt/ghc \
+            /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL \
+            /usr/share/swift
+          sudo docker image prune --all --force >/dev/null 2>&1 || true
+          echo "After:"
+          df -h /
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Built and loaded locally first so the smoke test runs against the exact
+      # image that gets pushed. The Dockerfile pins linux/amd64 on every stage,
+      # which matches the runner, so there is no emulation here.
+      - name: Build the image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          provenance: false
+          tags: amap:ci
+
+      # Same script you can run locally against a development build, see the
+      # usage note at the top of docker/smoke_test.sh.
+      - name: Smoke test the image
+        run: docker/smoke_test.sh amap:ci "$PWD"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Retagging what was just tested, rather than rebuilding, so the bits
+      # that get published are the bits the smoke test ran against.
+      - name: Push
+        env:
+          TAGS: ${{ steps.tags.outputs.tags }}
+        run: |
+          set -euo pipefail
+          for tag in $TAGS; do
+            echo "Pushing ${tag}"
+            docker tag amap:ci "$tag"
+            docker push "$tag"
+          done
+
+      - name: Summary
+        env:
+          TAGS: ${{ steps.tags.outputs.tags }}
+          VERSION: ${{ steps.tags.outputs.version }}
+        run: |
+          {
+            echo "### Published"
+            echo
+            for tag in $TAGS; do
+              echo "- \`${tag}\`"
+            done
+            echo
+            echo "Pull with:"
+            echo
+            echo '```bash'
+            echo "docker pull ${IMAGE}:${VERSION}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

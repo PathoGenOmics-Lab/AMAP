@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import ast
 import pandas as pd
 from Bio import SeqIO
 import argparse
@@ -32,9 +33,17 @@ def extract_sequences(tsv_filepath, fasta_filepath, output_filepath):
     # We clean this string and split it to get individual IDs.
     sequence_ids = []
     for row in df['Members']:
-        # Removes brackets and single quotes, then splits the string into a list of IDs.
-        cleaned_ids = row.strip("[]'").split("', '")
-        sequence_ids.extend(cleaned_ids)
+        # Safely parse the Python list literal stored as a string
+        try:
+            parsed = ast.literal_eval(row)
+            if isinstance(parsed, list):
+                sequence_ids.extend(parsed)
+            else:
+                sequence_ids.append(str(parsed))
+        except (ValueError, SyntaxError):
+            # Fallback: strip and split manually
+            cleaned_ids = row.strip("[]'").split("', '")
+            sequence_ids.extend(cleaned_ids)
 
     # Read the FASTA file and create a dictionary of sequences, with IDs as keys.
     # This allows for quick lookups.
@@ -63,6 +72,18 @@ def main():
     # Define the output file name by appending '.dup' to the input CDS file name.
     output_file = args.cds + ".dup"
     
+    # Check if the groups file has any data rows
+    try:
+        df_check = pd.read_csv(args.tsv, sep='\t', nrows=1)
+        if df_check.empty:
+            print("No duplication groups — creating empty output.")
+            open(output_file, 'w').close()
+            return
+    except (pd.errors.EmptyDataError, KeyError):
+        print("No duplication groups — creating empty output.")
+        open(output_file, 'w').close()
+        return
+
     # Call the function to perform the extraction.
     extract_sequences(args.tsv, args.cds, output_file)
 

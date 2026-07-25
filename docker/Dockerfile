@@ -1,59 +1,75 @@
-# STAGE 1: Build tools that need compilation
-FROM continuumio/miniconda3 AS builder
+# =============================================================================
+# AMAP v1.0.1 - Multi-stage Docker build
+# =============================================================================
+# Stage 1: Compile native tools (miniprot)
+# Stage 2: Download databases (Bakta DB, reference files)
+# Stage 3: Final image with all runtime dependencies
+#
+# NOTE on reference files: Several files are hosted on Google Drive. If the
+# build fails on those wget calls, the links may have expired. Replace with
+# Zenodo/Figshare URLs when available. The MTB_ancestor_reference.fasta is
+# already on Zenodo and should always work.
+# =============================================================================
 
-# Install build dependencies, including zlib1g-dev for miniprot compilation.
-# We install only what's needed for this stage to keep it light.
+# ---------------------------------------------------------------------------
+# STAGE 1: Build tools that need compilation
+# ---------------------------------------------------------------------------
+FROM --platform=linux/amd64 continuumio/miniconda3:24.1.2-0 AS builder
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        git \
-        build-essential \
-        wget \
-        tar \
-        bzip2 \
-        zlib1g-dev && \
+        git build-essential wget tar bzip2 zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# Set a working directory for the build artifacts
 WORKDIR /build
 
-# Compile miniprot
-RUN git clone https://github.com/lh3/miniprot && \
-    cd miniprot && \
-    make
+# Download pathotypr binary from Bioconda (pre-compiled for linux-64)
+RUN conda install -c bioconda -c conda-forge -y pathotypr=1.0.0 && \
+    cp $(which pathotypr) /usr/local/bin/pathotypr && \
+    conda clean -afy
 
-# Download and extract pangene
-RUN wget https://github.com/lh3/pangene/releases/download/v1.1/pangene-1.1-bin.tar.bz2 -O- | tar -jxvf -
+# Compile miniprot v0.18
+RUN git clone --branch v0.18 --depth 1 https://github.com/lh3/miniprot && \
+    cd miniprot && make
 
+# Download pangene v1.1 pre-built binaries
+RUN wget -q https://github.com/lh3/pangene/releases/download/v1.1/pangene-1.1-bin.tar.bz2 -O- | tar -jxf -
 
-# STAGE 2: Download large datasets
-# This stage is dedicated to downloading data, so it can be cached effectively.
-FROM continuumio/miniconda3 AS data_downloader
+# ---------------------------------------------------------------------------
+# STAGE 2: Download large datasets (cached independently)
+# ---------------------------------------------------------------------------
+FROM --platform=linux/amd64 continuumio/miniconda3:24.1.2-0 AS data_downloader
 
-# Install bakta and wget to download data, specifying a compatible Python version.
-RUN conda install -c conda-forge -c bioconda -y python=3.9 bakta=1.11.3 && \
+RUN conda install -c conda-forge -c bioconda -y python=3.9 bakta=1.12.0 && \
     apt-get update && apt-get install -y --no-install-recommends wget && \
     conda clean -afy && \
     rm -rf /var/lib/apt/lists/*
 
-# Download bakta database
+# Bakta light database
 RUN bakta_db download --output /data/bakta_db --type light
 
-# Download reference data
+# Reference files for MTBC mode
 RUN mkdir /reference && \
-    wget -P /reference https://zenodo.org/record/3497110/files/MTB_ancestor_reference.fasta && \
-    wget -O /reference/aa_H37Rv.translated.fas 'https://docs.google.com/uc?export=download&id=1ibHC4VgZnIbu7EsVZ-VFmcUMCt1ACKuc' && \
-    wget -O /reference/bad.bakta.fa 'https://docs.google.com/uc?export=download&id=1sNUuEkgq9Et4sRP3nr-xsMktx1G5rOjn' && \
-    wget -O /reference/bad.bakta.translated.fas 'https://docs.google.com/uc?export=download&id=1lDrQPe7S4FJmgejsKyov5jcVbckLqxj9' && \
-    wget -O /reference/new_refH37Rv.fasta 'https://docs.google.com/uc?export=download&id=1ZvlTVwp3RVPqZPgIaTONg1IQEm6c98P8' && \
-    wget -O /reference/nt_correctedH37Rv.fa 'https://docs.google.com/uc?export=download&id=1_wWCduMeJW4PHV084K8X3BzivaSAmbo8' && \
-    wget -O /reference/sequence.gb 'https://docs.google.com/uc?export=download&id=1l0MnOZUWM6t7gYjWgfbt-1SuXOEMi7MQ' && \
-    wget -O /reference/snps_lineages.tsv 'https://docs.google.com/uc?export=download&id=1C7BcWzpLnbFwMA-uTyiD_FSi-LkVSHAj' && \
-    wget -O /reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt 'https://docs.google.com/uc?export=download&id=1_yWmTKd3FRykoT7RYI74ksyDm9gyHmpM'
+    wget -q -P /reference https://zenodo.org/record/3497110/files/MTB_ancestor_reference.fasta && \
+    wget -q -O /reference/aa_H37Rv.translated.fas 'https://docs.google.com/uc?export=download&id=1ibHC4VgZnIbu7EsVZ-VFmcUMCt1ACKuc' && \
+    wget -q -O /reference/bad.bakta.fa 'https://docs.google.com/uc?export=download&id=1sNUuEkgq9Et4sRP3nr-xsMktx1G5rOjn' && \
+    wget -q -O /reference/bad.bakta.translated.fas 'https://docs.google.com/uc?export=download&id=1lDrQPe7S4FJmgejsKyov5jcVbckLqxj9' && \
+    wget -q -O /reference/new_refH37Rv.fasta 'https://docs.google.com/uc?export=download&id=1ZvlTVwp3RVPqZPgIaTONg1IQEm6c98P8' && \
+    wget -q -O /reference/nt_correctedH37Rv.fa 'https://docs.google.com/uc?export=download&id=1_wWCduMeJW4PHV084K8X3BzivaSAmbo8' && \
+    wget -q -O /reference/sequence.gb 'https://docs.google.com/uc?export=download&id=1l0MnOZUWM6t7gYjWgfbt-1SuXOEMi7MQ' && \
+    wget -q -O /reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt 'https://docs.google.com/uc?export=download&id=1_yWmTKd3FRykoT7RYI74ksyDm9gyHmpM' && \
+    # --- Pathotypr lineage markers (Zenodo DOI: 10.5281/zenodo.19210044) ---
+    wget -q -O /reference/pathotypr_lineage_markers.tsv 'https://zenodo.org/records/19210044/files/pathotypr_lineage_markers_v1.0.0.tsv?download=1' && \
+    # Keep legacy name as symlink for backward compatibility
+    ln -s pathotypr_lineage_markers.tsv /reference/snps_lineages.tsv
 
+# ---------------------------------------------------------------------------
+# STAGE 3: Final production image
+# ---------------------------------------------------------------------------
+FROM --platform=linux/amd64 continuumio/miniconda3:24.1.2-0
 
-# -----------------------------------------------------------------------------
-# STAGE 3: Final production image (REVISED VERSION)
-# -----------------------------------------------------------------------------
-FROM continuumio/miniconda3
+LABEL maintainer="Paula Ruiz-Rodriguez <paururo@github>" \
+      version="1.0.1" \
+      description="AMAP: Assisted Microbial Annotator Pipeline"
 
 ENV MPLCONFIGDIR=/app/matplotlib_config
 ENV PATH="/opt/conda/bin:/miniprot:/data/bakta_db:/reference:${PATH}"
@@ -61,71 +77,68 @@ ENV PATH="/opt/conda/bin:/miniprot:/data/bakta_db:/reference:${PATH}"
 RUN mkdir -p /miniprot /data/bakta_db /reference /app/matplotlib_config && \
     chmod -R 777 /app/matplotlib_config
 
-# Copy artifacts from previous stages
+# Copy compiled tools and databases from previous stages
 COPY --from=builder /build/miniprot/miniprot /miniprot/
+COPY --from=builder /usr/local/bin/pathotypr /usr/local/bin/pathotypr
 COPY --from=builder /build/pangene-1.1-bin/bin_x64-linux/* /usr/local/bin/
 COPY --from=builder /build/pangene-1.1-bin/scripts/pangene.js /usr/local/bin/
 RUN chmod +x /miniprot/miniprot /usr/local/bin/*
 COPY --from=data_downloader /data/bakta_db /data/bakta_db
 COPY --from=data_downloader /reference /reference
 
-# --- UNIFIED PACKAGE INSTALLATION WITH CONDA ---
-# We use Conda to install EVERYTHING: Python, R, and their respective packages.
-# This ensures compatibility and proper dependency resolution.
+# --- CONDA: Python + R + bioinformatics tools ---
+# Single solve step for reproducibility. No r-essentials (pulls ~150 unused pkgs).
 RUN \
-    # 1. Configure Conda channels
     conda config --add channels defaults && \
     conda config --add channels bioconda && \
     conda config --add channels conda-forge && \
     conda config --set channel_priority strict && \
     \
-    # 2. Install Python and R packages with Conda in a single step.
-    #    Conda will handle system dependencies (like cairo, libxml2, etc.) for us.
     conda install -y \
-      # Base environment
+      # --- Python runtime ---
       python=3.9 \
-      r-base=4.2 \
-      r-essentials \
-      # Python packages
+      numpy \
       pandas \
       biopython \
-      matplotlib=3.8.3 \
-      eggnog-mapper=2.1.13 \
-      bakta=1.11.3 \
+      matplotlib \
       plotly \
-      # R packages (using the r- prefix)
+      # --- Bioinformatics tools ---
+      bakta=1.12.0 \
+      eggnog-mapper=2.1.13 \
+      diamond=2.1.24 \
+      gfatools \
+      # --- R runtime (only packages used by report_AMAP.Rmd) ---
+      r-base=4.4 \
       r-ggplot2 \
       r-dplyr \
+      r-tidyr \
+      r-stringr \
+      r-scales \
       r-rmarkdown \
+      r-knitr \
       r-prettydoc \
-      r-remotes \
       r-plotly \
       r-ggpubr \
-      r-dt \
-      r-stringr \
-      r-knitr \
-      r-rstatix \
       r-ggrepel \
-      r-scales \
+      r-rstatix \
+      r-dt \
+      r-pheatmap \
+      r-rcolorbrewer \
+      r-remotes \
       pandoc && \
     \
-    # 3. Install Python packages with Pip that are not on Conda
+    # --- Pip: packages not on Conda ---
     pip install --no-cache-dir \
       intervaltree \
       python-louvain \
       pyvis==0.3.2 \
-      setuptools \
       networkx && \
     \
-    # 4. Clean up caches to reduce the final image size
+    # --- Cleanup ---
     conda clean -afy && \
-    rm -rf /root/.cache/pip
+    rm -rf /root/.cache/pip /tmp/*
 
-# --- R PACKAGE INSTALLATION FROM GITHUB (IF NEEDED) ---
-# This runs after the Conda R environment is fully set up.
-# Uncomment the line below only if you truly need the development version of plotly.
- RUN R -e "remotes::install_github('maximilian-heeg/ggsimplestats', force = TRUE)"
-# RUN R -e "remotes::install_github('ropensci/plotly', force = TRUE)"
+# --- R: GitHub-only packages ---
+RUN R -e "remotes::install_github('maximilian-heeg/ggsimplestats', force = TRUE)"
 
-# Set the final working directory
 WORKDIR /app

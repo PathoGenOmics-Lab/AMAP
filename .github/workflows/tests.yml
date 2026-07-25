@@ -1,0 +1,86 @@
+name: Tests
+
+# Unit tests for the Python under bin/, plus a syntax check over every script.
+# Fast: no containers, no reference data, no Nextflow. The pipeline itself is
+# exercised by `nextflow run . -profile docker,test`, which is too slow to run
+# on every push.
+
+on:
+  push:
+    branches: [main, fix, dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements-test.txt
+
+      # The list lives in requirements-test.txt so CI and a local checkout
+      # install the same thing. Keeping it inline here is how it drifted out of
+      # step with what bin/ actually imports.
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+
+      - name: Run tests
+        run: python -m pytest tests/ -v --tb=short
+
+      # Globbed rather than listed by hand: the previous list had drifted and
+      # was missing five scripts, including extract_ref_proteins.py.
+      - name: Syntax check every Python script
+        run: |
+          set -euo pipefail
+          n=0
+          for f in bin/*.py bin/classify/*.py; do
+            python -m py_compile "$f"
+            n=$((n + 1))
+          done
+          echo "$n Python files compile successfully"
+
+      # Catches an import that resolves on the test machine but not from a
+      # clean environment, which is how a missing dependency usually shows up.
+      - name: Import every module
+        run: |
+          PYTHONPATH=bin python -c "
+          import importlib, pathlib, sys
+          names  = [p.stem for p in sorted(pathlib.Path('bin').glob('*.py'))]
+          names += ['classify.' + p.stem
+                    for p in sorted(pathlib.Path('bin/classify').glob('*.py'))
+                    if p.stem != '__init__']
+          bad = []
+          for n in names:
+              try:
+                  importlib.import_module(n)
+              except Exception as exc:
+                  bad.append('%s: %s' % (n, exc))
+          if bad:
+              print('FAILED to import:')
+              for b in bad:
+                  print('  ', b)
+              sys.exit(1)
+          print('%d modules import cleanly' % len(names))
+          "

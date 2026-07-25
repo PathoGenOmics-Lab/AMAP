@@ -1,96 +1,207 @@
 ---
-title: "Assisted MTBC Annotator Pipeline"
-author: "AMAP v1.0.0"
+title: "AMAP: Assisted Microbial Annotation Pipeline Report"
+author: "AMAP v1.0.1"
 date: "`r format(Sys.time(), '%d/%m/%Y')`"
 
 output:
   html_document:
-    theme: flatly        # cualquier tema Bootswatch: cerulean, cosmo, darkly, etc.
-    toc: true            # activa la TOC
-    toc_float:           # flotante (se puede contraer)
+    theme: flatly
+    toc: true
+    toc_float:
       collapsed: false
       smooth_scroll: true
-    highlight: tango     # resaltado de código; prueba otros (“monokai”, “textmate”…)
-    css: styles.css      # hoja de estilo que añadiremos abajo
-    includes:            # inyectamos los logos en la cabecera
+    toc_depth: 4
+    highlight: tango
+    css: styles.css
+    # Everything is inlined, so the file opens with no network and survives
+    # being emailed around. Nothing here may reference a remote URL.
+    self_contained: true
+    includes:
       before_body: header.html
 params:
   cog_file: "input_cog.txt"
   myco_file: "input_myco.txt"
   summary_file: "input_summary.txt"
   empty_file: "input_noref.txt"
-
-header-includes:
-  - |
-    <!-- habilita uso de jQuery si no lo carga otro widget -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  rvmissing_file: "input_rvmissing.txt"
+  mastertable_file: "input_mastertables.txt"
+  pangene_file: "input_pangene.txt"
+  dup_file: "homologous_communities.tsv"
+  qc_file: "input_qc.txt"
 ---
 
-```{js zoom-jquery, echo = FALSE}
-$(document).ready(function() {
-    // This code requires jQuery to be loaded, which DT::datatable will handle.
-    if (window.jQuery) {
-        $('body').prepend('<div class="zoomDiv"><img src="" class="zoomImg"></div>');
-        // onClick function for all plots (img's)
-        $('body').on('click', 'img:not(.zoomImg)', function() {
-            $('.zoomImg').attr('src', $(this).attr('src')).css({width: '100%'});
-            $('.zoomDiv').css({opacity: '1', width: 'auto', border: '1px solid white', borderRadius: '5px', position: 'fixed', top: '50%', left: '50%', marginRight: '-50%', transform: 'translate(-50%, -50%)', boxShadow: '0px 0px 50px #888888', zIndex: '50', overflow: 'auto', maxHeight: '100%'});
-        });
-        // onClick function for zoomImg
-        $('body').on('click', 'img.zoomImg', function() {
-            $('.zoomDiv').css({opacity: '0', width: '0%'});
-        });
-    }
-});
-
-document.addEventListener("DOMContentLoaded", function () {
-  const titleText = document.querySelector("h1.title")?.textContent
-                      || "test_AMAP.Rmd";            // ← tu nombre de fichero
-  const toc = document.getElementById("TOC");
-  if (!toc) return;                                     // por si no hay TOC
-  /* Si Tocify ya creó su encabezado, lo sobrescribimos; si no, lo creamos */
-  let header = toc.querySelector(".tocify-header");
-  if (!header) {
-    header = document.createElement("div");
-    header.className = "tocify-header";
-    toc.prepend(header);
+```{js zoom, echo = FALSE}
+// Click a figure to blow it up, click again to dismiss. This used to be
+// jQuery pulled from a CDN, which meant the report only worked with a network
+// connection and quietly did nothing without one, despite being advertised as
+// self-contained. Plain DOM APIs, no dependency.
+(function () {
+  function ready(fn) {
+    if (document.readyState !== "loading") fn();
+    else document.addEventListener("DOMContentLoaded", fn);
   }
-  header.textContent = titleText;
-});
+
+  ready(function () {
+    var overlay = document.createElement("div");
+    overlay.className = "zoomDiv";
+    var big = document.createElement("img");
+    big.className = "zoomImg";
+    overlay.appendChild(big);
+    document.body.insertBefore(overlay, document.body.firstChild);
+
+    function close() {
+      overlay.style.opacity = "0";
+      overlay.style.width = "0%";
+    }
+
+    document.body.addEventListener("click", function (ev) {
+      var t = ev.target;
+      if (t.tagName !== "IMG") return;
+      if (t.classList.contains("zoomImg")) { close(); return; }
+      big.src = t.getAttribute("src");
+      big.style.width = "100%";
+      Object.assign(overlay.style, {
+        opacity: "1", width: "auto", border: "1px solid white",
+        borderRadius: "5px", position: "fixed", top: "50%", left: "50%",
+        marginRight: "-50%", transform: "translate(-50%, -50%)",
+        boxShadow: "0 0 50px #888", zIndex: "50", overflow: "auto",
+        maxHeight: "100%"
+      });
+    });
+
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") close();
+    });
+
+    // Put the report title above the table of contents.
+    var titleEl = document.querySelector("h1.title");
+    var toc = document.getElementById("TOC");
+    if (!toc) return;
+    // Deliberately not "tocify-header": tocify gives that class to every
+    // top-level group in the index, so styling it also restyles the entries.
+    var header = toc.querySelector(".amap-toc-title");
+    if (!header) {
+      header = document.createElement("div");
+      header.className = "amap-toc-title";
+      toc.insertBefore(header, toc.firstChild);
+    }
+    header.textContent = titleEl ? titleEl.textContent : "AMAP Report";
+  });
+})();
 ```
 
 ```{r setup, message=FALSE, warning=FALSE, include=FALSE}
-# Load libraries
 library(ggplot2)
 library(plotly)
 library(dplyr)
+library(tidyr)
 library(ggpubr)
 library(DT)
-library(ggsimplestats)
 library(stringr)
 library(knitr)
-library(rstatix) # Added for advanced statistical tests
-library(ggrepel) # Added for non-overlapping labels
-library(scales) # Added for percentage labels
+library(rstatix)
+library(ggrepel)
+library(scales)
+library(pheatmap)
+library(RColorBrewer)
 
-# Define input files and global variables
-cog_summary <- params$cog_file
-myco_summary <- params$myco_file
-input_sum <- params$summary_file
-empty <- params$empty_file
+# Every figure is base64'd into the single output file, so their pixel count is
+# the file size. knitr defaults to fig.retina = 2, which renders each one at
+# twice the requested size, and with this many panels that alone accounted for
+# roughly half the report. At 1x and 96 dpi they still look right on screen and
+# the file becomes something you can actually attach to an email.
+knitr::opts_chunk$set(fig.retina = 1, dpi = 96)
 
-colors <- c("L5"="#995200","L6"="#1eb040","A1"="#d1ae00","A4"="#ff9cdb","A2"="#8ef5c8", "A3"="#73c2ff", "L4"="#ff0000","L1"="#ff3091", "L2"="#001aff", "L3" ="#8a0bd2", "L7"="#fbff00", "L8"="#ff9d00","L9"="#37ff30", "L10"="#8fbda1", "NA"="#808080")
-cog_names <- c("A" = "A - RNA processing and modification", "B" = "B - Chromatin structure and dynamics", "C" = "C - Energy production and conversion", "D" = "D - Cell cycle control, cell division, chromosome partitioning", "E" = "E - Amino acid transport and metabolism", "F" = "F - Nucleotide transport and metabolism", "G" = "G - Carbohydrate transport and metabolism", "H" = "H - Coenzyme transport and metabolism", "I" = "I - Lipid transport and metabolism", "J" = "J - Translation, ribosomal structure and biogenesis", "K" = "K - Transcription", "L" = "L - Replication, recombination and repair", "M" = "M - Cell wall/membrane/envelope biogenesis", "N" = "N - Cell motility", "O" = "O - Posttranslational modification, protein turnover, chaperones", "P" = "P - Inorganic ion transport and metabolism", "Q" = "Q - Secondary metabolites biosynthesis, transport and catabolism", "R" = "R - General function prediction only", "S" = "S - Function unknown", "T" = "T - Signal transduction mechanisms", "U" = "U - Intracellular trafficking, secretion, and vesicular transport", "V" = "V - Defense mechanisms", "W" = "W - Extracellular structures", "X" = "X - Mobilome: prophages, transposons", "Y" = "Y - Nuclear structure", "Z" = "Z - Cytoskeleton", "NA"="None")
+# Each figure is then base64'd into the report, so its bytes are the report's
+# bytes. A ggplot is flat colour over white: as 24-bit RGB most of that depth
+# is spent on nothing. Quantising to a 256-colour palette is invisible on this
+# kind of figure and takes the image payload down by roughly half. Pillow comes
+# with matplotlib, which is already in the image; if it is missing for any
+# reason the hook leaves the file alone rather than failing the report.
+knitr::knit_hooks$set(plot = local({
+  default_plot_hook <- knitr::knit_hooks$get("plot")
+  shrink <- function(path) {
+    py <- paste(
+      "import sys",
+      "from PIL import Image",
+      "p = sys.argv[1]",
+      "im = Image.open(p)",
+      "if im.mode in ('RGBA', 'LA'):",
+      "    bg = Image.new('RGB', im.size, (255, 255, 255))",
+      "    bg.paste(im, mask=im.split()[-1])",
+      "    im = bg",
+      "im.convert('RGB').quantize(colors=256, method=Image.MEDIANCUT).save(p, optimize=True)",
+      sep = "\n")
+    try(system2("python3", c("-c", shQuote(py), shQuote(path)),
+                stdout = FALSE, stderr = FALSE), silent = TRUE)
+  }
+  function(x, options) {
+    if (grepl("\\.png$", x, ignore.case = TRUE) && file.exists(x)) shrink(x)
+    default_plot_hook(x, options)
+  }
+}))
 
-# Helper function to process combined IDs from input_sum.txt
+# plotly ships its whole JavaScript bundle the moment a single widget appears,
+# and this report has three of them against roughly a hundred static figures.
+# That bundle was 3.6 MB of an 8 MB file. partial_bundle() works out which
+# trace types are actually used and ships only those. Wrapped in a helper so
+# adding a fourth interactive plot does not silently bring the full bundle
+# back. Falls back to the plot untouched if the shrink fails, since a slightly
+# bigger report beats no report.
+# local = TRUE matters: with local = FALSE partial_bundle points the report at
+# cdn.plot.ly, which is the sort of remote reference this report must not have.
+# It needs a network the first time to fetch the smaller bundle, so if that
+# fails we keep the full one, which ships inside the R package and always works.
+interactive_plot <- function(p) {
+  tryCatch(plotly::partial_bundle(p, local = TRUE),
+           error = function(e) {
+             message("partial_bundle failed, keeping the full plotly bundle: ",
+                     conditionMessage(e))
+             p
+           })
+}
+
+# ------------- GLOBAL VARIABLES -------------
+# Lineage color palette — includes MTBC lineages and a broad auto-extension
+# mechanism for any organism. Unknown lineage names get colors from a
+# qualitative palette, ensuring the report works out-of-the-box for non-MTBC.
+mtbc_colors <- c("L5"="#995200","L6"="#1eb040","A1"="#d1ae00","A4"="#ff9cdb","A2"="#8ef5c8",
+                 "A3"="#73c2ff","L4"="#ff0000","L1"="#ff3091","L2"="#001aff","L3"="#8a0bd2",
+                 "L7"="#fbff00","L8"="#ff9d00","L9"="#37ff30","L10"="#8fbda1",
+                 "Untyped"="#999999","NA"="#808080")
+colors <- mtbc_colors
+
+# Auto-extend palette for non-MTBC lineages/groups at report render time
+extend_palette <- function(observed) {
+  novel <- setdiff(observed, names(colors))
+  if (length(novel) > 0) {
+    extra_pal <- colorRampPalette(RColorBrewer::brewer.pal(min(length(novel), 12), "Set3"))(length(novel))
+    names(extra_pal) <- novel
+    colors <<- c(colors, extra_pal)
+  }
+}
+
+cog_names <- c("A"="A - RNA processing and modification","B"="B - Chromatin structure and dynamics",
+  "C"="C - Energy production and conversion","D"="D - Cell cycle control, cell division",
+  "E"="E - Amino acid transport and metabolism","F"="F - Nucleotide transport and metabolism",
+  "G"="G - Carbohydrate transport and metabolism","H"="H - Coenzyme transport and metabolism",
+  "I"="I - Lipid transport and metabolism","J"="J - Translation, ribosomal structure",
+  "K"="K - Transcription","L"="L - Replication, recombination and repair",
+  "M"="M - Cell wall/membrane/envelope biogenesis","N"="N - Cell motility",
+  "O"="O - Post-translational modification, chaperones","P"="P - Inorganic ion transport",
+  "Q"="Q - Secondary metabolites biosynthesis","R"="R - General function prediction only",
+  "S"="S - Function unknown","T"="T - Signal transduction mechanisms",
+  "U"="U - Intracellular trafficking, secretion","V"="V - Defense mechanisms",
+  "W"="W - Extracellular structures","X"="X - Mobilome: prophages, transposons",
+  "Y"="Y - Nuclear structure","Z"="Z - Cytoskeleton","NA"="None")
+
+# ------------- HELPER FUNCTIONS -------------
 process_id <- function(id) {
   id <- as.character(id)
-  # Handle cases where ID is NA, empty, or starts with an underscore
   if (is.na(id) || id == "" || startsWith(id, "_")) {
     lineage <- "NA"
     genome <- ifelse(is.na(id) || id == "", NA_character_, sub("^_", "", id))
   } else {
-    # Split by the first underscore
     parts <- str_split(id, "_", n = 2)[[1]]
     lineage <- parts[1]
     genome <- ifelse(length(parts) > 1, parts[2], NA_character_)
@@ -98,189 +209,233 @@ process_id <- function(id) {
   return(c(lineage, genome))
 }
 
-# Read and preprocess data
-# COG data - Read robustly to avoid row.names error
-datos_cog <- read.table(cog_summary, sep = "\t", dec=".", header = FALSE, fill = TRUE, stringsAsFactors = FALSE, quote = "", col.names = paste0("V", 1:5))
-datos_cog$V2 <- sapply(strsplit(datos_cog$V2, "_"), `[`, 1)
+make_dt <- function(df, fname = "table") {
+  datatable(df, rownames = FALSE, extensions = 'Buttons',
+    options = list(dom = 'Bfrtip', pageLength = 15, scrollX = TRUE,
+      buttons = list('copy', list(extend='csv', filename=fname),
+                     list(extend='excel', filename=fname), 'print'),
+      initComplete = JS(
+        "function(settings, json) {",
+        "$(this.api().table().header()).css({'background-color':'#3da68d','color':'#fff','font-size':'14px','font-family':'Roboto'});",
+        "$(this.api().table().body()).css({'font-size':'13px','font-family':'Roboto'});",
+        "}")),
+    class = 'cell-border stripe')
+}
 
-colnames(datos_cog) <- c("Lineages", "genome", "Functional_Category", "Count", "Percentage")
-datos_cog$Lineages[is.na(datos_cog$Lineages) | datos_cog$Lineages == ""] <- "NA"
-datos_cog <- datos_cog %>% filter(!is.na(Lineages) & Lineages != "")
-datos_cog$Functional_Category[datos_cog$Functional_Category == "" | datos_cog$Functional_Category == "NaN"] <- "NA"
-datos_cog$sequences <- with(datos_cog, paste(Lineages, genome, sep = "_"))
-datos_cog$Percentage<-as.numeric(datos_cog$Percentage)
-datos_cog$Count <- as.integer(datos_cog$Count) # Ensure Count is integer
-
-datos_cog <- datos_cog %>%
-  # Primero, cuenta las combinaciones únicas de los grupos.
-  # Esto crea la nueva columna 'Count'.
-  count(Lineages, genome, sequences, Functional_Category, name = "Count") %>%
-  
-  # Ahora, agrupa por la unidad principal ('sequences') para calcular el porcentaje
-  group_by(sequences) %>%
-  
-  # Crea la columna 'Percentage' dividiendo el conteo de la fila
-  # entre el total de conteos para ese grupo 'sequences'.
-  mutate(Percentage = Count / sum(Count)) %>%
-  
-  ungroup()
-
-datos_cog1 <- datos_cog 
-lvl_cogs <- c("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","S","T","U","V","NA")
-datos_cog1$Functional_Category <- factor(datos_cog1$Functional_Category, levels = lvl_cogs)
-
-
-# Mycobrowser data - Read robustly
-datos_myco <- read.table(myco_summary, sep = "\t", dec=".", header = FALSE, fill = TRUE, stringsAsFactors = FALSE, quote = "", col.names = paste0("V", 1:5))
-datos_myco$V2 <- as.character(datos_myco$V2)
-datos_myco$V2 <- sapply(strsplit(datos_myco$V2, "_"), `[`, 1)
-colnames(datos_myco) <- c("Lineages", "genome", "Functional_Category", "Count", "Percentage")
-datos_myco$Lineages[is.na(datos_myco$Lineages) | datos_myco$Lineages == ""] <- "NA"
-datos_myco <- datos_myco %>% filter(!is.na(Lineages) & Lineages != "")
-datos_myco$Functional_Category[datos_myco$Functional_Category == "" | datos_myco$Functional_Category == "Unassigned"] <- "NA"
-datos_myco$sequences <- with(datos_myco, paste(Lineages, genome, sep = "_"))
-
-datos_myco <- datos_myco %>%
-  # Primero, cuenta las combinaciones únicas de los grupos.
-  # Esto crea la nueva columna 'Count'.
-  count(Lineages, genome, sequences, Functional_Category, name = "Count") %>%
-  
-  # Ahora, agrupa por la unidad principal ('sequences') para calcular el porcentaje
-  group_by(sequences) %>%
-  
-  # Crea la columna 'Percentage' dividiendo el conteo de la fila
-  # entre el total de conteos para ese grupo 'sequences'.
-  mutate(Percentage = Count / sum(Count)) %>%
-  
-  ungroup()
-
-datos_myco$Percentage<-as.numeric(datos_myco$Percentage)
-datos_myco$Count <- as.integer(datos_myco$Count) # Ensure Count is integer
-
-# H37Rv reference data
-my_myco <- data.frame(
-  lineage = c(rep("L4", 11)),
-  genome = c(rep("H37Rv", 11)),
-    Functional_Category = c("PE/PPE", "cell wall and cell processes", "conserved hypotheticals", "information pathways", "insertion seqs and phages", "intermediary metabolism and respiration", "lipid metabolism", "regulatory proteins", "unknown", "virulence, detoxification, adaptation", "NA"),
-  count = c(162, 766, 1042, 240, 149, 936, 271, 198, 15, 239, 13),
-  percentage = c(4.018853882411312, 19.00272885140164, 25.8496650955098, 5.953857603572314, 3.696353262217812, 23.220044653932025, 6.722897544033739, 4.9119325229471595, 0.37211610022326963, 5.92904986355743, 0.3225006201935004)
-)
-merged_data <- merge(my_myco, datos_myco, by = "Functional_Category", all = TRUE)
-merged_data$Ratio_Percentage <- (merged_data$Count / merged_data$count) * 100
-
-# Main data for CDS plots - This file needs special ID processing
-data_raw <- read.table(input_sum, header = FALSE, sep = "\t", col.names=c("V1", "V2", "V3", "ID"), fill=TRUE, stringsAsFactors=FALSE, quote="")
-processed_ids_data <- lapply(data_raw$ID, process_id)
-data <- tibble(
-  V1 = data_raw$V1,
-  V2 = data_raw$V2,
-  V3 = data_raw$V3,
-  V4 = sapply(processed_ids_data, `[`, 1), # This is the Lineage
-  genome = sapply(processed_ids_data, `[`, 2) # This is the Genome
-)
-data <- data %>% filter(!is.na(V4) & V4 != "")
-order_lineages <- rev(c("A4", "A3", "A2", "A1","L10","L9","L6","L5","L4","L3","L2","L7","L1","L8", "NA"))
-data$V4 <- factor(data$V4, levels = order_lineages)
-
-# ------------- HELPER FUNCTIONS -------------
-
-# Function to generate statistics tables
 generate_statistics_table <- function(data, case_value) {
   data_filtered <- data %>% filter(V1 == case_value) %>% rename(Lineages = V4)
   statistics <- data_filtered %>%
     group_by(Lineages) %>%
-    summarise(
-      Count = n(), Mean = mean(V2, na.rm = TRUE), SD = sd(V2, na.rm = TRUE),
-      Median = median(V2, na.rm = TRUE), IQR = IQR(V2, na.rm = TRUE),
-      Min = min(V2, na.rm = TRUE), Max = max(V2, na.rm = TRUE)
-    )
-  
-  # Define a base name for the files for this table
-  filename_base <- paste0("stats_", case_value)
-  
-  datatable(
-    statistics, extensions = 'Buttons',
-    options = list(
-      dom = 'Bfrtip',
-      buttons = list(
-        'copy',
-        list(extend = 'csv', filename = filename_base),
-        list(extend = 'excel', filename = filename_base),
-        list(extend = 'pdf', filename = filename_base),
-        'print'
-      ),
-      pageLength = 14,
-      initComplete = JS(
-        "function(settings, json) {",
-        "$(document.head).append('<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" />');",
-        "$(this.api().table().header()).css({'background-color': '#3da68d', 'color': '#fff', 'font-size': '16px', 'font-family': 'Roboto'});",
-        "$(this.api().table().body()).css({'font-size': '14px', 'font-family': 'Roboto'});",
-        "}"
-      )
-    ), class = 'cell-border stripe'
-  )
+    summarise(Count=n(), Mean=mean(V2,na.rm=T), SD=sd(V2,na.rm=T),
+              Median=median(V2,na.rm=T), IQR=IQR(V2,na.rm=T),
+              Min=min(V2,na.rm=T), Max=max(V2,na.rm=T), .groups='drop')
+  make_dt(statistics, paste0("stats_", case_value))
 }
 
-# Generic function to create scatter plots for different categories
 create_scatter_plot <- function(df, category_value, value_col, y_axis_label, plot_title) {
     data_filtered <- df %>% filter(Functional_Category == category_value)
-    
-    # *** MODIFICATION: Combine boxplot with jitter plot ***
     p <- ggplot(data_filtered, aes(x = Lineages, y = .data[[value_col]], color = Lineages)) +
-        geom_boxplot(outlier.shape = NA, fill = NA, alpha = 0.6) + # Add boxplot outlines
-        geom_jitter(alpha = 0.7, width = 0.25) + # Overlay jittered points
+        geom_boxplot(outlier.shape = NA, fill = NA, alpha = 0.6) +
+        geom_jitter(alpha = 0.7, width = 0.25) +
         scale_color_manual(values = colors) +
         labs(x = "", y = y_axis_label, title = plot_title) +
         theme_pubr() +
-        theme(
-            axis.text.x = element_text(angle = 45, hjust = 1),
-            legend.position = "none"
-        )
-    
-    # If the plotted value is "Count", ensure the y-axis has integer breaks
+        theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
     if (value_col == 'Count') {
         p <- p + scale_y_continuous(breaks = function(x) unique(floor(pretty(x))))
     }
-    
-    # Check if there is enough data to perform a statistical test
     if (nrow(data_filtered) > 0 && length(unique(data_filtered$Lineages)) >= 2) {
-        # Perform Dunn's test
         stat.test <- tryCatch({
-            data_filtered %>%
-                dunn_test(as.formula(paste(value_col, "~ Lineages")), p.adjust.method = "BH")
-        }, error = function(e) {
-            # Return NULL if dunn_test fails for any reason
-            return(NULL)
-        })
-        
-        # Add coordinates and p-values only if the test was successful and returned results
-        if (!is.null(stat.test) && nrow(stat.test) > 0 && all(c("group1", "group2") %in% names(stat.test))) {
+            data_filtered %>% dunn_test(as.formula(paste(value_col, "~ Lineages")), p.adjust.method = "BH")
+        }, error = function(e) NULL)
+        if (!is.null(stat.test) && nrow(stat.test) > 0) {
             stat.test <- stat.test %>% add_xy_position(x = "Lineages", step.increase = 0.08)
-            
-            p <- p + stat_pvalue_manual(
-                stat.test, 
-                label = "p.adj.signif", 
-                tip.length = 0.01, 
-                hide.ns = TRUE,
-                size = 3.5
-            )
+            p <- p + stat_pvalue_manual(stat.test, label="p.adj.signif", tip.length=0.01, hide.ns=TRUE, size=3.5)
         }
     }
-    
     return(p)
+}
+
+# ------------- DATA LOADING -------------
+# COG
+datos_cog <- read.table(params$cog_file, sep="\t", dec=".", header=F, fill=T, stringsAsFactors=F, quote="", col.names=paste0("V",1:5))
+datos_cog$V2 <- sapply(strsplit(datos_cog$V2, "_"), `[`, 1)
+colnames(datos_cog) <- c("Lineages","genome","Functional_Category","Count","Percentage")
+datos_cog$Lineages[is.na(datos_cog$Lineages) | datos_cog$Lineages == ""] <- "NA"
+datos_cog <- datos_cog %>% filter(!is.na(Lineages) & Lineages != "")
+datos_cog$Functional_Category[datos_cog$Functional_Category == "" | datos_cog$Functional_Category == "NaN"] <- "NA"
+datos_cog$sequences <- paste(datos_cog$Lineages, datos_cog$genome, sep="_")
+# Use the real Count values from count_annot.py, not row-counts
+datos_cog$Count <- as.integer(datos_cog$Count)
+datos_cog <- datos_cog %>%
+  group_by(sequences) %>%
+  mutate(Percentage = Count / sum(Count)) %>%
+  ungroup()
+datos_cog$Percentage <- as.numeric(datos_cog$Percentage)
+datos_cog1 <- datos_cog
+lvl_cogs <- c("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","S","T","U","V","NA")
+datos_cog1$Functional_Category <- factor(datos_cog1$Functional_Category, levels = lvl_cogs)
+
+# Dynamic color assignment for non-MTBC lineages
+all_lineages <- unique(c(as.character(datos_cog$Lineages)))
+unknown_lineages <- setdiff(all_lineages, names(colors))
+if (length(unknown_lineages) > 0) {
+  extra_cols <- scales::hue_pal()(length(unknown_lineages))
+  names(extra_cols) <- unknown_lineages
+  colors <- c(colors, extra_cols)
+}
+
+# Mycobrowser — may be empty for non-MTBC organisms
+has_mycobrowser_data <- file.exists(params$myco_file) && file.info(params$myco_file)$size > 10
+if (has_mycobrowser_data) {
+  myco_content <- tryCatch(readLines(params$myco_file, n=2), error=function(e) "")
+  has_mycobrowser_data <- length(myco_content) >= 1 && nchar(myco_content[1]) > 5
+}
+
+datos_myco <- if (has_mycobrowser_data) read.table(params$myco_file, sep="\t", dec=".", header=F, fill=T, stringsAsFactors=F, quote="", col.names=paste0("V",1:5)) else data.frame()
+if (!has_mycobrowser_data) datos_myco <- data.frame(Lineages=character(), genome=character(), Functional_Category=character(), Count=integer(), Percentage=numeric(), sequences=character())
+
+# Skip the rest of Mycobrowser processing if empty
+if (has_mycobrowser_data && nrow(datos_myco) > 0) {
+  # original Mycobrowser processing
+  datos_myco_orig <- datos_myco  # save raw
+} else {
+  datos_myco_orig <- data.frame()
+}
+
+if (has_mycobrowser_data && nrow(datos_myco) > 0) {
+datos_myco$V2 <- sapply(strsplit(as.character(datos_myco$V2), "_"), `[`, 1)
+colnames(datos_myco) <- c("Lineages","genome","Functional_Category","Count","Percentage")
+datos_myco$Lineages[is.na(datos_myco$Lineages) | datos_myco$Lineages == ""] <- "NA"
+datos_myco <- datos_myco %>% filter(!is.na(Lineages) & Lineages != "")
+datos_myco$Functional_Category[datos_myco$Functional_Category == "" | datos_myco$Functional_Category == "Unassigned"] <- "NA"
+datos_myco$sequences <- paste(datos_myco$Lineages, datos_myco$genome, sep="_")
+# Use the real Count values from count_annot.py, not row-counts
+datos_myco$Count <- as.integer(datos_myco$Count)
+datos_myco <- datos_myco %>%
+  group_by(sequences) %>%
+  mutate(Percentage = Count / sum(Count)) %>%
+  ungroup()
+datos_myco$Percentage <- as.numeric(datos_myco$Percentage)
+
+# Reference comparison: compute per-category expected counts from the
+# first sample (or a known reference if available). This is organism-agnostic:
+# for MTBC the reference distribution happens to be H37Rv; for other
+# organisms it uses the observed median counts per category.
+if (nrow(datos_myco) > 0) {
+  ref_summary <- datos_myco %>%
+    group_by(Functional_Category) %>%
+    summarise(count = round(median(Count, na.rm = TRUE)),
+              percentage = round(median(Percentage, na.rm = TRUE), 2),
+              .groups = 'drop')
+  merged_data <- merge(ref_summary, datos_myco, by = "Functional_Category", all = TRUE)
+  merged_data$Ratio_Percentage <- ifelse(merged_data$count > 0,
+    (merged_data$Count / merged_data$count) * 100, NA)
+} else {
+  merged_data <- data.frame()
+}
+} else {
+  # No Mycobrowser data — create empty placeholders
+  merged_data <- data.frame()
+}
+
+# Case summary data
+data_raw <- read.table(params$summary_file, header=F, sep="\t", col.names=c("V1","V2","V3","ID"), fill=T, stringsAsFactors=F, quote="")
+# Use V3 (Sequence = full sample name like "L8_G26689") for ID parsing,
+# NOT ID (Lineage = just "L8"). The Lineage column from write_summary
+# has no genome info, causing genome=NA and table collapse.
+processed_ids <- lapply(data_raw$V3, process_id)
+data <- tibble(
+  V1=data_raw$V1, V2=data_raw$V2, V3=data_raw$V3,
+  V4=sapply(processed_ids, `[`, 1), genome=sapply(processed_ids, `[`, 2))
+data <- data %>% filter(!is.na(V4) & V4 != "")
+# Dynamic lineage ordering: use MTBC order for known lineages, alphabetical for others
+mtbc_order <- rev(c("A4","A3","A2","A1","L10","L9","L6","L5","L4","L3","L2","L7","L1","L8","NA"))
+observed_lineages <- unique(as.character(data$V4))
+known <- intersect(mtbc_order, observed_lineages)
+unknown_lin <- sort(setdiff(observed_lineages, mtbc_order))
+order_lineages <- c(unknown_lin, known)  # unknown first, then MTBC order
+data$V4 <- factor(data$V4, levels = order_lineages)
+
+# Extend color palette for any lineages not in the MTBC set
+extend_palette(observed_lineages)
+data <- data %>% mutate(V4 = factor(V4)) %>% droplevels()
+
+# New data sources
+# Rv missing (detailed per-gene)
+has_rvmissing <- file.exists(params$rvmissing_file) && file.info(params$rvmissing_file)$size > 0
+if (has_rvmissing) {
+  rvmissing_raw <- tryCatch(
+    read.table(params$rvmissing_file, sep="\t", header=F, fill=T, stringsAsFactors=F, quote=""),
+    error = function(e) NULL)
+  if (!is.null(rvmissing_raw) && ncol(rvmissing_raw) >= 5) {
+    # Columns: Prot_Id, Prot_len, Strand, Start, End, Match_Nt, Num_nt, Sample
+    # The last column is the sample name appended by REPORT_INPUTS.
+    # After Overlaps column removal (fix), rvmissing has 7 data cols + 1 sample = 8.
+    # Legacy files with Overlaps column would have 9 columns.
+    n_cols <- ncol(rvmissing_raw)
+    base_names <- c("Prot_Id","Prot_len","Strand","Start","End")
+    if (n_cols == 8) {
+      colnames(rvmissing_raw) <- c(base_names, "Match_Nt", "Num_nt", "Sample")
+    } else if (n_cols >= 6) {
+      colnames(rvmissing_raw)[1:5] <- base_names
+      colnames(rvmissing_raw)[n_cols] <- "Sample"
+    } else {
+      colnames(rvmissing_raw)[1:5] <- base_names
+    }
+    rvmissing_raw$Rv_gene <- sub("_\\d+-\\d+$", "", rvmissing_raw$Prot_Id)
+    # Extract lineage from sample name
+    if ("Sample" %in% colnames(rvmissing_raw)) {
+      rvmissing_raw$Lineage <- sub("_.*", "", rvmissing_raw$Sample)
+    }
+  } else { has_rvmissing <- FALSE }
+}
+
+# Master table
+has_mastertable <- file.exists(params$mastertable_file) && file.info(params$mastertable_file)$size > 0
+if (has_mastertable) {
+  mastertable <- tryCatch(
+    read.table(params$mastertable_file, sep="\t", header=T, fill=T, stringsAsFactors=F, quote="", comment.char=""),
+    error = function(e) NULL)
+  if (is.null(mastertable)) has_mastertable <- FALSE
+  # Use explicit 'lineage' column if present (added by generate_master_table);
+  # otherwise fall back to extracting from the first column (legacy compat).
+  if (has_mastertable && !"lineage" %in% colnames(mastertable)) {
+    mastertable$lineage <- sub("_.*", "", mastertable[[colnames(mastertable)[1]]])
+  }
+}
+
+# Pangene Rtab
+has_pangene <- file.exists(params$pangene_file) && file.info(params$pangene_file)$size > 0
+if (has_pangene) {
+  pangene_raw <- tryCatch(
+    read.table(params$pangene_file, sep="\t", header=T, fill=T, stringsAsFactors=F, quote=""),
+    error = function(e) NULL)
+  if (is.null(pangene_raw) || ncol(pangene_raw) < 2) has_pangene <- FALSE
+}
+
+# Duplications
+has_dups <- file.exists(params$dup_file) && file.info(params$dup_file)$size > 0
+if (has_dups) {
+  dup_data <- tryCatch(
+    read.table(params$dup_file, sep="\t", header=T, fill=T, stringsAsFactors=F, quote=""),
+    error = function(e) NULL)
+  if (is.null(dup_data)) has_dups <- FALSE
 }
 ```
 
-# Pathotypr
-This section provides a general overview of the dataset composition, showing the distribution of sequences for the identified *Mycobacterium tuberculosis* lineages.
+# Overview {.tabset}
+
+## Dataset Composition
+
+This section provides a general overview of the dataset, showing the distribution of sequences across lineages/groups.
 
 ```{r lineage_summary, echo=FALSE, fig.align='center', fig.width=14, message=FALSE, warning=FALSE}
-# 1. Data Preparation using the 'data' dataframe from input_summary.txt
 lineage_summary <- data %>%
-  rename(Lineages = V4) %>% # Use V4 as the Lineage column
+  rename(Lineages = V4) %>%
   mutate(Lineages = ifelse(is.na(Lineages) | Lineages == "", "NA", as.character(Lineages))) %>%
   group_by(Lineages) %>%
-  summarise(Count = n_distinct(V3), .groups = 'drop') %>% # Count the number of unique V3 entries (CDS) per lineage
+  summarise(Count = n_distinct(V3), .groups = 'drop') %>%
   arrange(desc(Count)) %>%
   mutate(
     Frequency = Count / sum(Count),
@@ -290,527 +445,761 @@ lineage_summary <- data %>%
     label = paste0(Lineages, "\n", round(Frequency*100, 1), "%")
   )
 
-# 2. Plotting
-# Plot for Counts
 plot_counts <- ggplot(lineage_summary, aes(x = reorder(Lineages, -Count), y = Count, fill = Lineages)) +
   geom_bar(stat = "identity", show.legend = FALSE) +
   geom_text(aes(label = Count), vjust = -0.3, size = 3.5) +
   scale_fill_manual(values = colors) +
-  labs(title = "Number of Unique CDS per Lineage", x = "Lineage", y = "Number of Unique CDS") +
+  labs(title = "Number of Unique CDS per Lineage", x = "Lineage", y = "Count") +
   theme_pubr() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   expand_limits(y = max(lineage_summary$Count) * 1.1)
 
-# Plot for Frequencies (Donut Chart with repelled labels and connecting lines)
-plot_donut <- ggplot(lineage_summary, aes(ymax = ymax, ymin = ymin, xmax = 4, xmin = 3, fill = Lineages)) +
+plot_donut <- ggplot(lineage_summary, aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Lineages)) +
   geom_rect() +
-  # Use repel with an anchor point on the donut's outer edge (x=4)
-  geom_label_repel(
-    aes(x = 4, y = labelPosition, label = label), 
-    size = 3,
-    show.legend = FALSE,
-    segment.size = 0.5,
-    segment.color = "grey50",
-    nudge_x = 1 # Nudge label away from the anchor point
-  ) +
-  coord_polar(theta = "y") +
-  xlim(c(2, 5.5)) + 
-  theme_void() +
-  scale_fill_manual(values = colors) +
-  labs(title = "Frequency of Unique CDS per Lineage (%)") +
-  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+  geom_label_repel(aes(x=4, y=labelPosition, label=label), size=3, show.legend=F,
+                   segment.size=0.5, segment.color="grey50", nudge_x=1) +
+  coord_polar(theta="y") + xlim(c(2, 5.5)) + theme_void() +
+  scale_fill_manual(values=colors) +
+  labs(title="Lineage Distribution (%)") +
+  theme(legend.position="none", plot.title=element_text(hjust=0.5))
 
+ggarrange(plot_counts, plot_donut, ncol=2, widths=c(0.6, 0.4))
+```
 
-# Arrange plots side-by-side
-ggarrange(plot_counts, plot_donut, ncol = 2, nrow = 1, widths = c(0.6, 0.4))
+## Sample Quality Overview
+
+Per-sample summary of total CDS, correction rates, and missing reference genes.
+
+```{r sample_quality, echo=FALSE, message=FALSE, warning=FALSE}
+quality_data <- data %>%
+  select(V1, V2, V4, genome) %>%
+  pivot_wider(names_from = V1, values_from = V2, values_fn = first) %>%
+  mutate(
+    Lineage = as.character(V4),
+    Genome = genome,
+    Total_CDS = as.integer(total_cds),
+    Case2_perfect = as.integer(case2),
+    Case3_mismatch = as.integer(case3),
+    Case4_corrected = as.integer(case4),
+    Case1_kept = as.integer(case1_kept),
+    Case1_removed = as.integer(case1_removed),
+    Rv_missing = as.integer(rv_missing),
+    Pct_perfect = round(100 * Case2_perfect / Total_CDS, 1),
+    Pct_corrected = round(100 * (Case3_mismatch + Case4_corrected) / Total_CDS, 1)
+  ) %>%
+  select(Lineage, Genome, Total_CDS, Case2_perfect, Case3_mismatch, Case4_corrected,
+         Case1_kept, Case1_removed, Rv_missing, Pct_perfect, Pct_corrected) %>%
+  arrange(Lineage, Genome)
+
+make_dt(quality_data, "sample_quality_overview")
+```
+
+## Annotation Quality Metrics {.tabset}
+
+Per-sample assembly and annotation quality: genome size, GC%, coding density, hypothetical %, and functional annotation rate.
+
+### Overview Table
+```{r qc_table, echo=FALSE, message=FALSE, warning=FALSE}
+has_qc <- file.exists(params$qc_file) && file.info(params$qc_file)$size > 10
+if (has_qc) {
+  qc_data <- tryCatch(read.table(params$qc_file, sep="\t", header=TRUE, fill=TRUE, stringsAsFactors=FALSE, quote=""), error = function(e) NULL)
+  if (!is.null(qc_data) && nrow(qc_data) > 0) {
+    make_dt(qc_data, "annotation_qc")
+  } else { cat("No QC data available.\n") }
+} else { cat("QC data not available.\n") }
+```
+
+### Coding Density
+```{r qc_coding_density, echo=FALSE, fig.align='center', fig.width=10, fig.height=5, message=FALSE, warning=FALSE}
+if (has_qc && !is.null(qc_data) && nrow(qc_data) > 0 && "coding_density_pct" %in% colnames(qc_data)) {
+  p <- ggplot(qc_data, aes(x=reorder(sample, coding_density_pct), y=coding_density_pct)) +
+    geom_col(fill="#2196F3", alpha=0.7) +
+    geom_hline(yintercept=mean(qc_data$coding_density_pct, na.rm=TRUE), linetype="dashed", color="red") +
+    labs(x="Sample", y="Coding Density (%)") + theme_pubr() +
+    theme(axis.text.x=element_text(angle=90, hjust=1, size=6))
+  if (nrow(qc_data) > 30) p <- p + theme(axis.text.x=element_blank())
+  print(p)
+} else { cat("Not available.\n") }
+```
+
+### Hypothetical %
+```{r qc_hypothetical, echo=FALSE, fig.align='center', fig.width=10, fig.height=5, message=FALSE, warning=FALSE}
+if (has_qc && !is.null(qc_data) && nrow(qc_data) > 0 && "hypothetical_pct" %in% colnames(qc_data)) {
+  p <- ggplot(qc_data, aes(x=reorder(sample, -hypothetical_pct), y=hypothetical_pct)) +
+    geom_col(fill="#FF9800", alpha=0.7) +
+    geom_hline(yintercept=mean(qc_data$hypothetical_pct, na.rm=TRUE), linetype="dashed", color="red") +
+    labs(x="Sample", y="Hypothetical Proteins (%)") + theme_pubr() +
+    theme(axis.text.x=element_text(angle=90, hjust=1, size=6))
+  if (nrow(qc_data) > 30) p <- p + theme(axis.text.x=element_blank())
+  print(p)
+} else { cat("Not available.\n") }
+```
+
+### Genome Size Distribution
+```{r qc_genome_size, echo=FALSE, fig.align='center', fig.width=10, fig.height=5, message=FALSE, warning=FALSE}
+if (has_qc && !is.null(qc_data) && nrow(qc_data) > 0 && "genome_size" %in% colnames(qc_data)) {
+  qc_data$genome_mb <- qc_data$genome_size / 1e6
+  p <- ggplot(qc_data, aes(x=genome_mb)) +
+    geom_histogram(fill="#4CAF50", alpha=0.7, bins=30) +
+    geom_vline(xintercept=mean(qc_data$genome_mb, na.rm=TRUE), linetype="dashed", color="red") +
+    labs(x="Genome Size (Mb)", y="Count") + theme_pubr()
+  print(p)
+} else { cat("Not available.\n") }
 ```
 
 # AMAP Annotation Results
-This section presents the main results from the AMAP annotation pipeline. It includes detailed statistics on CDS counts, correction cases, and functional annotations based on COG and Mycobrowser databases.
 
-## Lineage CDS Distribution
-This plot shows the distribution of the total number of CDS for each lineage.
+## CDS Distribution per Lineage
 
 ```{r lineage_cds_distribution, echo=FALSE, fig.align='center', fig.width=12, message=FALSE, warning=FALSE}
-# Create the boxplot without statistical comparisons
 p_cds_dist <- ggplot(data %>% filter(V1 == "total_cds"), aes(x = V4, y = V2, color = V4)) +
   geom_boxplot(outlier.shape = NA, fill = NA) +
   geom_jitter(alpha = 0.4, width = 0.2) +
   scale_color_manual(values = colors) +
-  labs(
-    title = "Distribution of CDS per Lineage",
-    x = "Lineage",
-    y = "Number of CDS"
-  ) +
-  theme_pubr() +
-  theme(
-    legend.position = "none",
-    axis.text.x = element_text(angle = 45, hjust = 1)
-  )
-
+  labs(title = "Distribution of CDS per Lineage", x = "Lineage", y = "Number of CDS") +
+  theme_pubr() + theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust = 1))
 print(p_cds_dist)
 ```
 
-## CDS no H37Rv
-This plot shows CDS without an Rv equivalent for each lineage.
+## CDS not in Reference
 
-```{r cds_NoH37Rvdistribution, echo=FALSE, fig.align='center', fig.width=12, message=FALSE, warning=FALSE}
-# Create the boxplot without statistical comparisons
+```{r cds_NoH37Rv, echo=FALSE, fig.align='center', fig.width=12, message=FALSE, warning=FALSE}
+datos_noH <- read.table(params$empty_file, sep="\t", dec=".", header=T, fill=T, stringsAsFactors=F, quote="", col.names=paste0("V",1:2))
+resultado <- datos_noH %>% mutate(genome=sapply(strsplit(V1,"_"),`[`,1)) %>% count(genome, V2)
 
-datos_noH <- read.table(empty, sep = "\t", dec=".", header = T, fill = TRUE, stringsAsFactors = FALSE, quote = "", col.names = paste0("V", 1:2))
-resultado <- datos_noH %>%
-  mutate(genome = sapply(strsplit(V1, "_"), `[`, 1)) %>%
-  count(genome, V2)
-datos_plot <- resultado 
-colors <- c("L5"="#995200","L6"="#1eb040","A1"="#d1ae00","A4"="#ff9cdb","A2"="#8ef5c8", "A3"="#73c2ff", "L4"="#ff0000","L1"="#ff3091", "L2"="#001aff", "L3" ="#8a0bd2", "L7"="#fbff00", "L8"="#ff9d00","L9"="#37ff30", "L10"="#8fbda1", "NA"="#808080")
-
-p_false_cds <- ggplot(datos_plot,
-                      aes(x = V2, y = n, colour = V2)) +
-  geom_boxplot(outlier.shape = NA, fill = NA) +         # caja sin relleno
-  geom_jitter(alpha = 0.4, width = 0.2) +
-  scale_color_manual(values = colors) +               # misma paleta
-  labs(
-    title = "",
-    x = "Lineage",
-    y = "CDS not in H37Rv"
-  ) +
-  theme_pubr() +
-  theme(
-    legend.position = "none",
-    axis.text.x = element_text(angle = 45, hjust = 1)
-  )
-
+p_false_cds <- ggplot(resultado, aes(x=V2, y=n, colour=V2)) +
+  geom_boxplot(outlier.shape=NA, fill=NA) + geom_jitter(alpha=0.4, width=0.2) +
+  scale_color_manual(values=colors) +
+  labs(x="Lineage", y="CDS not in Reference") + theme_pubr() +
+  theme(legend.position="none", axis.text.x=element_text(angle=45, hjust=1))
 print(p_false_cds)
 ```
 
-
-
 ## CDS Correction Summary
-This plot shows the proportion of corrected vs. uncorrected CDS for each lineage.
 
 ```{r cds_correction_summary, echo=FALSE, fig.align='center', fig.width=12, message=FALSE, warning=FALSE}
-# Data wrangling for the stacked histogram
 correction_data <- data %>%
-  filter(V1 %in% c("case1_kept", "case4", "case2", "case3")) %>%
+  filter(V1 %in% c("case4","case2","case3","rv_missing")) %>%
   mutate(CorrectionStatus = case_when(
-    V1 %in% c("case1_kept", "case4","rv_missing") ~ "Corrected",
-    V1 %in% c("case2", "case3")     ~ "Uncorrected"
-  )) %>%
+    V1 %in% c("case4","rv_missing") ~ "Corrected by AMAP",
+    V1 %in% c("case2","case3") ~ "Matched Reference",
+    TRUE ~ "Other")) %>%
   group_by(V4, CorrectionStatus) %>%
-  # Correctly summarize by SUMMING the CDS counts (V2)
-  summarise(TotalCDS = sum(V2), .groups = 'drop') %>%
-  # Calculate percentage for labels
+  summarise(TotalCDS=sum(V2), .groups='drop') %>%
   group_by(V4) %>%
-  mutate(
-    Percentage = TotalCDS / sum(TotalCDS),
-    Label = if_else(Percentage > 0.05, scales::percent(Percentage, accuracy = 0.1), "")
-  ) %>%
+  mutate(Percentage=TotalCDS/sum(TotalCDS),
+         Label=if_else(Percentage>0.05, scales::percent(Percentage, accuracy=0.1), "")) %>%
   ungroup()
 
-# Plotting the stacked histogram
-p_correction_hist <- ggplot(correction_data, aes(x = V4, y = TotalCDS, fill = CorrectionStatus)) +
-  geom_bar(position = "fill", stat = "identity") +
-  # Add percentage labels inside the bars
-  geom_text(aes(label = Label), position = position_fill(vjust = 0.5), size = 3.5) +
-  scale_y_continuous(labels = scales::percent) +
-  labs(
-    title = "Proportion of Corrected vs. Uncorrected CDS per Lineage",
-    x = "Lineage",
-    y = "Percentage",
-    fill = "Correction Status"
-  ) +
-  theme_pubr() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-print(p_correction_hist)
+ggplot(correction_data, aes(x=V4, y=TotalCDS, fill=CorrectionStatus)) +
+  geom_bar(position="fill", stat="identity") +
+  geom_text(aes(label=Label), position=position_fill(vjust=0.5), size=3.5) +
+  scale_y_continuous(labels=scales::percent) +
+  labs(title="Corrected vs. Uncorrected CDS per Lineage", x="Lineage", y="Percentage", fill="Status") +
+  theme_pubr() + theme(axis.text.x=element_text(angle=45, hjust=1))
 ```
 
-## Functional Annotations of AMAP CDS
-### COG Categories by EggNog Mapper {.tabset}
-This section provides a functional characterization of the annotated CDS based on the Clusters of Orthologous Groups (COG) database, assigned using EggNog Mapper.
+## Missing Reference Genes (Rv) {.tabset}
 
-#### Plot ALL
+Reference genes absent from the Bakta annotation and recovered by AMAP.
+
+### Heatmap
+
+Which Rv genes are missing in which lineages? Darker = missing in more genomes of that lineage.
+
+```{r rvmissing_heatmap, echo=FALSE, fig.align='center', fig.height=12, fig.width=14, message=FALSE, warning=FALSE}
+if (has_rvmissing) {
+  # Count how many genomes are missing each Rv gene, broken down by lineage
+  rv_counts <- rvmissing_raw %>%
+    group_by(Rv_gene) %>%
+    summarise(n_missing = n(), .groups = 'drop') %>%
+    arrange(desc(n_missing))
+  
+  # Show top 50 most frequently missing genes
+  top_missing <- head(rv_counts, 50)
+  
+  # If we have lineage info, show stacked bars by lineage
+  if ("Lineage" %in% colnames(rvmissing_raw)) {
+    rv_by_lineage <- rvmissing_raw %>%
+      filter(Rv_gene %in% top_missing$Rv_gene) %>%
+      count(Rv_gene, Lineage)
+    
+    p <- ggplot(rv_by_lineage, aes(x = reorder(Rv_gene, -n, FUN=sum), y = n, fill = Lineage)) +
+      geom_col() +
+      scale_fill_manual(values = colors) +
+      coord_flip() +
+      labs(title = "Top 50 Most Frequently Missing Reference Genes",
+           x = "Reference Gene", y = "Number of Genomes Missing This Gene") +
+      theme_pubr()
+  } else {
+    p <- ggplot(top_missing, aes(x = reorder(Rv_gene, n_missing), y = n_missing)) +
+      geom_col(fill = "#3da68d") +
+      coord_flip() +
+      labs(title = "Top 50 Most Frequently Missing Reference Genes",
+           x = "Reference Gene", y = "Number of Genomes Missing This Gene") +
+      theme_pubr()
+  }
+  print(p)
+} else {
+  cat("No Rv missing data available.\n")
+}
+```
+
+### Full Table
+
+```{r rvmissing_table, echo=FALSE, message=FALSE, warning=FALSE}
+if (has_rvmissing) {
+  rv_summary <- rvmissing_raw %>%
+    group_by(Rv_gene) %>%
+    summarise(
+      Times_Missing = n(),
+      Avg_Length_bp = round(mean(as.numeric(End) - as.numeric(Start), na.rm=T)),
+      Lineages_Affected = if ("Lineage" %in% colnames(rvmissing_raw))
+        paste(sort(unique(Lineage)), collapse=", ") else "N/A",
+      .groups = 'drop') %>%
+    arrange(desc(Times_Missing))
+  make_dt(rv_summary, "rv_missing_genes")
+} else {
+  cat("No Rv missing data available.\n")
+}
+```
+
+# Functional Annotation {.tabset}
+
+## COG Categories (EggNOG) {.tabset}
+
+### Overview
 ```{r allCOGs, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
-p <- ggplot(datos_cog1, aes(x = Functional_Category, y = Percentage, color = Lineages)) +
-  geom_jitter(alpha = 0.2) +
-  scale_color_manual(values = colors) +
-  labs(x = "Functional Category", y = "Percentage") +
-  theme_pubr() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "top")
-ggplotly(p) %>% layout(autosize = F, width = 800, height = 400)
+p <- ggplot(datos_cog1, aes(x=Functional_Category, y=Percentage, color=Lineages)) +
+  geom_jitter(alpha=0.2) + scale_color_manual(values=colors) +
+  labs(x="Functional Category", y="Percentage") + theme_pubr() +
+  theme(axis.text.x=element_text(angle=45, hjust=1), legend.position="top")
+interactive_plot(ggplotly(p) %>% layout(autosize=F, width=800, height=400))
 ```
 
-#### Statistics
-```{r allstatsCOGs, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
-statistics <- datos_cog %>%
+### Statistics
+```{r statsCOGs, echo=FALSE, message=FALSE, warning=FALSE}
+stats_cog <- datos_cog %>%
   group_by(Lineages, Functional_Category) %>%
-  summarise(
-    Count = n(), Mean_Percentage = mean(Percentage, na.rm = TRUE),
-    SD_Percentage = sd(Percentage, na.rm = TRUE), Median_Percentage = median(Percentage, na.rm = TRUE),
-    IQR_Percentage = IQR(Percentage, na.rm = TRUE), .groups = 'drop'
-  )
-datatable(
-  statistics, rownames = FALSE, extensions = 'Buttons',
-  options = list(
-    dom = 'Bfrtip',
-    buttons = list(
-      'copy',
-      list(extend = 'csv', filename = 'cog_statistics'),
-      list(extend = 'excel', filename = 'cog_statistics'),
-      list(extend = 'pdf', filename = 'cog_statistics'),
-      'print'
-    ),
-    pageLength = 10,
-    initComplete = JS(
-      "function(settings, json) {",
-      "$(document.head).append('<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" />');",
-      "$(this.api().table().header()).css({'background-color': '#3da68d', 'color': '#fff', 'font-size': '16px', 'font-family': 'Roboto'});",
-      "$(this.api().table().body()).css({'font-size': '14px', 'font-family': 'Roboto'});",
-      "}"
-    )
-  ), class = 'cell-border stripe'
-)
+  summarise(Count=n(), Mean_Pct=round(mean(Percentage,na.rm=T),4),
+            SD_Pct=round(sd(Percentage,na.rm=T),4),
+            Median_Pct=round(median(Percentage,na.rm=T),4), .groups='drop')
+make_dt(stats_cog, "cog_statistics")
 ```
 
-#### Scatterplot per COG (% Percentage) {.tabset}
-```{r scatter_cogs, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+### Per COG (% Percentage) {.tabset}
+```{r scatter_cogs_pct, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
 for (cat_code in names(cog_names)) {
-  cat(paste("#####", cat_code, "\n\n"))
-  plot_output <- create_scatter_plot(
-    df = datos_cog1, 
-    category_value = cat_code, 
-    value_col = 'Percentage',
-    y_axis_label = 'Percentage', 
-    plot_title = cog_names[cat_code]
-  )
-  print(plot_output)
+  cat(paste("####", cat_code, "\n\n"))
+  print(create_scatter_plot(datos_cog1, cat_code, 'Percentage', 'Percentage', cog_names[cat_code]))
   cat("\n\n")
 }
 ```
 
-#### Scatterplot per COG (Nº CDS) {.tabset}
-```{r scatter_cogs_cds_count, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+### Per COG (Nº CDS) {.tabset}
+```{r scatter_cogs_count, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
 for (cat_code in names(cog_names)) {
-  cat(paste("#####", cat_code, "\n\n"))
-  plot_output <- create_scatter_plot(
-    df = datos_cog1, 
-    category_value = cat_code, 
-    value_col = 'Count',
-    y_axis_label = 'Number of CDS',
-    plot_title = cog_names[cat_code]
-  )
-  print(plot_output)
+  cat(paste("####", cat_code, "\n\n"))
+  print(create_scatter_plot(datos_cog1, cat_code, 'Count', 'Number of CDS', cog_names[cat_code]))
   cat("\n\n")
 }
 ```
 
-### Functional Categories by Mycobrowser {.tabset}
-This section provides a functional characterization of the annotated CDS based on the Mycobrowser database categories.
+## Mycobrowser Categories {.tabset}
 
-#### All Categories
-```{r myco_all_cats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
-p <- ggplot(datos_myco, aes(x = Functional_Category, y = Percentage, color = Lineages)) +
-  geom_jitter(alpha = 0.2) +
-  scale_color_manual(values = colors) +
-  labs(x = "", y = "Percentage") +
-  theme_pubr() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1,size = 8), legend.position = "top")
-ggplotly(p) %>% layout(autosize = F, width = 800, height = 450)
-```
+*Mycobrowser functional categories are specific to the M. tuberculosis complex. This section is only shown when Mycobrowser data is available.*
 
-#### Split categories (% Percentage) {.tabset}
-```{r myco_split_cats, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
-myco_categories <- unique(na.omit(datos_myco$Functional_Category))
-myco_categories <- myco_categories[myco_categories != "NA"]
-
-for (cat_name in myco_categories) {
-  cat(paste("#####", cat_name, "\n\n"))
-  plot_output <- create_scatter_plot(
-    df = datos_myco, category_value = cat_name, value_col = 'Percentage',
-    y_axis_label = 'Percentage', plot_title = cat_name
-  )
-  print(plot_output)
-  cat("\n\n")
+### Overview
+```{r myco_all, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+if (!has_mycobrowser_data) { cat("Mycobrowser data not available for this dataset.\n") } else {
+p <- ggplot(datos_myco, aes(x=Functional_Category, y=Percentage, color=Lineages)) +
+  geom_jitter(alpha=0.2) + scale_color_manual(values=colors) +
+  labs(x="", y="Percentage") + theme_pubr() +
+  theme(axis.text.x=element_text(angle=45, hjust=1, size=8), legend.position="top")
+interactive_plot(ggplotly(p) %>% layout(autosize=F, width=800, height=450))
 }
 ```
 
-#### Split categories (Nº CDS) {.tabset}
-```{r myco_split_cats_cds_count, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
-myco_categories <- unique(na.omit(datos_myco$Functional_Category))
-myco_categories <- myco_categories[myco_categories != "NA"]
-
-for (cat_name in myco_categories) {
-  cat(paste("#####", cat_name, "\n\n"))
-  plot_output <- create_scatter_plot(
-    df = datos_myco, 
-    category_value = cat_name, 
-    value_col = 'Count',
-    y_axis_label = 'Number of CDS',
-    plot_title = cat_name
-  )
-  print(plot_output)
+### Per Category (%) {.tabset}
+```{r myco_split_pct, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+if (!has_mycobrowser_data) { cat("Not available.\n") } else {
+myco_cats <- setdiff(unique(na.omit(datos_myco$Functional_Category)), "NA")
+for (cat_name in myco_cats) {
+  cat(paste("####", cat_name, "\n\n"))
+  print(create_scatter_plot(datos_myco, cat_name, 'Percentage', 'Percentage', cat_name))
   cat("\n\n")
+}
 }
 ```
 
-#### Statistics
-```{r myco_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
-statistics <- datos_myco %>%
+### Per Category (Nº CDS) {.tabset}
+```{r myco_split_count, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+if (!has_mycobrowser_data) { cat("Not available.\n") } else {
+for (cat_name in myco_cats) {
+  cat(paste("####", cat_name, "\n\n"))
+  print(create_scatter_plot(datos_myco, cat_name, 'Count', 'Number of CDS', cat_name))
+  cat("\n\n")
+}
+}
+```
+
+### Statistics
+```{r myco_stats, echo=FALSE, message=FALSE, warning=FALSE}
+if (has_mycobrowser_data) {
+  stats_myco <- datos_myco %>%
+    group_by(Lineages, Functional_Category) %>%
+    summarise(Count=n(), Mean_Pct=round(mean(Percentage,na.rm=T),4),
+              SD_Pct=round(sd(Percentage,na.rm=T),4), .groups='drop')
+  make_dt(stats_myco, "mycobrowser_statistics")
+} else { cat("Not available.\n") }
+```
+
+## Compared to Reference {.tabset}
+
+*This section compares query genomes against the median distribution across all samples. Deviations indicate genome-specific gains or losses in functional categories.*
+
+### Overview
+```{r ref_comparison_all, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+if (!has_mycobrowser_data || nrow(merged_data) == 0) { cat("Reference comparison requires functional category data.\n") } else {
+p <- ggplot(merged_data, aes(x=Functional_Category, y=Ratio_Percentage, color=Lineages)) +
+  geom_jitter(alpha=0.2) + scale_color_manual(values=colors) +
+  labs(x="", y="Ratio to Median (%)") + theme_pubr() +
+  theme(axis.text.x=element_text(angle=45, hjust=1, size=8), legend.position="top")
+interactive_plot(ggplotly(p) %>% layout(autosize=F, width=800, height=450))
+}
+```
+
+### Per Category {.tabset}
+```{r ref_comparison_split, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+if (!has_mycobrowser_data || nrow(merged_data) == 0) { cat("Not available.\n") } else {
+ref_cats <- setdiff(unique(na.omit(merged_data$Functional_Category)), "NA")
+for (cat_name in ref_cats) {
+  cat(paste("####", cat_name, "\n\n"))
+  print(create_scatter_plot(merged_data, cat_name, 'Ratio_Percentage', 'Ratio to Median (%)', cat_name))
+  cat("\n\n")
+}
+}
+```
+
+### Statistics
+```{r ref_comparison_stats, echo=FALSE, message=FALSE, warning=FALSE}
+if (!has_mycobrowser_data || nrow(merged_data) == 0) { cat("Not available.\n") } else {
+stats_ref <- merged_data %>%
   group_by(Lineages, Functional_Category) %>%
-  summarise(
-    Count = n(), Mean_Percentage = mean(Percentage, na.rm = TRUE),
-    SD_Percentage = sd(Percentage, na.rm = TRUE), Median_Percentage = median(Percentage, na.rm = TRUE),
-    IQR_Percentage = IQR(Percentage, na.rm = TRUE), .groups = 'drop'
-  )
-datatable(
-  statistics, rownames = FALSE, extensions = 'Buttons',
-  options = list(
-    dom = 'Bfrtip',
-    buttons = list(
-      'copy',
-      list(extend = 'csv', filename = 'mycobrowser_statistics'),
-      list(extend = 'excel', filename = 'mycobrowser_statistics'),
-      list(extend = 'pdf', filename = 'mycobrowser_statistics'),
-      'print'
-    ),
-    pageLength = 10,
-    initComplete = JS(
-      "function(settings, json) {",
-      "$(document.head).append('<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" />');",
-      "$(this.api().table().header()).css({'background-color': '#3da68d', 'color': '#fff', 'font-size': '16px', 'font-family': 'Roboto'});",
-      "$(this.api().table().body()).css({'font-size': '14px', 'font-family': 'Roboto'});",
-      "}"
-    )
-  ), class = 'cell-border stripe'
-)
-```
-
-### Compared to reference H37Rv {.tabset}
-This section compares the functional categories of the query genomes against the H37Rv reference strain.
-
-#### All Lineages
-```{r h37rv_all_lineages, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
-p <- ggplot(merged_data, aes(x = Functional_Category, y = Ratio_Percentage, color = Lineages)) +
-  geom_jitter(alpha = 0.2) +
-  scale_color_manual(values = colors) +
-  labs(x = "", y = "Ratio_Percentage") +
-  theme_pubr() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1,size = 8), legend.position = "top")
-ggplotly(p) %>% layout(autosize = F, width = 800, height = 450)
-```
-
-#### Split categories {.tabset}
-```{r h37rv_split_cats, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
-merged_categories <- unique(na.omit(merged_data$Functional_Category))
-merged_categories <- merged_categories[merged_categories != "NA"]
-
-for (cat_name in merged_categories) {
-  cat(paste("#####", cat_name, "\n\n"))
-  plot_output <- create_scatter_plot(
-    df = merged_data, category_value = cat_name, value_col = 'Ratio_Percentage',
-    y_axis_label = 'Ratio Percentage', plot_title = cat_name
-  )
-  print(plot_output)
-  cat("\n\n")
+  summarise(Count=n(), Mean_Ratio=round(mean(Ratio_Percentage,na.rm=T),2),
+            SD_Ratio=round(sd(Ratio_Percentage,na.rm=T),2), .groups='drop')
+make_dt(stats_ref, "reference_comparison")
 }
 ```
 
-#### Statistics
-```{r h37rv_stats, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
-statistics <- merged_data %>%
-  group_by(Lineages, Functional_Category) %>%
-  summarise(
-    Count = n(), Mean_Percentage = mean(Ratio_Percentage, na.rm = TRUE),
-    SD_Percentage = sd(Ratio_Percentage, na.rm = TRUE), Median_Percentage = median(Ratio_Percentage, na.rm = TRUE),
-    IQR_Percentage = IQR(Ratio_Percentage, na.rm = TRUE), .groups = 'drop'
-  )
-datatable(
-  statistics, rownames = FALSE, extensions = 'Buttons',
-  options = list(
-    dom = 'Bfrtip',
-    buttons = list(
-      'copy',
-      list(extend = 'csv', filename = 'h37rv_comparison_statistics'),
-      list(extend = 'excel', filename = 'h37rv_comparison_statistics'),
-      list(extend = 'pdf', filename = 'h37rv_comparison_statistics'),
-      'print'
-    ),
-    pageLength = 10,
-    initComplete = JS(
-      "function(settings, json) {",
-      "$(document.head).append('<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" />');",
-      "$(this.api().table().header()).css({'background-color': '#3da68d', 'color': '#fff', 'font-size': '16px', 'font-family': 'Roboto'});",
-      "$(this.api().table().body()).css({'font-size': '14px', 'font-family': 'Roboto'});",
-      "}"
-    )
-  ), class = 'cell-border stripe'
-)
+## PE/PPE Gene Families {.tabset}
+
+*PE/PPE genes are characteristic of Mycobacteria. This section is only shown when Mycobrowser functional categories are available.*
+
+### Distribution per Lineage
+```{r peppe, echo=FALSE, fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE}
+if (!has_mycobrowser_data) { cat("PE/PPE analysis requires functional category data (Mycobrowser).\n") } else if (has_mastertable && "Functional_Category" %in% colnames(mastertable)) {
+  peppe_count <- mastertable %>%
+    
+    group_by(lineage) %>%
+    summarise(
+      total = n(),
+      peppe = sum(grepl("PE/PPE", Functional_Category, ignore.case=TRUE), na.rm=TRUE),
+      pct = round(100 * peppe / total, 1),
+      .groups = 'drop')
+  
+  p <- ggplot(peppe_count, aes(x=reorder(lineage, -pct), y=pct, fill=lineage)) +
+    geom_col(show.legend=FALSE) +
+    geom_text(aes(label=paste0(peppe, "\n(", pct, "%)")), vjust=-0.2, size=3) +
+    scale_fill_manual(values=colors) +
+    labs(title="PE/PPE Genes per Lineage", x="Lineage", y="% of Total CDS") +
+    theme_pubr() + expand_limits(y=max(peppe_count$pct)*1.15)
+  print(p)
+} else {
+  cat("Master table not available or missing Functional_Category column.\n")
+}
 ```
 
-## AMAP CDS Stats {.tabset}
-This section provides a detailed breakdown of the different CDS-correction cases identified by the AMAP pipeline.  
-Each tab shows the distribution of CDS counts for a specific case across all lineages.
+### Statistics
+```{r peppe_stats, echo=FALSE, message=FALSE, warning=FALSE}
+if (has_mastertable && exists("peppe_count")) {
+  make_dt(peppe_count, "peppe_per_lineage")
+} else {
+  cat("No PE/PPE data available.\n")
+}
+```
 
-The AMAP classification is:
+## KEGG Pathway Analysis {.tabset}
 
-- **Case 1:** Novel CDS not present in the reference H37Rv. 
-  - **Case 1 – keep:** CDS missing from the reference annotation; they may be real or artefacts.  
-  - **Case 1 – remove:** CDS falsely introduced by Bakta and absent from the reference.
-- **Case 2:** Perfect match with the reference.
-- **Case 3:** Same start or end as the reference but containing mismatches.
-- **Case 4:** CDS coordinates corrected by AMAP.
-- **Misssing Rvs:** Genes of H37Rv in the genome not annotated by Bakta and introduced by AMAP.
+Distribution of KEGG pathway annotations across lineages.
 
-### CDS Boxplot
+### Top Pathways
+```{r kegg_top, echo=FALSE, fig.align='center', fig.width=14, fig.height=8, message=FALSE, warning=FALSE}
+if (has_mastertable && "KEGG_Pathway" %in% colnames(mastertable)) {
+  kegg_data <- mastertable %>%
+    filter(!is.na(KEGG_Pathway) & KEGG_Pathway != "" & KEGG_Pathway != "-") %>%
+    
+    separate_rows(KEGG_Pathway, sep=",") %>%
+    mutate(KEGG_Pathway = trimws(KEGG_Pathway))
+  
+  top_kegg <- kegg_data %>%
+    count(KEGG_Pathway, sort=TRUE) %>%
+    head(25)
+  
+  kegg_by_lineage <- kegg_data %>%
+    filter(KEGG_Pathway %in% top_kegg$KEGG_Pathway) %>%
+    count(lineage, KEGG_Pathway)
+  
+  p <- ggplot(kegg_by_lineage, aes(x=reorder(KEGG_Pathway, n), y=n, fill=lineage)) +
+    geom_col(position="dodge") +
+    scale_fill_manual(values=colors) +
+    coord_flip() +
+    labs(title="Top 25 KEGG Pathways", x="", y="Gene Count", fill="Lineage") +
+    theme_pubr()
+  print(p)
+} else {
+  cat("No KEGG pathway data available.\n")
+}
+```
+
+### Full Table
+```{r kegg_table, echo=FALSE, message=FALSE, warning=FALSE}
+if (has_mastertable && exists("kegg_data")) {
+  kegg_summary <- kegg_data %>%
+    count(KEGG_Pathway, lineage) %>%
+    pivot_wider(names_from=lineage, values_from=n, values_fill=0) %>%
+    mutate(Total = rowSums(across(where(is.numeric)))) %>%
+    arrange(desc(Total))
+  make_dt(kegg_summary, "kegg_pathways")
+} else {
+  cat("No KEGG data available.\n")
+}
+```
+
+## Pseudogene Detection {.tabset}
+
+Genes without a stop codon in their annotated coordinates — potential pseudogenes.
+
+### Per Lineage
+```{r pseudogenes, echo=FALSE, fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE}
+if (has_mastertable) {
+  # Pseudogenes can be detected from genes with internal stops or no terminal stop
+  # Using the rvs column: genes with known Rv ID that were flagged as pseudogenes
+  # Check both Mycobrowser's Is_Pseudogene and AMAP's pseudogene columns
+  has_myco_pseudo <- "Is_Pseudogene" %in% colnames(mastertable)
+  has_amap_pseudo <- "pseudogene" %in% colnames(mastertable)
+  if (has_myco_pseudo || has_amap_pseudo) {
+    pseudo_data <- mastertable %>%
+      
+      filter(
+        (if (has_myco_pseudo) (Is_Pseudogene %in% c("yes","Yes","TRUE",TRUE)) else FALSE) |
+        (if (has_amap_pseudo) (pseudogene %in% c("yes","Yes","TRUE",TRUE)) else FALSE)
+      )
+    
+    if (nrow(pseudo_data) > 0) {
+      pseudo_count <- pseudo_data %>%
+        count(lineage) %>%
+        arrange(desc(n))
+      
+      p <- ggplot(pseudo_count, aes(x=reorder(lineage, -n), y=n, fill=lineage)) +
+        geom_col(show.legend=FALSE) +
+        geom_text(aes(label=n), vjust=-0.3, size=3.5) +
+        scale_fill_manual(values=colors) +
+        labs(title="Pseudogenes per Lineage (Mycobrowser annotation)", x="Lineage", y="Count") +
+        theme_pubr()
+      print(p)
+    } else {
+      cat("No pseudogenes detected in the dataset.\n")
+    }
+  } else {
+    cat("No pseudogene columns found in master table (neither Is_Pseudogene nor pseudogene).\n")
+  }
+} else {
+  cat("Master table not available.\n")
+}
+```
+
+# Gene Duplications {.tabset}
+
+Gene duplications detected by all-vs-all Diamond BLASTp within and across genomes.
+
+## Duplication Summary
+
+```{r dup_summary, echo=FALSE, fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE}
+if (has_dups && nrow(dup_data) > 0) {
+  cat(paste0("**", nrow(dup_data), "** homologous community pairs detected across all genomes.\n\n"))
+  
+  # Community size distribution
+  if ("Size1" %in% colnames(dup_data)) {
+    sizes <- c(dup_data$Size1, dup_data$Size2)
+    p <- ggplot(data.frame(size=sizes), aes(x=size)) +
+      geom_histogram(binwidth=1, fill="#3da68d", color="white") +
+      labs(title="Distribution of Community Sizes", x="Genes per Community", y="Count") +
+      theme_pubr()
+    print(p)
+  }
+} else {
+  cat("No duplication data available.\n")
+}
+```
+
+## Cross-genome Communities
+
+```{r dup_table, echo=FALSE, message=FALSE, warning=FALSE}
+if (has_dups && nrow(dup_data) > 0) {
+  dup_display <- dup_data %>%
+    select(any_of(c("Genome1","Community1","Size1","Genome2","Community2","Size2")))
+  make_dt(dup_display, "homologous_communities")
+} else {
+  cat("No duplication data available.\n")
+}
+```
+
+## Network Metrics
+
+```{r dup_metrics, echo=FALSE, message=FALSE, warning=FALSE}
+if (has_dups && nrow(dup_data) > 0 && "AvgDegree1" %in% colnames(dup_data)) {
+  metrics_display <- dup_data %>%
+    select(any_of(c("Genome1","Community1","Size1","AvgDegree1","Density1","AvgClustering1",
+                     "Genome2","Community2","Size2","AvgDegree2","Density2","AvgClustering2")))
+  make_dt(metrics_display, "duplication_network_metrics")
+} else {
+  cat("No network metrics available.\n")
+}
+```
+
+# Pangenome Analysis {.tabset}
+
+Gene presence/absence across samples based on pangene analysis.
+
+## Core vs Accessory Genes
+
+```{r pangene_core, echo=FALSE, fig.align='center', fig.width=12, fig.height=8, message=FALSE, warning=FALSE}
+if (has_pangene) {
+  # Rtab is a presence/absence matrix: gene × sample
+  gene_names <- pangene_raw[, 1]
+  pa_matrix <- as.matrix(pangene_raw[, -1])
+  
+  n_samples <- ncol(pa_matrix)
+  gene_freq <- rowSums(pa_matrix > 0)
+  
+  gene_class <- case_when(
+    gene_freq == n_samples ~ "Core (100%)",
+    gene_freq >= 0.95 * n_samples ~ "Soft core (≥95%)",
+    gene_freq >= 0.15 * n_samples ~ "Shell (15-95%)",
+    TRUE ~ "Cloud (<15%)"
+  )
+  
+  class_counts <- data.frame(Category = gene_class) %>%
+    count(Category) %>%
+    mutate(
+      Category = factor(Category, levels=c("Core (100%)","Soft core (≥95%)","Shell (15-95%)","Cloud (<15%)")),
+      pct = round(100 * n / sum(n), 1),
+      label = paste0(n, " (", pct, "%)")
+    )
+  
+  p <- ggplot(class_counts, aes(x=Category, y=n, fill=Category)) +
+    geom_col(show.legend=FALSE) +
+    geom_text(aes(label=label), vjust=-0.3, size=4) +
+    scale_fill_manual(values=c("Core (100%)"="#2c7bb6","Soft core (≥95%)"="#abd9e9",
+                                "Shell (15-95%)"="#fdae61","Cloud (<15%)"="#d7191c")) +
+    labs(title=paste0("Pangenome Composition (", n_samples, " samples, ", nrow(pangene_raw), " gene families)"),
+         x="", y="Gene Families") +
+    theme_pubr() +
+    expand_limits(y=max(class_counts$n)*1.12)
+  print(p)
+  
+} else {
+  cat("No pangene data available.\n")
+}
+```
+
+## Gene Frequency Spectrum
+
+```{r pangene_spectrum, echo=FALSE, fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE}
+if (has_pangene) {
+  freq_df <- data.frame(frequency = gene_freq)
+  
+  p <- ggplot(freq_df, aes(x=frequency)) +
+    geom_histogram(binwidth=1, fill="#3da68d", color="white") +
+    labs(title="Gene Frequency Spectrum", x="Number of Samples", y="Gene Families") +
+    theme_pubr() +
+    geom_vline(xintercept=n_samples, linetype="dashed", color="red") +
+    annotate("text", x=n_samples-0.5, y=Inf, label="Core", hjust=1, vjust=1.5, color="red")
+  print(p)
+} else {
+  cat("No pangene data available.\n")
+}
+```
+
+## Presence/Absence Heatmap
+
+```{r pangene_heatmap, echo=FALSE, fig.align='center', fig.height=10, fig.width=14, message=FALSE, warning=FALSE}
+if (has_pangene && ncol(pa_matrix) >= 2 && nrow(pa_matrix) >= 2) {
+  # Show only shell + cloud genes (variable genes are more interesting)
+  variable_idx <- which(gene_freq < n_samples & gene_freq >= 1)
+  if (length(variable_idx) > 200) {
+    # Sample top 200 most variable
+    variable_idx <- variable_idx[order(abs(gene_freq[variable_idx] - n_samples/2))][1:200]
+  }
+  if (length(variable_idx) >= 2) {
+    mat <- pa_matrix[variable_idx, , drop=FALSE]
+    rownames(mat) <- gene_names[variable_idx]
+    tryCatch({
+      pheatmap(mat, color=c("white","#3da68d"), legend_breaks=c(0,1),
+               legend_labels=c("Absent","Present"),
+               show_rownames=(nrow(mat)<=60), fontsize_row=6, fontsize_col=8,
+               main="Variable Gene Presence/Absence", border_color=NA,
+               clustering_distance_rows="binary", clustering_distance_cols="binary")
+    }, error = function(e) cat("Could not generate heatmap.\n"))
+  } else {
+    cat("Fewer than 2 variable genes — no heatmap needed.\n")
+  }
+} else {
+  cat("No pangene data available or too few samples.\n")
+}
+```
+
+# AMAP CDS Stats {.tabset}
+
+Detailed breakdown of the CDS-correction cases identified by AMAP.
+
+**Classification:**
+
+- **Case 1 keep:** CDS missing from the reference — potentially real novel genes
+- **Case 1 remove:** CDS falsely introduced by Bakta, absent from reference
+- **Case 2:** Perfect coordinate match with reference
+- **Case 3:** Same start/end but containing mismatches
+- **Case 4:** Coordinates corrected by AMAP
+- **Missing Genes:** Reference genes recovered by AMAP (not annotated by Bakta)
+
+## Boxplot
 ```{r cds_boxplot, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
-counts <- data %>% 
-  group_by(V4, V1) %>% 
-  summarise(n = n(), y_pos = max(V2) + 1, .groups = 'drop')
+counts <- data %>% group_by(V4, V1) %>% summarise(n=n(), y_pos=max(V2)+1, .groups='drop')
 
-# Identify V1 groups with more than one V4 level to avoid dunn_test error
-valid_comparison_groups <- data %>%
-  group_by(V1) %>%
-  summarise(n_groups = n_distinct(V4), .groups = 'drop') %>%
-  filter(n_groups > 1) %>%
-  pull(V1)
+valid_groups <- data %>%
+  group_by(V1) %>% summarise(n_groups=n_distinct(V4), .groups='drop') %>%
+  filter(n_groups > 1) %>% pull(V1)
 
-stat.test.cds <- NULL # Initialize as NULL
-
-data <- data %>% 
-  mutate(V4 = factor(V4)) %>%   # fuerza que sea factor
-  droplevels()                  # elimina niveles que no aparecen
-
-
-if (length(valid_comparison_groups) > 0) {
-  # Perform Dunn's test only on valid groups, with error handling
+stat.test.cds <- NULL
+if (length(valid_groups) > 0) {
   stat.test.cds <- tryCatch({
-    data %>%
-      filter(V1 %in% valid_comparison_groups) %>%
-      group_by(V1) %>%
-      dunn_test(V2 ~ V4, p.adjust.method = "BH") %>%
-      add_xy_position(x = "V4", scales = "free_y", step.increase = 0.08)
-  }, error = function(e) {
-    # If any error occurs during the test, return NULL
-    # This prevents the script from stopping
-    return(NULL)
-  })
+    data %>% filter(V1 %in% valid_groups) %>% group_by(V1) %>%
+      dunn_test(V2 ~ V4, p.adjust.method="BH") %>%
+      add_xy_position(x="V4", scales="free_y", step.increase=0.08)
+  }, error = function(e) NULL)
 }
 
+p <- ggplot(data, aes(x=V4, y=V2, color=V4)) +
+  geom_boxplot(outlier.shape=NA, fill=NA) +
+  geom_point(position=position_jitter(width=0.2), alpha=0.2) +
+  geom_text(data=counts, aes(x=V4, y=y_pos, label=n, color=V4), position=position_dodge(width=0.75), size=3) +
+  facet_wrap(~V1, scales="free_y", ncol=4) +
+  theme_pubr() + labs(x="", y="Number of CDS") +
+  scale_color_manual(values=colors) +
+  theme(legend.position="none", axis.text.x=element_text(size=9.5))
 
-p <- ggplot(data, aes(x = V4, y = V2, color = V4)) +
-  geom_boxplot(outlier.shape = NA, fill = NA) +
-  geom_point(position = position_jitter(width = 0.2), alpha = 0.2) +
-  geom_text(data = counts, aes(x = V4, y = y_pos, label = n, color = V4), 
-            position = position_dodge(width = 0.75), size = 3) +
-  facet_wrap(~ V1, scales = "free_y", ncol = 4) +
-  ggpubr::theme_pubr() +
-  labs(x = "", y = "Number of CDS") + 
-  scale_color_manual(values = colors) +
-  theme(legend.position = "none", 
-        axis.text.x = element_text(size = 9.5))
-
-# Add significance levels manually only if the test was successful
 if (!is.null(stat.test.cds) && nrow(stat.test.cds) > 0) {
-  p <- p + stat_pvalue_manual(
-    stat.test.cds, 
-    label = "p.adj.signif", 
-    tip.length = 0.01, 
-    hide.ns = TRUE,
-    size = 2
-  )
+  p <- p + stat_pvalue_manual(stat.test.cds, label="p.adj.signif", tip.length=0.01, hide.ns=TRUE, size=2)
 }
-
 print(p)
 ```
 
-### CDS Violinplot
+## Violinplot
 ```{r cds_violin, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
-means <- data %>% 
-  group_by(V4, V1) %>% 
-  summarise(mean_value = mean(V2), y_pos = max(V2) + 1, .groups = 'drop')
+means <- data %>% group_by(V4, V1) %>% summarise(mean_value=mean(V2), y_pos=max(V2)+1, .groups='drop')
 
-p <- ggplot(data, aes(x = V4, y = V2, color = V4)) +
-  geom_violin(fill = NA) +
-  stat_summary(fun = mean, geom = "point", shape = 18, size = 3, color = "black") +
-  stat_summary(fun.data = mean_cl_normal, geom = "errorbar", width = 0.2, color = "black") +
-  geom_text(data = means, aes(x = V4, y = y_pos, label = round(mean_value, 2), color = V4), 
-            position = position_dodge(width = 0.75), size = 3) +
-  facet_wrap(~ V1, scales = "free_y", ncol = 4) +
-  ggpubr::theme_pubr() +
-  labs(x = "", y = "Number of CDS") + 
-  scale_color_manual(values = colors) +
-  theme(legend.position = "none", 
-        axis.text.x = element_text(size = 9.5)) 
-
+p <- ggplot(data, aes(x=V4, y=V2, color=V4)) +
+  geom_violin(fill=NA) +
+  stat_summary(fun=mean, geom="point", shape=18, size=3, color="black") +
+  stat_summary(fun.data=mean_cl_normal, geom="errorbar", width=0.2, color="black") +
+  geom_text(data=means, aes(x=V4, y=y_pos, label=round(mean_value,2), color=V4), size=3) +
+  facet_wrap(~V1, scales="free_y", ncol=4) + theme_pubr() +
+  labs(x="", y="Number of CDS") + scale_color_manual(values=colors) +
+  theme(legend.position="none", axis.text.x=element_text(size=9.5))
 print(p)
 ```
 
-### Histogram Cases
+## Histogram Cases
 ```{r cds_histo, echo=FALSE, fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE}
-filtered_data <- means %>%
-  filter(str_starts(V1, "case"))
+filtered_data <- means %>% filter(str_starts(V1, "case"))
+colores_cases <- c("case1_kept"="#13ff03","case1_removed"="#377eb8",
+                    "case2"="#984ea3","case3"="#ffff33","case4"="#ff7f00")
 
-colores <- c(
-  "case1_kept" = "#e41a1c", "case1_kept" = "#13ff03", "case1_removed" = "#377eb8",
-  "case2" = "#984ea3", "case3" = "#ffff33", "case4" = "#ff7f00"
-)
-
-p <- ggplot(filtered_data, aes(x = V4, y = mean_value, fill = V1)) +
-  geom_bar(position = "fill", stat = "identity") +
-  labs(x = "", y = "Proportion of CDS", fill = "Cases") +
-  theme_pubr() +
-  scale_fill_manual(values = colores) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position="right")
-
-print(p)
+ggplot(filtered_data, aes(x=V4, y=mean_value, fill=V1)) +
+  geom_bar(position="fill", stat="identity") +
+  labs(x="", y="Proportion of CDS", fill="Cases") + theme_pubr() +
+  scale_fill_manual(values=colores_cases) +
+  theme(axis.text.x=element_text(angle=45, hjust=1), legend.position="right")
 ```
 
-### CDS Heatmap LogMeanValues
+## Heatmap
 ```{r cds_heatmap, echo=FALSE, fig.align='center', fig.height=5, fig.width=7, message=FALSE, warning=FALSE}
-p <- ggplot(means, aes(x = V4, y = V1, fill = log(mean_value))) +
-  geom_tile() +
-  scale_fill_viridis_c(option = "C", name = "Log Mean Value") +
+ggplot(means, aes(x=V4, y=V1, fill=log(mean_value))) +
+  geom_tile() + scale_fill_viridis_c(option="C", name="Log Mean Value") +
   theme_minimal() +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 9.5),
-    axis.text.y = element_text(size = 9.5),
-    legend.position = "right"
-  ) +
-  labs(x = "Lineages", y = "Cases", title = "Heatmap of Log Mean Values")
-print(p)
+  theme(axis.text.x=element_text(angle=45, hjust=1, size=9.5), axis.text.y=element_text(size=9.5)) +
+  labs(x="Lineages", y="Cases", title="Heatmap of Log Mean Values")
 ```
 
-### CDS Table stats {.tabset}
-#### CASE 1
-```{r case1_stats, echo=FALSE, message=FALSE, warning=FALSE}
+## Per-case Statistics {.tabset}
+
+### Case 1
+```{r s_case1, echo=FALSE, message=FALSE, warning=FALSE}
 generate_statistics_table(data, "case1_initial")
 ```
-#### CASE 1 KEEP
-```{r case1keep_stats, echo=FALSE, message=FALSE, warning=FALSE}
+### Case 1 Keep
+```{r s_case1k, echo=FALSE, message=FALSE, warning=FALSE}
 generate_statistics_table(data, "case1_kept")
 ```
-#### CASE 1 REMOVE
-```{r case1remove_stats, echo=FALSE, message=FALSE, warning=FALSE}
+### Case 1 Remove
+```{r s_case1r, echo=FALSE, message=FALSE, warning=FALSE}
 generate_statistics_table(data, "case1_removed")
 ```
-#### CASE 2
-```{r case2_stats, echo=FALSE, message=FALSE, warning=FALSE}
+### Case 2
+```{r s_case2, echo=FALSE, message=FALSE, warning=FALSE}
 generate_statistics_table(data, "case2")
 ```
-#### CASE 3
-```{r case3_stats, echo=FALSE, message=FALSE, warning=FALSE}
+### Case 3
+```{r s_case3, echo=FALSE, message=FALSE, warning=FALSE}
 generate_statistics_table(data, "case3")
 ```
-#### CASE 4
-```{r case4_stats, echo=FALSE, message=FALSE, warning=FALSE}
+### Case 4
+```{r s_case4, echo=FALSE, message=FALSE, warning=FALSE}
 generate_statistics_table(data, "case4")
 ```
-#### ALL CDS
-```{r cds_stats, echo=FALSE, message=FALSE, warning=FALSE}
+### Total CDS
+```{r s_total, echo=FALSE, message=FALSE, warning=FALSE}
 generate_statistics_table(data, "total_cds")
 ```
-#### MISSING RVs
-```{r missing_stats, echo=FALSE, message=FALSE, warning=FALSE}
+### Missing Rvs
+```{r s_missing, echo=FALSE, message=FALSE, warning=FALSE}
 generate_statistics_table(data, "rv_missing")
 ```
+
+# Master Table Explorer
+
+Interactive explorer for the full annotation master table with all functional annotations.
+
+```{r master_explorer, echo=FALSE, message=FALSE, warning=FALSE}
+if (has_mastertable) {
+  # Show a subset of the most useful columns
+  display_cols <- intersect(
+    c("id","strand","start","end","rvs","pseudogene","COG_category","Description","Preferred_name",
+      "Gene","Product_x","KEGG_Pathway","KEGG_ko","GOs","EC","PFAMs","CAZy",
+      "Functional_Category","Is_Pseudogene","Locus"),
+    colnames(mastertable))
+  
+  if (length(display_cols) > 0) {
+    make_dt(mastertable[, display_cols, drop=FALSE], "master_table_full")
+  } else {
+    make_dt(head(mastertable, 500), "master_table_preview")
+  }
+} else {
+  cat("Master table not available.\n")
+}
 ```
+
+---
+
+*Report generated by [AMAP](https://github.com/PathoGenOmics-Lab/AMAP) v1.0.1 on `r format(Sys.time(), '%Y-%m-%d %H:%M')`.*

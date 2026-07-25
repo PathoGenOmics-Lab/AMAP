@@ -5,6 +5,8 @@ import argparse
 import pandas as pd
 import numpy as np
 import networkx as nx
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from pyvis.network import Network
 import community as community_louvain
@@ -20,7 +22,18 @@ __lab__ = 'PathoGenOmics (I2SysBio)'
 
 
 def read_and_create(p_file):
-    df = pd.read_csv(p_file, sep='\t', comment='#')
+    try:
+        # header=None is required: Diamond is run with --header, so every real
+        # header line starts with '#' and is stripped by comment='#'. Without
+        # header=None pandas then promotes the FIRST HIT to column names and
+        # that alignment is silently dropped from the duplication analysis.
+        df = pd.read_csv(p_file, sep='\t', comment='#', header=None)
+    except pd.errors.EmptyDataError:
+        # No hits at all — return empty DataFrame with expected columns
+        return pd.DataFrame(columns=["qseqid", "sseqid", "pident", "length", "mismatch",
+                                      "gaps", "qstart", "qend", "sstart", "send",
+                                      "evalue", "bitscore", "qlen", "slen", "nident",
+                                      "same_seq", "p_query", "p_subject"])
     names_columns = ["qseqid", "sseqid", "pident", "length", "mismatch", "gaps", "qstart", "qend", "sstart", "send", "evalue", "bitscore", "qlen", "slen", "nident"]
     df.columns = names_columns
     df['same_seq'] = df.iloc[:, 0] == df.iloc[:, 1]
@@ -55,14 +68,24 @@ def plot_network(df, output_filename):
     # Calculate connected components (clusters)
     clusters = list(nx.connected_components(G))
     
-    # Calculate the number of rows and columns for the grid of subplots
+    # Handle edge case: no clusters
     num_clusters = len(clusters)
+    if num_clusters == 0:
+        fig, ax = plt.subplots(figsize=(10, 10))
+        ax.text(0.5, 0.5, 'No duplications found', ha='center', va='center', fontsize=16)
+        ax.axis('off')
+        plt.savefig(output_filename, format='png', dpi=300)
+        plt.close()
+        return
+
+    # Calculate the number of rows and columns for the grid of subplots
     num_rows = int(np.ceil(np.sqrt(num_clusters)))
-    num_cols = num_rows if num_clusters > num_rows * (num_rows - 1) else num_rows - 1
+    num_cols = max(1, num_rows if num_clusters > num_rows * (num_rows - 1) else num_rows - 1)
     
     # Create subplots in a grid
     fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(20, 20))
-    axes = axes.flatten()  # Flatten the axes array for easy indexing
+    # Ensure axes is always a flat array (single subplot returns bare Axes)
+    axes = np.atleast_1d(axes).flatten()
     
     # Adjust the spacing between the subplots
     plt.subplots_adjust(wspace=0.3, hspace=0.3)  # Modify these values as needed for your data
@@ -141,6 +164,22 @@ def main():
     args = parser.parse_args()
 
     df = read_and_create(args.file)
+
+    if df.empty:
+        print("No significant duplications found — creating empty outputs.")
+        pd.DataFrame(columns=['Group', 'Members', 'Length']).to_csv(
+            args.file + "_groups.tsv", sep='\t', index=False)
+        # Create empty plot
+        fig, ax = plt.subplots(figsize=(10, 10))
+        ax.text(0.5, 0.5, 'No duplications found', ha='center', va='center', fontsize=16)
+        ax.axis('off')
+        plt.savefig(args.file + "_network.png", format='png', dpi=300)
+        plt.close()
+        # Create empty interactive plot
+        net = Network(height='1080px', width='100%', bgcolor='#FFFFFF')
+        net.show(args.file + "_network_interactive.html", notebook=False)
+        return
+
     df_with_groups = group_related_pairs(df)
 
     # Save the groups to a file

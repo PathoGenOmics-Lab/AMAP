@@ -98,7 +98,9 @@ if (params.help) {
     --ref_genome                Path to the trusted reference genome (FASTA).
                                 Both must be set together. When used, the pipeline extracts
                                 proteins from your reference and uses them instead of H37Rv.
-    --skip_mycobrowser          Auto-enabled when genus is not Mycobacterium.
+    --skip_mycobrowser          Auto-enabled when a custom reference is set and
+                                genus is not Mycobacterium. Set it yourself
+                                otherwise.
     --skip_typing               Required for non-MTBC organisms (Pathotypr is MTBC-specific).
     
     Example — annotating E. coli:

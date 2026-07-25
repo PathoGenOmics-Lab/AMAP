@@ -223,15 +223,29 @@ def extract_and_translate_cds(fasta_file, annotation_df):
             # coordinates. If so, it's a known pseudogene — don't extend.
             # If coords DON'T match the ID, it's a partial alignment that needs extension.
             is_ref_pseudogene = False
-            ref_id = str(rvs) if pd.notna(rvs) and str(rvs).startswith('Rv') else str(ide)
-            m = re.search(r'_(\d+)-(\d+)$', ref_id)
-            if m:
+            # The reference coordinates live in `rvs`; format_cluster_id has
+            # already stripped them from `ide`. This used to be gated on
+            # rvs.startswith('Rv'), so for any organism whose genes are not
+            # named RvNNNN it fell through to `ide`, found no coordinates, and
+            # extended every reference pseudogene instead of leaving it alone.
+            # `rvs` is comma separated when a gene maps to several references,
+            # so check them all rather than relying on which one comes last.
+            candidates = []
+            if pd.notna(rvs) and str(rvs).strip():
+                candidates = [c.strip() for c in str(rvs).split(',') if c.strip()]
+            candidates.append(str(ide))
+            for cand in candidates:
+                m = re.search(r'_(\d+)-(\d+)$', cand)
+                if not m:
+                    continue
                 id_start = int(m.group(1))
                 id_end = int(m.group(2))
                 # Coords match the ID → this is a reference gene with its true coordinates
                 if abs((start + 1) - id_start) <= 3 and abs(end - id_end) <= 3:
                     is_ref_pseudogene = True
-            
+                    break
+
+
             if is_ref_pseudogene:
                 # Reference gene without stop = known pseudogene. Keep original coords.
                 logging.info(f"Reference gene {ide} has no stop codon (likely pseudogene), keeping original coordinates")

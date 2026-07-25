@@ -572,6 +572,62 @@ class TestAnnotationQC:
 
 
 # =============================================================================
+# CHECK CDS TESTS
+# =============================================================================
+
+class TestCheckCds:
+    """Tests for check_cds.py."""
+
+    @staticmethod
+    def _run(tmpdir, gene_id, rvs):
+        """Annotate one 36 bp gene with no stop codon, with a TAA just past it.
+
+        Whether the gene is treated as a known reference pseudogene decides
+        between keeping 1-36 and extending to 1-39.
+        """
+        import subprocess
+        genome = os.path.join(tmpdir, 'g.fasta')
+        with open(genome, 'w') as f:
+            f.write(">chr1\n" + "ATG" + "GCT" * 11 + "TAA" + "GCT" * 20 + "\n")
+        tsv = os.path.join(tmpdir, 'sample_corrected.tsv')
+        with open(tsv, 'w') as f:
+            f.write(f"{gene_id}\t+\t1\t36\t{rvs}\n")
+        script = os.path.join(os.path.dirname(__file__), '..', 'bin', 'check_cds.py')
+        subprocess.run([sys.executable, script, genome, tsv],
+                       cwd=tmpdir, check=True, capture_output=True)
+        out = pd.read_csv(os.path.join(tmpdir, 'sample.AMAP.tsv'), sep='\t')
+        return int(out.iloc[0]['start']), int(out.iloc[0]['end']), out.iloc[0]['pseudogene']
+
+    def test_reference_pseudogene_kept_for_mtbc(self):
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            assert self._run(d, 'S1_Rv0001', 'Rv0001_1-36') == (1, 36, 'yes')
+
+    def test_reference_pseudogene_kept_for_other_organisms(self):
+        """The check was gated on the ID starting with 'Rv'.
+
+        A gene called thrA behaves identically to one called Rv0001, so it must
+        not be extended just because of its name.
+        """
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            assert self._run(d, 'S1_thrA', 'thrA_1-36') == (1, 36, 'yes')
+
+    def test_reference_pseudogene_kept_with_several_references(self):
+        """rvs is comma separated; any of them matching the position counts."""
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            assert self._run(d, 'S1_multi', 'Rv0001_1-36, Rv0002_500-600') == (1, 36, 'yes')
+
+    def test_gene_without_reference_coordinates_is_extended(self):
+        """No embedded coordinates means nothing vouches for the boundary."""
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            start, end, _ = self._run(d, 'S1_00042', '')
+            assert (start, end) == (1, 39)
+
+
+# =============================================================================
 # MERGE RTABS TESTS
 # =============================================================================
 

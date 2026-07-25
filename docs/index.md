@@ -98,8 +98,14 @@ the pangenome.
 
 ## The pipeline at a glance
 
-<div class="amap-figure" markdown>
-![AMAP pipeline map](assets/pipeline-map.svg)
+The map animates: each line traces the route a sample takes through the
+pipeline.
+
+<div class="amap-figure">
+  <object class="amap-animated" type="image/svg+xml" data="assets/pipeline-map.svg"
+          aria-label="AMAP pipeline map, animated">
+    <img src="assets/pipeline-map.svg" alt="AMAP pipeline map">
+  </object>
 </div>
 
 ## Citing AMAP

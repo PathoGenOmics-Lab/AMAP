@@ -52,6 +52,21 @@
   width: 100%;
 }
 
+/* The pipeline map animates, and its animation is a CSS @import inside the
+   file. A browser renders an SVG loaded through <img> without fetching any
+   external resource, that @import included, so the map sits there frozen.
+   Loading it through <object> gives it its own document, where the import
+   resolves and the animation plays. Inlining the markup is the other way to
+   do it, but this particular file namespaces every element (ns0:svg), and an
+   HTML parser will not read those as SVG. */
+.amap-figure object.amap-animated {
+  display: block;
+  width: 100%;
+  min-width: 640px;
+  aspect-ratio: 317.5 / 185.2;   /* the file's own viewBox, so no letterboxing */
+  border: 0;
+}
+
 /* Parameter tables carry long default values; stop them wrapping mid-path. */
 .md-typeset table:not([class]) td code {
   white-space: nowrap;

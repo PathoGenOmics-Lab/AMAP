@@ -83,11 +83,14 @@ def main():
                 
                 # Check that the value is not null (it could be a '-' we replaced with NaN)
                 if pd.notna(cog_value):
-                    if "dup" in seq_id:
-                        new_id = seq_id + ";" + str(cog_value)
-                    else:
-                        new_id = "_".join(seq_id.split("_")[0:3]) + ";" + str(cog_value)
-                    
+                    # Keep the full seq_id. Truncating to the first three
+                    # underscore-separated parts mangled multi-part gene names
+                    # (L8_G26689_PE_PGRS1 -> L8_G26689_PE) and collapsed every
+                    # PE/PPE gene of a sample onto one identifier, so Diamond
+                    # and dup_ex_multifasta.py silently lost sequences.
+                    # seq_id is already stripped of the ';strand;coords' suffix.
+                    new_id = seq_id + ";" + str(cog_value)
+
                     record.id = new_id
                     record.description = ''  # Clear the description for a clean header
                     renamed_count += 1

@@ -4,22 +4,19 @@ hide:
  - navigation
 ---
 
-<p align="center">
- <img src="assets/logo.png" alt="AMAP" width="260">
-</p>
-
-<p align="center" markdown>
- <strong>Assisted Microbial Annotator Pipeline</strong><br>
- <em>Reference-guided annotation correction for prokaryotic genomes.</em>
-</p>
-
-<p align="center">
- <img src="https://img.shields.io/badge/version-1.0.0-2f9e8a" alt="Version 1.0.0">
- <img src="https://img.shields.io/badge/license-GPL--3.0-orange" alt="License GPL-3.0">
- <img src="https://img.shields.io/badge/nextflow-%E2%89%A523.04-30ba91" alt="Nextflow 23.04+">
-</p>
-
----
+<div class="amap-hero">
+  <img class="amap-hero__logo" src="assets/logo.png" alt="AMAP">
+  <p class="amap-hero__title">Assisted Microbial Annotator Pipeline</p>
+  <p class="amap-hero__tagline">
+    Reference-guided annotation correction for prokaryotic genomes.
+  </p>
+  <p class="amap-badges">
+    <span class="amap-badge"><span class="amap-badge__k">version</span><span class="amap-badge__v">1.0.0</span></span>
+    <span class="amap-badge amap-badge--alt"><span class="amap-badge__k">license</span><span class="amap-badge__v">GPL-3.0</span></span>
+    <span class="amap-badge amap-badge--alt"><span class="amap-badge__k">nextflow</span><span class="amap-badge__v">&ge;23.04</span></span>
+    <span class="amap-badge amap-badge--alt"><span class="amap-badge__k">tests</span><span class="amap-badge__v">92 passing</span></span>
+  </p>
+</div>
 
 **AMAP** takes assembled prokaryotic genomes and produces a corrected,
 functionally annotated gene set. It annotates each genome with Bakta, aligns a

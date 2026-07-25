@@ -198,7 +198,12 @@ def _insert_with_dedup(combined_dict, new_coord, new_id, threshold=550):
             elif (len_exist - len_new) < threshold and not _is_reference_gene(exist_id):
                 coords_to_remove.add(exist_coord)
             else:
+                # The existing entry wins, so the new coordinate is discarded.
+                # Any removals queued so far were only justified as replacements
+                # for new_coord; applying them now would delete those genes
+                # without inserting anything in their place.
                 coords_to_add.clear()
+                coords_to_remove.clear()
                 break
 
     for c in coords_to_remove:

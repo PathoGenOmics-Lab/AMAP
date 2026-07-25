@@ -57,7 +57,7 @@ version in `nextflow.config` or on the command line:
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv \
-    -process.container 'paururo/amap:1.0.0'
+    -process.container 'paururo/amap:1.0.1'
 ```
 
 `results/pipeline_info/software_versions.yml` records the exact version of every

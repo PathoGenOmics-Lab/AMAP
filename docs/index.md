@@ -11,7 +11,7 @@ hide:
     Reference-guided annotation correction for prokaryotic genomes.
   </p>
   <p class="amap-badges">
-    <span class="amap-badge"><span class="amap-badge__k">version</span><span class="amap-badge__v">1.0.0</span></span>
+    <span class="amap-badge"><span class="amap-badge__k">version</span><span class="amap-badge__v">1.0.1</span></span>
     <span class="amap-badge amap-badge--alt"><span class="amap-badge__k">license</span><span class="amap-badge__v">GPL-3.0</span></span>
     <span class="amap-badge amap-badge--alt"><span class="amap-badge__k">nextflow</span><span class="amap-badge__v">&ge;23.04</span></span>
     <span class="amap-badge amap-badge--alt"><span class="amap-badge__k">tests</span><span class="amap-badge__v">92 passing</span></span>
@@ -107,7 +107,7 @@ pipeline.
 
 ## Citing AMAP
 
-> Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.0)
+> Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.1)
 > [Computer software]. <https://doi.org/10.5281/zenodo.8024447>
 
 The BibTeX entry is on the [citation page](about/citation.md).

@@ -4,7 +4,7 @@ title: Citation
 
 # Citing AMAP
 
-> Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.0)
+> Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.1)
 > [Computer software]. <https://doi.org/10.5281/zenodo.8024447>
 
 ```bibtex
@@ -15,7 +15,7 @@ title: Citation
   month = apr,
   title = {{AMAP}},
   url = {https://github.com/PathoGenOmics-Lab/AMAP},
-  version = {1.0.0},
+  version = {1.0.1},
   year = {2026}}
 ```
 

@@ -1,5 +1,5 @@
 # =============================================================================
-# AMAP v1.0.0 — Multi-stage Docker build
+# AMAP v1.0.1 - Multi-stage Docker build
 # =============================================================================
 # Stage 1: Compile native tools (miniprot)
 # Stage 2: Download databases (Bakta DB, reference files)
@@ -68,7 +68,7 @@ RUN mkdir /reference && \
 FROM --platform=linux/amd64 continuumio/miniconda3:24.1.2-0
 
 LABEL maintainer="Paula Ruiz-Rodriguez <paururo@github>" \
-      version="1.0.0" \
+      version="1.0.1" \
       description="AMAP: Assisted Microbial Annotator Pipeline"
 
 ENV MPLCONFIGDIR=/app/matplotlib_config

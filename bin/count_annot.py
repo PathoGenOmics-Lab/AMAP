@@ -20,7 +20,7 @@ from typing import Tuple
 __author__ = 'Paula Ruiz-Rodriguez'
 __credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
 __license__ = ['GPL 3']
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __maintainer__ = '@paururo'
 __email__ = 'paula.ruiz.rodriguez@csic.es'
 __status__ = 'finished'

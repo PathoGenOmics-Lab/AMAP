@@ -1,6 +1,6 @@
 # AMAP: Assisted Microbial Annotator Pipeline  
 [![PGO](https://img.shields.io/badge/PathoGenOmics-Lab-grey?style=plastic&labelColor=red)](https://github.com/PathoGenOmics-Lab)
-[![AMAP](https://img.shields.io/badge/AMAP-v1.0.0-green?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP)
+[![AMAP](https://img.shields.io/badge/AMAP-v1.0.1-green?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP)
 [![Nextflow](https://img.shields.io/badge/Nextflow-%E2%89%A5%2023.04-%2330ba91?style=plastic)](https://github.com/nextflow-io/nextflow)
 [![License: GPL v3](https://img.shields.io/badge/License%3A-GPL%20v3-orange?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE)
 [![Docker Image](https://img.shields.io/badge/Docker%20Image-AMAP-blue?style=plastic&logo=docker)](https://hub.docker.com/repository/docker/paururo/amap/general)
@@ -19,7 +19,7 @@ __and Mireia Coscolla<sup>1</sup>__
     </td>
     <td style="padding-left: 20px;">
       <p>AMAP is a bioinformatics pipeline written in Nextflow for processing, annotating and correcting annotations of prokaryotic genomes. Originally developed for the <em>Mycobacterium tuberculosis</em> complex (MTBC), the reference-based correction adjusts approximately 30% of the genes in a given genome.</p>
-      <p>AMAP v1.0.0 is <strong>fully organism-agnostic</strong>: provide any trusted reference annotation (<code>--ref_annotation</code> + <code>--ref_genome</code>) to annotate <em>E. coli</em>, <em>S. aureus</em>, or any prokaryote. MTBC-specific features (lineage typing, Mycobrowser) are auto-detected and gracefully skipped for non-MTBC organisms.</p>
+      <p>AMAP is <strong>fully organism-agnostic</strong>: provide any trusted reference annotation (<code>--ref_annotation</code> + <code>--ref_genome</code>) to annotate <em>E. coli</em>, <em>S. aureus</em>, or any prokaryote. MTBC-specific features (lineage typing, Mycobrowser) are auto-detected and gracefully skipped for non-MTBC organisms.</p>
     </td>
   </tr>
 </table>
@@ -155,7 +155,7 @@ See
 
 ## Citation
 
->Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.0) [Computer software]. https://doi.org/10.5281/zenodo.8024447
+>Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software]. https://doi.org/10.5281/zenodo.8024447
 ```bibtex
 @software{Ruiz-Rodriguez_AMAP_2026,
   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},
@@ -164,7 +164,7 @@ See
   month = apr,
   title = {{AMAP}},
   url = {https://github.com/PathoGenOmics-Lab/AMAP},
-  version = {1.0.0},
+  version = {1.0.1},
   year = {2026}}
 ```
 ---

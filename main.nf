@@ -21,7 +21,7 @@ nextflow.enable.dsl=2
 //
 // --- PARAMS ---
 //
-params.tsv = 'example_files/test.tsv'
+params.tsv = 'samples.tsv'
 params.outdir = 'results'
 params.eggnog_db = 'eggnog_db'
 params.help = false
@@ -32,6 +32,8 @@ params.genus = "Mycobacterium"
 params.species = "Mycobacterium tuberculosis"
 params.bakta_db = "/data/bakta_db/db-light"
 params.skip_mycobrowser = false
+// Set by the `test` profile: take the genome from the container, not a TSV.
+params.test_data = false
 
 // Custom reference (set both to use your own reference instead of H37Rv)
 params.ref_annotation = null   // GFF3 or GenBank of a trusted reference
@@ -76,6 +78,8 @@ if (params.help) {
     Required Arguments:
     --tsv                       Path to the input TSV file.
                                 Format: sampleId<TAB>fasta_path
+                                Not needed with -profile test, which annotates
+                                the reference genome bundled in the container.
 
     Optional Arguments:
     --outdir                    Path to the output directory. (Default: "${params.outdir}")
@@ -128,7 +132,7 @@ log.info """
     │  Nextflow    : ${nextflow.version}
     │  Profile     : ${workflow.profile ?: 'standard'}
     ├─────────────────────────────────────────────────┤
-    │  Input TSV   : ${params.tsv}
+    │  Input       : ${params.test_data ? 'bundled test genome' : params.tsv}
     │  Output      : ${params.outdir}
     │  Reference   : ${params.ref_annotation ? 'Custom (' + params.ref_annotation + ')' : 'H37Rv (built-in)'}
     │  Organism    : ${params.genus} ${params.species}
@@ -267,16 +271,32 @@ include { DUMP_PARAMS }         from './modules/local/versions'
 //
 // --- INPUT CHANNEL ---
 //
-Channel
-    .fromPath(params.tsv)
-    .ifEmpty { error """
+// The test profile does not read a sample sheet. Its genome ships inside the
+// container, and the check below runs in the Nextflow head process on the host,
+// before any container exists, so a /reference path in a TSV would be reported
+// as missing. TEST_GENOME copies it out from inside the container instead. That
+// keeps a 4 MB genome out of this repository and off the host entirely.
+if (!params.test_data) {
+
+// Checked here rather than with ifEmpty on the channel: fromPath throws on a
+// missing literal path before ifEmpty ever runs, so the message below was
+// never the one anybody saw.
+if (!file(params.tsv).exists()) {
+    error """
     ╔══════════════════════════════════════════════════════════╗
     ║  Input TSV file not found: ${params.tsv}
     ║
     ║  Make sure the path is correct and the file exists.
-    ║  Use --tsv to specify the input file.
+    ║  Use --tsv to specify the input file, or try the pipeline
+    ║  with no data of your own:
+    ║
+    ║    nextflow run PathoGenOmics-Lab/AMAP -profile docker,test
     ╚══════════════════════════════════════════════════════════╝
-    """.stripIndent() }
+    """.stripIndent()
+}
+
+Channel
+    .fromPath(params.tsv)
     .splitCsv(header: true, sep: '\t')
     .map { row ->
         if (!row.containsKey('sampleId') || !row.containsKey('fasta')) {
@@ -317,6 +337,9 @@ fasta_ch.count().subscribe { n ->
     log.info "    ✓ Loaded ${n} sample(s) from ${params.tsv}"
     if (n == 0) log.warn "    ⚠ No samples found! Check your TSV file."
 }
+} else {
+    log.info "    ✓ Test profile: using the reference genome bundled in the container"
+}
 
 //
 // --- WORKFLOW ---
@@ -337,14 +360,17 @@ workflow {
         EGGNOG_DB()
     }
 
+    // 1b. Where the genomes come from: the sample sheet, or the container.
+    genomes_ch = params.test_data ? TEST_GENOME() : fasta_ch
+
     // 2. Perform MTB lineage typing or skip it
     if (!params.skip_typing) {
-        PATHOTYPR(fasta_ch)
+        PATHOTYPR(genomes_ch)
         typed_ch = PATHOTYPR.out.typed_fasta
     } else {
         // If skipping typing, create a placeholder file for caching.
         CREATE_EMPTY_FILE()
-        typed_ch = fasta_ch.combine(CREATE_EMPTY_FILE.out).map { sampleId, fasta, empty_file ->
+        typed_ch = genomes_ch.combine(CREATE_EMPTY_FILE.out).map { sampleId, fasta, empty_file ->
             tuple(sampleId, fasta, empty_file)
         }
     }
@@ -458,6 +484,29 @@ workflow {
  * This ensures that downstream processes that need this file as an
  * input can be cached correctly when using -resume.
  */
+/**
+ * Emits the reference genome that ships in the container as a sample, so
+ * `-profile test` needs neither a genome in this repository nor one on the
+ * host. Runs inside the container, which is the only place /reference exists.
+ */
+process TEST_GENOME {
+    tag 'test_data'
+
+    output:
+    tuple val('H37Rv_test'), path('H37Rv_test.fasta')
+
+    script:
+    """
+    if [ ! -s "${params.miniprot_ref_h37rv}" ]; then
+        echo "ERROR: the test profile expects the bundled reference at ${params.miniprot_ref_h37rv}." >&2
+        echo "It ships in the AMAP container, so run this with -profile docker,test" >&2
+        echo "or -profile singularity,test rather than without a container." >&2
+        exit 1
+    fi
+    cp "${params.miniprot_ref_h37rv}" H37Rv_test.fasta
+    """
+}
+
 process CREATE_EMPTY_FILE {
     // This process will be cached after its first successful run.
     output:

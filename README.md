@@ -80,7 +80,8 @@ conda activate nextflow-env
 conda install -c bioconda nextflow
 ```
 
-Check the installation with the bundled test dataset:
+Check the installation. This annotates the reference genome bundled in the
+container, so you need no data of your own:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker,test

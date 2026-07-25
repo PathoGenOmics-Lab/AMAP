@@ -3,3 +3,11 @@ bin/input_summary.txt
 bin/input_cog.txt
 bin/input_MycoBrowser.txt
 site/
+
+# Runtime output, never committed
+work/
+.nextflow*
+results/
+__pycache__/
+*.pyc
+.pytest_cache/

@@ -14,7 +14,7 @@ Pipeline parameters take two dashes (`--tsv`). Nextflow's own options take one
 
 | Parameter | Description | Type | Default | Required |
 | :--- | :--- | :--- | :--- | :--- |
-| `--tsv` | Sample sheet with `sampleId` and `fasta` columns, tab separated. | `file` | `example_files/test.tsv` | **Yes** |
+| `--tsv` | Sample sheet with `sampleId` and `fasta` columns, tab separated. Not needed with `-profile test`. | `file` | `samples.tsv` | **Yes** |
 | `--outdir` | Directory for results. | `string` | `results` | No |
 
 ## Skip options

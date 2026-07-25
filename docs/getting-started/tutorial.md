@@ -51,7 +51,8 @@ Full details, including running without a container, are on the
 
 ## 2. Check the plumbing before touching real data
 
-The test profile ships a small dataset and needs no input of your own:
+The test profile annotates the reference genome that ships inside the
+container, so it needs no data of your own:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker,test

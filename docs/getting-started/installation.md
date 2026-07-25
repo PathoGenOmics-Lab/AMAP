@@ -60,7 +60,8 @@ docker --version        # or: singularity --version
 ## 4. Run the test profile
 
 Before pointing AMAP at real data, confirm the whole chain works. The test
-profile ships a small dataset and needs no input of your own:
+profile annotates the reference genome bundled in the container, so it needs
+no data of your own and nothing to download beyond the image:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker,test

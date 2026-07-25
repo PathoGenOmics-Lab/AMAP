@@ -112,6 +112,55 @@ library(RColorBrewer)
 # the file becomes something you can actually attach to an email.
 knitr::opts_chunk$set(fig.retina = 1, dpi = 96)
 
+# Each figure is then base64'd into the report, so its bytes are the report's
+# bytes. A ggplot is flat colour over white: as 24-bit RGB most of that depth
+# is spent on nothing. Quantising to a 256-colour palette is invisible on this
+# kind of figure and takes the image payload down by roughly half. Pillow comes
+# with matplotlib, which is already in the image; if it is missing for any
+# reason the hook leaves the file alone rather than failing the report.
+knitr::knit_hooks$set(plot = local({
+  default_plot_hook <- knitr::knit_hooks$get("plot")
+  shrink <- function(path) {
+    py <- paste(
+      "import sys",
+      "from PIL import Image",
+      "p = sys.argv[1]",
+      "im = Image.open(p)",
+      "if im.mode in ('RGBA', 'LA'):",
+      "    bg = Image.new('RGB', im.size, (255, 255, 255))",
+      "    bg.paste(im, mask=im.split()[-1])",
+      "    im = bg",
+      "im.convert('RGB').quantize(colors=256, method=Image.MEDIANCUT).save(p, optimize=True)",
+      sep = "\n")
+    try(system2("python3", c("-c", shQuote(py), shQuote(path)),
+                stdout = FALSE, stderr = FALSE), silent = TRUE)
+  }
+  function(x, options) {
+    if (grepl("\\.png$", x, ignore.case = TRUE) && file.exists(x)) shrink(x)
+    default_plot_hook(x, options)
+  }
+}))
+
+# plotly ships its whole JavaScript bundle the moment a single widget appears,
+# and this report has three of them against roughly a hundred static figures.
+# That bundle was 3.6 MB of an 8 MB file. partial_bundle() works out which
+# trace types are actually used and ships only those. Wrapped in a helper so
+# adding a fourth interactive plot does not silently bring the full bundle
+# back. Falls back to the plot untouched if the shrink fails, since a slightly
+# bigger report beats no report.
+# local = TRUE matters: with local = FALSE partial_bundle points the report at
+# cdn.plot.ly, which is the sort of remote reference this report must not have.
+# It needs a network the first time to fetch the smaller bundle, so if that
+# fails we keep the full one, which ships inside the R package and always works.
+interactive_plot <- function(p) {
+  tryCatch(plotly::partial_bundle(p, local = TRUE),
+           error = function(e) {
+             message("partial_bundle failed, keeping the full plotly bundle: ",
+                     conditionMessage(e))
+             p
+           })
+}
+
 # ------------- GLOBAL VARIABLES -------------
 # Lineage color palette — includes MTBC lineages and a broad auto-extension
 # mechanism for any organism. Unknown lineage names get colors from a
@@ -625,7 +674,7 @@ p <- ggplot(datos_cog1, aes(x=Functional_Category, y=Percentage, color=Lineages)
   geom_jitter(alpha=0.2) + scale_color_manual(values=colors) +
   labs(x="Functional Category", y="Percentage") + theme_pubr() +
   theme(axis.text.x=element_text(angle=45, hjust=1), legend.position="top")
-ggplotly(p) %>% layout(autosize=F, width=800, height=400)
+interactive_plot(ggplotly(p) %>% layout(autosize=F, width=800, height=400))
 ```
 
 ### Statistics
@@ -667,7 +716,7 @@ p <- ggplot(datos_myco, aes(x=Functional_Category, y=Percentage, color=Lineages)
   geom_jitter(alpha=0.2) + scale_color_manual(values=colors) +
   labs(x="", y="Percentage") + theme_pubr() +
   theme(axis.text.x=element_text(angle=45, hjust=1, size=8), legend.position="top")
-ggplotly(p) %>% layout(autosize=F, width=800, height=450)
+interactive_plot(ggplotly(p) %>% layout(autosize=F, width=800, height=450))
 }
 ```
 
@@ -716,7 +765,7 @@ p <- ggplot(merged_data, aes(x=Functional_Category, y=Ratio_Percentage, color=Li
   geom_jitter(alpha=0.2) + scale_color_manual(values=colors) +
   labs(x="", y="Ratio to Median (%)") + theme_pubr() +
   theme(axis.text.x=element_text(angle=45, hjust=1, size=8), legend.position="top")
-ggplotly(p) %>% layout(autosize=F, width=800, height=450)
+interactive_plot(ggplotly(p) %>% layout(autosize=F, width=800, height=450))
 }
 ```
 

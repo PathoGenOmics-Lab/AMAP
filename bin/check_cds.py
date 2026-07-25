@@ -345,7 +345,23 @@ def main():
         logging.info(f"Keeping {len(indices_para_mantener)} unique entries, removing {len(indices_para_eliminar)} duplicates")
 
         annotation_df = annotation_df.drop(indices_para_eliminar)
-    
+
+    # The sequence dictionaries were filled while iterating, before the rows
+    # above were dropped, and the FASTA files below are written straight from
+    # them. Without this they keep proteins whose row no longer exists, so the
+    # .faa ends up larger than the .tsv and the two disagree about which genes
+    # the sample has. Rebuild the keys the same way extract_and_translate_cds
+    # does: it stores the 0-based start, the table carries it 1-based.
+    surviving = {
+        f"{row['id']};{row['strand']};{int(row['start']) - 1}-{int(row['end'])}"
+        for _, row in annotation_df.iterrows()
+    }
+    n_orphans = len(cds_amino_acids) - len(surviving & set(cds_amino_acids))
+    if n_orphans:
+        logging.info(f"Dropping {n_orphans} sequence(s) whose annotation row was removed")
+    cds_amino_acids = {k: v for k, v in cds_amino_acids.items() if k in surviving}
+    cds_nts = {k: v for k, v in cds_nts.items() if k in surviving}
+
     logging.info(f"Saving filtered annotation DataFrame to {base_name + '.AMAP.tsv'}")
     annotation_df.to_csv(base_name + '.AMAP.tsv', sep='\t', index=False)
 

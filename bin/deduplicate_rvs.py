@@ -81,8 +81,26 @@ def deduplicate(genes):
     return [g for i, g in enumerate(genes) if i not in remove], remove
 
 
-def filter_fasta(path, remove_ids):
-    """Rewrite a FASTA file, removing entries whose ID is in remove_ids."""
+def record_key(gene):
+    """Rebuild the FASTA header check_cds.py wrote for this row.
+
+    Headers are 'id;strand;start-end' with a 0-based start, while the table
+    carries it 1-based.
+    """
+    return "%s;%s;%d-%s" % (gene['id'], gene['strand'],
+                            int(gene['start']) - 1, gene['end'])
+
+
+def filter_fasta(path, remove_keys):
+    """Rewrite a FASTA file, dropping the records named in remove_keys.
+
+    Matching is on the whole header, not the part before the first ';'. A
+    multi-copy gene has one record per placement, all sharing the same gene id
+    (Sakai_b4570 appears six times in E. coli O157:H7), so cutting the header
+    at the ';' deleted every copy as soon as one of them was removed. The gene
+    stayed in the table with no sequence anywhere, and the families this hits
+    are exactly the ones the duplication analysis is about.
+    """
     if not os.path.exists(path):
         return
     lines = []
@@ -90,8 +108,8 @@ def filter_fasta(path, remove_ids):
     with open(path) as fh:
         for line in fh:
             if line.startswith('>'):
-                seq_id = line[1:].split()[0].split(';')[0]
-                skip = seq_id in remove_ids
+                seq_id = line[1:].split()[0]
+                skip = seq_id in remove_keys
             if not skip:
                 lines.append(line)
     with open(path, 'w') as fh:
@@ -111,8 +129,10 @@ def main():
     n_removed = n_before - len(deduped)
 
     if n_removed > 0:
-        # Collect IDs of removed genes for FASTA filtering
+        # Collect the removed genes for FASTA filtering, keyed by placement so
+        # the other copies of a multi-copy gene survive.
         all_genes_orig = parse_amap_tsv(args.amap_tsv)[1]
+        removed_keys = {record_key(all_genes_orig[i]) for i in removed_indices}
         removed_ids = {all_genes_orig[i]['id'] for i in removed_indices}
 
         # Rewrite TSV
@@ -123,9 +143,9 @@ def main():
 
         # Filter FASTAs
         if args.faa:
-            filter_fasta(args.faa, removed_ids)
+            filter_fasta(args.faa, removed_keys)
         if args.fna:
-            filter_fasta(args.fna, removed_ids)
+            filter_fasta(args.fna, removed_keys)
 
         print(f"Deduplicated: removed {n_removed} gene(s)", file=sys.stderr)
         for rid in sorted(removed_ids):

@@ -662,6 +662,71 @@ class TestCheckCds:
             start, end, _ = self._run(d, 'S1_00042', '')
             assert (start, end) == (1, 39)
 
+    def test_fasta_matches_the_table_after_deduplication(self):
+        """Two genes that extend onto the same coordinates leave one row.
+
+        The sequence dictionaries are filled during the loop, before that row
+        is dropped, so the .faa used to keep a protein the .tsv no longer
+        listed.
+        """
+        import subprocess
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            genome = os.path.join(d, 'g.fasta')
+            with open(genome, 'w') as f:
+                # 1-33 and 1-36 both run on to the stop at 37-39
+                f.write(">chr1\n" + "ATG" + "GCT" * 11 + "TAA" + "GCT" * 20 + "\n")
+            tsv = os.path.join(d, 'sample_corrected.tsv')
+            with open(tsv, 'w') as f:
+                f.write("S1_geneA\t+\t1\t33\t\n")
+                f.write("S1_geneB\t+\t1\t36\t\n")
+            script = os.path.join(os.path.dirname(__file__), '..', 'bin', 'check_cds.py')
+            subprocess.run([sys.executable, script, genome, tsv],
+                           cwd=d, check=True, capture_output=True)
+
+            table = pd.read_csv(os.path.join(d, 'sample.AMAP.tsv'), sep='\t')
+            with open(os.path.join(d, 'sample.AMAP.faa')) as f:
+                faa = {l[1:].split(';')[0] for l in f if l.startswith('>')}
+            with open(os.path.join(d, 'sample.AMAP.fna')) as f:
+                fna = {l[1:].split(';')[0] for l in f if l.startswith('>')}
+
+            assert set(table['id']) == faa
+            assert faa == fna
+
+
+# =============================================================================
+# DEDUPLICATE RVS TESTS
+# =============================================================================
+
+class TestDeduplicateRvs:
+    """Tests for deduplicate_rvs.py."""
+
+    def test_removing_one_copy_keeps_the_others(self):
+        """A multi-copy gene has one record per placement, all sharing an id.
+
+        filter_fasta cut the header at the first ';', so removing one copy took
+        every copy of that gene with it.
+        """
+        from deduplicate_rvs import filter_fasta, record_key
+        gene = {'id': 'S1_b4570', 'strand': '+', 'start': '1207083', 'end': '1207478'}
+        key = record_key(gene)
+        assert key == 'S1_b4570;+;1207082-1207478'
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.faa', delete=False) as f:
+            f.write(">S1_b4570;+;1207082-1207478\nMKT\n")
+            f.write(">S1_b4570;+;1649191-1649588\nMKT\n")
+            f.write(">S1_b4570;+;1968105-1968502\nMKT\n")
+            f.flush()
+        filter_fasta(f.name, {key})
+        with open(f.name) as fh:
+            kept = [l.strip() for l in fh if l.startswith('>')]
+        os.unlink(f.name)
+        assert kept == ['>S1_b4570;+;1649191-1649588', '>S1_b4570;+;1968105-1968502']
+
+    def test_missing_file_is_ignored(self):
+        from deduplicate_rvs import filter_fasta
+        filter_fasta('/nonexistent/path.faa', {'anything'})
+
 
 # =============================================================================
 # MERGE RTABS TESTS

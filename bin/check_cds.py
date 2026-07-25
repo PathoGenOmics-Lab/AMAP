@@ -198,6 +198,10 @@ def extract_and_translate_cds(fasta_file, annotation_df):
         except Exception as e:
 
             logging.error(f"Error translating sequence for ide {ide}: {e}")
+            # Drop the row too: keeping it would emit a gene in the .AMAP.tsv
+            # (and hence the master table and GFF) with no matching record in
+            # the .AMAP.faa / .AMAP.fna.
+            indices_to_drop.append(index)
             continue
 
         # Track original coordinates for fallback
@@ -274,6 +278,9 @@ def extract_and_translate_cds(fasta_file, annotation_df):
                     pseudogene_ids.add(ide)
         else:
             logging.warning(f"Empty translation for {ide}, skipping")
+            # Same as above: no sequence was stored, so the row must not
+            # survive into the annotation table.
+            indices_to_drop.append(index)
             continue
 
         # Update annotation coordinates (they may have changed from stop extension)

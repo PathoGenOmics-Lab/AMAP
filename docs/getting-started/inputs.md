@@ -89,6 +89,15 @@ rather than corrected.
 so it is dropped or flagged as a pseudogene. The 1% warning is worth taking
 seriously.
 
+!!! note "Bakta renames your contigs"
+
+    Whatever your FASTA headers say, Bakta relabels them `contig_1`,
+    `contig_2` and so on, so the names in `BAKTA/` will not match the ones you
+    supplied. The corrected annotation keeps its own naming and the coordinates
+    are unaffected, since the correction matches on position rather than on
+    contig name. Worth knowing before you go looking for `NC_002695.2` in the
+    output and cannot find it.
+
 !!! warning "Multi-contig assemblies and coordinate collisions"
 
     The correction step keys genes on `(start, end, strand)` without the contig

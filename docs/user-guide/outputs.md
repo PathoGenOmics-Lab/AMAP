@@ -125,6 +125,32 @@ into it, so you can see exactly what was changed and why. The
 cases; `*-summary.tsv` aggregates the counts across samples and feeds the
 report.
 
+#### What a healthy summary looks like
+
+Two real runs, to calibrate expectations. On the left, *M. tuberculosis*
+CDC1551 against the bundled H37Rv reference. On the right, *E. coli* O157:H7
+Sakai against K-12 MG1655, using a custom reference.
+
+| Case | CDC1551 vs H37Rv | Sakai vs K-12 |
+| :--- | ---: | ---: |
+| case2, exact match | 2816 | 3325 |
+| case3, length differs | 24 | 34 |
+| case4, resolved conflict | 1097 | 537 |
+| case1_kept, genuinely novel | 11 | 1356 |
+| rv_missing, rescued | 97 | 102 |
+| total_cds before correction | 4077 | 5367 |
+
+The one number that differs by two orders of magnitude is case 1, and that is
+biology: CDC1551 is the same species as the reference so almost nothing is
+genuinely new, while O157:H7 carries prophages and the LEE island that K-12
+does not have.
+
+What should worry you is the opposite: **case 2 at or near zero**. Every gene
+disagreeing with the reference by a few bases means something systematic is
+wrong with the reference, not with 4000 individual genes. The usual cause is a
+reference proteome whose coordinates do not describe the sequence its proteins
+were translated from.
+
 ### `final_report.html`
 
 Self-contained, so it travels by email. Covers per-sample quality, missing

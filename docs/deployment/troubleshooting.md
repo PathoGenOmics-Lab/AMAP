@@ -32,7 +32,8 @@ resources or logic.
 
 **"Invalid TSV format"**
 : The header must be exactly `sampleId` and `fasta`, separated by a real tab.
-  Spaces are the usual culprit. `cat -A samples.tsv` shows tabs as `^I`.
+  Spaces are the usual culprit. `cat -t samples.tsv` shows tabs as `^I`, and
+  works on both Linux and macOS.
 
 **"FASTA file not found"**
 : A path in the sample sheet does not resolve. Absolute paths avoid the

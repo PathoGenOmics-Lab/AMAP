@@ -46,10 +46,10 @@ the pangenome.
 
     ---
 
-    From an installed Nextflow to a finished report, with every command spelled
-    out and nothing assumed.
+    From an empty folder to an annotated genome, every command spelled out,
+    with the numbers from a real run to check yours against.
 
-    [:octicons-arrow-right-24: Quickstart](getting-started/quickstart.md)
+    [:octicons-arrow-right-24: Tutorial](getting-started/tutorial.md)
 
 - :material-tune: __Every parameter__
 

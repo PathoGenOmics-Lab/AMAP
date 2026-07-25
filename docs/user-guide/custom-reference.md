@@ -87,6 +87,32 @@ the stop codon check, eggNOG functional annotation, duplication analysis, the
 pangenome and the report all work identically. The report simply omits the
 lineage and Mycobrowser sections.
 
+## What to expect from a real run
+
+*E. coli* O157:H7 Sakai corrected against K-12 MG1655, both straight from
+RefSeq:
+
+```text
+reference proteins extracted from the K-12 GenBank   4318
+CDS Bakta called on that same reference genome       4296
+Bakta false positives derived from the difference     142
+
+case2                                                3325
+case3                                                  34
+case4                                                 537
+case1_kept                                           1356
+rv_missing                                            102
+final annotation                                     5244 genes
+```
+
+The 142 are the automatically derived equivalent of the hand-curated MTBC
+false-positive list, and 1356 case 1 genes is what you would expect between two
+*E. coli* strains that genuinely differ.
+
+If your case 2 comes out at or near zero, stop and look at the reference rather
+than the sample. Every gene missing an exact match by a constant offset points
+at the reference, not at 4000 coincidences.
+
 ## Worked example
 
 *E. coli* K-12 MG1655 against the RefSeq reference:

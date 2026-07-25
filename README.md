@@ -5,7 +5,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License%3A-GPL%20v3-orange?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE)
 [![Docker Image](https://img.shields.io/badge/Docker%20Image-AMAP-blue?style=plastic&logo=docker)](https://hub.docker.com/repository/docker/paururo/amap/general)
 [![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-%23c9ac02?style=plastic)](https://doi.org/10.5281/zenodo.8024447)
-[![Tests](https://img.shields.io/badge/tests-58%20passed-brightgreen?style=plastic)](tests/)
+[![Docs](https://img.shields.io/badge/docs-pathogenomics--lab.github.io%2FAMAP-2f9e8a?style=plastic)](https://pathogenomics-lab.github.io/AMAP/)
 
 __Paula Ruiz-Rodriguez<sup>1</sup>__ 
 __and Mireia Coscolla<sup>1</sup>__
@@ -24,196 +24,86 @@ __and Mireia Coscolla<sup>1</sup>__
   </tr>
 </table>
 
+## 📖 Documentation
+
+Full documentation is published at
+**[pathogenomics-lab.github.io/AMAP](https://pathogenomics-lab.github.io/AMAP/)**:
+installation, every parameter, the output layout, deployment on HPC, and a
+reference for the correction algorithm itself (how each case is classified,
+which coordinates win a conflict, and the thresholds behind those decisions).
+
+| | |
+| :--- | :--- |
+| [Quickstart](https://pathogenomics-lab.github.io/AMAP/getting-started/quickstart/) | From an installed Nextflow to an open report |
+| [Parameters](https://pathogenomics-lab.github.io/AMAP/user-guide/parameters/) | Every flag and its default |
+| [Outputs](https://pathogenomics-lab.github.io/AMAP/user-guide/outputs/) | What every file is |
+| [How it works](https://pathogenomics-lab.github.io/AMAP/how-it-works/) | The workflow and the correction algorithm |
+| [Custom reference](https://pathogenomics-lab.github.io/AMAP/user-guide/custom-reference/) | Annotating non-MTBC organisms |
+| [Troubleshooting](https://pathogenomics-lab.github.io/AMAP/deployment/troubleshooting/) | When a run fails |
+
 ## What can AMAP do?
 
-AMAP is designed to provide a comprehensive and accurate annotation of MTBC genomes, starting from assembled genome sequences. The pipeline performs a series of steps to classify, annotate, correct, and analyze the genomes.
+AMAP takes assembled genomes and produces a corrected, functionally annotated
+gene set. It annotates each genome with Bakta, aligns a trusted reference
+proteome onto it with Miniprot, and then acts as a referee between the two:
+every CDS is classified, conflicting coordinates are resolved, reference genes
+the annotator missed are rescued, and every final CDS is checked for a valid
+stop codon.
 
-The main steps of the AMAP workflow are:
+The main steps:
 
-1.  **Database Setup ([eggnog](https://github.com/eggnogdb/))**: The pipeline first checks if the necessary EggNOG database exists. If the database (`bacteria.dmnd`) is found, this step is skipped. If not, it proceeds to download and build it before any analysis begins.
+1. **Database setup** ([eggNOG](https://github.com/eggnogdb/)): builds the eggNOG database if it is not already there.
+2. **MTBC lineage typing** ([pathotypr](https://github.com/PathoGenOmics-Lab/pathotypr)): assigns lineages from phylogenetic markers and renames the genomes accordingly. Skippable.
+3. **Genome annotation** ([Bakta](https://github.com/oschwengers/bakta)): CDS, tRNAs and other features, the baseline that AMAP corrects.
+4. **Protein alignment** ([miniprot](https://github.com/lh3/miniprot)): the reference proteome aligned onto each genome.
+5. **CDS case classification**: every CDS sorted by how it relates to the reference (novel, perfect match, imperfect match, conflicting coordinates, or a reference gene the annotator missed).
+6. **Annotation correction**: conflicts resolved and coordinates adjusted into a corrected gene set.
+7. **Functional annotation** ([eggNOG-mapper](https://github.com/eggnogdb/eggnog-mapper)): COG, KEGG, GO, EC, PFAM and CAZy assignments.
+8. **Gene duplication analysis**: duplication families per genome, plus homologous communities across genomes with network metrics.
+9. **Pangenome analysis** ([pangene](https://github.com/lh3/pangene)): gene content compared across the whole set.
+10. **Report**: a single self-contained HTML file covering all of the above.
 
-2.  **MTBC Lineage Typing ([pathotypr](https://github.com/PathoGenOmics-Lab/pathotypr))**: The pipeline classifies the input genomes into _Mycobacterium tuberculosis_ lineages using robust phylogenetic markers. This step can be skipped if desired. The results of this classification are used to rename the sequences for clarity in downstream analyses.
-
-3.  **Genome Annotation ([bakta](https://github.com/oschwengers/bakta))**: Each genome is then annotated using the **Bakta** tool. This process identifies coding sequences (CDS), tRNAs, and other genomic features, providing a baseline annotation for each genome.
-
-4.  **Protein Alignment ([miniprot](https://github.com/lh3/miniprot))**: The annotated proteins are aligned against a reference proteome (H37Rv) using **miniprot**. This step is crucial for identifying orthologous proteins and assessing the quality of the initial annotation.
-
-5.  **CDS Case Classification ([AMAP](https://github.com/PathoGenOmics-Lab/AMAP))**: Based on the alignments from miniprot, the pipeline classifies each CDS into different "cases" to identify discrepancies between the input genome's annotation and the reference.
-    * **Case 1**: Novel CDS not present in the reference.
-    * **Case 2**: Perfect match with the reference annotation.
-    * **Case 3**: Same start or end as the reference but with mismatches.
-    * **Case 4**: CDS coordinates corrected by AMAP.
-    * **Missing RVs**: Reference genes that were not annotated by Bakta in the input genome.
-
-6.  **Annotation Correction ([AMAP](https://github.com/PathoGenOmics-Lab/AMAP))**: Using the case classifications, the pipeline corrects the CDS annotations, adjusting start/end coordinates to produce a more accurate set of annotated genes.
-
-7.  **Functional Annotation ([eggNOG-mapper](https://github.com/eggnogdb/eggnog-mapper))**: The corrected protein sequences are functionally annotated using **eggNOG-mapper**. This assigns functional information, such as COG categories, to each gene.
-
-8.  **Gene Duplication Analysis ([AMAP](https://github.com/PathoGenOmics-Lab/AMAP))**: The pipeline identifies and analyzes gene duplications within each genome. It generates a network of duplicated genes and calculates various network metrics to characterize these duplications.
-
-9.  **Pangenome Analysis ([pangene](https://github.com/lh3/pangene))**: AMAP performs a pangenome analysis to compare the gene content across all processed genomes, helping to understand the core and accessory genome of the dataset.
-
-10. **Final Report Generation**: AMAP generates a comprehensive HTML report that exploits **all** pipeline outputs:
-    - **Sample Quality Overview**: per-sample CDS counts, correction rates, and missing gene statistics.
-    - **Missing Rv Genes**: which H37Rv reference genes are absent and in which lineages.
-    - **PE/PPE Gene Families**: distribution of these pathogenesis-critical genes per lineage.
-    - **KEGG Pathway Analysis**: top metabolic pathways and cross-lineage comparisons.
-    - **Gene Duplications**: community sizes, cross-genome homologous pairs, and network topology metrics.
-    - **Pangenome**: core/softcore/shell/cloud gene classification, frequency spectrum, and presence/absence heatmaps.
-    - **Master Table Explorer**: interactive, searchable table with all functional annotations (COG, KEGG, GO, EC, PFAMs, CAZy).
-    - Plus all existing sections: COG/Mycobrowser distributions, H37Rv comparisons, case statistics, and statistical tests.
+The [how it works](https://pathogenomics-lab.github.io/AMAP/how-it-works/)
+section documents each step and the correction algorithm in detail.
 
 ![AMAP pipeline map](.github/metroAMAP_trayectos_css_clean_anim.svg)
 
-## Parameters
+## Quickstart
 
-### Input/Output
-
-| Parameter | Description | Type | Default | Required |
-| :--- | :--- | :--- | :--- | :--- |
-| `--tsv` | Path to the input TSV file. The file should have two columns: `sampleId` and `fasta`, separated by a tab. | `file` | `example_files/test.tsv` | **Yes** |
-| `--outdir` | Path to the output directory where the results will be saved. | `string` | `results` | No |
-
-### Optional Arguments
-
-| Parameter | Description | Type | Default |
-| :--- | :--- | :--- | :--- |
-| `--skip_typing` | Skip the initial PATHOTYPR lineage typing step. Required for non-MTBC organisms. | `boolean` | `false` |
-| `--skip_functional_annotation` | Skip all functional annotation and downstream analysis steps. | `boolean` | `false` |
-| `--skip_mycobrowser` | Skip Mycobrowser functional categories. Auto-enabled when `--genus` is not Mycobacterium. | `boolean` | `false` |
-| `--genus` | The genus to be used for Bakta annotation. | `string` | `"Mycobacterium"` |
-| `--species` | The species to be used for Bakta annotation. | `string` | `"Mycobacterium tuberculosis"` |
-| `--bakta_db` | Path to the Bakta database directory. Only needed when running without a container. | `string` | `/data/bakta_db/db-light` |
-| `--validate_only` | Run input validation only — check all FASTAs and databases without executing the pipeline. | `boolean` | `false` |
-| `--max_cpus` | Maximum number of CPUs available for any single process. | `integer` | `24` |
-| `--max_memory` | Maximum memory available for any single process. | `string` | `50.GB` |
-| `--max_time` | Maximum wall-clock time for any single process. | `string` | `72.h` |
-| `--scratch` | Use node-local scratch disk for I/O-intensive processes. Enabled by default on HPC profiles. | `boolean` | `false` |
-| `--help` | Display the help message and exit. | `boolean` | `false` |
-| `--version` | Print pipeline and Nextflow versions and exit. | `boolean` | `false` |
-
-### Custom Reference (Organism-Agnostic Mode)
-
-Provide your own trusted reference to annotate **any prokaryote**:
-
-| Parameter | Description | Type | Default |
-| :--- | :--- | :--- | :--- |
-| `--ref_annotation` | Path to a trusted reference annotation (GFF3 or GenBank). Both `--ref_annotation` and `--ref_genome` must be provided together. | `file` | `null` |
-| `--ref_genome` | Path to the trusted reference genome (FASTA). | `file` | `null` |
-
-When set, AMAP extracts proteins from your reference, generates a false-positive database by comparing against Bakta, and uses your reference for all alignment and correction steps instead of the built-in H37Rv.
-
-### Reference & Database Arguments
-
-**Note**: All the necessary reference files for the standard MTBC analysis are **included in the Docker and Singularity images**. These files, originally sourced from public repositories like Zenodo, are located in the `/reference/` directory inside the container.
-
-Therefore, **you do not need to specify these parameters** if you are running the pipeline with Docker or Singularity for a standard analysis. The pipeline will automatically use the bundled files.
-
-These options are provided for advanced users who wish to:
-* Run the pipeline without a container.
-* Use custom or updated reference files.
-* Adapt the pipeline for other organisms.
-
-| Parameter | Description | Type | Default (within container) |
-| :--- | :--- | :--- | :--- |
-| `--bakta_db` | Path to the Bakta database directory. | `string` | `/data/bakta_db/db-light` |
-| `--eggnog_db` | Path to the pre-formatted eggNOG database directory. | `string` | `eggnog_db` |
-| `--pathotyper_snps` | Path to the SNPs TSV file for Pathotyper. | `file` | `/reference/snps_lineages.tsv` |
-| `--pathotyper_ref` | Path to the reference FASTA file for Pathotyper. | `file` | `/reference/MTB_ancestor_reference.fasta` |
-| `--miniprot_ref_aa` | Path to the reference amino acid proteome for Miniprot. | `file` | `/reference/aa_H37Rv.translated.fas` |
-| `--miniprot_ref_bad_bakta` | Path to a set of problematic proteins for Miniprot alignment. | `file` | `/reference/bad.bakta.translated.fas` |
-| `--miniprot_ref_h37rv` | Path to the reference genome FASTA for Miniprot. | `file` | `/reference/new_refH37Rv.fasta` |
-| `--bakta_proteins` | Path to a reference proteins GBK file for Bakta annotation. | `file` | `/reference/sequence.gb` |
-| `--mycobrowser_ref` | Path to the Mycobrowser reference TXT file for functional categorization. | `file` | `/reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt` |
-
-
-## First Steps for Using AMAP
-
-**Why Choose Nextflow with Conda and Singularity?** 
-Nextflow excels in managing complex workflows, offering reproducibility, scalability, and portability. It's particularly effective for bioinformatics and data analysis tasks. Nextflow's support for containerization with Docker and Singularity ensures consistent and isolated execution environments. Conda complements this by simplifying the package management process.
-
-### Installation Guide
-
-To set up your environment with Nextflow and Singularity, follow these straightforward steps:
-
-1. **Install Nextflow Using Conda**:
-   Begin by downloading Miniconda, a lightweight version of Conda, which simplifies package management. You can find it at [Miniconda's official site](https://docs.conda.io/en/latest/miniconda.html).
-2. **Create and Activate a Conda Environment**:
-   Organize your packages and dependencies in an isolated environment to avoid conflicts.
-   ```bash
-   conda create -n nextflow-env
-   conda activate nextflow-env
-3. **Install Nextflow in Conda Environment**:
-   With the Conda environment ready, install Nextflow seamlessly.
-   ```bash
-   conda install -c bioconda nextflow
-   ```
-4. **Install Singularity**:
-   To handle containerization, install Singularity following the detailed instructions in the [Singularity Installation Guide](https://docs.sylabs.io/guides/4.1/user-guide/quick_start.html).
-5. **Verify Installation**:
-   Confirm that Nextflow and Singularity are correctly installed and ready to use.
-   ```bash
-   nextflow -version
-   singularity --version
-   ```
-These steps ensure that you have a robust setup for running reproducible data analysis workflows using Nextflow, Conda, and Singularity.
-
-### Running AMAP
-
-Nextflow runs the pipeline directly from GitHub — no need to clone the repository.
-
-> [!NOTE]
-> If you are new to Nextflow, refer to [this page](https://nf-co.re/docs/usage/installation) on how to set it up. Test your setup with `-profile test` before running on real data.
-
-#### 🖥️ On a local machine (laptop / workstation)
+You need [Nextflow](https://www.nextflow.io/) 23.04 or newer and a container
+engine. Nothing else: every tool lives in the AMAP image, and there is no need
+to clone this repository.
 
 ```bash
-# With Docker (recommended for local use):
+conda create -n nextflow-env
+conda activate nextflow-env
+conda install -c bioconda nextflow
+```
+
+Check the installation with the bundled test dataset:
+
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile docker,test
+```
+
+Write a tab-separated sample sheet:
+
+```tsv
+sampleId	fasta
+G26689	/data/genomes/G26689.fasta
+G26690	/data/genomes/G26690.fasta
+```
+
+And run it:
+
+```bash
+# Local machine, Docker
 nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv
 
-# With Singularity (if Docker is not available):
-nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv
-```
+# HPC cluster, Singularity and SLURM
+nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv
 
-The pipeline auto-detects available CPUs and sets `max_memory` to 16 GB. Override if needed:
-
-```bash
-nextflow run PathoGenOmics-Lab/AMAP -profile docker \
-    --tsv samples.tsv --max_cpus 8 --max_memory 32.GB
-```
-
-#### 🏗️ On an HPC cluster (SLURM)
-
-Combine a container profile with the `slurm` profile:
-
-```bash
-nextflow run PathoGenOmics-Lab/AMAP \
-    -profile singularity,slurm \
-    --tsv samples.tsv
-```
-
-This submits each process as a separate SLURM job. Default resources: up to 48 CPUs, 128 GB RAM per job. Each process has time limits to prevent zombie jobs.
-
-**Customize for your cluster:**
-
-```bash
-# Custom partition and account:
-nextflow run PathoGenOmics-Lab/AMAP \
-    -profile singularity,slurm \
-    --tsv samples.tsv \
-    --max_cpus 64 --max_memory 256.GB \
-    -process.queue long \
-    -process.clusterOptions '--account=mygroup'
-```
-
-> [!TIP]
-> For large datasets (>100 genomes), SLURM is strongly recommended. The pipeline will submit up to 200 concurrent jobs, parallelizing Bakta, Miniprot, and eggNOG across all samples simultaneously.
-
-**Other schedulers:** Profiles for SGE (`-profile singularity,sge`) and PBS (`-profile singularity,pbs`) are also available.
-
-#### 🧬 Non-MTBC organisms
-
-```bash
+# A non-MTBC organism, with your own reference
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv \
     --skip_typing --skip_mycobrowser \
@@ -221,233 +111,49 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --ref_annotation my_reference.gbk --ref_genome my_reference.fasta
 ```
 
-### Advanced Usage
+`--validate_only` checks every FASTA and database path without running anything,
+which is worth doing before a long run.
 
-#### Resuming a run
-If your run is interrupted, resume from the last checkpoint with `-resume`:
+See [running AMAP](https://pathogenomics-lab.github.io/AMAP/user-guide/running/)
+for the full set of profiles and options.
+
+## Results
+
+Everything lands under `--outdir`, `results/` by default. The three to open
+first:
+
+| What | Where |
+| :--- | :--- |
+| The full interactive report | `results/final_report.html` |
+| Corrected annotation, per sample | `results/AMAP/{sampleId}/*-AMAP.gff3` |
+| Proteins for downstream tools | `results/AMAP/{sampleId}/*-AMAP.clean.faa` |
+
+Alongside them, `results/pipeline_info/` holds `software_versions.yml` and
+`params.yml`, which are what belongs in a methods section. Every directory is
+documented under
+[outputs](https://pathogenomics-lab.github.io/AMAP/user-guide/outputs/).
+
+## Development
 
 ```bash
-nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
-    --tsv samples.tsv -resume
+git clone https://github.com/PathoGenOmics-Lab/AMAP
+cd AMAP
+pip install pytest pandas numpy biopython intervaltree
+python -m pytest tests/ -v
 ```
 
-#### Test profile
-Run the pipeline with a small test dataset to verify installation:
+To preview the documentation locally:
 
 ```bash
-nextflow run PathoGenOmics-Lab/AMAP -profile docker,test
+pip install -r requirements-docs.txt
+mkdocs serve
 ```
 
+See
+[contributing](https://pathogenomics-lab.github.io/AMAP/about/contributing/).
 
-# Detailed Outputs
-
-The pipeline will create a main output directory (specified by `--outdir`, default: `results/`). Within this directory, a structured set of subdirectories will be generated for each step of the analysis.
-
-```
-results/
-├── AMAP/
-│   └── {sampleId}/
-│       ├── *-AMAP.faa                   # Final corrected protein sequences (all genes, including pseudogenes).
-│       ├── *-AMAP.clean.faa             # Clean proteome: no pseudogenes, no internal stops (for downstream tools).
-│       ├── *-AMAP.fna                   # Final corrected nucleotide sequences in FASTA format.
-│       ├── *-AMAP.gff3                  # Final corrected annotation in GFF3 format (spec-compliant).
-│       ├── *-AMAP.gbk                   # Final corrected annotation in GenBank format.
-│       ├── *-AMAP.qc.tsv               # Per-sample QC: genome size, GC%, coding density, hypothetical %, annotation rate.
-│       ├── *-AMAPmastertable.tsv        # Master table combining all annotation info (coordinates, eggNOG, Mycobrowser).
-│       ├── *-AMAP.COG.tsv               # Summary count of COG functional categories.
-│       └── *-AMAP.MycoBrowser.tsv       # Summary count of Mycobrowser functional categories.
-│
-├── BAKTA/
-│   └── {sampleId}/
-│       ├── *.faa                        # Original protein sequences from Bakta.
-│       ├── *.gbff                       # Original GenBank file from Bakta.
-│       ├── *.gff3                       # Original GFF3 file from Bakta.
-│       ├── *.hypotheticals.faa          # FASTA of hypothetical proteins.
-│       ├── *.hypotheticals.tsv          # TSV of hypothetical proteins.
-│       ├── *.png                        # Genome map image.
-│       ├── *.tsv                        # Original annotation table from Bakta.
-│       └── *.txt                        # Summary statistics from Bakta.
-│
-├── CDS_CASES/
-│   ├── summary/
-│   │   └── *-summary.tsv                # Summary table of all classified cases across all samples.
-│   └── {sampleId}/
-│       ├── *-case[1-4].tsv              # Tables for each specific case (novel, perfect match, mismatch, corrected).
-│       ├── *-rvmissing.tsv              # Genes from the reference (H37Rv) not found by Bakta.
-│       ├── *.html                       # Interactive plots visualizing gene overlaps.
-│       └── *_corrected.tsv              # The final list of corrected CDS coordinates before generating new annotation files.
-│
-├── DUPLICATIONS/
-│   ├── {sampleId}/
-│   │   ├── duplications*                # Raw BLASTp output for within-genome duplications.
-│   │   ├── duplications_*_groups.tsv    # Table grouping duplicated genes into families.
-│   │   └── *.dup                        # FASTA file of all duplicated protein sequences for the sample.
-│   ├── homologous_communities.tsv       # Summary table of homologous gene communities across all samples, with network metrics.
-│   └── homologous_communities.html      # Interactive network visualization of the homologous communities.
-│
-├── PANGENE/
-│   └── {sampleId}/
-│       ├── *.gfa                        # Pangenome graph in Graphical Fragment Assembly format.
-│       ├── *.bubbles.txt                # Details on structural variations (bubbles) in the graph.
-│       ├── *.Rtab                       # Presence/absence matrix of genes across genomes.
-│       └── *.stat                       # Statistics of the GFA graph.
-│
-├── PATHOTYPR/
-│   ├── typing/
-│   │   └── *_summary.tsv                # Summary of lineage classification from Pathotyper.
-│   ├── fastas/
-│   │   └── *.fasta                      # Renamed genome FASTA files based on the assigned lineage.
-│   └── renamed_fastas.tsv               # TSV file mapping original sample IDs to new lineage-based names.
-│
-├── pipeline_info/
-│   ├── execution_report_*.html          # Nextflow execution report.
-│   ├── execution_timeline_*.html        # Nextflow execution timeline.
-│   ├── pipeline_dag_*.html              # Pipeline dependency graph (DAG).
-│   ├── execution_trace_*.txt            # Nextflow execution trace file with resource usage.
-│   ├── software_versions.yml            # Exact versions of all tools used (for reproducibility / Methods).
-│   ├── software_versions.tsv            # Same as above in TSV format.
-│   ├── params.yml                       # All pipeline parameters for this run.
-│   ├── validation.log                   # Pre-flight input validation results.
-│   └── run_summary.txt                  # Machine-readable run summary (status, duration, sample counts).
-│
-└── final_report.html                    # Comprehensive HTML report with all analyses (COG, KEGG, PE/PPE,
-                                         #   pangenome, duplications, missing genes, quality overview, and more).
-```
-
-## Effect of Skip Options
-
-Using optional flags will prevent certain directories and files from being generated:
-
-* **If `--skip_typing` is used:**
-    * The entire `PATHOTYPR/` directory will not be created. The pipeline will proceed using the original sample IDs.
-
-* **If `--skip_functional_annotation` is used:**
-    * The pipeline will stop after the annotation correction step. The following directories and files **will not be generated**:
-        * `AMAP/`
-        * `DUPLICATIONS/`
-        * `PANGENE/`
-        * `final_report.html`
-
-## Network measures of Duplications
-1. **Degree Centrality** ``(AverageDegree1-2)``: Measures the number of direct connections a node has. In networks based on pairwise relationships, this measure is crucial for identifying highly connected nodes. Simply put,it is the average number of connections each node in the community has.
-2. **Closeness Centrality** ``(AverageCloseness1-2)``: Calculates the average distance of a node to all others in the network, identifying nodes capable of efficiently propagating information. This metric measures how'close' nodes are to each other in terms of steps or hops. A high value indicates that nodes are, on average, closer to each other.
-3. **Betweenness Centrality** ``(AverageBetweenness1-2)``: Indicates how often a node acts as a bridge on the shortest path between two other nodes, thus controlling the flow of information. A high value may indicate nodesthat act as 'bridges' between different parts of the network.
-4. **Eigen Centrality** ``(Eigen1-2)``: Values the number of connections of a node and the importance of the connected nodes, useful for identifying influential nodes in pairwise networks.
-5. **Katz Centrality** ``(Katz1-2)``: Similar to Eigen Centrality, but it considers nodes at greater distances with diminishing weight, useful for identifying influential nodes considering indirect connections.
-6. **Network Density** ``(Density1-2)``: The ratio of possible connections that are actual, indicating the degree of interconnection of the network. A density close to 1 indicates a highly connected network, while a lowdensity indicates a more dispersed network.
-7. **Clustering Coefficient** ``(ClusteringCoefficient1-2)``: Measures the degree to which nodes cluster together, indicating a well-defined community structure. This metric measures the extent to which nodes in a networktend to cluster or form closed groups. A high value suggests that if two nodes are connected to a third one, they are likely also connected to each other.
-8. **Average Path Length** ``(AveragePathLength1-2)``: The average distance between all pairs of nodes, with short lengths indicating a "small world" distance between any pair of nodes. It is the average number of stepsalong the shortest paths for all possible pairs of nodes. A low average path length means that most nodes can be reached from other nodes in a few steps.
-9. **Transitivity** ``(transitivity1-2)``: Measures the likelihood that the neighbors of a node are also connected to each other. It is similar to the clustering coefficient but applies to the entire network. It indicatesthe general tendency of the network to form triangles or "three connected friends."
-10. **Modularity** ``(modularity1-2)``: Evaluates the community structure within a network. High modularity indicates that the network has densely interconnected communities, but with few connections between these distinct communities. It helps to identify how well defined the communities are within the network.
-
-## AMAP Detailed Workflow
-```mermaid
-%%{init: { 'theme': 'dark' } }%%
-%%{init: { 'theme': 'dark' } }%%
-flowchart TB
-    subgraph "INPUT"
-    v0["GENOMES"]
-    end
-    v3([PATHOTYPR])
-    v4([BAKTA ANNOTATOR])
-    v6([MINIPROT])
-    v8([TYPE CASES])
-    v14([FIX ANNOTATION])
-    v20([GET 
-    DUPLICATIONS])
-    v17([EGGNOG DB])
-    v18([EGGNOG 
-    ANNOTATION])
-    v19([FUNCTIONAL
-    ANNOTATION])
-    v16["FINAL RUN 
-    REPORT"]
-    v22([PANGENE])
-    subgraph "RESULTS"
-    v12["OG Bakta annotation 
-    /BAKTA"]
-    v10["Report cases
-    /CDS_CASES"]
-    v13["Corrected annotation
-    /AMAP"]
-    v23["Duplicated genes
-    /DUPLICATIONS"]
-    v21["Pangenome"
-    /PANGENE]
-    v15["Lineage Typing
-    /PATHOTYPR"]
-    
-    end
-    v3 --> v4
-    v0 --> v3
-    v4 --> v12
-    v4 --> v6
-    v3 --> v6
-    v4 --> v8
-    v6 --> v8
-    v8 --> v10
-    v8 --> v14
-    v14 --> v13
-    v20 --> v13
-    v19 --> v13
-    v3 --> v15
-    v10 --> v16
-    v13 --> v16
-    v15 --> v16
-    v17 --> v18
-    v14 --> v19
-    v18 --> v19
-    v14 --> v20
-    v14 --> v22
-    v22 --> v21
-    v20 --> v23
-
-
-```
-
-# AMAP Correction Algorithm: A Deeper Look
-
-The core of AMAP's functionality is its algorithm for refining genome annotations. It acts as a "referee" between the initial annotation (from Bakta) and a trusted reference (alignments to the H37Rv proteome via Miniprot). The process involves classifying every potential gene and then applying a set of rules to resolve discrepancies.
-
----
-
-#### 1. Initial CDS Classification
-
-First, every CDS from the initial Bakta annotation is compared to the Miniprot alignments and categorized:
-
-* **Case 2 (Perfect Match)**: The Bakta CDS has the **exact same start and end coordinates** as a high-quality Miniprot alignment. These are considered correct and are kept.
-* **Case 3 (Imperfect Match)**: The Bakta CDS has the same coordinates, but the alignment length differs slightly (e.g., due to indels). These are also kept as they are generally reliable.
-* **Case 4 (Conflicting Overlap)**: A Bakta CDS and a Miniprot alignment overlap positionally, but their start/end coordinates do not match. These are conflicts that must be resolved.
-* **Case 1 (Potentially Novel)**: A Bakta CDS has **no overlap** with any Miniprot alignment. This suggests it might be a novel gene not present in the H37Rv reference.
-* **Missing RVs**: A Miniprot alignment has **no overlap** with any Bakta CDS. This represents a reference gene that the initial annotation tool missed entirely. These are automatically "rescued" and added to the set of trusted genes.
-
----
-
-#### 2. Conflict Resolution and Decision Logic
-
-The algorithm's main task is to resolve the conflicts from **Case 4** and filter the potentially novel genes from **Case 1**.
-
-* **Filtering Case 1**: Potentially novel genes are scrutinized. A gene is **removed** if:
-    * It has an overlap of **≥ 80%** with a database of known false positives or problematic annotations.
-    * It shows a weak but significant alignment (**≥ 80%** match identity) to the reference, indicating it's not truly novel but a mis-annotation.
-    * Genes that pass these filters are kept (`case1_kept`).
-
-* **Resolving Case 4 Conflicts**: When a Bakta CDS and a H37Rv alignment overlap, a winner is chosen based on the following logic:
-    * **Single Overlaps**: For a one-to-one conflict, the algorithm compares the length of the Bakta annotation versus the length of the H37Rv alignment.
-        * The **H37Rv version is preferred by default**.
-        * The Bakta version is only chosen if it is substantially longer than the H37Rv alignment (a difference of **> 550 bp**). This rule avoids discarding a potentially full-length gene in favor of a shorter, fragmented reference alignment.
-    * **Multiple Overlaps**: If multiple Bakta CDSs overlap a single H37Rv alignment (a sign of a fragmented gene), the algorithm first finds the Bakta CDS with the best overlap percentage. It then compares this "best" Bakta CDS to the H37Rv alignment using a similar length-based rule (threshold of **500 bp**).
-
-* **Final De-duplication**: After a "winner" is chosen from a conflict, it is compared against the existing set of trusted genes. If the new gene has a high overlap (**≥ 70%**) with an existing one, it is only kept if it is substantially longer (difference **> 550 bp**). This prevents the inclusion of redundant, shorter fragments.
-
-![AMAP pipeline map](.github/plot_AMAP_algorithm.svg)
-
----
-
-#### 3. Final Quality Control: Stop Codon Check
-
-As a final validation step (performed by the `check_cds.py` script), the algorithm translates every CDS in the final, corrected set. If a sequence does not end with a valid stop codon, its coordinates are automatically extended to the next in-frame stop codon in the genome. This ensures that all final annotations correspond to complete, translatable proteins.
 ## Citation
+
 >Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.0) [Computer software]. https://doi.org/10.5281/zenodo.8024447
 ```bibtex
 @software{Ruiz-Rodriguez_AMAP_2026,

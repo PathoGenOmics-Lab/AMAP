@@ -12,18 +12,23 @@ The genome is *Mycobacterium tuberculosis* CDC1551, corrected against the H37Rv
 reference that ships inside the AMAP container. At the end there is a second
 pass showing the same thing for a non-MTBC organism.
 
-Budget about half an hour of wall clock, most of it spent downloading the
-container and building the eggNOG database on first use.
+The correction itself takes minutes on one genome. What dominates the first run
+is setup: pulling a 12 GB image and building the eggNOG database, both of which
+happen once and are reused afterwards. Expect the first run to take
+considerably longer than every run after it, and do not read a long silence
+during the database build as a failure.
 
 ## 1. What you need
 
-Two things, and nothing else. Every tool the pipeline calls lives inside the
-AMAP image.
+Nextflow and a container engine. Every tool the pipeline itself calls lives
+inside the AMAP image, so there is nothing else to install.
+
+The easiest way to get Nextflow is Conda. If you do not have it,
+[Miniforge](https://github.com/conda-forge/miniforge) is the one to install:
 
 ```bash
-conda create -n nextflow-env
+conda create -n nextflow-env -c conda-forge -c bioconda nextflow
 conda activate nextflow-env
-conda install -c bioconda nextflow
 ```
 
 Nextflow needs Java 11 or newer. Check what you have:
@@ -48,6 +53,17 @@ docker --version        # or: singularity --version
 
 Full details, including running without a container, are on the
 [installation page](installation.md).
+
+!!! warning "On an Apple Silicon Mac, read this first"
+
+    The AMAP image is `linux/amd64` only, so on an M-series Mac every step runs
+    under emulation. The test profile in step 2 is fine. A real genome is slow
+    enough that a working run can look like a hung one, which is the part worth
+    knowing before you start wondering what you broke.
+
+    It is a reasonable way to learn what the pipeline does and to check your
+    sample sheet. For results you intend to use, move to an amd64 machine or a
+    cluster.
 
 ### The machine
 
@@ -92,6 +108,21 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
 You still get the corrected annotation, which is what AMAP exists to produce.
 What you lose is eggNOG categories, the pangenome and the duplication analysis.
 The heaviest step left asks for 8 GB.
+
+!!! danger "Docker Desktop has its own memory limit, and it is the one that counts"
+
+    On macOS and Windows, Docker runs your containers inside a virtual machine
+    with a memory ceiling of its own, often 8 GB by default no matter how much
+    the machine has. Nextflow sizes its requests against the host, so it will
+    happily start a 12 GB task that the VM then kills. You get exit code 137
+    and nothing that mentions Docker.
+
+    Raising `--max_memory` makes this worse, not better. Raise the VM instead,
+    in Docker Desktop under Settings, Resources, Memory, and keep
+    `--max_memory` at or below what you set there.
+
+    Linux has no such layer. Containers use host memory directly and this does
+    not apply.
 
 ## 2. Check the plumbing before touching real data
 

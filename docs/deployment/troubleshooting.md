@@ -70,9 +70,19 @@ is normal. Persistent failures mean raising the ceiling:
 --max_memory 256.GB
 ```
 
-**eggNOG runs out of memory.** It is the hungriest step, and it runs once over
-all samples together. Use the `highmem` profile, or point it at a large-memory
-partition:
+On a cluster, that is the whole answer. On a macOS or Windows laptop it is the
+wrong one: Docker Desktop runs containers inside a VM with its own memory
+ceiling, commonly 8 GB, and that ceiling is what killed the process. Nextflow
+sized the request against the host and never saw it. Raising `--max_memory`
+only makes the request larger than a limit it was already over. Raise the VM in
+Docker Desktop under Settings, Resources, Memory, then keep `--max_memory` at
+or below it.
+
+**eggNOG runs out of memory.** It is the hungriest step, requesting 50 GB, and
+it runs once over all samples together. On a machine that cannot reach that,
+`--skip_functional_annotation` drops it along with the pangenome and the
+duplication analysis and still gives you the corrected annotation. On a cluster,
+use the `highmem` profile, or point it at a large-memory partition:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm,highmem \

@@ -13,6 +13,7 @@ copyright: Copyright &copy; PathoGenOmics Lab &middot; GPL-3.0
 
 theme:
   name: material
+  custom_dir: overrides
   logo: assets/logo.png
   favicon: assets/logo.png
   language: en
@@ -46,6 +47,10 @@ theme:
         icon: material/brightness-4
         name: Switch to system preference
   features:
+    # Pages are swapped in without a full reload, so navigation feels instant
+    # and the scroll position and search index survive.
+    - navigation.instant
+    - navigation.instant.progress
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.sections
@@ -53,14 +58,19 @@ theme:
     - navigation.footer
     - navigation.indexes
     - navigation.tracking
+    - navigation.path
     - toc.follow
     - search.suggest
     - search.highlight
     - search.share
     - content.code.copy
+    - content.code.select
     - content.code.annotate
     - content.tabs.link
     - content.tooltips
+    # edit_uri is set above, but without these the buttons never render.
+    - content.action.edit
+    - content.action.view
 
 # Broken cross-references and dead anchors become warnings, which `mkdocs build
 # --strict` in CI turns into a failed build.
@@ -69,6 +79,10 @@ validation:
   absolute_links: warn
   unrecognized_links: warn
   anchors: warn
+
+# Appended to every page by pymdownx.snippets rather than being a page itself.
+not_in_nav: |
+  includes/*
 
 extra_css:
   - stylesheets/extra.css
@@ -85,6 +99,7 @@ markdown_extensions:
       permalink: true
       toc_depth: 3
   - pymdownx.betterem
+  - pymdownx.blocks.caption
   - pymdownx.caret
   - pymdownx.keys
   - pymdownx.mark
@@ -99,6 +114,10 @@ markdown_extensions:
       base_path:
         - "."
       check_paths: true
+      # Appended to every page, so a term defined once gets a tooltip
+      # everywhere it appears without anyone having to remember to link it.
+      auto_append:
+        - docs/includes/abbreviations.md
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -114,6 +133,14 @@ markdown_extensions:
 
 plugins:
   - search
+  # Stamps each page with the date of the last commit that touched it, so a
+  # reader can tell whether what they are looking at is current. Needs the full
+  # history: both jobs in docs.yml check out with fetch-depth 0. The fallback
+  # keeps a shallow clone or a tarball building rather than failing.
+  - git-revision-date-localized:
+      type: date
+      enable_creation_date: false
+      fallback_to_build_date: true
 
 extra:
   social:

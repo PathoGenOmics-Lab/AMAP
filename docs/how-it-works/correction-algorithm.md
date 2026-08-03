@@ -145,6 +145,11 @@ FASTA files, so the two never disagree.
 
 <div class="amap-figure" markdown>
 ![AMAP correction algorithm](../assets/correction-algorithm.svg)
+/// caption
+Two passes. The top row assigns every Bakta call a case from how it matches the
+H37Rv reference. The bottom row takes those cases and decides, wherever the two
+sets of coordinates overlap, which one survives into the curated annotation.
+///
 </div>
 
 ## Threshold summary

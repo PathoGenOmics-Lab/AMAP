@@ -39,7 +39,11 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
+      # Full history: git-revision-date-localized reads the last commit date of
+      # every page, and a shallow clone silently dates them all the same.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:

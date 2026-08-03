@@ -291,7 +291,197 @@
   background: hsl(190, 16%, 9%);
 }
 
+/* content.action.edit and .view put two icons in the top right of the content
+   area. On the landing page that area belongs to the hero, and they end up
+   floating over it. Every other page keeps them. */
+.md-content__inner:has(.amap-hero) .md-content__button {
+  display: none;
+}
+
+/* Breadcrumbs from navigation.path. They sit above the h1 and should read as
+   a whisper, not a second title. */
+.md-path {
+  font-size: 0.62rem;
+  opacity: 0.72;
+}
+
+/* The "Last update" stamp, from git-revision-date-localized. */
+.md-source-file__fact {
+  font-size: 0.62rem;
+  opacity: 0.7;
+}
+
+/* Text selection in the brand colour rather than the browser default blue. */
+::selection {
+  background: color-mix(in srgb, var(--amap-teal) 30%, transparent);
+}
+
+/* ==========================================================================
+   Call to action
+   Two buttons under the hero. The first is filled, the second outlined, so
+   there is one obvious next step rather than two competing ones.
+   ========================================================================== */
+
+.amap-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-top: 1.4rem;
+}
+.md-typeset .amap-cta .md-button {
+  margin: 0;
+  border-radius: 2rem;
+  padding: 0.5rem 1.3rem;
+  font-weight: 600;
+  border-width: 2px;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.md-typeset .amap-cta .md-button--primary {
+  background: var(--amap-teal);
+  border-color: var(--amap-teal);
+  color: #fff;
+}
+.md-typeset .amap-cta .md-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--amap-teal) 35%, transparent);
+}
+
+/* ==========================================================================
+   404
+   ========================================================================== */
+
+.amap-404 {
+  text-align: center;
+  max-width: 34rem;
+  margin: 3rem auto;
+  padding: 0 1rem;
+}
+.amap-404__code {
+  font-size: 5rem;
+  line-height: 1;
+  font-weight: 800;
+  margin: 0;
+  color: var(--amap-teal);
+  opacity: 0.28;
+  letter-spacing: -0.03em;
+}
+.amap-404 h1 {
+  margin-top: 0.4rem;
+}
+.amap-404__hint {
+  margin-top: 1.6rem;
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+
+/* ==========================================================================
+   Admonitions, continued
+   Only `note` was wired to the palette. Give the ones the docs actually lean
+   on the same treatment so a warning reads as a warning at a glance.
+   ========================================================================== */
+
+.md-typeset .admonition.tip,
+.md-typeset .admonition.success {
+  border-left: 0.2rem solid var(--amap-aqua);
+}
+.md-typeset .admonition.tip > .admonition-title,
+.md-typeset .admonition.success > .admonition-title {
+  background: color-mix(in srgb, var(--amap-aqua) 12%, transparent);
+}
+.md-typeset .admonition.warning > .admonition-title {
+  background: color-mix(in srgb, #ff9100 12%, transparent);
+}
+.md-typeset .admonition.danger > .admonition-title {
+  background: color-mix(in srgb, #ff5252 12%, transparent);
+}
+
+/* ==========================================================================
+   Code
+   ========================================================================== */
+
+/* The named-block header, e.g. ```bash title="samples.tsv" */
+.md-typeset .highlight > .filename {
+  border-radius: 0.4rem 0.4rem 0 0;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Line selection, from content.code.select. */
+.md-typeset .highlight .hll,
+.md-typeset .highlight [data-md-visible] > mark {
+  background: color-mix(in srgb, var(--amap-teal) 18%, transparent);
+}
+
+/* Search hits, so the term you typed is findable in the page you land on. */
+.md-typeset mark {
+  background: color-mix(in srgb, var(--amap-aqua) 35%, transparent);
+  border-radius: 0.15rem;
+}
+
+/* Figure captions, from pymdownx.blocks.caption. */
+.md-typeset figcaption {
+  font-size: 0.72rem;
+  opacity: 0.78;
+  max-width: none;
+  margin-top: 0.4rem;
+}
+
+/* Abbreviations carry a tooltip. Mark them without turning the prose into a
+   dotted minefield: a faint underline that only firms up on hover. */
+.md-typeset abbr {
+  border-bottom: 1px dotted var(--md-default-fg-color--lighter);
+  text-decoration: none;
+  cursor: help;
+}
+.md-typeset abbr:hover {
+  border-bottom-color: var(--amap-teal);
+}
+
+/* ==========================================================================
+   Tables, continued
+   ========================================================================== */
+
+.md-typeset table:not([class]) tbody tr {
+  transition: background 100ms ease;
+}
+.md-typeset table:not([class]) tbody tr:hover {
+  background: color-mix(in srgb, var(--amap-teal) 7%, transparent);
+}
+
+/* ==========================================================================
+   Scrollbar
+   ========================================================================== */
+
+@supports selector(::-webkit-scrollbar) {
+  ::-webkit-scrollbar {
+    width: 0.4rem;
+    height: 0.4rem;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--md-default-fg-color--lighter);
+    border-radius: 0.2rem;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--amap-teal);
+  }
+}
+
 @media screen and (max-width: 44.9em) {
   .amap-hero img.amap-hero__logo { width: 180px; }
   .amap-hero__title { font-size: 1.2rem; }
+  .amap-cta { flex-direction: column; }
+}
+
+/* Respect a reduced-motion preference: the hover lift and the transitions are
+   decoration, and the pipeline map on the home page already moves enough. */
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset .amap-cta .md-button,
+  .md-typeset table:not([class]) tbody tr,
+  .md-typeset .grid.cards > ul > li {
+    transition: none;
+  }
+  .md-typeset .amap-cta .md-button:hover {
+    transform: none;
+  }
 }

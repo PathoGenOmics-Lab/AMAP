@@ -16,6 +16,14 @@ hide:
     <span class="amap-badge amap-badge--alt"><span class="amap-badge__k">nextflow</span><span class="amap-badge__v">&ge;23.04</span></span>
     <span class="amap-badge amap-badge--alt"><span class="amap-badge__k">tests</span><span class="amap-badge__v">92 passing</span></span>
   </p>
+  <p class="amap-cta">
+    <a class="md-button md-button--primary" href="getting-started/tutorial/">
+      Start the tutorial
+    </a>
+    <a class="md-button" href="https://github.com/PathoGenOmics-Lab/AMAP">
+      View on GitHub
+    </a>
+  </p>
 </div>
 
 **AMAP** takes assembled prokaryotic genomes and produces a corrected,

@@ -104,7 +104,8 @@ python3 bin/report/demo/make_demo.py demo_inputs
 docker run --rm -v "$PWD:/w" -w /w paururo/amap:latest \
   Rscript -e 'rmarkdown::render("bin/report/report_AMAP.Rmd",
     output_file="/w/demo.html",
-    params=list(cog_file="/w/demo_inputs/input_cog.txt",
+    params=list(version="v1.0.1",
+                cog_file="/w/demo_inputs/input_cog.txt",
                 myco_file="/w/demo_inputs/input_myco.txt",
                 summary_file="/w/demo_inputs/input_summary.txt",
                 empty_file="/w/demo_inputs/input_noref.txt",

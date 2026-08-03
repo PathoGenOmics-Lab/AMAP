@@ -52,13 +52,18 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
         -profile singularity,slurm --tsv samples.tsv
     ```
 
-The pipeline auto-detects the CPUs available and caps memory at 16 GB. Override
-either when the machine allows more:
+Resource requests are capped at 24 CPUs and 50 GB by default, which is what the
+eggNOG annotation step asks for. Nextflow refuses to start a task requesting
+more memory than the machine has, so on anything smaller than a server, lower
+the ceiling:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \
-    --tsv samples.tsv --max_cpus 8 --max_memory 32.GB
+    --tsv samples.tsv --max_cpus 4 --max_memory 12.GB
 ```
+
+The [tutorial](tutorial.md#the-machine) has the per-step figures and what to do
+when the machine cannot reach them.
 
 ## 4. Read the results
 

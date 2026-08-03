@@ -35,6 +35,7 @@ than by reading it. Several changed what the pipeline outputs, so results from
 - **Layout**: the stylesheet was losing to the one rmarkdown inlines afterwards, so the article sat underneath the table of contents and the left logo on top of the title
 - **Self-contained without a network at render time**: jQuery came from a CDN and the second logo from GitHub. pandoc inlines those when the render machine has a network and leaves them dangling when it does not, so a report rendered on an isolated node arrived with a broken image
 - **Half the size**: 8.2 MB to 4.4 MB, by shipping only the plotly traces actually used and quantising the figures
+- **The version in the report is the version that produced it**: it was written by hand in three places in the Rmd, so any release that forgot to update them published a report naming the wrong version. It now comes from the manifest in `nextflow.config`
 
 ### 📚 Documentation and infrastructure
 - **Documentation site** built with MkDocs Material, published to GitHub Pages, including a tutorial with the numbers from real runs and a rendered example report

@@ -49,6 +49,50 @@ docker --version        # or: singularity --version
 Full details, including running without a container, are on the
 [installation page](installation.md).
 
+### The machine
+
+Worth checking before you start, because this is what stops a run rather than
+anything you will have got wrong.
+
+Disk goes first. The container is 12 GB unpacked. The eggNOG database is built
+on first use and cached: AMAP skips the 60 GB Diamond core that eggNOG-mapper
+would otherwise fetch and builds a bacteria-only index of about 3 GB instead,
+on top of the metadata it downloads. Nextflow keeps every intermediate under
+`work/`, which for one genome is a few GB and grows with the sample sheet.
+
+Memory decides whether the run finishes at all. Two steps are heavy:
+
+| Step | CPUs | Memory requested |
+| :--- | ---: | ---: |
+| eggNOG annotation | 24 | 50 GB |
+| eggNOG database build | 16 | 45 GB |
+| Pangenome | 16 | 16 GB |
+| Duplication analysis | 6 | 10 GB |
+| Report | 1 | 8 GB |
+| Bakta annotation | 12 | 6 GB |
+| Everything else | 1 to 8 | under 6 GB |
+
+Nextflow will not start a task that asks for more memory than the machine has,
+so on a laptop these requests are the thing that fails, not your data. Lower
+the ceiling and every request is clamped to it:
+
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile docker \
+    --tsv samples.tsv --max_cpus 4 --max_memory 12.GB
+```
+
+eggNOG will be slower and may still run out on a genuinely small machine. The
+alternative is to skip functional annotation altogether:
+
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile docker \
+    --tsv samples.tsv --skip_functional_annotation
+```
+
+You still get the corrected annotation, which is what AMAP exists to produce.
+What you lose is eggNOG categories, the pangenome and the duplication analysis.
+The heaviest step left asks for 8 GB.
+
 ## 2. Check the plumbing before touching real data
 
 The test profile annotates the reference genome that ships inside the

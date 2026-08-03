@@ -95,7 +95,7 @@ process FINAL_REPORT {
     WORK_DIR=`pwd`
     echo \$WORK_DIR
     echo "▸ [REPORT] Rendering HTML report..." >&2
-    Rscript -e "rmarkdown::render('report_AMAP.Rmd', output_file='final_report.html',params=list(cog_file='\$WORK_DIR/${input_cog}', myco_file='\$WORK_DIR/${input_myco}', summary_file='\$WORK_DIR/${input_summary}', empty_file='\$WORK_DIR/${input_noref}', rvmissing_file='\$WORK_DIR/${input_rvmissing}', mastertable_file='\$WORK_DIR/${input_mastertables}', pangene_file='\$WORK_DIR/${input_pangene}', dup_file='\$WORK_DIR/${dup_communities_tsv}', qc_file='\$WORK_DIR/${input_qc}'))" \
+    Rscript -e "rmarkdown::render('report_AMAP.Rmd', output_file='final_report.html',params=list(version='v${workflow.manifest.version}', cog_file='\$WORK_DIR/${input_cog}', myco_file='\$WORK_DIR/${input_myco}', summary_file='\$WORK_DIR/${input_summary}', empty_file='\$WORK_DIR/${input_noref}', rvmissing_file='\$WORK_DIR/${input_rvmissing}', mastertable_file='\$WORK_DIR/${input_mastertables}', pangene_file='\$WORK_DIR/${input_pangene}', dup_file='\$WORK_DIR/${dup_communities_tsv}', qc_file='\$WORK_DIR/${input_qc}'))" \
     || {
         echo "" >&2
         echo "╔══════════════════════════════════════════════════╗" >&2

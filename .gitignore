@@ -11,3 +11,6 @@ results/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Inputs and outputs of tests/selftest/h37rv_selftest.sh
+selftest_h37rv/

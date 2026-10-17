@@ -38,6 +38,31 @@ reconciliation rules, and the parsers, and it runs in about a second. Anything
 touching `bin/classify/` should come with a test, since the correction logic is
 where a silent change does the most damage.
 
+### Annotating H37Rv with itself
+
+A change to the correction algorithm should also pass the self-test, which has
+exactly one right answer: annotating H37Rv against its own reference must give
+back every CDS of the AL123456.3 GenBank record, at exactly its coordinates and
+strand, under its own name.
+
+```bash
+docker run --rm --platform linux/amd64 -v "$PWD:/amap" -w /amap \
+    paururo/amap:latest bash tests/selftest/h37rv_selftest.sh
+```
+
+```text
+GenBank CDS: 4031   AMAP genes: 4031
+  exact and named right: 4031
+  not at exactly their coordinates: 0
+  named wrong: 0
+  AMAP genes that are no GenBank CDS: 0
+```
+
+The first run spends a couple of minutes on Bakta and miniprot and keeps their
+output under `selftest_h37rv/`. After that it only runs `classify_cases.py`,
+`check_cds.py` and `deduplicate_rvs.py`, in seconds, and exits non-zero with
+the offending genes listed if anything is missing, misplaced or misnamed.
+
 The quickest way to run the whole pipeline is the test profile:
 
 ```bash

@@ -943,3 +943,249 @@ class TestBiopythonCompat:
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
+
+
+# =============================================================================
+# PARALOG PLACEMENTS (synteny.py)
+# =============================================================================
+
+class TestParalogPlacements:
+    """drop_paralog_placements keeps each protein at its own locus.
+
+    The frames mimic read_miniprot(..., ref_coords=True): anchors are proteins
+    placed once, every 10 kb, and a 2 kb insertion halfway through the sample
+    shifts everything after it, so reference coordinates cannot be compared
+    with sample positions directly.
+    """
+
+    COLS = ['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt',
+            'Ref Start', 'Ref End', 'Contig']
+
+    @classmethod
+    def _frame(cls, extra=(), contig='chr', insertion_at=200_000, shift=2_000, n=40):
+        rows = []
+        for i in range(n):
+            ref = 10_000 * i + 1
+            pos = ref + (shift if ref > insertion_at else 0)
+            rows.append([f'g{i}', 300, '+', pos, pos + 899, 900, 900, ref, ref + 899, contig])
+        rows += [list(r) + [contig] if len(r) == 9 else list(r) for r in extra]
+        return pd.DataFrame(rows, columns=cls.COLS)
+
+    @staticmethod
+    def _placed(df, prot):
+        return sorted(df.loc[df['Prot Id'] == prot, 'Start'])
+
+    def test_returns_the_usual_columns(self):
+        """-rvmissing.tsv and the report expect exactly these seven."""
+        from classify.synteny import drop_paralog_placements
+        out = drop_paralog_placements(self._frame())
+        assert list(out.columns) == ['Prot Id', 'Prot len', 'Strand', 'Start', 'End',
+                                     'Match Nt', 'Num nt']
+
+    def test_paralog_on_another_genes_locus_is_dropped(self):
+        """Rv1945 also lands inside Rv1148c; that copy is Rv1148c's locus."""
+        from classify.synteny import drop_paralog_placements
+        # P belongs at reference 305_001, i.e. sample 307_001 after the insertion,
+        # and also aligns inside g5 at 50_001.
+        df = self._frame(extra=[
+            ['P', 300, '+', 307_101, 307_900, 800, 800, 305_101, 305_900],
+            ['P', 300, '+', 50_100, 50_899, 780, 800, 305_101, 305_900],
+        ])
+        out = drop_paralog_placements(df)
+        assert self._placed(out, 'P') == [307_101]
+        assert self._placed(out, 'g5') == [50_001]
+
+    def test_offsets_come_from_the_sample_not_the_reference(self):
+        """After an insertion, a protein's reference coordinates point at
+        another locus of the sample. Compared in absolute terms, a copy sitting
+        exactly there would pass for the protein's own; the local offset says
+        the protein is 5 kb further on.
+        """
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(shift=5_000)
+        df = df[df['Prot Id'] != 'g30']
+        extra = pd.DataFrame([
+            # Q belongs at reference 295_001, sample 300_001 after the shift.
+            ['Q', 300, '+', 300_001, 300_900, 900, 900, 295_001, 295_900, 'chr'],
+            # P belongs at reference 300_101, sample 305_101; it also aligns
+            # at 300_101, inside Q, where its reference coordinates point.
+            ['P', 300, '+', 305_101, 305_800, 700, 700, 300_101, 300_800, 'chr'],
+            ['P', 300, '+', 300_100, 300_799, 700, 700, 300_101, 300_800, 'chr'],
+        ], columns=self.COLS)
+        out = drop_paralog_placements(pd.concat([df, extra], ignore_index=True))
+        assert self._placed(out, 'P') == [305_101]
+        assert self._placed(out, 'Q') == [300_001]
+
+    def test_identical_copies_annotated_differently_follow_position(self):
+        """Rv1150 and Rv1041c: two identical copies of one element, annotated
+        as the short protein at one and the long one at the other. Only
+        position can tell which is which."""
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(extra=[
+            # short protein S belongs at 120_001, long protein L at 340_001
+            ['S', 184, '+', 120_001, 120_552, 552, 552, 120_001, 120_552],
+            ['S', 184, '+', 342_001, 342_552, 552, 552, 120_001, 120_552],
+            ['L', 288, '+', 120_001, 120_864, 864, 864, 340_001, 340_864],
+            ['L', 288, '+', 342_001, 342_864, 864, 864, 340_001, 340_864],
+        ])
+        out = drop_paralog_placements(df)
+        assert self._placed(out, 'S') == [120_001]
+        assert self._placed(out, 'L') == [342_001]
+
+    def test_better_match_is_not_dropped_for_its_position(self):
+        """E. coli Sakai has two of K-12's three ldr toxin copies. The second
+        one sits where b4423 belongs, but it is a b4421, which differs from
+        b4423 at two residues; position alone labelled it b4423."""
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(extra=[
+            # b4421-like belongs at 120_001; b4423-like at 125_001. The sample's
+            # copy at 125_001 is an exact b4421 and a 94% b4423.
+            ['b4421', 36, '+', 120_001, 120_108, 108, 108, 120_001, 120_108],
+            ['b4421', 36, '+', 125_001, 125_108, 108, 108, 120_001, 120_108],
+            ['b4423', 36, '+', 125_001, 125_108, 102, 108, 125_001, 125_108],
+        ])
+        out = drop_paralog_placements(df)
+        assert self._placed(out, 'b4421') == [120_001, 125_001]
+        assert self._placed(out, 'b4423') == [125_001]
+
+    def test_overlapping_genes_in_different_frames_are_kept(self):
+        """Rv1041c and Rv1042c really overlap, in different frames. A SNP in
+        one of them must not cost it its place to the other."""
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(extra=[
+            ['A', 288, '-', 100_001, 100_864, 864, 864, 100_001, 100_864],
+            ['B', 136, '-', 100_521, 100_928, 396, 408, 100_521, 100_928],
+        ])
+        out = drop_paralog_placements(df)
+        assert self._placed(out, 'A') == [100_001]
+        assert self._placed(out, 'B') == [100_521]
+
+    def test_neighbours_brought_into_one_frame_are_both_kept(self):
+        """Rv2879c and Rv2880c overlap in H37Rv in different frames; an indel
+        in CDC1551 puts them in one. They are neighbours in the reference, not
+        a paralog squatting on someone else's locus, so neither is dropped."""
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(extra=[
+            ['Rv2879c', 190, '-', 100_001, 100_570, 552, 570, 100_001, 100_570],
+            ['Rv2880c', 276, '-', 100_268, 100_828, 558, 561, 100_269, 100_828],
+        ])
+        out = drop_paralog_placements(df)
+        assert self._placed(out, 'Rv2879c') == [100_001]
+        assert self._placed(out, 'Rv2880c') == [100_268]
+
+    def test_paralog_next_door_after_a_deletion(self):
+        """CDC1551 lacks Rv3427c-Rv3428c; Rv3425 then lands on Rv3429, close
+        enough to home to look syntenic. The better match keeps the locus."""
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(extra=[
+            ['Rv3429', 179, '+', 155_001, 155_537, 537, 537, 155_001, 155_537],
+            ['Rv3425', 176, '+', 155_001, 155_528, 465, 528, 150_001, 150_528],
+        ])
+        out = drop_paralog_placements(df)
+        assert self._placed(out, 'Rv3429') == [155_001]
+        assert self._placed(out, 'Rv3425') == []
+
+    def test_copy_at_a_locus_nobody_claims_is_kept(self):
+        """An IS6110 insertion at a site the reference lacks, or a duplication
+        in the sample: no protein belongs there, so nothing is dropped."""
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(extra=[
+            ['IS', 300, '+', 150_001, 150_900, 900, 900, 150_001, 150_900],
+            ['IS', 300, '+', 255_001, 255_900, 900, 900, 150_001, 150_900],
+        ])
+        out = drop_paralog_placements(df)
+        assert self._placed(out, 'IS') == [150_001, 255_001]
+
+    def test_reverse_oriented_sequence(self):
+        """A reverse-complemented assembly maps positions backwards."""
+        from classify.synteny import drop_paralog_placements
+        L = 500_000
+        rows = []
+        for i in range(40):
+            ref = 10_000 * i + 1
+            rows.append([f'g{i}', 300, '-', L - ref - 899, L - ref, 900, 900, ref, ref + 899, 'chr'])
+        # P belongs at reference 205_101; its paralog copy sits inside g5.
+        own = L - 205_900
+        rows.append(['P', 300, '-', own, own + 799, 800, 800, 205_101, 205_900, 'chr'])
+        g5 = L - 50_001 - 899
+        rows.append(['P', 300, '-', g5 + 100, g5 + 899, 780, 800, 205_101, 205_900, 'chr'])
+        out = drop_paralog_placements(pd.DataFrame(rows, columns=self.COLS))
+        assert self._placed(out, 'P') == [own]
+
+    def test_contigs_are_kept_apart(self):
+        """Offsets from one contig say nothing about another."""
+        from classify.synteny import drop_paralog_placements
+        a = self._frame(contig='c1')
+        b = self._frame(contig='c2', shift=0)
+        b['Prot Id'] = 'h' + b['Prot Id']
+        extra = pd.DataFrame([
+            ['P', 300, '+', 120_101, 120_900, 800, 800, 120_101, 120_900, 'c2'],
+            ['P', 300, '+', 50_100, 50_899, 780, 800, 120_101, 120_900, 'c2'],
+        ], columns=self.COLS)
+        out = drop_paralog_placements(pd.concat([a, b, extra], ignore_index=True))
+        assert self._placed(out, 'P') == [120_101]
+        assert len(out) == len(a) + len(b) + 1
+
+    def test_unplaced_proteins_pass_through(self):
+        """miniprot -u writes a row for every protein it could not place, with
+        '*' for target and strand and zeros for coordinates. They used to crash
+        the interval tree on CDC1551, where Rv3427c is deleted."""
+        from classify.synteny import drop_paralog_placements
+        # The three CDC1551 lacks: three of them is what it takes for the '*'
+        # rows to look like a sequence with enough anchors to predict from.
+        df = self._frame(extra=[
+            ['Rv0793', 102, '*', 1, 0, 0, 0, 886_719, 887_024, '*'],
+            ['Rv3427c', 252, '*', 1, 0, 0, 0, 3_843_885, 3_844_640, '*'],
+            ['Rv3428c', 411, '*', 1, 0, 0, 0, 3_844_738, 3_845_970, '*'],
+        ])
+        out = drop_paralog_placements(df)
+        assert len(out) == len(df)
+        assert set(out.loc[out['Strand'] == '*', 'Prot Id']) == {'Rv0793', 'Rv3427c', 'Rv3428c'}
+
+    def test_without_reference_coordinates_nothing_changes(self):
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(extra=[
+            ['P', 300, '+', 307_101, 307_900, 800, 800, None, None],
+            ['P', 300, '+', 50_101, 50_900, 780, 800, None, None],
+        ])
+        df['Ref Start'] = np.nan
+        df['Ref End'] = np.nan
+        assert len(drop_paralog_placements(df)) == len(df)
+
+
+class TestStrandOfResolvedHit:
+    """Resolving a conflict takes the strand of the hit being resolved."""
+
+    def test_second_placement_keeps_its_own_strand(self):
+        """esxM (Rv1792) is placed twice, its paralog first and on the other
+        strand; it came out at its own coordinates on the paralog's strand."""
+        from classify.overlaps import (build_overlap_tree, create_overlap_groups,
+                                       resolve_single_overlaps)
+        mp = pd.DataFrame([
+            ['Rv1792', 99, '-', 1_160_855, 1_161_151, 294, 297],
+            ['Rv1792', 99, '+', 2_030_347, 2_030_643, 297, 297],
+        ], columns=['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt'])
+        case4 = pd.DataFrame([['S1_01880', 2_030_401, 2_030_643, '+', 243]],
+                             columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt'])
+        groups = create_overlap_groups(build_overlap_tree(mp, case4, 'Prot Id', 'Locus Tag'),
+                                       case4, mp)
+        b_groups = create_overlap_groups(build_overlap_tree(case4, mp, 'Locus Tag', 'Prot Id'),
+                                         case4, mp)
+        combined = {}
+        resolve_single_overlaps(groups, mp, combined, {v['Prot Id']: v for v in b_groups.values()})
+        assert combined == {(2_030_347, 2_030_643, '+'): 'Rv1792'}
+
+    def test_bakta_coordinates_keep_baktas_strand(self):
+        """When the Bakta call wins, it keeps the strand Bakta gave it."""
+        from classify.overlaps import (build_overlap_tree, create_overlap_groups,
+                                       resolve_single_overlaps)
+        mp = pd.DataFrame([['X', 100, '-', 10_000, 10_300, 300, 300]],
+                          columns=['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt'])
+        # Much longer than the hit, so the Bakta coordinates are chosen.
+        case4 = pd.DataFrame([['S1_00001', 9_000, 10_300, '+', 1_301]],
+                             columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt'])
+        groups = create_overlap_groups(build_overlap_tree(mp, case4, 'Prot Id', 'Locus Tag'),
+                                       case4, mp)
+        combined = {}
+        resolve_single_overlaps(groups, mp, combined, {})
+        assert combined == {(9_000, 10_300, '+'): 'S1_00001'}

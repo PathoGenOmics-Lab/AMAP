@@ -86,6 +86,8 @@ def create_overlap_groups(filtered_overlaps, case4_df, miniprot_df):
             mp_coords = [(0, 0)]
         groups[i] = {
             'case4': [(r['Start'], r['End']) for _, r in case4_rows.iterrows()],
+            # Kept apart from 'case4' because callers unpack those as pairs.
+            'case4_strands': [r.get('Strand', '+') for _, r in case4_rows.iterrows()],
             'miniprot_df': mp_coords,
             'Prot Id': row['Prot Id'],
             'Locus Tags': row['Locus Tags']
@@ -104,9 +106,14 @@ def resolve_single_overlaps(single_groups, miniprot_df, combined_dict, new_group
     """
     for key, value in single_groups.items():
         bakta_len = value['case4'][0][1] - value['case4'][0][0] + 1
-        mp_row = miniprot_df.loc[miniprot_df['Prot Id'] == value['Prot Id']].iloc[0]
+        # The group key is the index of the Miniprot hit being resolved. Looking
+        # the protein up by name instead returns its first placement, which for
+        # a protein with several copies can sit elsewhere on the other strand:
+        # esxM (Rv1792) came out at its own coordinates on the wrong strand.
+        mp_row = miniprot_df.loc[key]
         rv_len = mp_row['End'] - mp_row['Start'] + 1
         strand = mp_row.get('Strand', '+')
+        bakta_strand = value['case4_strands'][0] if value.get('case4_strands') else strand
 
         locus_tag = value['Locus Tags'][0]
         n_overlaps = len(new_groups[locus_tag]['Locus Tags']) if locus_tag in new_groups else 0
@@ -116,7 +123,7 @@ def resolve_single_overlaps(single_groups, miniprot_df, combined_dict, new_group
         elif rv_len > bakta_len:
             new_coord, new_id = (*value['miniprot_df'][0], strand), value['Prot Id']
         elif rv_len < bakta_len and abs(bakta_len - rv_len) > 550:
-            new_coord, new_id = (*value['case4'][0], strand), value['Locus Tags'][0]
+            new_coord, new_id = (*value['case4'][0], bakta_strand), value['Locus Tags'][0]
         else:
             new_coord, new_id = (*value['miniprot_df'][0], strand), value['Prot Id']
 
@@ -133,16 +140,17 @@ def resolve_multiple_overlaps(multiple_groups, miniprot_df, combined_dict):
         miniprot_range = value['miniprot_df'][0]
         prot_id = value['Prot Id']
 
-        # Get strand from miniprot
-        mp_row = miniprot_df.loc[miniprot_df['Prot Id'] == prot_id]
-        strand = mp_row.iloc[0]['Strand'] if not mp_row.empty else '+'
+        # Strand of the hit being resolved, not of the protein's first placement
+        # (see resolve_single_overlaps).
+        strand = miniprot_df.at[key, 'Strand'] if key in miniprot_df.index else '+'
+        case4_strands = value.get('case4_strands') or [strand] * len(value['case4'])
 
-        best = (None, None, -1)
+        best = (None, None, -1, strand)
         for i, r in enumerate(value['case4']):
             pct = get_overlap_percentage(r, miniprot_range)
             if pct > best[2]:
                 tag = value['Locus Tags'][i] if i < len(value['Locus Tags']) else "Unknown"
-                best = (r, tag, pct)
+                best = (r, tag, pct, case4_strands[i])
 
         if not best[0]:
             continue
@@ -151,7 +159,7 @@ def resolve_multiple_overlaps(multiple_groups, miniprot_df, combined_dict):
            (_range_length(best[0]) - _range_length(miniprot_range)) < 500:
             chosen_coord, chosen_id = (*miniprot_range, strand), prot_id
         else:
-            chosen_coord, chosen_id = (*best[0], strand), best[1]
+            chosen_coord, chosen_id = (*best[0], best[3]), best[1]
 
         _insert_with_dedup(combined_dict, chosen_coord, chosen_id, threshold=550)
 

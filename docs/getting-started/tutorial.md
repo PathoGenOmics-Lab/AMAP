@@ -31,7 +31,7 @@ conda create -n nextflow-env -c conda-forge -c bioconda nextflow
 conda activate nextflow-env
 ```
 
-Nextflow needs Java 11 or newer. Check what you have:
+Nextflow needs Java 17 or newer. Check what you have:
 
 ```bash
 java -version

@@ -31,13 +31,18 @@ params.skip_functional_annotation = false
 params.genus = "Mycobacterium"
 params.species = "Mycobacterium tuberculosis"
 params.bakta_db = "/data/bakta_db/db-light"
-params.skip_mycobrowser = false
 // Set by the `test` profile: take the genome from the container, not a TSV.
 params.test_data = false
 
 // Custom reference (set both to use your own reference instead of H37Rv)
 params.ref_annotation = null   // GFF3 or GenBank of a trusted reference
 params.ref_genome = null       // FASTA of the reference genome
+
+// Mycobrowser categories describe MTBC genes only, so a custom reference from
+// another genus skips them unless --skip_mycobrowser is given either way. This
+// is decided here, in the default, because Nextflow ignores any later
+// assignment to a param.
+params.skip_mycobrowser = params.ref_annotation && params.genus != 'Mycobacterium'
 
 // Default H37Rv reference files (used when ref_annotation/ref_genome are not set)
 params.pathotyper_snps = "/reference/snps_lineages.tsv"
@@ -51,7 +56,12 @@ params.mycobrowser_ref = "/reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt
 //
 // --- LOG AND HELP ---
 //
-def logo = """\
+// Nextflow 25.10 and later parse scripts with the strict syntax by default,
+// which allows no statements outside a workflow or a function. Everything
+// below that used to run at the top of this file is therefore a function, and
+// the entry workflow calls them in the same order.
+def logo() {
+    return """\
 =======================================
        A M A P   P I P E L I N E
 =======================================
@@ -68,10 +78,10 @@ def logo = """\
     ,=,-<=`.     ,=,-<=`.    ,=,-<=`.
  ,-'-'   `-=_, -'-'   `-=_, -'-'   `-=
 """
+}
 
-if (params.help) {
-    log.info logo
-    log.info """
+def helpMessage() {
+    return """
     Usage:
     nextflow run ${workflow.manifest.name} -profile <profile> [options]
 
@@ -122,11 +132,10 @@ if (params.help) {
     --bakta_proteins            Path to the reference proteins GBK file for Bakta. (Default: "${params.bakta_proteins}")
     --mycobrowser_ref           Path to the Mycobrowser reference TXT file. (Default: "${params.mycobrowser_ref}")
     """
-    exit 0
 }
 
-log.info logo
-log.info """
+def runSummary() {
+    return """
     ┌─────────────────────────────────────────────────┐
     │  Pipeline    : ${workflow.manifest.name} v${workflow.manifest.version}
     │  Nextflow    : ${nextflow.version}
@@ -148,9 +157,10 @@ log.info """
     │  Scratch     : ${params.scratch ? '✓  node-local' : '✗  disabled'}
     └─────────────────────────────────────────────────┘
 """
+}
 
 // --- COMPLETION HANDLER ---
-workflow.onComplete {
+def onCompleteHandler() {
     def duration = workflow.duration
     def succeeded = workflow.stats.succeededCount
     def failed = workflow.stats.failedCount
@@ -221,29 +231,29 @@ workflow.onComplete {
     """.stripIndent()
 }
 
-workflow.onError {
+def onErrorHandler() {
     log.error "Pipeline failed: ${workflow.errorMessage}"
     log.error "Check .nextflow.log for full stack trace."
 }
 
-// Validate custom reference params
-if ((params.ref_annotation && !params.ref_genome) || (!params.ref_annotation && params.ref_genome)) {
-    error "Both --ref_annotation and --ref_genome must be provided together. You set one but not the other."
-}
+def checkParams() {
+    // Validate custom reference params
+    if ((params.ref_annotation && !params.ref_genome) || (!params.ref_annotation && params.ref_genome)) {
+        error "Both --ref_annotation and --ref_genome must be provided together. You set one but not the other."
+    }
 
-// Auto-detect organism-agnostic mode:
-// When using a custom reference AND genus is not Mycobacterium, auto-enable
-// --skip_mycobrowser to avoid referencing MTBC-specific categories.
-if (params.ref_annotation && params.genus != 'Mycobacterium' && !params.skip_mycobrowser) {
-    log.info "Auto-enabling --skip_mycobrowser (genus '${params.genus}' is not Mycobacterium)"
-    params.skip_mycobrowser = true
-}
+    // Organism-agnostic mode: params.skip_mycobrowser is decided with the
+    // other params at the top of this file; this only says why.
+    if (params.ref_annotation && params.genus != 'Mycobacterium' && params.skip_mycobrowser) {
+        log.info "Skipping Mycobrowser categories (genus '${params.genus}' is not Mycobacterium)"
+    }
 
-// Suggest --skip_typing when genus is not Mycobacterium
-if (params.genus != 'Mycobacterium' && !params.skip_typing) {
-    log.warn "Genus '${params.genus}' is not Mycobacterium but --skip_typing is not set. " +
-             "Pathotypr lineage typing is MTBC-specific and will likely fail for other organisms. " +
-             "Consider adding --skip_typing to your command."
+    // Suggest --skip_typing when genus is not Mycobacterium
+    if (params.genus != 'Mycobacterium' && !params.skip_typing) {
+        log.warn "Genus '${params.genus}' is not Mycobacterium but --skip_typing is not set. " +
+                 "Pathotypr lineage typing is MTBC-specific and will likely fail for other organisms. " +
+                 "Consider adding --skip_typing to your command."
+    }
 }
 
 // validate_only handled in workflow block below
@@ -276,75 +286,91 @@ include { DUMP_PARAMS }         from './modules/local/versions'
 // before any container exists, so a /reference path in a TSV would be reported
 // as missing. TEST_GENOME copies it out from inside the container instead. That
 // keeps a 4 MB genome out of this repository and off the host entirely.
-if (!params.test_data) {
-
-// Checked here rather than with ifEmpty on the channel: fromPath throws on a
-// missing literal path before ifEmpty ever runs, so the message below was
-// never the one anybody saw.
-if (!file(params.tsv).exists()) {
-    error """
-    ╔══════════════════════════════════════════════════════════╗
-    ║  Input TSV file not found: ${params.tsv}
-    ║
-    ║  Make sure the path is correct and the file exists.
-    ║  Use --tsv to specify the input file, or try the pipeline
-    ║  with no data of your own:
-    ║
-    ║    nextflow run PathoGenOmics-Lab/AMAP -profile docker,test
-    ╚══════════════════════════════════════════════════════════╝
-    """.stripIndent()
-}
-
-Channel
-    .fromPath(params.tsv)
-    .splitCsv(header: true, sep: '\t')
-    .map { row ->
-        if (!row.containsKey('sampleId') || !row.containsKey('fasta')) {
-            error """
-    ╔══════════════════════════════════════════════════════════╗
-    ║  Invalid TSV format!
-    ║
-    ║  Expected columns: sampleId  fasta
-    ║  Found columns:    ${row.keySet().join('  ')}
-    ║
-    ║  Your TSV should look like:
-    ║    sampleId\\tfasta
-    ║    sample1\\t/path/to/sample1.fasta
-    ║    sample2\\t/path/to/sample2.fasta
-    ╚══════════════════════════════════════════════════════════╝
-    """.stripIndent()
-        }
-        def f = file(row.fasta)
-        if (!f.exists()) {
-            error """
-    ╔══════════════════════════════════════════════════════════╗
-    ║  FASTA file not found!
-    ║
-    ║  Sample:  ${row.sampleId}
-    ║  Path:    ${row.fasta}
-    ║
-    ║  Check that the path is correct (absolute or relative
-    ║  to where you launched nextflow).
-    ╚══════════════════════════════════════════════════════════╝
-    """.stripIndent()
-        }
-        tuple(row.sampleId, f)
+def readSampleSheet() {
+    // Checked here rather than with ifEmpty on the channel: fromPath throws on a
+    // missing literal path before ifEmpty ever runs, so the message below was
+    // never the one anybody saw.
+    if (!file(params.tsv).exists()) {
+        error """
+        ╔══════════════════════════════════════════════════════════╗
+        ║  Input TSV file not found: ${params.tsv}
+        ║
+        ║  Make sure the path is correct and the file exists.
+        ║  Use --tsv to specify the input file, or try the pipeline
+        ║  with no data of your own:
+        ║
+        ║    nextflow run PathoGenOmics-Lab/AMAP -profile docker,test
+        ╚══════════════════════════════════════════════════════════╝
+        """.stripIndent()
     }
-    .set { fasta_ch }
 
-// Count samples for the user
-fasta_ch.count().subscribe { n ->
-    log.info "    ✓ Loaded ${n} sample(s) from ${params.tsv}"
-    if (n == 0) log.warn "    ⚠ No samples found! Check your TSV file."
-}
-} else {
-    log.info "    ✓ Test profile: using the reference genome bundled in the container"
+    def fasta_ch = Channel
+        .fromPath(params.tsv)
+        .splitCsv(header: true, sep: '\t')
+        .map { row ->
+            if (!row.containsKey('sampleId') || !row.containsKey('fasta')) {
+                error """
+        ╔══════════════════════════════════════════════════════════╗
+        ║  Invalid TSV format!
+        ║
+        ║  Expected columns: sampleId  fasta
+        ║  Found columns:    ${row.keySet().join('  ')}
+        ║
+        ║  Your TSV should look like:
+        ║    sampleId\\tfasta
+        ║    sample1\\t/path/to/sample1.fasta
+        ║    sample2\\t/path/to/sample2.fasta
+        ╚══════════════════════════════════════════════════════════╝
+        """.stripIndent()
+            }
+            def f = file(row.fasta)
+            if (!f.exists()) {
+                error """
+        ╔══════════════════════════════════════════════════════════╗
+        ║  FASTA file not found!
+        ║
+        ║  Sample:  ${row.sampleId}
+        ║  Path:    ${row.fasta}
+        ║
+        ║  Check that the path is correct (absolute or relative
+        ║  to where you launched nextflow).
+        ╚══════════════════════════════════════════════════════════╝
+        """.stripIndent()
+            }
+            tuple(row.sampleId, f)
+        }
+
+    // Count samples for the user
+    fasta_ch.count().subscribe { n ->
+        log.info "    ✓ Loaded ${n} sample(s) from ${params.tsv}"
+        if (n == 0) log.warn "    ⚠ No samples found! Check your TSV file."
+    }
+    return fasta_ch
 }
 
 //
 // --- WORKFLOW ---
 //
 workflow {
+    // What used to run at the top of this file, in the same order: help, the
+    // run summary, the handlers, the parameter checks and the sample sheet.
+    if (params.help) {
+        log.info logo()
+        log.info helpMessage()
+        exit 0
+    }
+    log.info logo()
+    log.info runSummary()
+    workflow.onComplete = { onCompleteHandler() }
+    workflow.onError = { onErrorHandler() }
+    checkParams()
+    if (params.test_data) {
+        log.info "    ✓ Test profile: using the reference genome bundled in the container"
+        fasta_ch = channel.empty()
+    } else {
+        fasta_ch = readSampleSheet()
+    }
+
     // 0. Input validation + reproducibility — always runs first
     VALIDATE_INPUTS(Channel.value(file(params.tsv)))
     SOFTWARE_VERSIONS()

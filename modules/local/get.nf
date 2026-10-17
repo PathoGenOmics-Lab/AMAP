@@ -1,7 +1,9 @@
 process GET_DUPLICATIONS {
     tag "$sampleId"
 
-    publishDir "${params.outdir}/DUPLICATIONS/${sampleId}",
+    // Per-sample paths are closures: the strict parser evaluates publishDir once,
+    // when the process is defined, so ${sampleId} has to wait for each task.
+    publishDir path: { "${params.outdir}/DUPLICATIONS/${sampleId}" },
            mode: 'link', overwrite: true,
            pattern: "duplications*"                  
 
@@ -42,7 +44,7 @@ process GET_DUPLICATIONS {
 process GET_OUTPUTS {
     tag "$sampleId"
 
-    publishDir "${params.outdir}/AMAP/${sampleId}",
+    publishDir path: { "${params.outdir}/AMAP/${sampleId}" },
                mode: 'link', overwrite: true,
                pattern: "*AMAP*"
 
@@ -125,7 +127,7 @@ process GET_OUTPUTS {
 process GET_COUNT {
     tag "$sampleId"
 
-    publishDir "${params.outdir}/AMAP/${sampleId}",
+    publishDir path: { "${params.outdir}/AMAP/${sampleId}" },
                mode: 'link', overwrite: true,
                pattern: "*-AMAP.*.tsv"
 

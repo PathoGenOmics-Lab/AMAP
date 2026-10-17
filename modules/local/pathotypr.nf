@@ -8,7 +8,7 @@ process PATHOTYPR {
     tuple val(sampleId), path(fasta)
 
     output:
-    tuple env(SAMPLE_NAME), path("*.fasta"), path("*_summary.tsv"), emit: typed_fasta
+    tuple env('SAMPLE_NAME'), path("*.fasta"), path("*_summary.tsv"), emit: typed_fasta
 
     script:
     """

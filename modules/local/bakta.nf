@@ -1,7 +1,10 @@
 process BAKTA_ANNOTATOR {
     tag "$sampleId"
     cache 'lenient'  // resume-friendly: reuse if same input sizes/names (tolerates NFS timestamp drift)
-    publishDir "${params.outdir}/BAKTA", pattern: "${sampleId}", mode: 'link', overwrite: true
+    // Publishes the sample's directory and nothing else. A saveAs closure rather
+    // than pattern: "${sampleId}", because the strict parser evaluates publishDir
+    // options once, when the process is defined, before any sampleId exists.
+    publishDir "${params.outdir}/BAKTA", saveAs: { fn -> fn == sampleId ? fn : null }, mode: 'link', overwrite: true
 
     input:
     tuple val(sampleId), path(fasta), path(summary_log), val(genus), val(species)

@@ -2,10 +2,12 @@ process TYPE_CASES {
     tag "$sampleId"
 
     publishDir "${params.outdir}/CDS_CASES/summary", pattern: "*-summary.tsv", mode: 'link', overwrite: true
-    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*-case*.tsv", mode: 'link', overwrite: true
-    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*-rvmissing.tsv", mode: 'link', overwrite: true
-    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*.html", mode: 'link', overwrite: true
-    publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*_corrected.tsv", mode: 'link', overwrite: true
+    // Per-sample paths are closures: the strict parser evaluates publishDir once,
+    // when the process is defined, so ${sampleId} has to wait for each task.
+    publishDir path: { "${params.outdir}/CDS_CASES/${sampleId}" }, pattern: "*-case*.tsv", mode: 'link', overwrite: true
+    publishDir path: { "${params.outdir}/CDS_CASES/${sampleId}" }, pattern: "*-rvmissing.tsv", mode: 'link', overwrite: true
+    publishDir path: { "${params.outdir}/CDS_CASES/${sampleId}" }, pattern: "*.html", mode: 'link', overwrite: true
+    publishDir path: { "${params.outdir}/CDS_CASES/${sampleId}" }, pattern: "*_corrected.tsv", mode: 'link', overwrite: true
 
     input:
     tuple val(sampleId), path(miniprot_paf), path(badbakta_paf), path(h37rv_paf), path(fasta), path(bakta_tsv), path(bakta_faa)
@@ -36,7 +38,7 @@ process TYPE_CASES {
 process FIX_CDS {
     tag "$sampleId"
 
-    publishDir "${params.outdir}/AMAP/${sampleId}", pattern: "*.AMAP.*", mode: 'link', overwrite: true
+    publishDir path: { "${params.outdir}/AMAP/${sampleId}" }, pattern: "*.AMAP.*", mode: 'link', overwrite: true
 
     input:
     tuple val(sampleId), path(corrected_tsv), path(fasta), path(bakta_tsv)

@@ -146,19 +146,20 @@ class TestSubsetOverlap:
 
 
 class TestIsReferenceGene:
-    """Tests for _is_reference_gene — detects embedded coordinates."""
-    
-    def test_rv_with_coords(self):
-        assert _is_reference_gene('Rv0001_1-1524') is True
-    
-    def test_locus_tag_no_coords(self):
-        assert _is_reference_gene('ABCDE_00042') is False
-    
-    def test_pe_pgrs_with_coords(self):
-        assert _is_reference_gene('PE_PGRS1_703830-704057') is True
-    
-    def test_empty_string(self):
-        assert _is_reference_gene('') is False
+    """A gene in the dict is a reference gene when its ID is a reference protein's."""
+
+    def test_reference_protein(self):
+        assert _is_reference_gene('Rv0001', {'Rv0001', 'Rv0002'}) is True
+
+    def test_locus_tag(self):
+        assert _is_reference_gene('ABCDE_00042', {'Rv0001'}) is False
+
+    def test_pe_pgrs(self):
+        assert _is_reference_gene('PE_PGRS1', {'PE_PGRS1'}) is True
+
+    def test_nothing_is_one_without_the_reference_ids(self):
+        """Coordinates in an ID are no sign: clean_id has removed them by then."""
+        assert _is_reference_gene('Rv0001_1-1524') is False
 
 
 class TestInsertWithDedup:
@@ -198,11 +199,24 @@ class TestInsertWithDedup:
         """
         d = {
             (100, 900, '+'): 'baktaGene_short',
-            (150, 950, '+'): 'Rv0001_150-950',
+            (150, 950, '+'): 'Rv0001',
         }
-        _insert_with_dedup(d, (120, 920, '+'), 'newGene')
+        _insert_with_dedup(d, (120, 920, '+'), 'newGene', reference_ids={'Rv0001'})
         assert (120, 920, '+') not in d          # candidate rejected
-        assert set(d.values()) == {'baktaGene_short', 'Rv0001_150-950'}
+        assert set(d.values()) == {'baktaGene_short', 'Rv0001'}
+
+    def test_similar_call_does_not_displace_a_reference_gene(self):
+        """Bakta's version of Rv1614, one codon longer, replaced the reference
+        gene: telling reference genes apart relied on coordinates in the ID,
+        which clean_id had already removed."""
+        d = {(1000, 2500, '+', 'c1'): 'Rv1614'}
+        _insert_with_dedup(d, (997, 2500, '+', 'c1'), 'S1_01690', reference_ids={'Rv1614'})
+        assert d == {(1000, 2500, '+', 'c1'): 'Rv1614'}
+
+    def test_a_much_longer_call_still_displaces_a_reference_gene(self):
+        d = {(1000, 2400, '+', 'c1'): 'Rv0001'}
+        _insert_with_dedup(d, (449, 2400, '+', 'c1'), 'S1_00001', reference_ids={'Rv0001'})
+        assert d == {(449, 2400, '+', 'c1'): 'S1_00001'}
 
 
 # =============================================================================
@@ -950,6 +964,27 @@ class TestReadPaf:
         assert list(df['Prot Id']) == ['Rv0001_1-1524', 'Rv0002_2052-3260']
         assert list(df['Start']) == [0, 2051]
 
+    def test_complete_means_the_whole_protein_and_its_stop(self):
+        """plcD aligns end to end, its final '*' on a stop codon (st:i:1).
+        Rv3022c, which the reference annotates without a stop, aligns end to end
+        with none (st:i:0), and Rv0002 misses its first 20 residues. Rows
+        without fs:i carry st:i one column earlier."""
+        from classify.io import read_miniprot
+        path = self._write(
+            "Rv1755c_1986854-1987696\t281\t0\t281\t-\tchr\t9000\t100\t943\t843\t843\t0"
+            "\tAS:i:1491\tms:i:1491\tnp:i:281\tfs:i:0\tst:i:1\tcg:Z:281M\n"
+            "Rv3022c_3380440-3380682\t81\t0\t81\t-\tchr\t9000\t2000\t2243\t243\t243\t0"
+            "\tAS:i:411\tms:i:411\tnp:i:81\tfs:i:0\tst:i:0\tcg:Z:81M\n"
+            "Rv0001_1-903\t301\t0\t301\t+\tchr\t9000\t3000\t3903\t903\t903\t0"
+            "\tAS:i:1500\tms:i:1500\tnp:i:301\tst:i:1\tcg:Z:301M\n"
+            "Rv0002_2052-3260\t403\t20\t403\t+\tchr\t9000\t5060\t6209\t1149\t1149\t0"
+            "\tAS:i:1000\tms:i:1000\tnp:i:383\tst:i:1\tcg:Z:383M\n"
+        )
+        df = read_miniprot(path)
+        os.unlink(path)
+        assert dict(zip(df['Prot Id'], df['Complete'])) == {
+            'Rv1755c': True, 'Rv3022c': False, 'Rv0001': True, 'Rv0002': False}
+
     def test_empty_paf(self):
         from classify.io import _read_paf
         path = self._write("")
@@ -1365,6 +1400,72 @@ class TestStrandOfResolvedHit:
         case4 = pd.DataFrame([['S1_00001', 9_000, 10_300, '+', 1_301]],
                              columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt'])
         assert build_overlap_tree(mp, case4, 'Prot Id', 'Locus Tag') == {}
+
+
+class TestAlignmentQuality:
+    """Case 4 weighs how much of its protein an alignment covers, not only how
+    long it is next to Bakta's call."""
+
+    @staticmethod
+    def _resolve(mp, case4):
+        from classify.overlaps import (build_overlap_tree, create_overlap_groups,
+                                       resolve_single_overlaps, resolve_multiple_overlaps)
+        overlaps = build_overlap_tree(mp, case4, 'Prot Id', 'Locus Tag')
+        single = create_overlap_groups({k: v for k, v in overlaps.items() if v['count'] == 1},
+                                       case4, mp)
+        multiple = create_overlap_groups({k: v for k, v in overlaps.items() if v['count'] > 1},
+                                         case4, mp)
+        b_groups = create_overlap_groups(build_overlap_tree(case4, mp, 'Locus Tag', 'Prot Id'),
+                                         case4, mp)
+        new_groups = {v['Prot Id']: v for v in b_groups.values()}
+        combined = {}
+        resolve_single_overlaps(single, mp, combined, new_groups)
+        resolve_multiple_overlaps(multiple, mp, combined, new_groups)
+        return combined
+
+    @staticmethod
+    def _mp(rows):
+        return pd.DataFrame(rows, columns=['Prot Id', 'Prot len', 'Strand', 'Start', 'End',
+                                           'Match Nt', 'Num nt', 'Complete'])
+
+    @staticmethod
+    def _case4(rows):
+        return pd.DataFrame(rows, columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt'])
+
+    def test_complete_alignment_beats_a_much_longer_call(self):
+        """plcD on CDC1551: Bakta's call ends at the same stop and starts
+        702 bp further upstream, and it replaced the gene."""
+        mp = self._mp([['Rv1755c', 281, '-', 1_977_868, 1_978_710, 843, 843, True]])
+        case4 = self._case4([['S1_01840', 1_977_868, 1_979_412, '-', 1_545]])
+        assert self._resolve(mp, case4) == {(1_977_868, 1_978_710, '-', ''): 'Rv1755c'}
+
+    def test_partial_alignment_still_gives_way(self):
+        mp = self._mp([['Rv1755c', 281, '-', 1_977_868, 1_978_710, 843, 843, False]])
+        case4 = self._case4([['S1_01840', 1_977_868, 1_979_412, '-', 1_545]])
+        assert self._resolve(mp, case4) == {(1_977_868, 1_979_412, '-', ''): 'S1_01840'}
+
+    def test_complete_alignment_also_wins_among_several_calls(self):
+        """The same alignment touching a second call by its last four bases
+        is resolved with the multiple overlaps, under the same rule."""
+        mp = self._mp([['Rv1755c', 281, '-', 1_977_868, 1_978_710, 843, 843, True]])
+        case4 = self._case4([['S1_01840', 1_977_868, 1_979_412, '-', 1_545],
+                             ['S1_01839', 1_976_870, 1_977_871, '-', 1_002]])
+        assert self._resolve(mp, case4) == {(1_977_868, 1_978_710, '-', ''): 'Rv1755c'}
+
+    def test_call_spanning_several_reference_genes_does_not_win(self):
+        """Rv3022c and Rv3021c are one reading frame in CDC1551, called as one
+        1308 bp gene. Rv3022c shares four bases with PE29, so it is resolved
+        with the multiple overlaps, where the call won on length and then lost
+        to Rv3021c, and Rv3022c was gone."""
+        mp = self._mp([['Rv3021c', 359, '-', 3_375_112, 3_376_176, 1_050, 1_065, False],
+                       ['Rv3022c', 81, '-', 3_376_177, 3_376_419, 243, 243, False],
+                       ['Rv3022A', 105, '-', 3_376_416, 3_376_730, 315, 315, True]])
+        case4 = self._case4([['S1_03152', 3_375_112, 3_376_419, '-', 1_308],
+                             ['S1_03153', 3_376_416, 3_376_733, '-', 318]])
+        assert self._resolve(mp, case4) == {
+            (3_375_112, 3_376_176, '-', ''): 'Rv3021c',
+            (3_376_177, 3_376_419, '-', ''): 'Rv3022c',
+            (3_376_416, 3_376_730, '-', ''): 'Rv3022A'}
 
 
 # =============================================================================

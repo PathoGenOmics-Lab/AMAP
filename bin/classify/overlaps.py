@@ -129,6 +129,7 @@ def resolve_single_overlaps(single_groups, miniprot_df, combined_dict, new_group
     - Use Bakta only if substantially longer (>550 bp difference)
     - Remove existing entries with ≥70% overlap if the new one is longer
     """
+    reference_ids = set(miniprot_df['Prot Id'])
     for key, value in single_groups.items():
         bakta_len = value['case4'][0][1] - value['case4'][0][0] + 1
         # The group key is the index of the Miniprot hit being resolved. Looking
@@ -145,24 +146,34 @@ def resolve_single_overlaps(single_groups, miniprot_df, combined_dict, new_group
         locus_tag = value['Locus Tags'][0]
         n_overlaps = len(new_groups[locus_tag]['Locus Tags']) if locus_tag in new_groups else 0
 
+        # A much longer Bakta call is taken as a sign the alignment fragmented,
+        # but only an alignment that stops short of the end of its protein can
+        # have. One that reaches it, stop codon included, is the whole gene,
+        # and a longer call on it ends at the same stop and merely starts
+        # further upstream: plcD (Rv1755c) on CDC1551, 843 bp in H37Rv, 1545 bp
+        # in Bakta's call.
+        complete = bool(mp_row.get('Complete', False))
+
         if n_overlaps > 1:
             new_coord, new_id = (*value['miniprot_df'][0], strand, contig), value['Prot Id']
         elif rv_len > bakta_len:
             new_coord, new_id = (*value['miniprot_df'][0], strand, contig), value['Prot Id']
-        elif rv_len < bakta_len and abs(bakta_len - rv_len) > 550:
+        elif rv_len < bakta_len and abs(bakta_len - rv_len) > 550 and not complete:
             new_coord, new_id = (*value['case4'][0], bakta_strand, bakta_contig), value['Locus Tags'][0]
         else:
             new_coord, new_id = (*value['miniprot_df'][0], strand, contig), value['Prot Id']
 
-        _insert_with_dedup(combined_dict, new_coord, new_id)
+        _insert_with_dedup(combined_dict, new_coord, new_id, reference_ids=reference_ids)
 
 
-def resolve_multiple_overlaps(multiple_groups, miniprot_df, combined_dict):
+def resolve_multiple_overlaps(multiple_groups, miniprot_df, combined_dict, new_groups=None):
     """
     Resolve N-to-1 overlaps (multiple Bakta CDS vs one Miniprot hit).
     
     Pick the best overlapping Bakta CDS, then compare to Miniprot by length.
     """
+    reference_ids = set(miniprot_df['Prot Id'])
+    new_groups = new_groups or {}
     for key, value in multiple_groups.items():
         miniprot_range = value['miniprot_df'][0]
         prot_id = value['Prot Id']
@@ -184,31 +195,45 @@ def resolve_multiple_overlaps(multiple_groups, miniprot_df, combined_dict):
         if not best[0]:
             continue
 
-        if _range_length(miniprot_range) >= _range_length(best[0]) or \
+        # As in resolve_single_overlaps: only a fragmentary alignment loses to a
+        # much longer Bakta call, and never to one that spans other reference
+        # genes as well, which is several genes read as one. Rv3022c and
+        # Rv3021c are one reading frame in CDC1551, and Rv3022c ends up here
+        # rather than with the single overlaps because it shares four bases
+        # with PE29.
+        complete = (bool(miniprot_df.at[key, 'Complete'])
+                    if key in miniprot_df.index and 'Complete' in miniprot_df.columns else False)
+        spans_others = best[1] in new_groups and len(new_groups[best[1]]['Locus Tags']) > 1
+        if complete or spans_others or _range_length(miniprot_range) >= _range_length(best[0]) or \
            (_range_length(best[0]) - _range_length(miniprot_range)) < 500:
             chosen_coord, chosen_id = (*miniprot_range, strand, contig), prot_id
         else:
             chosen_coord, chosen_id = (*best[0], best[3], best[4]), best[1]
 
-        _insert_with_dedup(combined_dict, chosen_coord, chosen_id, threshold=550)
+        _insert_with_dedup(combined_dict, chosen_coord, chosen_id, threshold=550,
+                           reference_ids=reference_ids)
 
 
-def _is_reference_gene(gene_id):
-    """Check if a gene ID looks like a reference gene (has embedded coordinates).
-    
-    Reference proteins from extract_ref_proteins.py always have the format
-    GENE_ID_START-END (e.g., Rv0001_1-1524, GENE_001_1234-5678).
-    This replaces the hardcoded "Rv" check to support organism-agnostic mode.
+def _is_reference_gene(gene_id, reference_ids=frozenset()):
+    """Whether a gene in the dict is a reference protein's placement.
+
+    This used to look for coordinates embedded in the ID, but clean_id strips
+    them before any ID reaches the dict (since the March 2026 refactor), so no
+    gene ever counted as a reference gene and any call of similar length could
+    displace one: Bakta's version of Rv1614, one codon longer, replaced it.
+    The callers pass the reference protein IDs instead.
     """
-    import re
-    return bool(re.search(r'_\d+-\d+$', str(gene_id)))
+    return gene_id in reference_ids
 
 
-def _insert_with_dedup(combined_dict, new_coord, new_id, threshold=550):
+def _insert_with_dedup(combined_dict, new_coord, new_id, threshold=550,
+                       reference_ids=frozenset()):
     """Insert a coordinate into the dict, resolving overlaps with existing entries.
     
     Coordinates are (Start, End, Strand, Contig). Overlap checks only compare
     genes on the SAME strand of the same contig; anything else never conflicts.
+    A reference gene already in the dict only gives way to a call that is
+    longer by more than the threshold.
     """
     new_start, new_end = new_coord[0], new_coord[1]
     new_strand = new_coord[2] if len(new_coord) > 2 else '+'
@@ -233,7 +258,7 @@ def _insert_with_dedup(combined_dict, new_coord, new_id, threshold=550):
             len_exist = _range_length((exist_start, exist_end))
             if len_new > len_exist and (len_new - len_exist) > threshold:
                 coords_to_remove.add(exist_coord)
-            elif (len_exist - len_new) < threshold and not _is_reference_gene(exist_id):
+            elif (len_exist - len_new) < threshold and not _is_reference_gene(exist_id, reference_ids):
                 coords_to_remove.add(exist_coord)
             else:
                 # The existing entry wins, so the new coordinate is discarded.

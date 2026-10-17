@@ -80,6 +80,20 @@ def _read_paf(path):
     return df
 
 
+def _tag(df, name):
+    """A numeric SAM-style tag ('st:i:1') of every row of a PAF; 0 where absent.
+
+    Tags are not at fixed columns: miniprot writes fs:i only for alignments
+    with a frameshift, and none at all for a protein it could not place.
+    """
+    value = pd.Series(0, index=df.index, dtype=float)
+    for col in [c for c in df.columns if isinstance(c, int)]:
+        text = df[col].astype(str)
+        hit = text.str.startswith(name + ':')
+        value[hit] = pd.to_numeric(text[hit].str.split(':').str[2], errors='coerce')
+    return value.fillna(0)
+
+
 def read_miniprot(miniprot_path, ref_coords=False):
     """Read Miniprot PAF output, apply best-match filtering per protein.
 
@@ -99,10 +113,21 @@ def read_miniprot(miniprot_path, ref_coords=False):
         miniprot_df['Ref End'] = pd.to_numeric(coords[1])
         extra = ['Ref Start', 'Ref End']
     miniprot_df['Contig'] = miniprot_df['fasta Tag'].astype(str)
+    # Whether the alignment is the whole gene: every residue of the reference
+    # protein, its final '*' included, so the sample's gene ends in a stop
+    # codon right where the reference one does. A protein the reference
+    # annotates without a stop (Rv3022c runs on into Rv3021c by a frameshift)
+    # aligns end to end with no stop codon (st:i:0), and the sample's reading
+    # frame may go on well past it: in CDC1551 an 81-residue copy of Rv3022c
+    # opens a 933 bp PPE gene.
+    miniprot_df['Complete'] = ((pd.to_numeric(miniprot_df['Prot Start'], errors='coerce') == 0)
+                               & (pd.to_numeric(miniprot_df['ProtStop'], errors='coerce')
+                                  >= pd.to_numeric(miniprot_df['Prot len'], errors='coerce'))
+                               & (_tag(miniprot_df, 'st') > 0))
     miniprot_df['Prot Id'] = miniprot_df['Prot Id'].apply(clean_id)
     miniprot_df['Start'] = miniprot_df['Start'] + 1  # 0-based → 1-based
 
-    last = miniprot_df[PAF_COLS + ['Contig'] + extra].copy()
+    last = miniprot_df[PAF_COLS + ['Contig', 'Complete'] + extra].copy()
 
     # Mark perfect matches (aligned nt == total nt)
     last['_is_perfect'] = (last['Num nt'] - last['Match Nt'] == 0).astype(int)

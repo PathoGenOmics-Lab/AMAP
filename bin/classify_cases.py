@@ -145,7 +145,7 @@ def main():
     new_groups = {v['Prot Id']: v for _, v in b_overlap_groups.items()}
 
     resolve_single_overlaps(single_groups, miniprot_df, combined, new_groups)
-    resolve_multiple_overlaps(multiple_groups, miniprot_df, combined)
+    resolve_multiple_overlaps(multiple_groups, miniprot_df, combined, new_groups)
 
     # --- 8. Reconciliation + recovery + dedup ---
     reconcile_coordinates(combined, miniprot_df, bakta_df)

@@ -376,129 +376,129 @@ workflow {
     SOFTWARE_VERSIONS()
     DUMP_PARAMS()
 
-    // If validate_only mode, stop here
-    if (params.validate_only) {
-        return
-    }
-
-    // 1. Setup eggNOG database if not present
-    if (!params.skip_functional_annotation) {
-        EGGNOG_DB()
-    }
-
-    // 1b. Where the genomes come from: the sample sheet, or the container.
-    genomes_ch = params.test_data ? TEST_GENOME() : fasta_ch
-
-    // 2. Perform MTB lineage typing or skip it
-    if (!params.skip_typing) {
-        PATHOTYPR(genomes_ch)
-        typed_ch = PATHOTYPR.out.typed_fasta
-    } else {
-        // If skipping typing, create a placeholder file for caching.
-        CREATE_EMPTY_FILE()
-        typed_ch = genomes_ch.combine(CREATE_EMPTY_FILE.out).map { sampleId, fasta, empty_file ->
-            tuple(sampleId, fasta, empty_file)
+    // With --validate_only, stop after the checks above. Nextflow 26.10 and
+    // later refuse a return in a workflow body, and exit() would cancel those
+    // checks too, so the rest of the pipeline sits inside this if instead.
+    if (!params.validate_only) {
+        // 1. Setup eggNOG database if not present
+        if (!params.skip_functional_annotation) {
+            EGGNOG_DB()
         }
-    }
 
-    // 3. Annotate genomes with Bakta
-    BAKTA_ANNOTATOR(typed_ch.combine(Channel.value(params.genus)).combine(Channel.value(params.species)))
+        // 1b. Where the genomes come from: the sample sheet, or the container.
+        genomes_ch = params.test_data ? TEST_GENOME() : fasta_ch
 
-    // 4. Prepare reference proteome (custom or default H37Rv)
-    if (params.ref_annotation && params.ref_genome) {
-        log.info "Using custom reference: ${params.ref_annotation} + ${params.ref_genome}"
-        PREPARE_REFERENCE(
-            Channel.value(file(params.ref_annotation)),
-            Channel.value(file(params.ref_genome))
-        )
-        ref_proteome_ch     = PREPARE_REFERENCE.out.ref_proteome
-        ref_genome_fasta_ch = PREPARE_REFERENCE.out.ref_genome_fasta
-        bad_bakta_ch        = PREPARE_REFERENCE.out.bad_bakta
-    } else {
-        ref_proteome_ch     = Channel.value(file(params.miniprot_ref_aa))
-        ref_genome_fasta_ch = Channel.value(file(params.miniprot_ref_h37rv))
-        bad_bakta_ch        = Channel.value(file(params.miniprot_ref_bad_bakta))
-    }
-
-    // 5. Align proteins to the genome with Miniprot
-    MINIPROT(BAKTA_ANNOTATOR.out.for_miniprot, ref_proteome_ch, ref_genome_fasta_ch, bad_bakta_ch)
-
-    // 6. Classify CDS cases based on alignments
-    TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases))
-
-    // 7. Correct CDS based on classified cases
-    FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix))
-
-    // --- FUNCTIONAL ANNOTATION AND DOWNSTREAM ANALYSIS ---
-    // This entire block will be skipped if --skip_functional_annotation is used
-    if (!params.skip_functional_annotation) {
-        // 7. Annotate corrected proteins with eggNOG-mapper (BATCH mode)
-        //    Collects all FAA files, runs eggNOG ONCE, splits results back.
-        //    This avoids N parallel jobs competing for the same Diamond DB on
-        //    shared filesystems — critical for HPC with NFS/Lustre.
-        eggnog_faa_ch = FIX_CDS.out.for_eggnog.map { it[1] }.collect()
-        eggnog_ids_ch = FIX_CDS.out.for_eggnog.map { it[0] }.collect()
-
-        // Wait for EGGNOG_DB to complete, then pass the actual DB directory
-        eggnog_db_ch = EGGNOG_DB.out.db_path.map {
-            def p = params.eggnog_db
-            file(p).isAbsolute() ? file(p) : file("${launchDir}/${p}")
-        }
-        ANNOT_EGGNOGMAP_BATCH(eggnog_faa_ch, eggnog_ids_ch, eggnog_db_ch)
-
-        // Flatten batch output back to per-sample tuples: [sampleId, annotation]
-        eggnog_results_ch = ANNOT_EGGNOGMAP_BATCH.out.split_annotations
-            .flatten()
-            .map { f ->
-                def sid = f.baseName.replace('.emapper', '')
-                tuple(sid, f)
-            }
-
-        // Combine results for downstream processing
-        ch_for_downstream = FIX_CDS.out.for_downstream.join(eggnog_results_ch)
-
-        // 8. Generate final output files (GFF, GBK, Master Table)
-        GET_OUTPUTS(ch_for_downstream)
-
-        // 9. Find and analyze gene duplications
-        GET_DUPLICATIONS(ch_for_downstream)
-        
-        // 10. Runs pangenome for the genes of each genome
-        // Collect typed FASTA files from PATHOTYPR step (or empty channel if skipped)
+        // 2. Perform MTB lineage typing or skip it
         if (!params.skip_typing) {
-            ref_fastas_ch = PATHOTYPR.out.typed_fasta.map { it[1] }.collect()
+            PATHOTYPR(genomes_ch)
+            typed_ch = PATHOTYPR.out.typed_fasta
         } else {
-            // Use a collected empty list instead of Channel.empty() so that
-            // PANGENE still executes (with 0 reference FASTAs → creates
-            // placeholder outputs). Channel.empty() prevents process execution entirely.
-            ref_fastas_ch = Channel.value([])
+            // If skipping typing, create a placeholder file for caching.
+            CREATE_EMPTY_FILE()
+            typed_ch = genomes_ch.combine(CREATE_EMPTY_FILE.out).map { sampleId, fasta, empty_file ->
+                tuple(sampleId, fasta, empty_file)
+            }
         }
-        PANGENE(ch_for_downstream, ref_fastas_ch)
 
-        // 11. Count annotations per category
-        GET_COUNT(GET_OUTPUTS.out.master_table)
+        // 3. Annotate genomes with Bakta
+        BAKTA_ANNOTATOR(typed_ch.combine(Channel.value(params.genus)).combine(Channel.value(params.species)))
 
-        // 12. Generate final reports
-        // Collect summaries from different processes
-        summaries_cases_ch = TYPE_CASES.out.summaries.collect()
-        summaries_annot_ch = GET_COUNT.out.collect()
+        // 4. Prepare reference proteome (custom or default H37Rv)
+        if (params.ref_annotation && params.ref_genome) {
+            log.info "Using custom reference: ${params.ref_annotation} + ${params.ref_genome}"
+            PREPARE_REFERENCE(
+                Channel.value(file(params.ref_annotation)),
+                Channel.value(file(params.ref_genome))
+            )
+            ref_proteome_ch     = PREPARE_REFERENCE.out.ref_proteome
+            ref_genome_fasta_ch = PREPARE_REFERENCE.out.ref_genome_fasta
+            bad_bakta_ch        = PREPARE_REFERENCE.out.bad_bakta
+        } else {
+            ref_proteome_ch     = Channel.value(file(params.miniprot_ref_aa))
+            ref_genome_fasta_ch = Channel.value(file(params.miniprot_ref_h37rv))
+            bad_bakta_ch        = Channel.value(file(params.miniprot_ref_bad_bakta))
+        }
 
-        // 13. Create report inputs
-        // Collect rvmissing files and master tables for comprehensive report
-        rvmissing_ch = TYPE_CASES.out.rvmissing.collect()
-        mastertables_ch = GET_OUTPUTS.out.master_table.map { it[1] }.collect()
+        // 5. Align proteins to the genome with Miniprot
+        MINIPROT(BAKTA_ANNOTATOR.out.for_miniprot, ref_proteome_ch, ref_genome_fasta_ch, bad_bakta_ch)
 
-        // Collect pangene Rtab files (or empty if skipped)
-        pangene_rtab_ch = PANGENE.out.pangene_out.map { it[3] }.collect().ifEmpty( file('NO_PANGENE') )
-        qc_stats_ch = GET_OUTPUTS.out.qc_stats.collect()
+        // 6. Classify CDS cases based on alignments
+        TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases))
 
-        REPORT_INPUTS(summaries_annot_ch, summaries_cases_ch, rvmissing_ch, mastertables_ch, pangene_rtab_ch, qc_stats_ch)
+        // 7. Correct CDS based on classified cases
+        FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix))
 
-        // 14. Analyze duplications across all samples
-        GET_ALLDUP(GET_DUPLICATIONS.out.dup_fastas.collect())
+        // --- FUNCTIONAL ANNOTATION AND DOWNSTREAM ANALYSIS ---
+        // This entire block will be skipped if --skip_functional_annotation is used
+        if (!params.skip_functional_annotation) {
+            // 7. Annotate corrected proteins with eggNOG-mapper (BATCH mode)
+            //    Collects all FAA files, runs eggNOG ONCE, splits results back.
+            //    This avoids N parallel jobs competing for the same Diamond DB on
+            //    shared filesystems: critical for HPC with NFS/Lustre.
+            eggnog_faa_ch = FIX_CDS.out.for_eggnog.map { it[1] }.collect()
+            eggnog_ids_ch = FIX_CDS.out.for_eggnog.map { it[0] }.collect()
 
-        // 15. Render the final HTML report
-        FINAL_REPORT(REPORT_INPUTS.out, GET_ALLDUP.out)
+            // Wait for EGGNOG_DB to complete, then pass the actual DB directory
+            eggnog_db_ch = EGGNOG_DB.out.db_path.map {
+                def p = params.eggnog_db
+                file(p).isAbsolute() ? file(p) : file("${launchDir}/${p}")
+            }
+            ANNOT_EGGNOGMAP_BATCH(eggnog_faa_ch, eggnog_ids_ch, eggnog_db_ch)
+
+            // Flatten batch output back to per-sample tuples: [sampleId, annotation]
+            eggnog_results_ch = ANNOT_EGGNOGMAP_BATCH.out.split_annotations
+                .flatten()
+                .map { f ->
+                    def sid = f.baseName.replace('.emapper', '')
+                    tuple(sid, f)
+                }
+
+            // Combine results for downstream processing
+            ch_for_downstream = FIX_CDS.out.for_downstream.join(eggnog_results_ch)
+
+            // 8. Generate final output files (GFF, GBK, Master Table)
+            GET_OUTPUTS(ch_for_downstream)
+
+            // 9. Find and analyze gene duplications
+            GET_DUPLICATIONS(ch_for_downstream)
+        
+            // 10. Runs pangenome for the genes of each genome
+            // Collect typed FASTA files from PATHOTYPR step (or empty channel if skipped)
+            if (!params.skip_typing) {
+                ref_fastas_ch = PATHOTYPR.out.typed_fasta.map { it[1] }.collect()
+            } else {
+                // Use a collected empty list instead of Channel.empty() so that
+                // PANGENE still executes (with 0 reference FASTAs → creates
+                // placeholder outputs). Channel.empty() prevents process execution entirely.
+                ref_fastas_ch = Channel.value([])
+            }
+            PANGENE(ch_for_downstream, ref_fastas_ch)
+
+            // 11. Count annotations per category
+            GET_COUNT(GET_OUTPUTS.out.master_table)
+
+            // 12. Generate final reports
+            // Collect summaries from different processes
+            summaries_cases_ch = TYPE_CASES.out.summaries.collect()
+            summaries_annot_ch = GET_COUNT.out.collect()
+
+            // 13. Create report inputs
+            // Collect rvmissing files and master tables for comprehensive report
+            rvmissing_ch = TYPE_CASES.out.rvmissing.collect()
+            mastertables_ch = GET_OUTPUTS.out.master_table.map { it[1] }.collect()
+
+            // Collect pangene Rtab files (or empty if skipped)
+            pangene_rtab_ch = PANGENE.out.pangene_out.map { it[3] }.collect().ifEmpty( file('NO_PANGENE') )
+            qc_stats_ch = GET_OUTPUTS.out.qc_stats.collect()
+
+            REPORT_INPUTS(summaries_annot_ch, summaries_cases_ch, rvmissing_ch, mastertables_ch, pangene_rtab_ch, qc_stats_ch)
+
+            // 14. Analyze duplications across all samples
+            GET_ALLDUP(GET_DUPLICATIONS.out.dup_fastas.collect())
+
+            // 15. Render the final HTML report
+            FINAL_REPORT(REPORT_INPUTS.out, GET_ALLDUP.out)
+        }
     }
 }
 

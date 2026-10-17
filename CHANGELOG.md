@@ -27,13 +27,16 @@ directly comparable with 1.0.1.
 ### 🐛 Pipeline
 - **The default H37Rv reference under Docker**: its files live inside the container and were handed to processes as paths, so Nextflow mounted `/reference` from the host, which Docker Desktop refuses and Docker on Linux mounts empty over the container's own. `BUNDLED_REFERENCE` copies them out first
 - **`-profile test`**: `VALIDATE_INPUTS` still required the sample sheet the test profile does without. 1.0.1 had only been checked with `-preview`, which runs no task
+- **`-resume` kept results made by older code**: Nextflow hashes a task's inputs and script, not the files it runs by path, so after an edit to the classifier or any script under `bin/`, `-resume` reused the old results. Every process that runs AMAP code now lists those files in `ext code`, which puts them in its cache key; edit `bin/classify/cases.py` and TYPE_CASES and FIX_CDS run again while PATHOTYPR and Bakta stay cached
+- **PATHOTYPR no longer depends on the classifier**: its script said `pathotypr classify`, and Nextflow adds any `bin/` entry a script names as a bare word to the cache key, so a change in `bin/classify/` re-ran PATHOTYPR, Bakta and everything after them. The subcommand is quoted
 
 ### 🧹 Code
 - **`reconcile_coordinates` is gone**: it read reference coordinates from protein identifiers that have not carried them since March 2026, so it changed nothing. The paralog check does its job with the sample's own offsets
 
 ### 🧪 Testing
 - **`tests/selftest/h37rv_selftest.sh`** annotates H37Rv with itself inside the container and fails unless every GenBank CDS comes back exactly
-- **135 tests**, up from 92
+- **`tests/test_cache_keys.py`** fails when a process runs AMAP code that is not in its cache key, or when its script names a `bin/` entry as a bare word without declaring it
+- **242 tests**, up from 92
 
 ## [1.0.1] - 2026-07-25
 

@@ -1,5 +1,7 @@
 process TYPE_CASES {
     tag "$sampleId"
+    // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
+    ext code: { files("${projectDir}/bin/{classify_cases.py,classify/*.py}") }
 
     publishDir "${params.outdir}/CDS_CASES/summary", pattern: "*-summary.tsv", mode: 'link', overwrite: true
     publishDir "${params.outdir}/CDS_CASES/${sampleId}", pattern: "*-case*.tsv", mode: 'link', overwrite: true
@@ -20,6 +22,7 @@ process TYPE_CASES {
 
     script:
     """
+    # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     echo "▸ [CLASSIFY] Processing ${sampleId}..." >&2
     python3 ${projectDir}/bin/classify_cases.py \\
         -b ${bakta_tsv} \\
@@ -38,6 +41,8 @@ process TYPE_CASES {
 
 process FIX_CDS {
     tag "$sampleId"
+    // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
+    ext code: { files("${projectDir}/bin/{check_cds.py,deduplicate_rvs.py,classify/*.py}") }
 
     publishDir "${params.outdir}/AMAP/${sampleId}", pattern: "*.AMAP.*", mode: 'link', overwrite: true
 
@@ -52,6 +57,7 @@ process FIX_CDS {
     script:
     def baseName = corrected_tsv.baseName.replace('_corrected', '')
     """
+    # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     # The reference proteome tells reference pseudogenes from genes the sample
     # cut short, and how much of a protein an alignment left out.
     python3 ${projectDir}/bin/check_cds.py ${fasta} ${corrected_tsv} \\

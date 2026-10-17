@@ -784,31 +784,118 @@ class TestCheckCds:
 class TestDeduplicateRvs:
     """Tests for deduplicate_rvs.py."""
 
+    @staticmethod
+    def _gene(id_, start, end, rvs, strand='+', pseudo='no', contig='c1'):
+        return {'id': id_, 'strand': strand, 'start': str(start), 'end': str(end),
+                'rvs': rvs, 'pseudogene': pseudo, 'contig': contig}
+
     def test_tie_goes_to_the_copy_bakta_also_called(self):
-        """E. coli K-12 b2635 aligns to its own locus and to a prophage copy
-        at 266553, both 237 bp. The tie went to whichever came first in the
-        genome; the copy Bakta called at the same coordinates now wins."""
+        """Between copies that tie, one Bakta called at the same coordinates
+        wins: it used to be whichever came first in the genome."""
         from deduplicate_rvs import deduplicate
-        genes = [
-            {'id': 'S1_b2635', 'strand': '-', 'start': '266553', 'end': '266789',
-             'rvs': 'b2635', 'pseudogene': 'no'},
-            {'id': 'S1_02737', 'strand': '+', 'start': '2770445', 'end': '2770681',
-             'rvs': 'b2635', 'pseudogene': 'no'},
-        ]
-        kept, _ = deduplicate(genes, {(2770445, 2770681, '+')})
+        genes = [self._gene('S1_g1', 266553, 266789, 'g1', '-', pseudo='yes'),
+                 self._gene('S1_02737', 2770445, 2770681, 'g1', pseudo='yes')]
+        kept, _ = deduplicate(genes, {(2770445, 2770681, '+', 'c1')})
         assert [g['id'] for g in kept] == ['S1_02737']
 
     def test_bakta_support_only_breaks_ties(self):
         """A longer copy still wins over a Bakta-confirmed shorter one."""
         from deduplicate_rvs import deduplicate
-        genes = [
-            {'id': 'S1_a', 'strand': '+', 'start': '100', 'end': '399',
-             'rvs': 'g1', 'pseudogene': 'no'},
-            {'id': 'S1_b', 'strand': '+', 'start': '1000', 'end': '1201',
-             'rvs': 'g1', 'pseudogene': 'no'},
-        ]
-        kept, _ = deduplicate(genes, {(1000, 1201, '+')})
+        genes = [self._gene('S1_a', 100, 399, 'g1'), self._gene('S1_b', 1000, 1201, 'g1')]
+        kept, _ = deduplicate(genes, {(1000, 1201, '+', 'c1')})
         assert [g['id'] for g in kept] == ['S1_a']
+
+    def test_further_copies_of_a_gene_are_kept(self):
+        """E. coli Sakai carries K-12 prophage genes several times over, and
+        every copy but one was deleted: genes missing from the annotation and
+        from the duplication analysis, which is about exactly these."""
+        from deduplicate_rvs import deduplicate
+        genes = [self._gene('Sakai_01184', 1184948, 1185481, 'b1554', '-'),
+                 self._gene('Sakai_01273', 1273009, 1273542, 'b1554'),
+                 self._gene('Sakai_b1554', 1558513, 1559046, 'b1554')]
+        kept, removed = deduplicate(genes)
+        assert len(kept) == 3 and not removed
+
+    def test_pseudogenes_and_pieces_are_not_copies(self):
+        """A further copy must be intact, nearly as long as the best one, and
+        clear of the copies kept; anything else is a remnant of the gene."""
+        from deduplicate_rvs import deduplicate
+        genes = [self._gene('S1_best', 1000, 1899, 'g1'),
+                 self._gene('S1_pseudo', 5000, 5899, 'g1', pseudo='yes'),
+                 self._gene('S1_piece', 9000, 9599, 'g1'),
+                 self._gene('S1_overlapping', 1300, 2199, 'g1'),
+                 self._gene('S1_copy', 20000, 20869, 'g1')]
+        kept, _ = deduplicate(genes)
+        assert [g['id'] for g in kept] == ['S1_best', 'S1_copy']
+
+    def test_a_copy_on_another_reference_gene_is_not_kept(self):
+        """In M. bovis an intact copy of Rv2177c lies inside Rv2424c, a
+        pseudogene at its own locus."""
+        from deduplicate_rvs import deduplicate
+        genes = [self._gene('S1_02275', 2422727, 2423392, 'Rv2177c', '-'),
+                 self._gene('S1_Rv2177c', 2693372, 2694037, 'Rv2177c', '-'),
+                 self._gene('S1_Rv2424c', 2693372, 2694371, 'Rv2424c', '-', pseudo='yes')]
+        kept, _ = deduplicate(genes)
+        assert [g['id'] for g in kept] == ['S1_02275', 'S1_Rv2424c']
+
+        # A gene on the other strand is another locus.
+        genes[2]['strand'] = '+'
+        kept, _ = deduplicate(genes)
+        assert len(kept) == 3
+
+    def test_copies_on_other_contigs_do_not_overlap(self):
+        from deduplicate_rvs import deduplicate
+        genes = [self._gene('S1_g1', 1000, 1899, 'g1', contig='c1'),
+                 self._gene('S1_g1', 1000, 1899, 'g1', contig='c2')]
+        kept, _ = deduplicate(genes)
+        assert len(kept) == 2
+
+    def test_synteny_breaks_the_remaining_ties(self):
+        """In CDC1551 an 81-residue copy of Rv3022c also opens another PPE
+        gene, 2.4 kb before its own locus, and that one came first."""
+        from deduplicate_rvs import deduplicate
+        genes = [self._gene('S1_Rv3022c', 3373737, 3373979, 'Rv3022c', '-', pseudo='yes'),
+                 self._gene('S1_Rv3022c', 3376177, 3376419, 'Rv3022c', '-', pseudo='yes')]
+        kept, _ = deduplicate(genes, distance={0: 2440.0, 1: 0.0})
+        assert [g['start'] for g in kept] == ['3376177']
+
+    def test_synteny_distance_follows_the_neighbours(self):
+        """The sample is 5 kb ahead of the reference here; the copy that sits
+        5 kb after the protein's reference position is the syntenic one."""
+        from deduplicate_rvs import synteny_distance
+        ref = {f'g{i}': (i * 1000, i * 1000 + 899) for i in range(1, 11)}
+        genes = [self._gene(f'S1_g{i}', i * 1000 + 5000, i * 1000 + 5899, f'g{i}')
+                 for i in range(1, 11) if i != 5]
+        genes += [self._gene('S1_g5', 5000 + 5000, 5899 + 5000, 'g5'),
+                  self._gene('S1_g5', 5000 + 40000, 5899 + 40000, 'g5')]
+        dist = synteny_distance(genes, ref)
+        assert dist[len(genes) - 2] < 100 < 30000 < dist[len(genes) - 1]
+
+    def test_copies_get_ids_of_their_own(self):
+        """Copies only miniprot placed are all named after their protein, and
+        the master table keeps one row per id."""
+        from deduplicate_rvs import unique_ids
+        genes = [self._gene('S1_b4570', 1, 393, 'b4570'), self._gene('S1_b4570_2', 900, 1292, 'x'),
+                 self._gene('S1_b4570', 2000, 2392, 'b4570'), self._gene('S1_b4570', 3000, 3392, 'b4570')]
+        assert unique_ids(genes) == {2: 'S1_b4570_3', 3: 'S1_b4570_4'}
+
+    def test_table_and_fasta_keep_the_same_ids(self):
+        import subprocess
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            tsv, faa = os.path.join(d, 's.AMAP.tsv'), os.path.join(d, 's.AMAP.faa')
+            with open(tsv, 'w') as f:
+                f.write("id\tstrand\tstart\tend\trvs\tpseudogene\tcontig\n")
+                f.write("S1_b4570\t+\t1\t393\tb4570\tno\tc1\n")
+                f.write("S1_b4570\t-\t2000\t2392\tb4570\tno\tc1\n")
+            with open(faa, 'w') as f:
+                f.write(">S1_b4570;+;0-393\nMKT\n>S1_b4570;-;1999-2392\nMKT\n")
+            script = os.path.join(os.path.dirname(__file__), '..', 'bin', 'deduplicate_rvs.py')
+            subprocess.run([sys.executable, script, tsv, '--faa', faa], check=True, capture_output=True)
+            table = pd.read_csv(tsv, sep='\t')
+            with open(faa) as f:
+                headers = [l[1:].split(';')[0] for l in f if l.startswith('>')]
+        assert list(table['id']) == ['S1_b4570', 'S1_b4570_2'] == headers
 
     def test_removing_one_copy_keeps_the_others(self):
         """A multi-copy gene has one record per placement, all sharing an id.

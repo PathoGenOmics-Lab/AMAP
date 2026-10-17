@@ -54,11 +54,12 @@ process FIX_CDS {
     python3 ${projectDir}/bin/check_cds.py ${fasta} ${corrected_tsv} \\
         --ref-proteome ${ref_proteome}
 
-    # Deduplicate genes with the same Rv assignment
+    # Deduplicate genes with the same Rv assignment, keeping real copies
     python3 ${projectDir}/bin/deduplicate_rvs.py \\
         *.AMAP.tsv \\
         --faa *.AMAP.faa \\
         --fna *.AMAP.fna \\
-        --bakta ${bakta_tsv}
+        --bakta ${bakta_tsv} \\
+        --ref-proteome ${ref_proteome}
     """
 }

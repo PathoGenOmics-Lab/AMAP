@@ -29,6 +29,7 @@ from classify.reconciliation import (
 from classify.plotting import generate_overlap_plot
 from classify.ids import format_cluster_id
 from classify.synteny import drop_paralog_placements
+from classify.exact import place_unplaced_proteins
 
 __author__ = 'Paula Ruiz-Rodriguez'
 __credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
@@ -83,15 +84,23 @@ def main():
     parser.add_argument('-p', '--miniprot', required=True, help="Miniprot PAF file.")
     parser.add_argument('-bb', '--badbakta', required=True, help="Miniprot 'bad bakta' PAF.")
     parser.add_argument('-c', '--cds', required=True, help="Reference CDS PAF for Miniprot.")
+    parser.add_argument('-g', '--genome', help="Genome FASTA. With --ref-proteome, the proteins "
+                                               "miniprot could not place are looked for in it.")
+    parser.add_argument('-r', '--ref-proteome', help="Reference proteome the miniprot PAF was made from.")
     args = parser.parse_args()
 
     base_name = os.path.basename(args.bakta).split('.')[0]
 
     # --- 1. Read inputs ---
     bakta_df = read_bakta(args.bakta)
+    miniprot_df = read_miniprot(args.miniprot, ref_coords=True)
+    # miniprot cannot seed an alignment for the smallest proteins; place the
+    # ones the genome encodes exactly.
+    if args.genome and args.ref_proteome:
+        miniprot_df = place_unplaced_proteins(miniprot_df, args.genome, args.ref_proteome)
     # A protein with a paralog is placed at both loci; keep only the placements
     # that do not land on a locus another protein syntenically owns.
-    miniprot_df = drop_paralog_placements(read_miniprot(args.miniprot, ref_coords=True))
+    miniprot_df = drop_paralog_placements(miniprot_df)
     bakta_df_bad = read_miniprot_unfiltered(args.badbakta)
     bakta_df = match_bakta_contigs(bakta_df, miniprot_df)
 

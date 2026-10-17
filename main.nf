@@ -413,7 +413,7 @@ workflow {
     MINIPROT(BAKTA_ANNOTATOR.out.for_miniprot, ref_proteome_ch, ref_genome_fasta_ch, bad_bakta_ch)
 
     // 6. Classify CDS cases based on alignments
-    TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases))
+    TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases), ref_proteome_ch)
 
     // 7. Correct CDS based on classified cases
     FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix), ref_proteome_ch)

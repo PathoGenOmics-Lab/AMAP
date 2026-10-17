@@ -61,7 +61,8 @@ rm -rf "$WORK/run"
 mkdir -p "$WORK/run"
 cd "$WORK/run"
 python3 "$REPO/bin/classify_cases.py" -b "$IN/$SAMPLE/$SAMPLE.tsv" -p "$IN/$SAMPLE.paf" \
-    -bb "$IN/$SAMPLE-badbakta.paf" -c "$IN/$SAMPLE-ref.paf" > classify.log 2>&1
+    -bb "$IN/$SAMPLE-badbakta.paf" -c "$IN/$SAMPLE-ref.paf" \
+    --genome "$IN/$SAMPLE.fasta" --ref-proteome "$REF/aa_H37Rv.translated.fas" > classify.log 2>&1
 python3 "$REPO/bin/check_cds.py" "$IN/$SAMPLE.fasta" "${SAMPLE}_corrected.tsv" \
     --ref-proteome "$REF/aa_H37Rv.translated.fas" > check.log 2>&1
 python3 "$REPO/bin/deduplicate_rvs.py" "$SAMPLE.AMAP.tsv" --faa "$SAMPLE.AMAP.faa" \

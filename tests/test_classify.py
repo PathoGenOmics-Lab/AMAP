@@ -1502,6 +1502,62 @@ class TestAlignmentQuality:
             (3_376_416, 3_376_730, '-', ''): 'Rv3022A'}
 
 
+class TestExactPlacements:
+    """miniprot places none of K-12's 33 smallest proteins (8 to 29 residues);
+    the ones the genome encodes exactly are found by looking for them."""
+
+    # MKLVWFYH from a GTG start, then a stop: 8 residues, 27 bp.
+    ORF = "GTG" "AAACTGGTTTGGTTTTATCAT" "TAA"
+    FILL = "GCA" * 10
+
+    @staticmethod
+    def _revcomp(s):
+        return s[::-1].translate(str.maketrans("ACGT", "TGCA"))
+
+    def _frames(self, d, genome):
+        from classify.exact import _six_frames
+        path = os.path.join(d, 'g.fasta')
+        with open(path, 'w') as f:
+            f.write(">chr\n" + genome + "\n")
+        return _six_frames(path)
+
+    def test_found_on_either_strand(self):
+        from classify.exact import find_exact
+        genome = self.FILL + self.ORF + self.FILL + self._revcomp(self.ORF) + self.FILL
+        with tempfile.TemporaryDirectory() as d:
+            hits = list(find_exact('MKLVWFYH*', self._frames(d, genome)))
+        assert hits == [('chr', 31, 57, '+'), ('chr', 88, 114, '-')]
+
+    def test_needs_a_start_codon_and_a_stop(self):
+        from classify.exact import find_exact
+        no_start = "GCT" + self.ORF[3:]
+        no_stop = self.ORF[:-3] + "TGG"
+        with tempfile.TemporaryDirectory() as d:
+            assert list(find_exact('MKLVWFYH*', self._frames(d, self.FILL + no_start + self.FILL))) == []
+            assert list(find_exact('MKLVWFYH*', self._frames(d, self.FILL + no_stop + self.FILL))) == []
+
+    def test_an_unplaced_protein_gets_a_complete_placement(self):
+        from classify.exact import place_unplaced_proteins
+        cols = ['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt',
+                'Contig', 'Complete', 'Ref Start', 'Ref End']
+        mp = pd.DataFrame([['gS', 9, '*', 1, 0, 0, 0, '*', False, 1000.0, 1026.0],
+                           ['gP', 101, '+', 300, 602, 303, 303, 'chr', True, 300.0, 602.0],
+                           ['gT', 6, '*', 1, 0, 0, 0, '*', False, 2000.0, 2017.0]], columns=cols)
+        with tempfile.TemporaryDirectory() as d:
+            genome = os.path.join(d, 'g.fasta')
+            with open(genome, 'w') as f:
+                f.write(">chr\n" + self.FILL + self.ORF + self.FILL + "ATGAAACTGGTTTGGTAA" + "\n")
+            proteome = os.path.join(d, 'p.faa')
+            with open(proteome, 'w') as f:
+                f.write(">gS_1000-1026\nMKLVWFYH*\n>gP_300-602\nM" + "A" * 99 + "*\n"
+                        ">gT_2000-2017\nMKLVW*\n")
+            out = place_unplaced_proteins(mp, genome, proteome)
+        assert out.drop(columns='Prot len').values.tolist() == [
+            ['gP', '+', 300, 602, 303, 303, 'chr', True, 300.0, 602.0],
+            ['gT', '*', 1, 0, 0, 0, '*', False, 2000.0, 2017.0],
+            ['gS', '+', 31, 57, 27, 27, 'chr', True, 1000.0, 1026.0]]
+
+
 # =============================================================================
 # CONTIGS
 # =============================================================================

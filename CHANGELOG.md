@@ -2,6 +2,11 @@
 
 All notable changes to AMAP are documented in this file.
 
+## [Unreleased]
+
+### 🐛 Pipeline
+- **The first `-resume` re-ran PATHOTYPR, Bakta and everything after them**: the first time a copy of AMAP ran, Python cached the bytecode of AMAP's own modules inside that copy, in `bin/classify/__pycache__`. Nextflow adds every `bin/` entry whose name appears as a word in a script to that task's cache key, and PATHOTYPR runs `pathotypr classify`, so the change voided its cache for every sample of the run. Tasks now run with `PYTHONDONTWRITEBYTECODE=1` and leave the pipeline untouched
+
 ## [1.0.1] - 2026-07-25
 
 Bug fixes, most of them found by running the pipeline on real genomes rather

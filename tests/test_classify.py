@@ -1456,6 +1456,23 @@ class TestAlignmentQuality:
         case4 = self._case4([['S1_01840', 1_977_868, 1_979_412, '-', 1_545]])
         assert self._resolve(mp, case4) == {(1_977_868, 1_978_710, '-', ''): 'Rv1755c'}
 
+    def test_a_call_in_another_frame_is_another_gene(self):
+        """K-12 ybfO ends four bases into ybfC, in another frame. Being
+        complete must not cost the call its place; ybfC, losing on length,
+        comes back as a gene nothing covers in its frame."""
+        from classify.reconciliation import recover_missing_genes
+        mp = self._mp([['b0704', 190, '+', 735_650, 736_219, 570, 570, True]])
+        case4 = self._case4([['S1_00703', 734_220, 735_653, '+', 1_434]])
+        combined = self._resolve(mp, case4)
+        assert combined == {(734_220, 735_653, '+', ''): 'S1_00703'}
+        recover_missing_genes(combined, mp)
+        assert combined[(735_650, 736_219, '+', '')] == 'b0704'
+
+        # The same among several calls.
+        case4 = self._case4([['S1_00703', 734_220, 735_653, '+', 1_434],
+                             ['S1_00705', 736_216, 739_000, '+', 2_785]])
+        assert self._resolve(mp, case4) == {(734_220, 735_653, '+', ''): 'S1_00703'}
+
     def test_partial_alignment_still_gives_way(self):
         mp = self._mp([['Rv1755c', 281, '-', 1_977_868, 1_978_710, 843, 843, False]])
         case4 = self._case4([['S1_01840', 1_977_868, 1_979_412, '-', 1_545]])

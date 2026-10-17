@@ -52,6 +52,13 @@ def _contig(coord):
     return coord[3] if len(coord) > 3 else ''
 
 
+def _same_frame(a, b, strand):
+    """Whether two (Start, End) spans on one strand are read in the same frame,
+    judged from their 5' ends."""
+    i = 1 if strand == '-' else 0
+    return (a[i] - b[i]) % 3 == 0
+
+
 def build_overlap_tree(tree_df, overlap_df, tree_id_col, overlap_id_col):
     """For each feature of tree_df, the features of overlap_df overlapping it on
     the same strand of the same contig.
@@ -149,10 +156,13 @@ def resolve_single_overlaps(single_groups, miniprot_df, combined_dict, new_group
         # A much longer Bakta call is taken as a sign the alignment fragmented,
         # but only an alignment that stops short of the end of its protein can
         # have. One that reaches it, stop codon included, is the whole gene,
-        # and a longer call on it ends at the same stop and merely starts
-        # further upstream: plcD (Rv1755c) on CDC1551, 843 bp in H37Rv, 1545 bp
-        # in Bakta's call.
-        complete = bool(mp_row.get('Complete', False))
+        # and a longer call in its frame ends at the same stop and merely
+        # starts further upstream: plcD (Rv1755c) on CDC1551, 843 bp in H37Rv,
+        # 1545 bp in Bakta's call. A call in another frame is another gene and
+        # keeps its chance to win on length; the alignment, if it loses, comes
+        # back in recover_missing_genes, since nothing covers it in its frame.
+        complete = (bool(mp_row.get('Complete', False))
+                    and _same_frame(value['miniprot_df'][0], value['case4'][0], strand))
 
         if n_overlaps > 1:
             new_coord, new_id = (*value['miniprot_df'][0], strand, contig), value['Prot Id']
@@ -203,6 +213,7 @@ def resolve_multiple_overlaps(multiple_groups, miniprot_df, combined_dict, new_g
         # with PE29.
         complete = (bool(miniprot_df.at[key, 'Complete'])
                     if key in miniprot_df.index and 'Complete' in miniprot_df.columns else False)
+        complete = complete and _same_frame(miniprot_range, best[0], strand)
         spans_others = best[1] in new_groups and len(new_groups[best[1]]['Locus Tags']) > 1
         if complete or spans_others or _range_length(miniprot_range) >= _range_length(best[0]) or \
            (_range_length(best[0]) - _range_length(miniprot_range)) < 500:

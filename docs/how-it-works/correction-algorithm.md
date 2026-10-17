@@ -9,10 +9,25 @@ Miniprot alignments of a trusted reference proteome, classifying every candidate
 gene and then applying a set of rules to resolve the disagreements.
 
 Coordinates throughout are 1-based inclusive, so a gene's length is
-`end - start + 1`. Every comparison is strand-aware: genes on opposite strands
-at the same position are different genes and never conflict.
+`end - start + 1`. Every comparison is strand-aware and contig-aware: genes on
+opposite strands at the same position are different genes and never conflict,
+and nor are genes on different contigs of a draft assembly, where every contig
+starts at 1. Bakta runs with `--keep-contig-headers` so that it names the
+contigs as the FASTA and Miniprot do; by default it renames them `contig_N`.
 
-## 0. Paralog placements
+## 0. Placements
+
+### Small proteins
+
+Miniprot needs a seed of several residues and enough score to report an
+alignment, which a protein of a few dozen residues rarely gives it: annotating
+*E. coli* K-12 with its own proteome, it placed none of 33 proteins of 8 to 29
+residues. Every protein it leaves unplaced is looked for in the six-frame
+translation of the genome, preceded by a start codon and followed by a stop,
+and each exact copy found becomes a complete placement. Proteins shorter than
+8 residues are not searched.
+
+### Paralog placements
 
 Miniprot places a reference protein everywhere it scores within 5% of its best,
 so a protein with a paralog is placed at both loci. Before anything is
@@ -86,16 +101,23 @@ by, are kept as `case1_kept`.
 
 ### Single overlaps
 
-One Bakta CDS against one reference alignment. Lengths are compared, and:
+One Bakta CDS against one reference alignment, on the same strand of the same
+contig. Lengths are compared, and:
 
 - **the reference wins by default**
-- the Bakta version wins only if it is longer by **more than 550 bp**
+- the Bakta version wins only if it is longer by **more than 550 bp**, and the
+  alignment is not **complete** in the call's reading frame
 
 The asymmetry is deliberate. A reference alignment is usually the better
 boundary, but a much longer Bakta call normally means the alignment fragmented,
 and discarding a full-length gene in favour of a partial alignment would be the
-worse error. If the Bakta CDS overlaps more than one alignment, the reference
-wins regardless.
+worse error. A complete alignment, one that covers the whole reference protein
+down to its stop codon, has not fragmented: a longer call in its frame ends at
+the same stop and only starts further upstream (plcD, Rv1755c, 843 bp in H37Rv
+and 1545 bp in Bakta's call on CDC1551). A call in another frame is another
+gene, and keeps its chance to win on length; the alignment then comes back in
+step 5. If the Bakta CDS overlaps more than one alignment, the reference wins
+regardless.
 
 ### Multiple overlaps
 
@@ -103,8 +125,10 @@ Several Bakta CDS against one alignment, the signature of a gene that has been
 split. The best-overlapping Bakta CDS is picked first, then compared to the
 alignment on length:
 
-- the reference wins if it is at least as long, or if the Bakta CDS beats it by
-  **less than 500 bp**
+- the reference wins if it is at least as long, if the Bakta CDS beats it by
+  **less than 500 bp**, if the alignment is complete in the call's frame, or if
+  the call overlaps other alignments as well, which makes it several reference
+  genes read as one (Rv3022c and Rv3021c are one reading frame in CDC1551)
 - otherwise the Bakta CDS wins
 
 ## 4. Deduplication on insert
@@ -117,15 +141,22 @@ coordinate overlaps an existing one by **70% or more** on the same strand:
   and is not a reference gene
 - otherwise the existing gene stands and the new coordinate is dropped
 
-The reference-gene test looks for coordinates embedded in the identifier, and
-identifiers have been stripped of them since the alignments are read, so at
-present no gene qualifies and the second rule applies to all of them.
+A reference gene is one whose identifier is a reference protein's. The test
+used to look for coordinates embedded in the identifier, which are stripped as
+the alignments are read, so no gene qualified and a call of similar length could
+displace any of them: Bakta's version of Rv1614, one codon longer, replaced it.
 
 ## 5. Rescuing missing genes
 
-Reference genes still absent from the set are added back, best alignment first.
-Placements on other genes' loci have already been dropped in step 0, so what is
-left to rescue sits where the gene belongs or at a locus nobody claims.
+A reference protein is missing when no gene accounts for any of its
+placements, and then it goes back in at its best one. A gene accounts for a
+placement when it sits on it: same contig and strand, the **same reading
+frame**, covering at least **50%** of it, and not known to be another reference
+gene. The frame matters because genes that really overlap sit in different
+frames (Rv0724A and Rv0725c); another reference gene in the same frame does not
+count either, since some are nested (*E. coli* hokC inside mokC). Placements on
+other genes' loci have already been dropped in step 0, so what is left to rescue
+sits where the gene belongs or at a locus nobody claims.
 
 ## 6. Final deduplication
 
@@ -133,10 +164,17 @@ Where one gene ends up at several coordinates, entries fully contained inside a
 different gene are dropped, always keeping at least one entry per gene so
 nothing disappears entirely.
 
-After the stop codon check, `deduplicate_rvs.py` keeps one gene per reference
-protein: a non-pseudogene over a pseudogene, then the longer one, then the one
-Bakta also called at exactly those coordinates. The last only breaks ties,
-which used to go to whichever copy came first in the genome.
+After the stop codon check, `deduplicate_rvs.py` ranks the genes that share a
+reference protein: a non-pseudogene over a pseudogene, then the longer one, then
+one Bakta also called at exactly those coordinates, then the one nearer where
+the protein belongs by synteny. The first keeps its place. The others stay as
+**further copies** of the gene when they are intact, at least **90%** as long as
+the first, clear of the copies kept, and not covered by another reference gene;
+anything else is a remnant of the gene and goes. A genome can carry a gene more
+than once, and these copies are what the duplication analysis counts: *E. coli*
+O157:H7 Sakai keeps 34 that used to be deleted. Copies only Miniprot placed are
+all named after their protein, so later ones get `_2`, `_3` to keep identifiers
+unique.
 
 ## 7. Stop codon check
 
@@ -192,6 +230,10 @@ sets of coordinates overlap, which one survives into the curated annotation.
 | Distance from the predicted position | paralog placements | 10 kb |
 | Proteins placed once, each side, for the local offset | paralog placements | 5 |
 | Cover to claim another protein's placement | paralog placements | 50% |
+| Shortest protein looked for exactly | small proteins | 8 residues |
+| Cover for a gene to account for a placement | rescuing missing genes | 50% |
+| Length of a further copy, next to the first | final deduplication | 90% |
+| Cover by another reference gene that rules a copy out | final deduplication | 50% |
 | Stop codon search | quality control | 300 bp, or what the reference protein is missing |
 | Identity to restore a clipped N-terminus | quality control | 90% |
 

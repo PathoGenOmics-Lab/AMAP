@@ -15,15 +15,25 @@ directly comparable with 1.0.1.
 - **Reference pseudogenes keep their extent**: PE21 (Rv2099c) and PPE48 (Rv3022c), which the reference annotates without a stop, were extended to the next one, and oxyR' (Rv2427A) and Rv3216 lost the partial final codon the reference gives them
 - **The 1.0.1 fix for reference pseudogenes never fired**: it looked for reference coordinates in a column that has not carried them since March 2026, and its tests wrote them in by hand. `check_cds.py` now reads the reference proteome instead
 - **Alignments that stop short are completed**: miniprot can miss a protein's N-terminus (Rv3611 on CP110619) or leave a repetitive C-terminus unaligned further from its stop than the 300 bp searched; the reference protein now says how much is missing
-- **Ties between copies of a gene** go to the one Bakta also called, not the one that comes first in the genome (E. coli K-12 b2635)
+- **Ties between copies of a gene** go to the one Bakta also called, then to the one where the protein belongs by synteny, not the one that comes first in the genome (E. coli K-12 b2635)
+- **Draft assemblies**: genes were compared on coordinates alone, and every contig starts at 1, so cut into 40 contigs CDC1551 had 87% of its proteins translated from the wrong contig. Every gene is now matched, translated and written on its own contig, and Bakta runs with `--keep-contig-headers` so that its contig names match the FASTA's
+- **Case 4 is grouped strand by strand**: about 8% of its groups (101 of 1255 on H37Rv) put an alignment on one strand together with a Bakta call on the other
+- **A complete alignment is not displaced by a longer call in its frame**: such a call ends at the same stop and only starts further upstream (plcD on CDC1551). Nor does a call that spans several reference genes win against them (Rv3022c and Rv3021c, one reading frame in CDC1551)
+- **Reference genes are protected again**: the check looked for coordinates in identifiers that no longer carry them, so any call of similar length could displace a reference gene (Rv1614)
+- **Missing genes are recovered by what covers them**: genes stored under Bakta locus tags looked missing by name, so a placement a codon off its gene went back in as a second copy. With the case 4 changes, ORFs annotated twice fall from 10 to 3 on CDC1551 and from 16 to 6 on M. bovis, where the reference has none
+- **Real copies of a gene are kept**: `deduplicate_rvs.py` deleted every copy of a gene but one, 34 genes on E. coli O157:H7 Sakai, which were then missing from the annotation and from the duplication analysis. Further copies get identifiers of their own
+- **Small proteins**: miniprot placed none of the 33 proteins of 8 to 29 residues in E. coli K-12. Those the genome encodes exactly are now found in its six-frame translation, which takes K-12 against itself from 4252 to 4285 of 4294 genes and Sakai from 198 to 219 of 220
 
 ### 🐛 Pipeline
 - **The default H37Rv reference under Docker**: its files live inside the container and were handed to processes as paths, so Nextflow mounted `/reference` from the host, which Docker Desktop refuses and Docker on Linux mounts empty over the container's own. `BUNDLED_REFERENCE` copies them out first
 - **`-profile test`**: `VALIDATE_INPUTS` still required the sample sheet the test profile does without. 1.0.1 had only been checked with `-preview`, which runs no task
 
+### 🧹 Code
+- **`reconcile_coordinates` is gone**: it read reference coordinates from protein identifiers that have not carried them since March 2026, so it changed nothing. The paralog check does its job with the sample's own offsets
+
 ### 🧪 Testing
 - **`tests/selftest/h37rv_selftest.sh`** annotates H37Rv with itself inside the container and fails unless every GenBank CDS comes back exactly
-- **120 tests**, up from 92
+- **135 tests**, up from 92
 
 ## [1.0.1] - 2026-07-25
 

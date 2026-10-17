@@ -40,6 +40,7 @@ process FIX_CDS {
 
     input:
     tuple val(sampleId), path(corrected_tsv), path(fasta), path(bakta_tsv)
+    path ref_proteome      // trusted reference proteome (H37Rv default or custom)
 
     output:
     tuple val(sampleId), path("*.AMAP.faa"), emit: for_eggnog
@@ -48,12 +49,16 @@ process FIX_CDS {
     script:
     def baseName = corrected_tsv.baseName.replace('_corrected', '')
     """
-    python3 ${projectDir}/bin/check_cds.py ${fasta} ${corrected_tsv}
+    # The reference proteome tells reference pseudogenes from genes the sample
+    # cut short, and how much of a protein an alignment left out.
+    python3 ${projectDir}/bin/check_cds.py ${fasta} ${corrected_tsv} \\
+        --ref-proteome ${ref_proteome}
 
     # Deduplicate genes with the same Rv assignment
     python3 ${projectDir}/bin/deduplicate_rvs.py \\
         *.AMAP.tsv \\
         --faa *.AMAP.faa \\
-        --fna *.AMAP.fna
+        --fna *.AMAP.fna \\
+        --bakta ${bakta_tsv}
     """
 }

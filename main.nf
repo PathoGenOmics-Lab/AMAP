@@ -401,7 +401,7 @@ workflow {
     TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases))
 
     // 7. Correct CDS based on classified cases
-    FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix))
+    FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix), ref_proteome_ch)
 
     // --- FUNCTIONAL ANNOTATION AND DOWNSTREAM ANALYSIS ---
     // This entire block will be skipped if --skip_functional_annotation is used

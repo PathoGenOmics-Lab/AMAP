@@ -614,53 +614,183 @@ class TestAppendStopCodon:
 class TestCheckCds:
     """Tests for check_cds.py."""
 
-    @staticmethod
-    def _run(tmpdir, gene_id, rvs):
-        """Annotate one 36 bp gene with no stop codon, with a TAA just past it.
+    GENOME = "ATG" + "GCT" * 11 + "TAA" + "GCT" * 20
 
-        Whether the gene is treated as a known reference pseudogene decides
-        between keeping 1-36 and extending to 1-39.
+    @staticmethod
+    def _run(tmpdir, gene_id, rvs, start=1, end=36, genome=None, proteome=None):
+        """Run check_cds.py on one gene and return (start, end, pseudogene).
+
+        The default genome holds a 36 bp gene with no stop codon and a TAA just
+        past it, so whether the gene is left alone or extended shows up as
+        keeping 1-36 or ending at 39. rvs carries plain reference names, as
+        classify_cases.py writes them; whatever check_cds knows about those
+        references comes from the proteome, when one is given.
         """
         import subprocess
-        genome = os.path.join(tmpdir, 'g.fasta')
-        with open(genome, 'w') as f:
-            f.write(">chr1\n" + "ATG" + "GCT" * 11 + "TAA" + "GCT" * 20 + "\n")
+        fasta = os.path.join(tmpdir, 'g.fasta')
+        with open(fasta, 'w') as f:
+            f.write(">chr1\n" + (genome or TestCheckCds.GENOME) + "\n")
         tsv = os.path.join(tmpdir, 'sample_corrected.tsv')
         with open(tsv, 'w') as f:
-            f.write(f"{gene_id}\t+\t1\t36\t{rvs}\n")
-        script = os.path.join(os.path.dirname(__file__), '..', 'bin', 'check_cds.py')
-        subprocess.run([sys.executable, script, genome, tsv],
-                       cwd=tmpdir, check=True, capture_output=True)
+            f.write(f"{gene_id}\t+\t{start}\t{end}\t{rvs}\n")
+        cmd = [sys.executable, os.path.join(os.path.dirname(__file__), '..', 'bin', 'check_cds.py'),
+               fasta, tsv]
+        if proteome:
+            faa = os.path.join(tmpdir, 'ref.faa')
+            with open(faa, 'w') as f:
+                f.writelines(f">{h}\n{seq}\n" for h, seq in proteome.items())
+            cmd += ['--ref-proteome', faa]
+        subprocess.run(cmd, cwd=tmpdir, check=True, capture_output=True)
         out = pd.read_csv(os.path.join(tmpdir, 'sample.AMAP.tsv'), sep='\t')
         return int(out.iloc[0]['start']), int(out.iloc[0]['end']), out.iloc[0]['pseudogene']
 
+    # 12 residues: the 36 bp gene translated, no stop.
+    STOPLESS = "MAAAAAAAAAAA"
+
     def test_reference_pseudogene_kept_for_mtbc(self):
+        """A reference protein without a stop marks a reference pseudogene."""
         import tempfile as tf
         with tf.TemporaryDirectory() as d:
-            assert self._run(d, 'S1_Rv0001', 'Rv0001_1-36') == (1, 36, 'yes')
+            got = self._run(d, 'S1_Rv0001', 'Rv0001', proteome={'Rv0001_1-36': self.STOPLESS})
+            assert got == (1, 36, 'yes')
 
     def test_reference_pseudogene_kept_for_other_organisms(self):
-        """The check was gated on the ID starting with 'Rv'.
+        """Nothing depends on the gene being called RvNNNN."""
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_thrA', 'thrA', proteome={'thrA_1-36': self.STOPLESS})
+            assert got == (1, 36, 'yes')
 
-        A gene called thrA behaves identically to one called Rv0001, so it must
-        not be extended just because of its name.
+    def test_reference_pseudogene_kept_with_several_references(self):
+        """rvs is comma separated when a gene matches several references."""
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_multi', 'Rv0001, Rv0002',
+                            proteome={'Rv0001_1-36': self.STOPLESS, 'Rv0002_500-600': self.STOPLESS})
+            assert got == (1, 36, 'yes')
+
+    def test_fragment_of_a_frameshifted_reference_runs_to_its_stop(self):
+        """E. coli b0240 is a frameshifted pseudogene: translated straight
+        through, its reference protein has no final stop, because the real one
+        is in another frame. The C-terminal fragment a sample carries in that
+        frame still ends at a stop, and is extended to it as before."""
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            # The reference protein ends in residues the fragment never reaches.
+            got = self._run(d, 'S1_b0240', 'b0240',
+                            proteome={'b0240_1-200': 'MAAAAAAAAAAA' + 'WRWRWRWRWR'})
+            assert got[:2] == (1, 39)
+
+    def test_join_cds_without_a_final_star_still_runs_to_its_stop(self):
+        """For a frameshifted (join) CDS the extracted protein has no '*' even
+        though the gene has a stop: b0240 is 133 residues over 1178 bp. Its
+        last residues match the gene's, so only the span says it is not a
+        reference annotated without a stop."""
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_b0240', 'b0240', proteome={'b0240_1-1178': self.STOPLESS})
+            assert got[:2] == (1, 39)
+
+    def test_reference_with_a_stop_means_the_sample_lost_it(self):
+        """If the reference protein has its stop, the sample's gene ran past it
+        and is extended to the next one, as it always was."""
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_Rv0001', 'Rv0001', proteome={'Rv0001_1-39': self.STOPLESS + '*'})
+            assert got[:2] == (1, 39)
+
+    def test_rvs_never_carries_coordinates(self):
+        """The pipeline writes plain names into rvs, so without the proteome
+        there is nothing to recognise a reference pseudogene by.
+
+        The previous check looked for coordinates in rvs and was tested with
+        hand-written ones; classify_cases.py had stopped writing them in March
+        2026, so in a real run it never fired.
         """
         import tempfile as tf
         with tf.TemporaryDirectory() as d:
-            assert self._run(d, 'S1_thrA', 'thrA_1-36') == (1, 36, 'yes')
-
-    def test_reference_pseudogene_kept_with_several_references(self):
-        """rvs is comma separated; any of them matching the position counts."""
-        import tempfile as tf
-        with tf.TemporaryDirectory() as d:
-            assert self._run(d, 'S1_multi', 'Rv0001_1-36, Rv0002_500-600') == (1, 36, 'yes')
+            assert self._run(d, 'S1_Rv0001', 'Rv0001')[:2] == (1, 39)
 
     def test_gene_without_reference_coordinates_is_extended(self):
-        """No embedded coordinates means nothing vouches for the boundary."""
+        """No reference means nothing vouches for the boundary."""
         import tempfile as tf
         with tf.TemporaryDirectory() as d:
-            start, end, _ = self._run(d, 'S1_00042', '')
+            start, end, _ = self._run(d, 'S1_00042', '', proteome={'Rv0001_1-36': self.STOPLESS})
             assert (start, end) == (1, 39)
+
+    def test_partial_final_codon_of_a_reference_pseudogene_is_kept(self):
+        """oxyR' (Rv2427A) spans 517 bp in the reference; its alignment covers
+        the 516 that make whole codons. The trailing base goes back on."""
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            # Reference span 1-37 carries one base past the twelve codons.
+            got = self._run(d, 'S1_Rv2427A', 'Rv2427A',
+                            proteome={'Rv2427A_1-37': self.STOPLESS + 'A*'})
+            assert got == (1, 37, 'yes')
+
+    def test_clipped_n_terminus_is_restored(self):
+        """Miniprot aligned Rv3611 from residue 30 on CP110619."""
+        import tempfile as tf
+        genome = "ATG" + "AAA" * 5 + "GCT" * 10 + "TAA" + "GCT" * 10
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_Rv3611', 'Rv3611', start=19, end=51, genome=genome,
+                            proteome={'Rv3611_1-51': 'MKKKKK' + 'A' * 10 + '*'})
+            assert got == (1, 51, 'no')
+
+    def test_n_terminus_is_not_restored_across_a_stop(self):
+        """If the sample has a stop where the reference has residues, its
+        protein really is shorter."""
+        import tempfile as tf
+        genome = "ATG" + "AAA" * 2 + "TAA" + "AAA" * 2 + "GCT" * 10 + "TAA" + "GCT" * 10
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_Rv3611', 'Rv3611', start=19, end=51, genome=genome,
+                            proteome={'Rv3611_1-51': 'MKKKKK' + 'A' * 10 + '*'})
+            assert got[:2] == (19, 51)
+
+    def test_n_terminus_is_not_restored_when_upstream_differs(self):
+        """The gene is clipped, but the sample's upstream codons translate to
+        something else than the reference's first residues: its N-terminus is
+        not the reference's, so nothing is borrowed from it."""
+        import tempfile as tf
+        genome = "ATG" + "GAA" * 5 + "GCT" * 10 + "TAA" + "GCT" * 10
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_Rv3611', 'Rv3611', start=19, end=51, genome=genome,
+                            proteome={'Rv3611_1-51': 'MKKKKK' + 'A' * 10 + '*'})
+            assert got[:2] == (19, 51)
+
+    def test_internal_deletion_is_not_mistaken_for_a_clipped_start(self):
+        """M. bovis Rv3159c (PPE53) is one residue short through an in-frame
+        deletion and starts at the same ATG as H37Rv. With a CTG in front, an
+        earlier version of the completion put it on, giving LMNYSV..."""
+        import tempfile as tf
+        genome = "CTG" + "ATG" + "GCT" * 20 + "TAA" + "GCT" * 10
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_Rv3159c', 'Rv3159c', start=4, end=69, genome=genome,
+                            proteome={'Rv3159c_1-72': 'MD' + 'A' * 20 + '*'})
+            assert got[:2] == (4, 69)
+
+    def test_internal_deletion_with_a_start_codon_upstream(self):
+        """Same, with an ATG in front, which translates to the reference's
+        first residue: only the gene already lining up with the reference's
+        start says there is nothing to restore."""
+        import tempfile as tf
+        genome = "ATG" + "ATG" + "GCT" * 20 + "TAA" + "GCT" * 10
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_Rv3159c', 'Rv3159c', start=4, end=69, genome=genome,
+                            proteome={'Rv3159c_1-72': 'MD' + 'A' * 20 + '*'})
+            assert got[:2] == (4, 69)
+
+    def test_far_stop_is_found_when_the_reference_says_how_far(self):
+        """The last 128 residues of a PE_PGRS went unaligned, 387 bp from the
+        stop; the default search stops at 300 bp."""
+        import tempfile as tf
+        genome = "ATG" + "GCT" * 150 + "TAA" + "GCT" * 20
+        protein = 'M' + 'A' * 150 + '*'
+        with tf.TemporaryDirectory() as d:
+            assert self._run(d, 'S1_g', 'gX', end=90, genome=genome,
+                             proteome={'gX_1-456': protein})[:2] == (1, 456)
+        with tf.TemporaryDirectory() as d:
+            assert self._run(d, 'S1_g', 'gX', end=90, genome=genome)[:2] == (1, 90)
 
     def test_fasta_matches_the_table_after_deduplication(self):
         """Two genes that extend onto the same coordinates leave one row.
@@ -700,6 +830,32 @@ class TestCheckCds:
 
 class TestDeduplicateRvs:
     """Tests for deduplicate_rvs.py."""
+
+    def test_tie_goes_to_the_copy_bakta_also_called(self):
+        """E. coli K-12 b2635 aligns to its own locus and to a prophage copy
+        at 266553, both 237 bp. The tie went to whichever came first in the
+        genome; the copy Bakta called at the same coordinates now wins."""
+        from deduplicate_rvs import deduplicate
+        genes = [
+            {'id': 'S1_b2635', 'strand': '-', 'start': '266553', 'end': '266789',
+             'rvs': 'b2635', 'pseudogene': 'no'},
+            {'id': 'S1_02737', 'strand': '+', 'start': '2770445', 'end': '2770681',
+             'rvs': 'b2635', 'pseudogene': 'no'},
+        ]
+        kept, _ = deduplicate(genes, {(2770445, 2770681, '+')})
+        assert [g['id'] for g in kept] == ['S1_02737']
+
+    def test_bakta_support_only_breaks_ties(self):
+        """A longer copy still wins over a Bakta-confirmed shorter one."""
+        from deduplicate_rvs import deduplicate
+        genes = [
+            {'id': 'S1_a', 'strand': '+', 'start': '100', 'end': '399',
+             'rvs': 'g1', 'pseudogene': 'no'},
+            {'id': 'S1_b', 'strand': '+', 'start': '1000', 'end': '1201',
+             'rvs': 'g1', 'pseudogene': 'no'},
+        ]
+        kept, _ = deduplicate(genes, {(1000, 1201, '+')})
+        assert [g['id'] for g in kept] == ['S1_a']
 
     def test_removing_one_copy_keeps_the_others(self):
         """A multi-copy gene has one record per placement, all sharing an id.

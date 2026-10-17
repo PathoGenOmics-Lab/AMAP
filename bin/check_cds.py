@@ -70,7 +70,7 @@ def find_next_stop_codon(fasta_seq, start_index, strand, max_distance=300):
     logging.warning(f"No stop codon found within {max_distance}bp")
     return None
 
-def get_goodseq(sequence, start, end, strand):
+def get_goodseq(sequence, start, end, strand, max_distance=300):
     """Extend a CDS to include its stop codon, adjusting frame if needed.
     
     Only extends if the current sequence does NOT already end with a stop codon.
@@ -101,7 +101,7 @@ def get_goodseq(sequence, start, end, strand):
                 logging.info(f"Gene already ends with stop codon '{last_codon}' — no extension needed")
                 return start, end, strand
         # Search for stop codon starting at current end
-        new_end = find_next_stop_codon(sequence, end, strand)
+        new_end = find_next_stop_codon(sequence, end, strand, max_distance)
         if new_end is not None:
             end = new_end + 3  # Include the stop codon
     else:
@@ -117,7 +117,7 @@ def get_goodseq(sequence, start, end, strand):
                 logging.info(f"Minus-strand gene already ends with stop codon '{first_codon_rc}' (rc) — no extension needed")
                 return start, end, strand
         # Search for stop codon scanning toward lower coordinates
-        new_start = find_next_stop_codon(sequence, max(start - 3, 0), strand)
+        new_start = find_next_stop_codon(sequence, max(start - 3, 0), strand, max_distance)
         if new_start is not None:
             start = new_start  # Include the stop codon
 
@@ -130,7 +130,121 @@ def read_to_pandas(file):
     df.columns = ["id", "strand", "start", "end", "rvs"]
     return df
 
-def extract_and_translate_cds(fasta_file, annotation_df):
+# Start codons of translation table 11, the bacterial code.
+START_CODONS = {"ATG", "GTG", "TTG", "CTG", "ATT", "ATC", "ATA"}
+
+
+def read_reference_proteins(path):
+    """Reference proteins by name, with the length of the span each was cut from.
+
+    Headers are NAME_START-END (Rv0001_1-1524), as aa_H37Rv.translated.fas and
+    extract_ref_proteins.py write them, and NAME is what classify_cases.py puts
+    in the rvs column. The span is None for a header without coordinates.
+    """
+    refs = {}
+    for rec in SeqIO.parse(path, "fasta"):
+        m = re.match(r'^(.+)_(\d+)-(\d+)$', rec.id)
+        if m:
+            name, span = m.group(1), int(m.group(3)) - int(m.group(2)) + 1
+        else:
+            name, span = rec.id, None
+        refs.setdefault(name, (str(rec.seq).upper(), span))
+    return refs
+
+
+def reference_for(rvs, refs):
+    """The (protein, span) a gene was matched to, or None.
+
+    A gene matched to several references at once carries all of them in rvs;
+    they are copies of one protein, so the first one known is as good as any.
+    """
+    if not refs or pd.isna(rvs):
+        return None
+    for name in str(rvs).split(','):
+        if name.strip() in refs:
+            return refs[name.strip()]
+    return None
+
+
+def lacks_stop(ref):
+    """Whether the reference annotates this gene without a stop codon.
+
+    Its protein then spans the whole annotated stretch codon for codon, with
+    nothing left over for a stop (Rv2099c: 58 residues over 174 bp). A protein
+    without a final '*' is not enough on its own: for a frameshifted (join) CDS
+    extract_ref_proteins.py leaves the '*' off because the outer span is not
+    3 x (residues + 1), stop or no stop (E. coli b0240: 133 residues, 1178 bp).
+    """
+    protein, span = ref
+    return (not protein.endswith('*') and span is not None and span % 3 == 0
+            and len(protein) == span // 3)
+
+
+def ends_like(translated, ref_protein, n=10):
+    """Whether a gene's last residues are the reference protein's last ones."""
+    got, ref = str(translated).rstrip('*'), ref_protein.rstrip('*')
+    n = min(n, len(got), len(ref))
+    return n > 0 and sum(a == b for a, b in zip(got[-n:], ref[-n:])) >= 0.8 * n
+
+
+def complete_n_terminus(fasta_seq, start, end, strand, ref_protein, translated):
+    """Extend a gene whose protein lacks the reference's first residues.
+
+    Miniprot can stop an alignment short of the N-terminus: on the CP110619
+    assembly of H37Rv it aligned Rv3611 from residue 30, over sequence identical
+    to AL123456.3 where it aligned the whole protein, and the gene came out 90 bp
+    short. When a gene ends in a stop codon and is k residues shorter than its
+    reference, the k codons upstream are tried: they must open with a start
+    codon, contain no stop, and translate to the reference's first residues.
+
+    A gene k residues short is not necessarily missing its first k: M. bovis
+    Rv3159c (PPE53) is one residue short through an in-frame deletion and
+    starts at the same ATG as H37Rv. So the gene must line up with the
+    reference from residue k, and not already from residue 0, before anything
+    is added; growing its 5' end would only put a CTG in front of a correct start.
+
+    Coordinates are 0-based, end exclusive. Returns them changed or not.
+    """
+    ref = ref_protein.rstrip('*')
+    got = str(translated).rstrip('*')
+    k = len(ref) - len(got)
+    if k <= 0 or not str(translated).endswith('*'):
+        return start, end
+
+    def identity(a, b):
+        n = min(len(a), len(b))
+        return sum(x == y for x, y in zip(a, b)) / n if n else 0.0
+
+    # Residue 0 depends on which start codon a naive translation met, so the
+    # line-up is judged from residue 1.
+    w = min(20, len(got))
+    if identity(got[1:w], ref[1:w]) >= 0.9:
+        return start, end
+    if identity(got[1:w], ref[k + 1:k + w]) < 0.9 or identity(got, ref[k:]) < 0.9:
+        return start, end
+
+    if strand == '+':
+        new_start, new_end = start - 3 * k, end
+        if new_start < 0:
+            return start, end
+        ext = fasta_seq.seq[new_start:start]
+    else:
+        new_start, new_end = start, end + 3 * k
+        if new_end > len(fasta_seq.seq):
+            return start, end
+        ext = fasta_seq.seq[end:new_end].reverse_complement()
+
+    ext_aa = str(ext.translate())
+    if str(ext[:3]).upper() not in START_CODONS or '*' in ext_aa:
+        return start, end
+    # The reference proteome is a naive translation too, so the same start
+    # codon gives the same first residue and every one of the k can be held to it.
+    if identity(ext_aa, ref[:k]) < 0.9:
+        return start, end
+    logging.info(f"Restored {k} N-terminal residue(s) missing from the alignment")
+    return new_start, new_end
+
+def extract_and_translate_cds(fasta_file, annotation_df, ref_proteins=None):
     logging.info(f"Extracting and translating CDS from FASTA file {fasta_file}")
     # Load all contigs into a dict for multi-contig support
     fasta_records = SeqIO.to_dict(SeqIO.parse(fasta_file, "fasta"))
@@ -207,6 +321,17 @@ def extract_and_translate_cds(fasta_file, annotation_df):
         # Track original coordinates for fallback
         orig_start = start
         orig_end = end
+        ref = reference_for(rvs, ref_proteins)
+
+        if len(translated_seq) > 0 and translated_seq[-1] == "*" and ref is not None:
+            new_start, new_end = complete_n_terminus(fasta_seq, start, end, strand,
+                                                     ref[0], translated_seq)
+            if (new_start, new_end) != (start, end):
+                start, end = new_start, new_end
+                sequence = fasta_seq.seq[start:end]
+                if strand == '-':
+                    sequence = sequence.reverse_complement()
+                translated_seq = sequence.translate()
 
         if len(translated_seq) > 0 and translated_seq[-1] == "*":
             # Gene ends with a stop codon — check for internal stops
@@ -218,43 +343,57 @@ def extract_and_translate_cds(fasta_file, annotation_df):
                 logging.warning(f"Gene {ide} has {n_internal} internal stop codon(s) — likely pseudogene or frameshift")
                 pseudogene_ids.add(ide)
         elif len(translated_seq) > 0:
-            # No terminal stop codon — try to extend to find one
-            # Check if this is a reference gene whose coordinates match the ID-embedded
-            # coordinates. If so, it's a known pseudogene — don't extend.
-            # If coords DON'T match the ID, it's a partial alignment that needs extension.
-            is_ref_pseudogene = False
-            # The reference coordinates live in `rvs`; format_cluster_id has
-            # already stripped them from `ide`. This used to be gated on
-            # rvs.startswith('Rv'), so for any organism whose genes are not
-            # named RvNNNN it fell through to `ide`, found no coordinates, and
-            # extended every reference pseudogene instead of leaving it alone.
-            # `rvs` is comma separated when a gene maps to several references,
-            # so check them all rather than relying on which one comes last.
-            candidates = []
-            if pd.notna(rvs) and str(rvs).strip():
-                candidates = [c.strip() for c in str(rvs).split(',') if c.strip()]
-            candidates.append(str(ide))
-            for cand in candidates:
-                m = re.search(r'_(\d+)-(\d+)$', cand)
-                if not m:
-                    continue
-                id_start = int(m.group(1))
-                id_end = int(m.group(2))
-                # Coords match the ID → this is a reference gene with its true coordinates
-                if abs((start + 1) - id_start) <= 3 and abs(end - id_end) <= 3:
-                    is_ref_pseudogene = True
-                    break
+            # No terminal stop codon. Normally the gene is cut short and gets
+            # extended to the next one, but not when the reference has no stop
+            # either. This used to be decided from coordinates embedded in the
+            # reference IDs, which clean_id has stripped from rvs since March
+            # 2026, so it never fired. The reference proteome answers it
+            # directly, for any organism.
+            partial = (ref is not None and ref[1] and ref[1] % 3
+                       and (end - start) == ref[1] - ref[1] % 3
+                       # the bases go on the 3' end, which is the low end on '-'
+                       and (end + ref[1] % 3 <= len(fasta_seq.seq) if strand == '+'
+                            else start - ref[1] % 3 >= 0))
 
-
-            if is_ref_pseudogene:
-                # Reference gene without stop = known pseudogene. Keep original coords.
-                logging.info(f"Reference gene {ide} has no stop codon (likely pseudogene), keeping original coordinates")
+            if ref is not None and lacks_stop(ref) and ends_like(translated_seq, ref[0]):
+                # A pseudogene the reference annotates without a stop codon
+                # (PE21, Rv2099c; PPE48, Rv3022c). Running on to the next stop
+                # would invent a C-terminus the reference does not have. Only
+                # when the gene ends where the reference protein does, though:
+                # a frameshifted reference pseudogene translated straight
+                # through also lacks a final '*', because its real stop sits in
+                # another frame, and the C-terminal fragment a sample carries
+                # in that frame does have to run on to it (E. coli b0240).
+                logging.info(f"Reference protein of {ide} has no stop codon either (reference pseudogene), keeping original coordinates")
                 cds_id = f"{ide};{strand};{start}-{end}"
                 cds_amino_acids[cds_id] = translated_seq
                 cds_nts[cds_id] = sequence
                 pseudogene_ids.add(ide)
+            elif partial:
+                # A frameshifted reference pseudogene annotated with a partial
+                # final codon (oxyR', Rv2427A; Rv3216). An alignment only covers
+                # whole codons, so put back the trailing bases the reference has.
+                if strand == '+':
+                    end += ref[1] % 3
+                    sequence = fasta_seq.seq[start:end]
+                else:
+                    start -= ref[1] % 3
+                    sequence = fasta_seq.seq[start:end].reverse_complement()
+                logging.info(f"Reference pseudogene {ide} ends in a partial codon, restoring it")
+                cds_id = f"{ide};{strand};{start}-{end}"
+                cds_amino_acids[cds_id] = sequence[:len(sequence) - len(sequence) % 3].translate()
+                cds_nts[cds_id] = sequence
+                pseudogene_ids.add(ide)
             else:
-                new_start, new_end, strand = get_goodseq(fasta_seq, start, end, strand)
+                # 300 bp is enough for an alignment that stopped a few codons
+                # short. When the reference says how many residues are missing,
+                # look that far: miniprot left the last 128 residues of a
+                # repetitive PE_PGRS (Rv1003720new) unaligned, 387 bp from its stop.
+                reach = 300
+                if ref is not None and ref[0].endswith('*'):
+                    missing = len(ref[0].rstrip('*')) - len(str(translated_seq).rstrip('*'))
+                    reach = max(reach, 3 * missing + 30)
+                new_start, new_end, strand = get_goodseq(fasta_seq, start, end, strand, reach)
                 
                 # Validate that we got valid coordinates
                 if new_start is not None and new_end is not None and new_end > new_start:
@@ -315,6 +454,11 @@ def main():
     parser = argparse.ArgumentParser(description="Extract and translate CDS from a FASTA file to amino acids")
     parser.add_argument("fasta_file", help="FASTA file containing the sequence")
     parser.add_argument("annotation_file", help="Annotation file in tabulated format")
+    parser.add_argument("--ref-proteome", default=None,
+                        help="Reference proteome (NAME_START-END headers). Lets reference "
+                             "pseudogenes keep their extent and restores N-termini an "
+                             "alignment clipped. Without it, every gene missing a stop "
+                             "codon is extended to the next one.")
     args = parser.parse_args()
     base_name = args.annotation_file.replace('_corrected.tsv', '')
     annotation_df = read_to_pandas(args.annotation_file)
@@ -329,7 +473,9 @@ def main():
         logging.info(f"Removed {n_before - n_after} duplicate coordinate entries before translation")
     
     logging.info("Annotation DataFrame loaded and filtered")
-    cds_amino_acids, cds_nts, annotation_df = extract_and_translate_cds(args.fasta_file, annotation_df)
+    ref_proteins = read_reference_proteins(args.ref_proteome) if args.ref_proteome else None
+    cds_amino_acids, cds_nts, annotation_df = extract_and_translate_cds(args.fasta_file, annotation_df,
+                                                                        ref_proteins)
     
     annotation_df['rvs'] = annotation_df['rvs'].fillna('')
 

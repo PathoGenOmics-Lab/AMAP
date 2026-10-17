@@ -42,7 +42,7 @@ fi
 if [ ! -s "$SAMPLE/$SAMPLE.tsv" ]; then
     echo "==> Bakta (once)" >&2
     export TMPDIR=$(mktemp -d) MPLCONFIGDIR=$(mktemp -d)
-    bakta --db /data/bakta_db/db-light --skip-trna --threads "${THREADS:-4}" \
+    bakta --db /data/bakta_db/db-light --keep-contig-headers --skip-trna --threads "${THREADS:-4}" \
         --genus "Mycobacterium" --species "Mycobacterium tuberculosis" \
         --force --output "$SAMPLE" --prefix "$SAMPLE" --locus-tag "$SAMPLE" \
         --proteins "$REF/sequence.gb" --tmp-dir "$TMPDIR" "$SAMPLE.fasta" > bakta.log 2>&1

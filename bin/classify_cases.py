@@ -42,19 +42,39 @@ __lab__ = 'PathoGenOmics (I2SysBio)'
 
 
 def create_coords_dict(df, id_col):
-    """Create a (Start, End, Strand)→ID dict.
+    """Create a (Start, End, Strand, Contig)→ID dict.
     
     Keys include Strand to prevent collisions between genes at the same
-    coordinates on opposite strands (e.g., antisense overlapping genes).
+    coordinates on opposite strands (e.g., antisense overlapping genes), and
+    Contig because every contig of a draft assembly starts at 1.
     First occurrence wins for duplicate coordinates.
     """
     result = {}
     for _, row in df.iterrows():
         strand = row.get('Strand', '+')
-        key = (row['Start'], row['End'], strand)
+        key = (row['Start'], row['End'], strand, row.get('Contig', ''))
         if key not in result:
             result[key] = row[id_col]
     return result
+
+
+def match_bakta_contigs(bakta_df, miniprot_df):
+    """Make sure Bakta and miniprot name the sequences alike.
+
+    Bakta renames every sequence to contig_N unless it runs with
+    --keep-contig-headers, and miniprot keeps the FASTA headers. With nothing
+    in common every comparison would be between different contigs and the
+    whole classification would come out wrong without a word. One sequence
+    each can only be the same sequence; anything else is a hard error.
+    """
+    bakta_contigs = set(bakta_df['Contig'])
+    mp_contigs = set(miniprot_df.loc[miniprot_df['Contig'] != '*', 'Contig'])
+    if not mp_contigs or bakta_contigs & mp_contigs:
+        return bakta_df
+    if len(bakta_contigs) == 1 and len(mp_contigs) == 1:
+        return bakta_df.assign(Contig=next(iter(mp_contigs)))
+    sys.exit(f"ERROR: Bakta names the sequences {sorted(bakta_contigs)[:3]}... but the "
+             f"genome has {sorted(mp_contigs)[:3]}...; run Bakta with --keep-contig-headers.")
 
 
 def main():
@@ -74,6 +94,7 @@ def main():
     # that do not land on a locus another protein syntenically owns.
     miniprot_df = drop_paralog_placements(read_miniprot(args.miniprot, ref_coords=True))
     bakta_df_bad = read_miniprot_unfiltered(args.badbakta)
+    bakta_df = match_bakta_contigs(bakta_df, miniprot_df)
 
     # --- 2. Classify cases ---
     case2, case3 = classify_case2_case3(bakta_df, miniprot_df, base_name)
@@ -102,9 +123,6 @@ def main():
     generate_overlap_plot(multiple_groups, f"{base_name}_multiple_overlaps.html")
 
     # --- 6. Build combined coordinate dict ---
-    # WARNING: dict keys are (Start, End) tuples. In multi-contig assemblies,
-    # genes on different contigs could share the same coordinates, causing
-    # silent collisions. This is safe for single-contig genomes (e.g. MTB).
     combined = {}
     n_before = 0
     for df, id_col in [(case2, 'Locus Tag'), (case3, 'Locus Tag'),
@@ -114,9 +132,8 @@ def main():
         combined.update(new_entries)
     if len(combined) < n_before:
         n_lost = n_before - len(combined)
-        print(f"WARNING: {n_lost} genes lost to (Start, End, Strand) collisions. "
-              f"This may indicate duplicate entries or a multi-contig assembly "
-              f"where genes on different contigs share the same coordinates.")
+        print(f"WARNING: {n_lost} genes lost to (Start, End, Strand, Contig) collisions, "
+              f"i.e. listed twice at the same place.")
 
     # --- 7. Resolve overlaps ---
     # NOTE: case4_mp_overlaps stores case4 indices, but create_overlap_groups

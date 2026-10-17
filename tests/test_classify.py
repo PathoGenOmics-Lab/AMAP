@@ -362,8 +362,17 @@ class TestCoordsDict:
         })
         result = create_coords_dict(df, 'Locus Tag')
         assert len(result) == 2  # Both genes preserved
-        assert result[(100, 200, '+')] == 'gene_fwd'
-        assert result[(100, 200, '-')] == 'gene_rev'
+        assert result[(100, 200, '+', '')] == 'gene_fwd'
+        assert result[(100, 200, '-', '')] == 'gene_rev'
+
+    def test_contig_aware_keys(self):
+        """Every contig of a draft starts at 1: the same coordinates on two
+        contigs are two genes."""
+        from classify_cases import create_coords_dict
+        df = pd.DataFrame({'Start': [100, 100], 'End': [200, 200], 'Strand': ['+', '+'],
+                           'Contig': ['c1', 'c2'], 'Locus Tag': ['g1', 'g2']})
+        result = create_coords_dict(df, 'Locus Tag')
+        assert result == {(100, 200, '+', 'c1'): 'g1', (100, 200, '+', 'c2'): 'g2'}
     
     def test_duplicate_coords_first_wins(self):
         from classify_cases import create_coords_dict
@@ -375,7 +384,7 @@ class TestCoordsDict:
         })
         result = create_coords_dict(df, 'Locus Tag')
         assert len(result) == 1
-        assert result[(100, 200, '+')] == 'first'
+        assert result[(100, 200, '+', '')] == 'first'
 
 
 # =============================================================================
@@ -1136,7 +1145,7 @@ class TestParalogPlacements:
         from classify.synteny import drop_paralog_placements
         out = drop_paralog_placements(self._frame())
         assert list(out.columns) == ['Prot Id', 'Prot len', 'Strand', 'Start', 'End',
-                                     'Match Nt', 'Num nt']
+                                     'Match Nt', 'Num nt', 'Contig']
 
     def test_paralog_on_another_genes_locus_is_dropped(self):
         """Rv1945 also lands inside Rv1148c; that copy is Rv1148c's locus."""
@@ -1329,7 +1338,7 @@ class TestStrandOfResolvedHit:
                                          case4, mp)
         combined = {}
         resolve_single_overlaps(groups, mp, combined, {v['Prot Id']: v for v in b_groups.values()})
-        assert combined == {(2_030_347, 2_030_643, '+'): 'Rv1792'}
+        assert combined == {(2_030_347, 2_030_643, '+', ''): 'Rv1792'}
 
     def test_bakta_coordinates_keep_baktas_strand(self):
         """When the Bakta call wins, it keeps the strand Bakta gave it."""
@@ -1344,4 +1353,104 @@ class TestStrandOfResolvedHit:
                                        case4, mp)
         combined = {}
         resolve_single_overlaps(groups, mp, combined, {})
-        assert combined == {(9_000, 10_300, '+'): 'S1_00001'}
+        assert combined == {(9_000, 10_300, '+', ''): 'S1_00001'}
+
+
+# =============================================================================
+# CONTIGS
+# =============================================================================
+
+class TestContigs:
+    """Every contig of a draft assembly starts at 1, so coordinates alone do not
+    say which contig a gene is on. Cut into 40 contigs, CDC1551 had 87% of its
+    proteins translated from the wrong contig."""
+
+    @staticmethod
+    def _bakta(rows):
+        return pd.DataFrame(rows, columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt', 'Contig'])
+
+    @staticmethod
+    def _mp(rows):
+        return pd.DataFrame(rows, columns=['Prot Id', 'Prot len', 'Strand', 'Start', 'End',
+                                           'Match Nt', 'Num nt', 'Contig'])
+
+    def test_same_coordinates_on_another_contig_are_not_a_match(self):
+        from classify.cases import classify_case2_case3, classify_case1_case4, find_rv_missing
+        bk = self._bakta([['S1_00001', 100, 399, '+', 300, 'c2']])
+        mp = self._mp([['Rv0001', 100, '+', 100, 399, 300, 300, 'c1']])
+        case2, _ = classify_case2_case3(bk, mp)
+        case4, case1 = classify_case1_case4(bk, mp)
+        assert case2.empty and case4.empty
+        assert list(case1['Locus Tag']) == ['S1_00001']
+        assert list(find_rv_missing(mp, bk)['Prot Id']) == ['Rv0001']
+
+    def test_genes_on_different_contigs_never_displace_each_other(self):
+        from classify.overlaps import _insert_with_dedup
+        combined = {(100, 900, '+', 'c1'): 'Rv0001'}
+        _insert_with_dedup(combined, (150, 950, '+', 'c2'), 'S1_00002')
+        assert combined == {(100, 900, '+', 'c1'): 'Rv0001', (150, 950, '+', 'c2'): 'S1_00002'}
+
+    def test_bakta_names_must_match_the_genome(self):
+        """Without --keep-contig-headers Bakta calls every sequence contig_N."""
+        from classify_cases import match_bakta_contigs
+        one = match_bakta_contigs(self._bakta([['S1_00001', 1, 300, '+', 300, 'contig_1']]),
+                                  self._mp([['Rv0001', 100, '+', 1, 300, 300, 300, 'S1']]))
+        assert set(one['Contig']) == {'S1'}
+        with pytest.raises(SystemExit):
+            match_bakta_contigs(
+                self._bakta([['S1_00001', 1, 300, '+', 300, 'contig_1'],
+                             ['S1_00002', 1, 300, '+', 300, 'contig_2']]),
+                self._mp([['Rv0001', 100, '+', 1, 300, 300, 300, 'S1'],
+                          ['Rv0002', 100, '+', 1, 300, 300, 300, 'node_2']]))
+
+    def test_check_cds_translates_from_the_genes_own_contig(self):
+        """The gene is on c2, but its coordinates also fit the shorter c1, which
+        is what the old guess picked."""
+        import subprocess
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            with open(os.path.join(d, 'g.fasta'), 'w') as f:
+                f.write(">c1\n" + "GCT" * 20 + "\n")
+                f.write(">c2\n" + "ATG" + "GCT" * 11 + "TAA" + "GCT" * 40 + "\n")
+            with open(os.path.join(d, 'sample_corrected.tsv'), 'w') as f:
+                f.write("S1_00001\t+\t1\t39\tRv0001\tc2\n")
+            script = os.path.join(os.path.dirname(__file__), '..', 'bin', 'check_cds.py')
+            subprocess.run([sys.executable, script, 'g.fasta', 'sample_corrected.tsv'],
+                           cwd=d, check=True, capture_output=True)
+            out = pd.read_csv(os.path.join(d, 'sample.AMAP.tsv'), sep='\t')
+            with open(os.path.join(d, 'sample.AMAP.faa')) as fh:
+                protein = fh.read().split('\n')[1]
+        assert out.iloc[0]['pseudogene'] == 'no'
+        assert out.iloc[0]['contig'] == 'c2'
+        assert list(out.columns)[-1] == 'contig'
+        assert protein == 'M' + 'A' * 11
+
+    def test_dedup_overlap_only_counts_on_the_same_contig(self):
+        from deduplicate_rvs import deduplicate
+        genes = [
+            {'id': 'S1_Rv0001', 'strand': '+', 'start': '100', 'end': '900',
+             'rvs': 'Rv0001', 'pseudogene': 'no', 'contig': 'c1'},
+            {'id': 'S1_00002', 'strand': '+', 'start': '100', 'end': '900',
+             'rvs': '', 'pseudogene': 'no', 'contig': 'c2'},
+        ]
+        kept, _ = deduplicate(genes)
+        assert [g['id'] for g in kept] == ['S1_Rv0001', 'S1_00002']
+
+    def test_final_tables_put_each_gene_on_its_contig(self):
+        """generate_tsv placed each gene on the smallest contig its coordinates
+        fit in: 90% of a 40-contig draft ended up on the wrong one."""
+        from generate_tsv_gff_gbk import generate_tsv
+        import tempfile as tf
+        merged = pd.DataFrame({
+            'id': ['S1_00001', 'S1_00002'], 'strand': ['+', '+'], 'start': [1, 1], 'end': [30, 30],
+            'rvs': ['Rv0001', 'Rv0002'], 'Preferred_name': ['-', '-'], 'Gene': ['a', 'b'],
+            'Product_x': ['p', 'q'], 'Description': ['-', '-'], 'contig': ['big', 'small']})
+        rest = pd.DataFrame(columns=["Sequence Id", "Type", "Start", "Stop", "Strand",
+                                     "Locus Tag", "Gene", "Product", "DbXrefs"])
+        with tf.TemporaryDirectory() as d:
+            fasta = os.path.join(d, 'g.fasta')
+            with open(fasta, 'w') as f:
+                f.write(">big\n" + "A" * 900 + "\n>small\n" + "A" * 60 + "\n")
+            out = generate_tsv(merged, rest, fasta, os.path.join(d, 'out.tsv'))
+        placed = dict(zip(out['Locus Tag'], out['Sequence Id']))
+        assert placed == {'S1_00001': 'big', 'S1_00002': 'small'}

@@ -10,7 +10,7 @@ from functools import lru_cache
 import pandas as pd
 
 from .ids import format_cluster_id
-from .overlaps import get_subset_overlap_percentage
+from .overlaps import get_subset_overlap_percentage, _contig
 
 # Both helpers below are pure functions of a single string and are called
 # millions of times over a few thousand distinct IDs, so memoising them turns
@@ -255,7 +255,7 @@ def recover_missing_genes(combined_dict, miniprot_df):
             continue  # Already recovered this gene from a better hit
 
         strand = row.get('Strand', '+')
-        coord = (row['Start'], row['End'], strand)
+        coord = (row['Start'], row['End'], strand, row.get('Contig', ''))
         if coord in combined_dict:
             continue  # Position already occupied
 
@@ -302,7 +302,7 @@ def deduplicate(combined_dict):
         subset_coords = set()
         for dc in dup_coords:
             for coord in non_dup_coords:
-                if get_subset_overlap_percentage(dc, coord) == 100:
+                if _contig(dc) == _contig(coord) and get_subset_overlap_percentage(dc, coord) == 100:
                     subset_coords.add(dc)
                     break
 
@@ -327,12 +327,24 @@ def write_corrected_tsv(combined_dict, miniprot_df, bakta_df, base_name):
     Filters out entries with start=0 or end=0, assigns strands from
     miniprot/bakta matches, and formats IDs.
     """
-    # Sort by start coordinate and filter invalid entries
-    sorted_dict = dict(sorted(combined_dict.items(), key=lambda x: (x[0][0], x[0][1])))
+    # Contigs in the order the assembly has them (Bakta lists them that way),
+    # then by start coordinate; filter invalid entries.
+    rank = {}
+    if 'Contig' in bakta_df.columns:
+        rank = {c: i for i, c in enumerate(dict.fromkeys(bakta_df['Contig']))}
+
+    def order(contig, start, end=0):
+        return (rank.get(contig, len(rank)), contig, start, end)
+
+    sorted_dict = dict(sorted(combined_dict.items(),
+                              key=lambda x: order(_contig(x[0]), x[0][0], x[0][1])))
     filtered = {
         k: v for k, v in sorted_dict.items()
         if k[0] != 0 and k[1] != 0
     }
+
+    mp_contig = miniprot_df['Contig'] if 'Contig' in miniprot_df.columns else ''
+    bk_contig = bakta_df['Contig'] if 'Contig' in bakta_df.columns else ''
 
     singles = []
     multis = []
@@ -340,30 +352,35 @@ def write_corrected_tsv(combined_dict, miniprot_df, bakta_df, base_name):
 
     for coord_key, value in filtered.items():
         start, end = coord_key[0], coord_key[1]
+        contig = _contig(coord_key)
         # Use strand from key if available, otherwise derive from data
         strand = coord_key[2] if len(coord_key) > 2 else _find_strand(start, end, miniprot_df, bakta_df)
 
-        mp_matches = miniprot_df[(miniprot_df['Start'] == start) & (miniprot_df['End'] == end)]
-        bk_matches = bakta_df[(bakta_df['Start'] == start) & (bakta_df['End'] == end)]
+        mp_matches = miniprot_df[(miniprot_df['Start'] == start) & (miniprot_df['End'] == end)
+                                 & (mp_contig == contig)]
+        bk_matches = bakta_df[(bakta_df['Start'] == start) & (bakta_df['End'] == end)
+                              & (bk_contig == contig)]
 
         if not bk_matches.empty:
             cluster_id = format_cluster_id(bk_matches.iloc[0]['Locus Tag'], base_name)
             rv_ids = ", ".join(mp_matches['Prot Id'].unique()) if not mp_matches.empty else ""
-            singles.append([cluster_id, strand, start, end, rv_ids])
+            singles.append([cluster_id, strand, start, end, rv_ids, contig])
         else:
             rv_ids = mp_matches['Prot Id'].unique() if not mp_matches.empty else []
             if len(rv_ids) == 0:
                 cluster_id = format_cluster_id(value, base_name)
-                singles.append([cluster_id, strand, start, end, ""])
+                singles.append([cluster_id, strand, start, end, "", contig])
             elif len(rv_ids) < 2:
                 cluster_id = format_cluster_id(rv_ids[0], base_name)
-                singles.append([cluster_id, strand, start, end, ", ".join(rv_ids)])
+                singles.append([cluster_id, strand, start, end, ", ".join(rv_ids), contig])
             else:
                 cluster_id = f"{base_name}_dup_{dup_counter}"
                 dup_counter += 1
-                multis.append([cluster_id, strand, start, end, ", ".join(rv_ids)])
+                multis.append([cluster_id, strand, start, end, ", ".join(rv_ids), contig])
 
-    final = sorted(singles + multis, key=lambda x: x[2])
+    # The contig is the sixth column: check_cds.py translates each gene from
+    # it, where it used to guess the contig from the coordinates alone.
+    final = sorted(singles + multis, key=lambda x: order(x[5], x[2]))
 
     output_path = f"{base_name}_corrected.tsv"
     with open(output_path, 'w') as f:

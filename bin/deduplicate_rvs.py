@@ -33,7 +33,7 @@ def overlap_fraction(s1, e1, s2, e2):
 
 
 def read_bakta_cds(path):
-    """(start, end, strand) of every CDS in a Bakta TSV."""
+    """(start, end, strand, contig) of every CDS in a Bakta TSV."""
     cds = set()
     with open(path) as fh:
         for line in fh:
@@ -41,7 +41,7 @@ def read_bakta_cds(path):
                 continue
             f = line.rstrip('\n').split('\t')
             if len(f) > 4 and f[1] == 'cds':
-                cds.add((int(f[2]), int(f[3]), f[4]))
+                cds.add((int(f[2]), int(f[3]), f[4], f[0]))
     return cds
 
 
@@ -55,6 +55,14 @@ def deduplicate(genes, bakta_cds=frozenset()):
             rv_genes[rvs].append(i)
 
     remove = set()
+    # A table from before contigs were carried through has no contig column;
+    # then a Bakta call on any contig at those coordinates counts.
+    bakta_any_contig = {c[:3] for c in bakta_cds}
+
+    def bakta_called(g):
+        key = (int(g['start']), int(g['end']), g['strand'])
+        contig = g.get('contig', '')
+        return key + (contig,) in bakta_cds if contig else key in bakta_any_contig
 
     # 1. Deduplicate: same single Rv mapped to multiple genes
     for rv, indices in rv_genes.items():
@@ -69,8 +77,7 @@ def deduplicate(genes, bakta_cds=frozenset()):
             g = genes[idx]
             is_pseudo = 1 if g.get('pseudogene', 'no') == 'yes' else 0
             length = int(g['end']) - int(g['start']) + 1
-            confirmed = (int(g['start']), int(g['end']), g['strand']) in bakta_cds
-            return (-is_pseudo, length, confirmed)  # higher is better
+            return (-is_pseudo, length, bakta_called(g))  # higher is better
 
         ranked = sorted(indices, key=score, reverse=True)
         # Keep best, remove rest
@@ -86,13 +93,14 @@ def deduplicate(genes, bakta_cds=frozenset()):
         rvs = g.get('rvs', '').strip()
         s, e = int(g['start']), int(g['end'])
         if rvs:
-            rv_assigned.append((i, s, e))
+            rv_assigned.append((i, s, e, g.get('contig', '')))
         else:
-            no_rv.append((i, s, e))
+            no_rv.append((i, s, e, g.get('contig', '')))
 
-    for ni, ns, ne in no_rv:
-        for _, rs, re_ in rv_assigned:
-            if overlap_fraction(ns, ne, rs, re_) > 0.9:
+    # Only genes on the same contig can overlap: every contig starts at 1.
+    for ni, ns, ne, nc in no_rv:
+        for _, rs, re_, rc in rv_assigned:
+            if nc == rc and overlap_fraction(ns, ne, rs, re_) > 0.9:
                 remove.add(ni)
                 break
 

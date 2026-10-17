@@ -8,6 +8,7 @@ from collections import Counter
 from functools import lru_cache
 
 import pandas as pd
+from intervaltree import IntervalTree
 
 from .ids import format_cluster_id
 from .overlaps import get_subset_overlap_percentage, _contig
@@ -221,56 +222,84 @@ def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
             combined_dict[c] = v
 
 
-def recover_missing_genes(combined_dict, miniprot_df):
+def _frame(coord):
+    """Reading frame of a (Start, End, Strand, ...) coordinate, from its 5' end."""
+    return (coord[1] if len(coord) > 2 and coord[2] == '-' else coord[0]) % 3
+
+
+def recover_missing_genes(combined_dict, miniprot_df, min_cover=0.5):
     """
-    Add reference genes that are completely absent from the coordinate dict.
-    
-    Safety: for each candidate, verify that the Miniprot alignment position
-    matches the coordinates embedded in the protein ID. If a protein named
-    'Rv1150_1278269-1278820' is placed at position 1164572-1165123, it
-    means Miniprot mapped it to a paralogous region — skip it.
-    
-    Tries all placements sorted by Match Nt descending, not just the best.
-    This handles cases where the best hit is a paralog but a weaker hit
-    at the correct position exists.
+    Add back reference proteins that no gene in the dict accounts for.
+
+    A placement is accounted for when a gene already sits on it: same contig
+    and strand, the same reading frame, covering at least min_cover of it, and
+    not known to be another reference gene. A protein is missing when none of
+    its placements is, and then its best one goes in.
+
+    'Missing' used to mean that the protein's name was not among the dict's
+    values. Genes matched through case 2 and 3 are stored under Bakta locus
+    tags, so every protein looked missing (4034 of 4034 on H37Rv), and what
+    kept that from duplicating every gene was an exact-coordinate check that a
+    placement one base off went straight past. The frame matters because genes
+    that genuinely overlap sit in different frames (Rv0724A and Rv0725c), and
+    one does not account for the other. Neither does a different reference
+    gene in the same frame: E. coli nests hokC inside mokC and b4706 inside
+    b2537, and both genes of each pair are real.
     """
-    all_ref_ids = set(miniprot_df['Prot Id'].unique())
-    included_ids = set(combined_dict.values())
-    missing = all_ref_ids - included_ids
+    reference_ids = set(miniprot_df['Prot Id'])
+    placed = miniprot_df[(miniprot_df['Start'] < miniprot_df['End'])
+                         & ~((miniprot_df['Match Nt'] == 0) & (miniprot_df['Num nt'] == 0))]
+    contig = placed['Contig'] if 'Contig' in placed.columns else pd.Series('', index=placed.index)
+    coords = {idx: (r['Start'], r['End'], r.get('Strand', '+'), contig[idx])
+              for idx, r in placed.iterrows()}
 
-    if not missing:
-        return
+    # The reference genes each gene of the dict stands for: itself, or for a
+    # Bakta call, the proteins placed at exactly its coordinates. None known
+    # means it can be any of them.
+    at_coord = {}
+    for idx, c in coords.items():
+        at_coord.setdefault(c, set()).add(placed.at[idx, 'Prot Id'])
 
-    df_missing = miniprot_df[miniprot_df['Prot Id'].isin(missing)].copy()
-    if df_missing.empty:
-        return
+    def labels(coord, gene_id):
+        return {gene_id} if gene_id in reference_ids else at_coord.get(coord, set())
 
-    # Sort by Match Nt descending so we try best placements first
-    df_missing = df_missing.sort_values('Match Nt', ascending=False)
+    trees = {}
 
-    recovered = set()
-    for _, row in df_missing.iterrows():
-        prot_id = row['Prot Id']
-        if prot_id in recovered:
-            continue  # Already recovered this gene from a better hit
+    def where(coord):
+        return _contig(coord), coord[2] if len(coord) > 2 else '+'
 
-        strand = row.get('Strand', '+')
-        coord = (row['Start'], row['End'], strand, row.get('Contig', ''))
-        if coord in combined_dict:
-            continue  # Position already occupied
+    def add_to_tree(coord, gene_id):
+        tree = trees.setdefault(where(coord), IntervalTree())
+        tree[coord[0]:coord[1] + 1] = (_frame(coord), labels(coord, gene_id))
 
-        # Verify placement matches embedded coordinates in Prot Id.
-        ref_s, ref_e = parse_ref_coords_from_id(prot_id)
-        if ref_s is not None and ref_e is not None:
-            ref_len = ref_e - ref_s + 1
-            placement_overlap = max(0, min(coord[1], ref_e) - max(coord[0], ref_s) + 1)
-            if ref_len > 0 and placement_overlap / ref_len < 0.5:
-                # Placement doesn't match embedded coords → paralog mapping
-                # Don't give up — try the next hit for this protein
+    def accounted(coord, prot_id):
+        length = coord[1] - coord[0] + 1
+        for iv in trees.get(where(coord), IntervalTree())[coord[0]:coord[1] + 1]:
+            frame, genes = iv.data
+            if frame != _frame(coord) or (genes and prot_id not in genes):
                 continue
+            if min(coord[1] + 1, iv.end) - max(coord[0], iv.begin) >= min_cover * length:
+                return True
+        return False
 
+    for coord, gene_id in combined_dict.items():
+        add_to_tree(coord, gene_id)
+
+    present = set()
+    for idx, c in coords.items():
+        prot_id = placed.at[idx, 'Prot Id']
+        if c in combined_dict or accounted(c, prot_id):
+            present.add(prot_id)
+
+    # Best placements first, so a missing protein goes in where it fits best.
+    for idx in placed.sort_values('Match Nt', ascending=False).index:
+        prot_id = placed.at[idx, 'Prot Id']
+        coord = coords[idx]
+        if prot_id in present or coord in combined_dict or accounted(coord, prot_id):
+            continue
         combined_dict[coord] = prot_id
-        recovered.add(prot_id)
+        add_to_tree(coord, prot_id)
+        present.add(prot_id)
 
 
 def deduplicate(combined_dict):

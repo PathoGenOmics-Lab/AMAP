@@ -358,6 +358,52 @@ class TestDeduplicate:
         assert combined == before
 
 
+class TestRecoverMissingGenes:
+    """A reference protein goes back in only when no gene accounts for it."""
+
+    @staticmethod
+    def _mp(rows):
+        return pd.DataFrame(rows, columns=['Prot Id', 'Start', 'End', 'Strand', 'Match Nt',
+                                           'Num nt', 'Contig'])
+
+    def test_placement_a_codon_off_a_call_is_not_added_again(self):
+        """Genes matched in case 2 and 3 are stored under Bakta locus tags, so
+        every protein looked missing by name, and only an exact-coordinate
+        check kept it out: a placement a codon away went in as a second gene."""
+        from classify.reconciliation import recover_missing_genes
+        combined = {(1000, 1900, '+', 'c1'): 'S1_00001'}
+        recover_missing_genes(combined, self._mp([['Rv0001', 1003, 1900, '+', 897, 897, 'c1']]))
+        assert combined == {(1000, 1900, '+', 'c1'): 'S1_00001'}
+
+    def test_a_gene_in_another_frame_accounts_for_nothing(self):
+        """Genes that really overlap sit in different frames."""
+        from classify.reconciliation import recover_missing_genes
+        combined = {(1000, 1900, '+', 'c1'): 'S1_00001'}
+        recover_missing_genes(combined, self._mp([['Rv0002', 1001, 1600, '+', 600, 600, 'c1']]))
+        assert combined[(1001, 1600, '+', 'c1')] == 'Rv0002'
+
+    def test_another_reference_gene_in_the_same_frame_accounts_for_nothing(self):
+        """E. coli nests hokC (b4412) inside mokC (b0018), in one frame."""
+        from classify.reconciliation import recover_missing_genes
+        mp = self._mp([['b0018', 16751, 16960, '-', 210, 210, 'c1'],
+                       ['b4412', 16751, 16903, '-', 153, 153, 'c1']])
+        combined = {(16751, 16960, '-', 'c1'): 'b0018'}
+        recover_missing_genes(combined, mp)
+        assert combined[(16751, 16903, '-', 'c1')] == 'b4412'
+
+        # The same with mokC under the locus tag of the Bakta call that matched it.
+        combined = {(16751, 16960, '-', 'c1'): 'S1_00018'}
+        recover_missing_genes(combined, mp)
+        assert combined[(16751, 16903, '-', 'c1')] == 'b4412'
+
+    def test_a_missing_protein_goes_in_once_where_it_fits_best(self):
+        from classify.reconciliation import recover_missing_genes
+        combined = {}
+        recover_missing_genes(combined, self._mp([['Rv0003', 5000, 5900, '+', 850, 900, 'c1'],
+                                                  ['Rv0003', 9000, 9900, '+', 900, 900, 'c1']]))
+        assert combined == {(9000, 9900, '+', 'c1'): 'Rv0003'}
+
+
 # =============================================================================
 # INTEGRATION-STYLE TESTS
 # =============================================================================

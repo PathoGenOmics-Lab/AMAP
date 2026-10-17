@@ -110,8 +110,7 @@ Tables land in `CDS_CASES/`, one per case, plus interactive overlap plots.
 ## 6. Correction
 
 The cases are resolved into one corrected coordinate set: conflicts adjudicated,
-novel genes filtered, missing reference genes rescued, coordinates reconciled
-against the reference, duplicates removed.
+novel genes filtered, missing reference genes rescued, duplicates removed.
 
 Then `check_cds.py` translates every surviving CDS. A gene that does not end in
 a stop codon has its coordinates extended to the next in-frame stop, up to 300

@@ -121,22 +121,13 @@ The reference-gene test looks for coordinates embedded in the identifier, and
 identifiers have been stripped of them since the alignments are read, so at
 present no gene qualifies and the second rule applies to all of them.
 
-## 5. Reconciliation
-
-`reconcile_coordinates` was written to replace a gene's coordinates with the
-ones embedded in its reference identifier, and to remove genes placed away from
-them. It reads those coordinates from identifiers that no longer carry any, so
-in a run it changes nothing. Comparing them in absolute terms would also be
-wrong for any genome but the reference, where an upstream indel shifts every
-position. Step 0 does the paralog part of its job with the sample's own offsets.
-
-## 6. Rescuing missing genes
+## 5. Rescuing missing genes
 
 Reference genes still absent from the set are added back, best alignment first.
 Placements on other genes' loci have already been dropped in step 0, so what is
 left to rescue sits where the gene belongs or at a locus nobody claims.
 
-## 7. Final deduplication
+## 6. Final deduplication
 
 Where one gene ends up at several coordinates, entries fully contained inside a
 different gene are dropped, always keeping at least one entry per gene so
@@ -147,7 +138,7 @@ protein: a non-pseudogene over a pseudogene, then the longer one, then the one
 Bakta also called at exactly those coordinates. The last only breaks ties,
 which used to go to whichever copy came first in the genome.
 
-## 8. Stop codon check
+## 7. Stop codon check
 
 `check_cds.py` translates every surviving CDS.
 

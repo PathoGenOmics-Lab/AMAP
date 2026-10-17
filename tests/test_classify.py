@@ -6,7 +6,7 @@ Unit tests for the AMAP classification module.
 Tests cover:
 - ID cleaning and formatting (ids.py)
 - Overlap calculations (overlaps.py)
-- Coordinate reconciliation (reconciliation.py)
+- Recovery and deduplication (reconciliation.py)
 - Case classification (cases.py)
 - I/O functions (io.py)
 """
@@ -25,9 +25,6 @@ from classify.ids import clean_id, format_cluster_id
 from classify.overlaps import (
     get_overlap_percentage, get_subset_overlap_percentage,
     _range_length, _insert_with_dedup, _is_reference_gene
-)
-from classify.reconciliation import (
-    parse_ref_coords_from_id, _extract_gene_name, _gene_names_match
 )
 
 
@@ -222,119 +219,6 @@ class TestInsertWithDedup:
 # =============================================================================
 # RECONCILIATION MODULE
 # =============================================================================
-
-class TestParseRefCoords:
-    """Tests for parse_ref_coords_from_id."""
-    
-    def test_simple_coords(self):
-        start, end = parse_ref_coords_from_id('Rv0001_1-1524')
-        assert start == 1
-        assert end == 1524
-    
-    def test_large_coords(self):
-        start, end = parse_ref_coords_from_id('Rv0609A_703830-704057')
-        assert start == 703830
-        assert end == 704057
-    
-    def test_no_coords(self):
-        result = parse_ref_coords_from_id('Rv0001')
-        assert result == (None, None)
-    
-    def test_prefixed_coords(self):
-        start, end = parse_ref_coords_from_id('L8_G26689_Rv0001_1-1524')
-        assert start == 1
-        assert end == 1524
-
-
-class TestExtractGeneName:
-    """Tests for _extract_gene_name."""
-    
-    def test_with_coords(self):
-        assert _extract_gene_name('Rv0001_1-1524') == 'Rv0001'
-    
-    def test_without_coords(self):
-        assert _extract_gene_name('Rv0001') == 'Rv0001'
-    
-    def test_prefixed(self):
-        # _extract_gene_name uses clean_id which strips coords, then takes last part
-        result = _extract_gene_name('L8_G26689_Rv0001')
-        assert 'Rv0001' in result
-
-
-class TestGeneNamesMatch:
-    """Tests for _gene_names_match — prevents substring false matches."""
-    
-    def test_exact_match(self):
-        assert _gene_names_match('Rv3508', 'Rv3508') is True
-    
-    def test_substring_no_match(self):
-        """Rv3508 should NOT match Rv3508c."""
-        assert _gene_names_match('Rv3508', 'Rv3508c') is False
-    
-    def test_rv1_rv10_no_match(self):
-        """Rv1 should NOT match Rv10."""
-        assert _gene_names_match('Rv1', 'Rv10') is False
-    
-    def test_with_coords(self):
-        assert _gene_names_match('Rv0001_1-1524', 'Rv0001') is True
-    
-    def test_completely_different(self):
-        assert _gene_names_match('Rv0001', 'Rv9999') is False
-
-
-class TestReconcileCoordinates:
-    """Behaviour locked in around the gene-name indexed lookups.
-
-    reconcile_coordinates used to scan every protein and every reference for
-    each gene; it now indexes both by gene name up front. These cases pin the
-    semantics that indexing must preserve.
-    """
-
-    @staticmethod
-    def _mp(rows):
-        return pd.DataFrame(rows, columns=['Prot Id', 'Start', 'End', 'Strand',
-                                           'Match Nt', 'Num nt'])
-
-    def test_replaces_with_reference_coordinates(self):
-        from classify.reconciliation import reconcile_coordinates
-        combined = {(1000, 1900, '+'): 'Rv0001_1010-1910'}
-        mp = self._mp([['Rv0001_1010-1910', 1010, 1910, '+', 900, 900]])
-        reconcile_coordinates(combined, mp)
-        assert combined == {(1010, 1910, '+'): 'Rv0001_1010-1910'}
-
-    def test_does_not_reconcile_similar_names(self):
-        """Rv3508 must not be pulled onto Rv3508c's coordinates."""
-        from classify.reconciliation import reconcile_coordinates
-        combined = {(1000, 1900, '+'): 'Rv3508_1000-1900'}
-        mp = self._mp([['Rv3508c_1010-1910', 1010, 1910, '+', 900, 900],
-                       ['Rv3508_1000-1900', 1000, 1900, '+', 900, 900]])
-        reconcile_coordinates(combined, mp)
-        assert combined == {(1000, 1900, '+'): 'Rv3508_1000-1900'}
-
-    def test_multi_copy_element_survives_paralog_check(self):
-        """>2 miniprot hits means placement away from the embedded coords is expected."""
-        from classify.reconciliation import reconcile_coordinates
-        combined = {(500000, 500600, '+'): 'PE_PGRS1_1000-1600'}
-        mp = self._mp([['PE_PGRS1_1000-1600', 1000, 1600, '+', 600, 600],
-                       ['PE_PGRS1_1000-1600', 500000, 500600, '+', 600, 600],
-                       ['PE_PGRS1_1000-1600', 900000, 900600, '+', 600, 600]])
-        reconcile_coordinates(combined, mp)
-        assert (500000, 500600, '+') in combined
-
-    def test_bakta_validates_position(self):
-        """A Bakta call at the exact coordinates rescues a mismatched placement."""
-        from classify.reconciliation import reconcile_coordinates
-        combined = {(500000, 500600, '+'): 'Rv0001_1000-1600'}
-        mp = self._mp([['Rv0001_1000-1600', 500000, 500600, '+', 600, 600]])
-        bk = pd.DataFrame([['L4_G1_00001', 500000, 500600, '+', 601]],
-                          columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt'])
-        without_bakta = dict(combined)
-        reconcile_coordinates(without_bakta, mp, None)
-        with_bakta = dict(combined)
-        reconcile_coordinates(with_bakta, mp, bk)
-        assert (500000, 500600, '+') not in without_bakta
-        assert (500000, 500600, '+') in with_bakta
-
 
 class TestDeduplicate:
     """deduplicate must never drop a gene entirely."""

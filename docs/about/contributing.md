@@ -34,7 +34,7 @@ appears to work until a test touches `classify_cases.py`, which pulls in
 plotly through `classify/plotting.py`.
 
 The suite covers ID handling, overlap arithmetic, case classification, the
-reconciliation rules, and the parsers, and it runs in about a second. Anything
+rules that resolve and recover genes, and the parsers, and it runs in about a second. Anything
 touching `bin/classify/` should come with a test, since the correction logic is
 where a silent change does the most damage.
 

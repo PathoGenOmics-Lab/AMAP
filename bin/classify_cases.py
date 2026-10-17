@@ -24,8 +24,7 @@ from classify.overlaps import (
     resolve_single_overlaps, resolve_multiple_overlaps
 )
 from classify.reconciliation import (
-    reconcile_coordinates, recover_missing_genes,
-    deduplicate, write_corrected_tsv
+    recover_missing_genes, deduplicate, write_corrected_tsv
 )
 from classify.plotting import generate_overlap_plot
 from classify.ids import format_cluster_id
@@ -147,8 +146,7 @@ def main():
     resolve_single_overlaps(single_groups, miniprot_df, combined, new_groups)
     resolve_multiple_overlaps(multiple_groups, miniprot_df, combined, new_groups)
 
-    # --- 8. Reconciliation + recovery + dedup ---
-    reconcile_coordinates(combined, miniprot_df, bakta_df)
+    # --- 8. Recovery + dedup ---
     recover_missing_genes(combined, miniprot_df)
     deduplicate(combined)
 

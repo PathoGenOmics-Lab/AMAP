@@ -53,16 +53,26 @@ def _contig(coord):
 
 
 def build_overlap_tree(tree_df, overlap_df, tree_id_col, overlap_id_col):
-    """For each feature of tree_df, the features of overlap_df overlapping it on its contig."""
+    """For each feature of tree_df, the features of overlap_df overlapping it on
+    the same strand of the same contig.
+
+    Case 4 is defined strand by strand, but this grouping was not: about 8% of
+    the groups (101 of 1255 on H37Rv) put an alignment on one strand together
+    with a Bakta call on the other, and a gene on the other strand counted as a
+    competing call.
+    """
+    def where(row):
+        return row.get('Contig', ''), '-' if row.get('Strand', '+') == '-' else '+'
+
     trees = {}
     for idx, row in tree_df.iterrows():
         if row['Start'] < row['End']:
-            tree = trees.setdefault(row.get('Contig', ''), IntervalTree())
+            tree = trees.setdefault(where(row), IntervalTree())
             tree[row['Start']:row['End']+1] = (idx, row[tree_id_col])
 
     overlap_counts = {}
     for _, row in overlap_df.iterrows():
-        tree = trees.get(row.get('Contig', ''))
+        tree = trees.get(where(row))
         if tree is None:
             continue
         for iv in tree[row['Start']:row['End']+1]:

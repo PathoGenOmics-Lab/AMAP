@@ -1347,13 +1347,24 @@ class TestStrandOfResolvedHit:
         mp = pd.DataFrame([['X', 100, '-', 10_000, 10_300, 300, 300]],
                           columns=['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt'])
         # Much longer than the hit, so the Bakta coordinates are chosen.
-        case4 = pd.DataFrame([['S1_00001', 9_000, 10_300, '+', 1_301]],
+        case4 = pd.DataFrame([['S1_00001', 9_000, 10_300, '-', 1_301]],
                              columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt'])
         groups = create_overlap_groups(build_overlap_tree(mp, case4, 'Prot Id', 'Locus Tag'),
                                        case4, mp)
         combined = {}
         resolve_single_overlaps(groups, mp, combined, {})
-        assert combined == {(9_000, 10_300, '+', ''): 'S1_00001'}
+        assert combined == {(9_000, 10_300, '-', ''): 'S1_00001'}
+
+    def test_opposite_strands_do_not_compete(self):
+        """Case 4 is defined strand by strand; the grouping that resolves it was
+        not, and about 8% of its groups mixed an alignment on one strand with a
+        call on the other."""
+        from classify.overlaps import build_overlap_tree
+        mp = pd.DataFrame([['X', 100, '-', 10_000, 10_300, 300, 300]],
+                          columns=['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt'])
+        case4 = pd.DataFrame([['S1_00001', 9_000, 10_300, '+', 1_301]],
+                             columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt'])
+        assert build_overlap_tree(mp, case4, 'Prot Id', 'Locus Tag') == {}
 
 
 # =============================================================================

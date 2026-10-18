@@ -40,8 +40,11 @@ The reference proteome carries each protein's coordinates in its header
 upstream shifts every position after it. So each placement's reference position
 is predicted from the nearest proteins placed only once, which follow the
 sample's local offset from the reference, and the placement closest to where the
-protein belongs is its **syntenic** one. A placement is then dropped when all of
-these hold:
+protein belongs is its **syntenic** one. A locus that several proteins are
+placed at, exactly, predicts nothing: it is a repeat the reference has in
+several copies and the sample in one, like the single IS6110 of *M. bovis*, and
+the reference positions of its proteins are spread over the whole genome. A
+placement is then dropped when all of these hold:
 
 - another protein's syntenic placement covers at least **50%** of it, on the
   same strand and in the **same reading frame**

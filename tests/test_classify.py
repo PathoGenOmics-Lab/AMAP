@@ -1588,6 +1588,61 @@ class TestParalogPlacements:
         assert len(drop_paralog_placements(df)) == len(df)
 
 
+class TestSyntenyAnchors:
+    """Where predict_ref_positions says a placement belongs depends on the
+    anchors around it, and on nothing else."""
+
+    COLS = TestParalogPlacements.COLS
+
+    @classmethod
+    def _anchors(cls, insertion_at=300_000, shift=48_000):
+        """A gene every 10 kb, placed once; the sample has 48 kb more than
+        the reference just before reference 300_000, as Sakai has a prophage
+        right before b2127."""
+        rows = []
+        for i in range(1, 60):
+            ref = 10_000 * i + 1
+            if ref == insertion_at + 1:
+                continue
+            pos = ref + (shift if ref > insertion_at else 0)
+            rows.append([f'g{i}', 300, '+', pos, pos + 899, 900, 900, ref, ref + 899, 'chr'])
+        return rows
+
+    def test_anchors_are_searched_in_the_order_of_their_midpoints(self):
+        """In Sakai, b1162 is placed once, on b2127's locus, starting where
+        b2127 does and ending 18 bp sooner, and a 48 kb prophage sits right
+        before them. Sorted by start, the anchors' midpoints, which the search
+        runs on, were out of order there: which window of anchors b2127 got
+        hung on the order of the rows, and adding unrelated rows to the table
+        moved its prediction 24 kb. An anchor that starts a little later but
+        ends sooner (B) does the same whatever the order."""
+        from classify.synteny import predict_ref_positions
+        rows = [r for r in self._anchors() if 240_000 < r[7] < 360_000] + [
+            ['T', 300, '+', 348_001, 348_900, 900, 900, 300_001, 300_900, 'chr'],
+            ['B', 300, '+', 348_011, 348_300, 290, 290, 100_011, 100_300, 'chr']]
+        for order in (rows, rows[::-1], rows[-1:] + rows[:-1]):
+            df = pd.DataFrame(order, columns=self.COLS)
+            pred = predict_ref_positions(df)
+            assert abs(pred[df['Prot Id'] == 'T'].iloc[0] - 300_451) < 1_000
+
+    def test_a_locus_several_proteins_share_anchors_nothing(self):
+        """M. bovis has a single IS6110, and each of H37Rv's 17 IS6110
+        proteins of a kind is placed there once. Their reference positions
+        are all over the genome, and they decided where everything near them
+        belonged: the copy came out named after another IS6110 of H37Rv."""
+        from classify.synteny import predict_ref_positions
+        rows = self._anchors(shift=0)
+        rows += [[f'IS{k}', 330, '-', 255_101, 256_087, 987, 987, ref, ref + 986, 'chr']
+                 for k, ref in enumerate([889_347, 1_541_994, 1_987_745, 1_996_427, 2_365_740,
+                                          2_430_159, 2_550_340, 2_635_903, 2_784_657, 255_101,
+                                          2_972_435, 3_551_556, 3_553_039, 3_710_708, 3_795_100,
+                                          3_891_105, 1_989_317])]
+        df = pd.DataFrame(rows, columns=self.COLS)
+        pred = predict_ref_positions(df)
+        assert abs(pred[df['Prot Id'] == 'IS9'].iloc[0] - 255_594) < 1_000
+        assert abs(pred[df['Prot Id'] == 'g26'].iloc[0] - 260_451) < 1_000
+
+
 class TestStrandOfResolvedHit:
     """Resolving a conflict takes the strand of the hit being resolved."""
 

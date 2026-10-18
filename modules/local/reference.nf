@@ -12,6 +12,8 @@
  */
 process PREPARE_REFERENCE {
     tag 'prepare_ref'
+    // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
+    ext code: { files("${projectDir}/bin/{extract_ref_proteins.py,find_bakta_false_positives.py}") }
     // Resources defined in nextflow.config (PREPARE_REFERENCE)
 
     input:
@@ -25,6 +27,7 @@ process PREPARE_REFERENCE {
 
     script:
     """
+    # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     set -euo pipefail
 
     # 1. Extract curated proteins from the user's trusted annotation
@@ -56,5 +59,42 @@ process PREPARE_REFERENCE {
     echo "==> Reference preparation complete"
     echo "    Curated proteins: \$(grep -c '^>' custom_ref_ref_proteins.faa)"
     echo "    Bakta false positives: \$(grep -c '^>' custom_ref_bad_bakta.faa || echo 0)"
+    """
+}
+
+/**
+ * BUNDLED_REFERENCE
+ *
+ * The default H37Rv reference lives inside the container, under /reference.
+ * Handing those paths to a process as `path` inputs makes Nextflow bind-mount
+ * /reference from the host, where it does not exist: Docker Desktop refuses
+ * the mount, and Docker on Linux creates an empty directory and mounts it over
+ * the container's own, hiding every file in it. Singularity skips the missing
+ * path, which is why this only ever showed with Docker. Copying the files out
+ * from inside the container gives the rest of the pipeline ordinary files to
+ * stage, the same way TEST_GENOME does for the genome.
+ */
+process BUNDLED_REFERENCE {
+    tag 'h37rv'
+
+    output:
+    path "ref_proteome.faa", emit: ref_proteome
+    path "ref_genome.fasta", emit: ref_genome_fasta
+    path "bad_bakta.faa", emit: bad_bakta
+
+    script:
+    """
+    copy() {
+        if [ ! -s "\$1" ]; then
+            echo "ERROR: bundled reference file not found: \$1" >&2
+            echo "       It ships in the AMAP container; outside it, pass your own with" >&2
+            echo "       --ref_annotation and --ref_genome." >&2
+            exit 1
+        fi
+        cp "\$1" "\$2"
+    }
+    copy "${params.miniprot_ref_aa}" ref_proteome.faa
+    copy "${params.miniprot_ref_h37rv}" ref_genome.fasta
+    copy "${params.miniprot_ref_bad_bakta}" bad_bakta.faa
     """
 }

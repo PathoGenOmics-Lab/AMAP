@@ -1,7 +1,7 @@
 # AMAP: Assisted Microbial Annotator Pipeline  
 [![PGO](https://img.shields.io/badge/PathoGenOmics-Lab-grey?style=plastic&labelColor=red)](https://github.com/PathoGenOmics-Lab)
 [![AMAP](https://img.shields.io/badge/AMAP-v1.0.1-green?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP)
-[![Nextflow](https://img.shields.io/badge/Nextflow-%E2%89%A5%2023.04-%2330ba91?style=plastic)](https://github.com/nextflow-io/nextflow)
+[![Nextflow](https://img.shields.io/badge/Nextflow-%E2%89%A5%2024.04-%2330ba91?style=plastic)](https://github.com/nextflow-io/nextflow)
 [![License: GPL v3](https://img.shields.io/badge/License%3A-GPL%20v3-orange?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE)
 [![Docker Image](https://img.shields.io/badge/Docker%20Image-AMAP-blue?style=plastic&logo=docker)](https://hub.docker.com/repository/docker/paururo/amap/general)
 [![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-%23c9ac02?style=plastic)](https://doi.org/10.5281/zenodo.8024447)
@@ -70,7 +70,7 @@ section documents each step and the correction algorithm in detail.
 
 ## Quickstart
 
-You need [Nextflow](https://www.nextflow.io/) 23.04 or newer and a container
+You need [Nextflow](https://www.nextflow.io/) 24.04 or newer and a container
 engine. Nothing else: every tool lives in the AMAP image, and there is no need
 to clone this repository.
 
@@ -224,7 +224,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 | Software                                                  | Version | Type     | Usage                           |
 |-----------------------------------------------------------|---------|----------|---------------------------------|
 | **Pipeline & Orchestration** | | | |
-| [Nextflow](https://github.com/nextflow-io/nextflow)       | ≥23.04  | Workflow | Pipeline orchestration          |
+| [Nextflow](https://github.com/nextflow-io/nextflow)       | ≥24.04  | Workflow | Pipeline orchestration          |
 | [Docker](https://www.docker.com/)                         | ≥25.0   | Container| Containerization                |
 | [Singularity](https://sylabs.io/singularity/)             | ≥3.11   | Container| Containerization (HPC)          |
 | **Bioinformatics Tools** | | | |

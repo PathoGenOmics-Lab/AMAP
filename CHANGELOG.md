@@ -4,8 +4,43 @@ All notable changes to AMAP are documented in this file.
 
 ## [Unreleased]
 
+Annotating H37Rv against its own reference now gives back every CDS of the
+AL123456.3 GenBank record at exactly its coordinates, strand and name: 4031 of
+4031, against 4020 before. The changes apply to every genome, so results are not
+directly comparable with 1.0.1.
+
+### 🔬 Correctness
+- **Paralog copies no longer take another gene's place**: a protein with a paralog was placed at both loci, and which copy survived came down to insertion order. On H37Rv itself that lost Rv1150, Rv1945 and Rv2828c; on M. bovis it reported genes the strain lacks (the mce3 operon of RD7, the phiRv2 prophage of RD11, plcBC of RD5) as copies sitting on their paralogs. Each placement is now checked against where its protein belongs, predicted from the sample's own offset to the reference so that indels do not throw it off
+- **Strand of a resolved conflict**: taken from the protein's first placement anywhere in the genome instead of the one being resolved, so esxM (Rv1792), Rv3466 and two IS6110 copies came out at their own coordinates on the wrong strand; a Bakta call chosen over an alignment also took the alignment's strand
+- **Reference pseudogenes keep their extent**: PE21 (Rv2099c) and PPE48 (Rv3022c), which the reference annotates without a stop, were extended to the next one, and oxyR' (Rv2427A) and Rv3216 lost the partial final codon the reference gives them
+- **The 1.0.1 fix for reference pseudogenes never fired**: it looked for reference coordinates in a column that has not carried them since March 2026, and its tests wrote them in by hand. `check_cds.py` now reads the reference proteome instead
+- **Alignments that stop short are completed**: miniprot can miss a protein's N-terminus (Rv3611 on CP110619) or leave a repetitive C-terminus unaligned further from its stop than the 300 bp searched; the reference protein now says how much is missing
+- **Ties between copies of a gene** go to the one Bakta also called, then to the one where the protein belongs by synteny, not the one that comes first in the genome (E. coli K-12 b2635)
+- **Draft assemblies**: genes were compared on coordinates alone, and every contig starts at 1, so cut into 40 contigs CDC1551 had 87% of its proteins translated from the wrong contig. Every gene is now matched, translated and written on its own contig, and Bakta runs with `--keep-contig-headers` so that its contig names match the FASTA's
+- **Case 4 is grouped strand by strand**: about 8% of its groups (101 of 1255 on H37Rv) put an alignment on one strand together with a Bakta call on the other
+- **A complete alignment is not displaced by a longer call in its frame**: such a call ends at the same stop and only starts further upstream (plcD on CDC1551). Nor does a call that spans several reference genes win against them (Rv3022c and Rv3021c, one reading frame in CDC1551)
+- **Reference genes are protected again**: the check looked for coordinates in identifiers that no longer carry them, so any call of similar length could displace a reference gene (Rv1614)
+- **Missing genes are recovered by what covers them**: genes stored under Bakta locus tags looked missing by name, so a placement a codon off its gene went back in as a second copy. With the case 4 changes, ORFs annotated twice fall from 10 to 3 on CDC1551 and from 16 to 6 on M. bovis, where the reference has none
+- **Real copies of a gene are kept**: `deduplicate_rvs.py` deleted every copy of a gene but one, 34 genes on E. coli O157:H7 Sakai, which were then missing from the annotation and from the duplication analysis. Further copies get identifiers of their own
+- **Genes that lost their stop no longer swallow the next gene**: `check_cds.py` extended a gene without a stop to the next one in its frame, which after an indel is the next gene's, so that gene was annotated a second time in the same frame (M. bovis Rv0590 over Rv0590A, Rv3373 over Rv3374, Rv2293c over Rv2292c). Such a gene now keeps its extent as a pseudogene, unless the extension only restores residues its reference protein has. ORFs annotated twice fall from 3 to 2 on CDC1551 and from 6 to 3 on M. bovis, and none of those left comes from an extension
+- **Small proteins**: miniprot placed none of the 33 proteins of 8 to 29 residues in E. coli K-12. Those the genome encodes exactly are now found in its six-frame translation, which takes K-12 against itself from 4252 to 4285 of 4294 genes and Sakai from 198 to 219 of 220
+
 ### 🐛 Pipeline
-- **The first `-resume` re-ran PATHOTYPR, Bakta and everything after them**: the first time a copy of AMAP ran, Python cached the bytecode of AMAP's own modules inside that copy, in `bin/classify/__pycache__`. Nextflow adds every `bin/` entry whose name appears as a word in a script to that task's cache key, and PATHOTYPR runs `pathotypr classify`, so the change voided its cache for every sample of the run. Tasks now run with `PYTHONDONTWRITEBYTECODE=1` and leave the pipeline untouched
+- **The default H37Rv reference under Docker**: its files live inside the container and were handed to processes as paths, so Nextflow mounted `/reference` from the host, which Docker Desktop refuses and Docker on Linux mounts empty over the container's own. `BUNDLED_REFERENCE` copies them out first
+- **`-profile test`**: `VALIDATE_INPUTS` still required the sample sheet the test profile does without. 1.0.1 had only been checked with `-preview`, which runs no task
+- **`-resume` kept results made by older code**: Nextflow hashes a task's inputs and script, not the files it runs by path, so after an edit to the classifier or any script under `bin/`, `-resume` reused the old results. Every process that runs AMAP code now lists those files in `ext code`, which puts them in its cache key; edit `bin/classify/cases.py` and TYPE_CASES and FIX_CDS run again while PATHOTYPR and Bakta stay cached
+- **PATHOTYPR no longer depends on the classifier**: its script said `pathotypr classify`, and Nextflow adds any `bin/` entry a script names as a bare word to the cache key, so a change in `bin/classify/` re-ran PATHOTYPR, Bakta and everything after them. The subcommand is quoted
+- **Nextflow 25.10 and later**: the pipeline stopped before running anything, because the strict parser those versions use by default rejects the helper functions in `nextflow.config`, the statements outside the workflow in `main.nf`, the bare `env(SAMPLE_NAME)` output and `publishDir` paths that name a task input. Nextflow 26.10 also refuses the `return` that ended a `--validate_only` run. The resource caps are now the `resourceLimits` directive, which still takes `--max_cpus`, `--max_memory` and `--max_time` from the command line, a profile or a `-c` config. Nextflow 24.04, where that directive first appeared, is the new minimum
+- **`--skip_mycobrowser` in organism-agnostic mode**: a custom reference from another genus turned it on by reassigning the parameter, which current Nextflow ignores with a warning, so the run went ahead with Mycobrowser enabled. It is now worked out in the parameter's default
+- **Tasks leave the pipeline untouched**: the first time a copy of AMAP ran, Python cached the bytecode of AMAP's own modules inside it, in `bin/classify/__pycache__`, and with `pathotypr classify` naming that directory in PATHOTYPR's script, the first `-resume` re-ran PATHOTYPR, Bakta and everything after them. Tasks now run with `PYTHONDONTWRITEBYTECODE=1`
+
+### 🧹 Code
+- **`reconcile_coordinates` is gone**: it read reference coordinates from protein identifiers that have not carried them since March 2026, so it changed nothing. The paralog check does its job with the sample's own offsets
+
+### 🧪 Testing
+- **`tests/selftest/h37rv_selftest.sh`** annotates H37Rv with itself inside the container and fails unless every GenBank CDS comes back exactly
+- **`tests/test_cache_keys.py`** fails when a process runs AMAP code that is not in its cache key, or when its script names a `bin/` entry as a bare word without declaring it
+- **248 tests**, up from 92
 
 ## [1.0.1] - 2026-07-25
 

@@ -1,4 +1,7 @@
 process REPORT_INPUTS {
+    // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
+    ext code: { files("${projectDir}/bin/merge_rtabs.py") }
+
     input:
     path summaries_annot
     path summaries_cases
@@ -19,6 +22,7 @@ process REPORT_INPUTS {
 
     script:
     """
+    # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     # --- SCALABLE FILE COLLECTION ---
     # Uses find + glob instead of echo|tr|grep (which breaks at ~500 files
     # due to ARG_MAX and is O(N²) with string splitting).
@@ -75,6 +79,8 @@ process REPORT_INPUTS {
 }
 
 process FINAL_REPORT {
+    // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
+    ext code: { files("${projectDir}/bin/report/{AMAP.png,PGO.png,header.html,styles.css,report_AMAP.Rmd}") }
     publishDir "${params.outdir}", mode: 'copy'
 
     input:
@@ -87,6 +93,7 @@ process FINAL_REPORT {
 
     script:
     """
+    # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     cp ${projectDir}/bin/report/AMAP.png .
     cp ${projectDir}/bin/report/PGO.png .
     cp ${projectDir}/bin/report/header.html .

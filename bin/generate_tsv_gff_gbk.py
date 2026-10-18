@@ -30,7 +30,10 @@ def read_pandas(open_file, name_columns):
     # row yields it as a data row (a phantom gene named "id", and Start/Stop
     # parsed as text). GET_OUTPUTS strips the header before calling this, but
     # the script is also run standalone, so drop it here when it is present.
-    if len(df) > 0 and list(df.iloc[0].astype(str)) == list(name_columns):
+    # A table with fewer columns than names (one from before the contig column
+    # was added) leaves the last ones empty, so match the header on its prefix.
+    first = [str(v) for v in df.iloc[0] if pd.notna(v)] if len(df) > 0 else []
+    if first and first == list(name_columns)[:len(first)]:
         df = df.iloc[1:].reset_index(drop=True)
         # The stray header row forced every column to object dtype; restore
         # numeric typing so coordinates sort numerically instead of as text.
@@ -103,8 +106,10 @@ def columns():
     "KEGG_Pathway", "KEGG_Module", "KEGG_Reaction", "KEGG_rclass", "BRITE",
     "KEGG_TC", "CAZy", "BiGG_Reaction", "PFAMs"
     ]
+    # check_cds.py writes the contig last; a table from before contigs were
+    # carried through reads with it empty.
     name_correctedtsv = [
-    "id", "strand", "start", "end", "rvs", "pseudogene"
+    "id", "strand", "start", "end", "rvs", "pseudogene", "contig"
     ]
     name_bakta = [
         "Sequence Id","Type", "Start","Stop","Strand","Locus Tag", "Gene","Product","DbXrefs"
@@ -170,7 +175,8 @@ def generate_master_table(eggnog_pd, correctedtsv_pd, bakta_pd_cds, myco_pd, bas
 
 def generate_tsv(merged_df, bakta_rest_df, fasta_file_path, output_file_path):
     # Create a copy of the merged DataFrame to avoid SettingWithCopyWarning
-    new_df = merged_df[['id', 'strand', 'start', 'end', 'rvs', 'Preferred_name', 'Gene', 'Product_x', 'Description']].copy()
+    keep = ['id', 'strand', 'start', 'end', 'rvs', 'Preferred_name', 'Gene', 'Product_x', 'Description']
+    new_df = merged_df[keep + (['contig'] if 'contig' in merged_df.columns else [])].copy()
 
     # Use loc to set values and avoid warnings
     new_df.loc[:, 'Preferred_name'] = new_df['Preferred_name'].replace('-', np.nan)
@@ -189,12 +195,19 @@ def generate_tsv(merged_df, bakta_rest_df, fasta_file_path, output_file_path):
     new_column_names = {'id': 'Locus Tag', 'strand': 'Strand', 'start': 'Start', 'end': 'Stop', 'Combined_Gene': 'Gene', 'Combined_Description': 'Product', 'rvs': 'DbXrefs'}
     new_df.rename(columns=new_column_names, inplace=True)
 
-    # Setting additional columns — assign Sequence Id per gene
-    # For multi-contig assemblies, match each gene to the correct contig by coordinates
+    # Setting additional columns: assign Sequence Id per gene, from the contig
+    # check_cds.py recorded. Guessing it from the coordinates, the smallest
+    # contig they fit in, put 90% of the genes of a 40-contig draft on the
+    # wrong contig; it remains only for tables that carry no contig.
     fasta_records = list(SeqIO.parse(fasta_file_path, "fasta"))
+    fasta_ids = {r.id for r in fasta_records}
     if len(fasta_records) == 1:
         new_df['Sequence Id'] = fasta_records[0].id
+    elif 'contig' in new_df.columns and new_df['contig'].isin(fasta_ids).all():
+        new_df['Sequence Id'] = new_df['contig']
     else:
+        print("WARNING: no contig recorded for the genes of a multi-contig assembly; "
+              "placing each on the smallest contig its coordinates fit in", file=sys.stderr)
         # Assign each gene to the smallest contig where it fits (tightest match)
         sorted_contigs = sorted(fasta_records, key=lambda r: len(r.seq), reverse=True)
         def find_contig_id(row):
@@ -211,6 +224,17 @@ def generate_tsv(merged_df, bakta_rest_df, fasta_file_path, output_file_path):
         new_df['Sequence Id'] = new_df.apply(find_contig_id, axis=1)
     new_df['Type'] = "CDS"
     
+    # Bakta renames every sequence to contig_N unless run with
+    # --keep-contig-headers, and then its tRNA, rRNA and other features sit on
+    # a sequence the FASTA does not have: tsv_to_gbk dropped them and the GFF3
+    # listed them on an undeclared contig. One sequence can only be that one.
+    bakta_rest_df = bakta_rest_df.copy()
+    if len(fasta_records) == 1:
+        bakta_rest_df['Sequence Id'] = fasta_records[0].id
+    elif len(bakta_rest_df) and not bakta_rest_df['Sequence Id'].isin(fasta_ids).all():
+        print("WARNING: Bakta's sequence names do not match the FASTA; run it with "
+              "--keep-contig-headers", file=sys.stderr)
+
     # Reordering columns
     column_order = ["Sequence Id", "Type", "Start", "Stop", "Strand", "Locus Tag", "Gene", "Product", "DbXrefs"]
     new_df = new_df[column_order]

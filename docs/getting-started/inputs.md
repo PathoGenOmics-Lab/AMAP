@@ -89,26 +89,23 @@ rather than corrected.
 so it is dropped or flagged as a pseudogene. The 1% warning is worth taking
 seriously.
 
-!!! note "Bakta renames your contigs"
+!!! note "Contig names are kept"
 
-    Whatever your FASTA headers say, Bakta relabels them `contig_1`,
-    `contig_2` and so on, so the names in `BAKTA/` will not match the ones you
-    supplied. The corrected annotation keeps its own naming and the coordinates
-    are unaffected, since the correction matches on position rather than on
-    contig name. Worth knowing before you go looking for `NC_002695.2` in the
-    output and cannot find it.
+    AMAP runs Bakta with `--keep-contig-headers`, so the sequence names you
+    supplied are the ones in `BAKTA/` and in the corrected annotation, and the
+    corrected tables say which contig each gene is on. Without that option
+    Bakta relabels everything `contig_1`, `contig_2` and so on, and
+    `classify_cases.py` stops with an error on a multi-contig assembly rather
+    than compare genes across contigs.
 
-!!! warning "Multi-contig assemblies and coordinate collisions"
+!!! note "Draft assemblies"
 
-    The correction step keys genes on `(start, end, strand)` without the contig
-    name. On a closed single-contig genome, which is the MTBC case AMAP was
-    built around, that is unambiguous. On a draft assembly, two genes at the
-    same coordinates on different contigs collide, and one is lost.
-
-    `classify_cases.py` prints a warning when it detects this, and the count
-    appears in the run log. In practice the collision needs an exact match of
-    start, end and strand across contigs, so it is rare, but on a highly
-    fragmented assembly it is worth checking the log for it.
+    Every contig of a draft assembly is numbered from 1, so the same
+    coordinates turn up on several contigs. The correction keys every gene on
+    its contig as well as its start, end and strand, only ever compares genes
+    on the same contig, and translates each one from its own contig. Cut into
+    40 contigs, CDC1551 gets every gene that lies within one contig exactly as
+    the closed genome does.
 
 ## Reference data
 

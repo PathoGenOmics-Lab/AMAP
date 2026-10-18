@@ -8,19 +8,22 @@ process PATHOTYPR {
     tuple val(sampleId), path(fasta)
 
     output:
-    tuple env(SAMPLE_NAME), path("*.fasta"), path("*_summary.tsv"), emit: typed_fasta
+    tuple env('SAMPLE_NAME'), path("*.fasta"), path("*_summary.tsv"), emit: typed_fasta
 
     script:
     """
     #!/bin/bash
     set -o pipefail
-    # NOTE: do NOT use 'set -e' here. If pathotypr classify fails,
+    # NOTE: do NOT use 'set -e' here. If the lineage call fails,
     # we need to reach the fallback code that sets SAMPLE_NAME.
     # With set -e, the script exits before SAMPLE_NAME is exported,
     # leaving env() empty → downstream sampleId is blank.
 
-    # 1. Run the lineage classifier (may fail for non-MTBC genomes).
-    pathotypr classify \\
+    # 1. Run the lineage classifier (may fail for non-MTBC genomes). The
+    # subcommand is quoted: Nextflow adds to a task's cache key any bin/ entry
+    # its script names as a bare word, and bare, this one named AMAP's own
+    # bin/classify package, which this task never runs.
+    pathotypr 'classify' \\
         -i ${fasta} \\
         -m "${params.pathotyper_snps}" \\
         -r "${params.pathotyper_ref}" \\

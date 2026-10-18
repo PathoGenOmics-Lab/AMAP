@@ -1,7 +1,11 @@
 process GET_DUPLICATIONS {
     tag "$sampleId"
+    // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
+    ext code: { files("${projectDir}/bin/{rename_fastas.py,get_duplications.py,dup_ex_multifasta.py}") }
 
-    publishDir "${params.outdir}/DUPLICATIONS/${sampleId}",
+    // Per-sample paths are closures: the strict parser evaluates publishDir once,
+    // when the process is defined, so ${sampleId} has to wait for each task.
+    publishDir path: { "${params.outdir}/DUPLICATIONS/${sampleId}" },
            mode: 'link', overwrite: true,
            pattern: "duplications*"                  
 
@@ -14,6 +18,7 @@ process GET_DUPLICATIONS {
 
     script:
     """
+    # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     python3 ${projectDir}/bin/rename_fastas.py ${emapper} ${amap_faa}
 
     # Build Diamond DB first, then query against it
@@ -41,8 +46,10 @@ process GET_DUPLICATIONS {
 
 process GET_OUTPUTS {
     tag "$sampleId"
+    // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
+    ext code: { files("${projectDir}/bin/{generate_tsv_gff_gbk.py,to_panaroo.py,export_clean_proteome.py,annotation_qc.py,classify/*.py}") }
 
-    publishDir "${params.outdir}/AMAP/${sampleId}",
+    publishDir path: { "${params.outdir}/AMAP/${sampleId}" },
                mode: 'link', overwrite: true,
                pattern: "*AMAP*"
 
@@ -63,6 +70,7 @@ process GET_OUTPUTS {
 
     script:
     """
+    # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     set -euo pipefail
 
     # Create a writable local copy of the staged symlink.
@@ -124,8 +132,10 @@ process GET_OUTPUTS {
 
 process GET_COUNT {
     tag "$sampleId"
+    // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
+    ext code: { files("${projectDir}/bin/count_annot.py") }
 
-    publishDir "${params.outdir}/AMAP/${sampleId}",
+    publishDir path: { "${params.outdir}/AMAP/${sampleId}" },
                mode: 'link', overwrite: true,
                pattern: "*-AMAP.*.tsv"
 
@@ -138,12 +148,15 @@ process GET_COUNT {
 
     script:
     """
+    # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     set -euo pipefail
     python3 ${projectDir}/bin/count_annot.py ${mastertable}
     """
 }
 
 process GET_ALLDUP {
+    // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
+    ext code: { files("${projectDir}/bin/network_genomes.py") }
     publishDir "${params.outdir}/DUPLICATIONS", mode: 'link', overwrite: true
 
     input:
@@ -154,6 +167,7 @@ process GET_ALLDUP {
 
     script:
     """
+    # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     # Concatenate all per-sample duplication FASTAs
     # Use find+xargs instead of glob to avoid ARG_MAX with 500+ files
     find . -maxdepth 1 -name '*.dup' -print0 | xargs -0 cat > all_fastas.fa

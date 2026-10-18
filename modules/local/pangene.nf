@@ -16,7 +16,9 @@
 process PANGENE {
     tag "$sampleId"
 
-    publishDir "${params.outdir}/PANGENE/${sampleId}",
+    // A closure: the strict parser evaluates publishDir once, when the process
+    // is defined, so ${sampleId} has to wait for each task.
+    publishDir path: { "${params.outdir}/PANGENE/${sampleId}" },
                mode: 'link', overwrite: true,
                pattern: "*.{gfa,bubbles.txt,Rtab,stat}"
 

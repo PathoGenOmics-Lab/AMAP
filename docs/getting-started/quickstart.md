@@ -54,11 +54,11 @@ nextflow run PathoGenOmics-Lab/AMAP \
     -profile singularity,slurm --tsv samples.tsv
 ```
 
-The `docker` and `singularity` profiles cap every task at the machine's CPUs
-and 16 GB, and the scheduler profiles at 48 CPUs and 128 GB; a larger request,
-such as the 50 GB the eggNOG annotation asks for, is lowered to the cap.
-Nextflow refuses to start a task asking for more memory than the machine has,
-so on a smaller machine, lower the ceiling:
+Without a scheduler profile every task is capped at the machine's CPUs and
+16 GB, and with the scheduler profiles at 48 CPUs and 128 GB, whichever order
+the profiles come in; a larger request, such as the 50 GB the eggNOG annotation
+asks for, is lowered to the cap. Nextflow refuses to start a task asking for
+more memory than the machine has, so on a smaller machine, lower the ceiling:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \

@@ -1,7 +1,3 @@
----
-title: Outputs
----
-
 # Outputs
 
 Everything lands under `--outdir`, `results/` by default, in one subdirectory
@@ -21,6 +17,8 @@ leaves it, `L4_G26689` for sample `G26689`, or the sample ID alone under
 | Tool versions for your methods section | `results/pipeline_info/software_versions.yml` |
 
 ## The full tree
+
+<!-- figure: results-map -->
 
 ```text
 results/
@@ -105,10 +103,14 @@ Two kinds of gene carry marks, written the way NCBI writes them:
   `/translation`.
 - **Genes a contig end cut short**, in a draft assembly, have `partial=true`,
   with `start_range=.,START` or `end_range=END,.` on the open end, and `<` or
-  `>` on that end of the GenBank location. They are not pseudogenes.
+  `>` on that end of the GenBank location. They are not pseudogenes. Each
+  piece of a cut gene is there under the gene's name, the first in the
+  assembly with the gene's identifier and the others with `_2`, `_3`.
 
 The same three facts, `pseudogene`, `partial` (`5'`, `3'` or both) and `note`,
 are the last columns of the master table and of `*-AMAP.tsv`.
+
+<!-- figure: excerpt -->
 
 ### `*-AMAP.faa` versus `*-AMAP.clean.faa`
 
@@ -160,6 +162,8 @@ Sakai against K-12 MG1655, using a custom reference.
 | rv_missing, rescued | 97 | 102 |
 | total_cds before correction | 4077 | 5367 |
 
+<!-- figure: case-table -->
+
 The one number that differs by two orders of magnitude is case 1, and that is
 biology: CDC1551 is the same species as the reference so almost nothing is
 genuinely new, while O157:H7 carries prophages and the LEE island that K-12
@@ -191,18 +195,15 @@ through it.
 
 ## Effect of the skip options
 
-`--skip_typing`
-: No `PATHOTYPR/` directory. Samples keep their original IDs instead of being
+- **`--skip_typing`**: No `PATHOTYPR/` directory. Samples keep their original IDs instead of being
   renamed by lineage.
-
-`--skip_functional_annotation`
-: The run stops after correction. No `DUPLICATIONS/`, `PANGENE/` or
-  `final_report.html`, and `AMAP/` has only the corrected genes
-  (`*.AMAP.tsv`, `.faa`, `.fna`). You still get `BAKTA/`, `CDS_CASES/` and
-  `amap_report.html`, without its eggNOG sections.
-
-`--skip_mycobrowser`
-: `*-AMAP.MycoBrowser.tsv` is written empty and the Mycobrowser sections drop
+- **`--skip_functional_annotation`**: The run stops after correction. No `DUPLICATIONS/`, `PANGENE/` or
+  `final_report.html`, and `AMAP/` holds only the corrected table and sequences,
+  `*.AMAP.tsv`, `*.AMAP.faa` and `*.AMAP.fna`, without the GFF3, the GenBank or
+  the master table. You still get `BAKTA/` and `CDS_CASES/`, including
+  `*_corrected.tsv` with the corrected coordinates, and `amap_report.html`,
+  without its eggNOG sections.
+- **`--skip_mycobrowser`**: `*-AMAP.MycoBrowser.tsv` is written empty and the Mycobrowser sections drop
   out of the report. Everything else is unaffected.
 
 ## Next steps

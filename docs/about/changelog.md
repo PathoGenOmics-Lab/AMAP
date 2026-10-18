@@ -1,8 +1,4 @@
----
-title: Changelog
----
+# Changelog
 
-<!-- The changelog is maintained at the repository root and included here so
- there is a single source of truth. -->
-
---8<-- "CHANGELOG.md"
+The changelog is kept at the root of the repository, in
+[CHANGELOG.md](../../CHANGELOG.md), and the website shows that file here.

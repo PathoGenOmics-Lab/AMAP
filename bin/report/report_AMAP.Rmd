@@ -267,7 +267,9 @@ datos_cog <- datos_cog %>%
   ungroup()
 datos_cog$Percentage <- as.numeric(datos_cog$Percentage)
 datos_cog1 <- datos_cog
-lvl_cogs <- c("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","S","T","U","V","NA")
+# The categories there is a figure for, A to Z and None: a category left out
+# of the levels turns NA, and its genes are plotted in no figure of their own
+lvl_cogs <- names(cog_names)
 datos_cog1$Functional_Category <- factor(datos_cog1$Functional_Category, levels = lvl_cogs)
 
 # Dynamic color assignment for non-MTBC lineages
@@ -360,7 +362,8 @@ data <- data %>% mutate(V4 = factor(V4)) %>% droplevels()
 has_rvmissing <- file.exists(params$rvmissing_file) && file.info(params$rvmissing_file)$size > 0
 if (has_rvmissing) {
   rvmissing_raw <- tryCatch(
-    read.table(params$rvmissing_file, sep="\t", header=F, fill=T, stringsAsFactors=F, quote=""),
+    # No comment character: Prot_Id holds the reference annotation's gene IDs
+    read.table(params$rvmissing_file, sep="\t", header=F, fill=T, stringsAsFactors=F, quote="", comment.char=""),
     error = function(e) NULL)
   if (!is.null(rvmissing_raw) && ncol(rvmissing_raw) >= 5) {
     # Columns: Prot_Id, Prot_len, Strand, Start, End, Match_Nt, Num_nt, Sample
@@ -402,10 +405,13 @@ if (has_mastertable) {
 }
 
 # Pangene Rtab
+# pangene names each genome <name>#0. With read.table's default comment
+# character the header stopped at the first "#": one genome column was lost
+# and the gene names became row names. check.names keeps the names as written.
 has_pangene <- file.exists(params$pangene_file) && file.info(params$pangene_file)$size > 0
 if (has_pangene) {
   pangene_raw <- tryCatch(
-    read.table(params$pangene_file, sep="\t", header=T, fill=T, stringsAsFactors=F, quote=""),
+    read.table(params$pangene_file, sep="\t", header=T, fill=T, stringsAsFactors=F, quote="", comment.char="", check.names=F),
     error = function(e) NULL)
   if (is.null(pangene_raw) || ncol(pangene_raw) < 2) has_pangene <- FALSE
 }
@@ -414,7 +420,8 @@ if (has_pangene) {
 has_dups <- file.exists(params$dup_file) && file.info(params$dup_file)$size > 0
 if (has_dups) {
   dup_data <- tryCatch(
-    read.table(params$dup_file, sep="\t", header=T, fill=T, stringsAsFactors=F, quote=""),
+    # No comment character: Nodes1/Nodes2 list gene IDs from the reference annotation
+    read.table(params$dup_file, sep="\t", header=T, fill=T, stringsAsFactors=F, quote="", comment.char=""),
     error = function(e) NULL)
   if (is.null(dup_data)) has_dups <- FALSE
 }
@@ -563,14 +570,26 @@ print(p_cds_dist)
 # Genome (the sample ID) and lineage of every gene not in the reference.
 # REPORT_INPUTS strips each file's header, so every line is a gene.
 datos_noH <- read.table(params$empty_file, sep="\t", dec=".", header=F, fill=T, stringsAsFactors=F, quote="", col.names=paste0("V",1:2))
-resultado <- datos_noH %>% rename(genome=V1) %>% count(genome, V2)
+# Counted for every sample of the case summary: one whose genes all match the
+# reference counts 0 rather than drop out of its lineage's box, and when no
+# sample has any (H37Rv against itself) the file above is empty.
+resultado <- data %>%
+  distinct(genome = as.character(genome), V2 = V4) %>%
+  left_join(count(datos_noH, genome = as.character(V1)), by = "genome") %>%
+  mutate(n = coalesce(n, 0L))
 
-p_false_cds <- ggplot(resultado, aes(x=V2, y=n, colour=V2)) +
-  geom_boxplot(outlier.shape=NA, fill=NA) + geom_jitter(alpha=0.4, width=0.2) +
-  scale_color_manual(values=colors) +
-  labs(x="Lineage", y="CDS not in Reference") + theme_pubr() +
-  theme(legend.position="none", axis.text.x=element_text(angle=45, hjust=1))
-print(p_false_cds)
+if (sum(resultado$n) == 0) {
+  cat("Every CDS of every sample matches a reference gene.\n")
+} else {
+  # Counts: each point at its own whole number, on an axis from 0
+  p_false_cds <- ggplot(resultado, aes(x=V2, y=n, colour=V2)) +
+    geom_boxplot(outlier.shape=NA, fill=NA) + geom_jitter(alpha=0.4, width=0.2, height=0) +
+    scale_color_manual(values=colors) +
+    scale_y_continuous(breaks = function(x) unique(floor(pretty(x)))) + expand_limits(y=0) +
+    labs(x="Lineage", y="CDS not in Reference") + theme_pubr() +
+    theme(legend.position="none", axis.text.x=element_text(angle=45, hjust=1))
+  print(p_false_cds)
+}
 ```
 
 ## CDS Correction Summary

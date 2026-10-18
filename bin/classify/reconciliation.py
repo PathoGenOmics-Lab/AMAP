@@ -35,11 +35,33 @@ def recover_missing_genes(combined_dict, miniprot_df, min_cover=0.5):
     one does not account for the other. Neither does a different reference
     gene in the same frame: E. coli nests hokC inside mokC and b4706 inside
     b2537, and both genes of each pair are real.
+
+    A gene that stands for no reference protein accounts for any placement in
+    its frame. That is the Bakta call that won its locus over a shorter
+    alignment, one that stops short of its protein's end: the call is that
+    protein's gene with the extent Bakta found. When no gene carries the
+    protein's name, the call takes it, the best placement first; it used to
+    keep none, and the protein went missing from the table. In M. bovis,
+    H37Rv's mmpL6 (Rv1557) is the 3' end of a 2904 bp gene that the TbD1
+    deletion cut short in H37Rv, and the whole gene came out with no name.
+    Only an alignment over at least half of its protein gives the name: a
+    call holding no more than a remnant of it is another gene. The RD12
+    deletion leaves the last 67 of the 400 residues of cyp141 (Rv3121) at the
+    end of a 321-codon gene of M. bovis.
+
+    The pieces of a gene that contig ends cut (classify/pieces.py) are parts of
+    their protein, not copies of it, so each is missing on its own: one in the
+    dict does not stand for another. Counted as copies, the smaller piece of
+    Rv0100 in CDC1551 cut into contigs, placed on a contig of its own, kept
+    the larger one from coming back after a 7.5 kb Bakta call had displaced it.
+    Nor does a piece give its name to a call that has none.
     """
     reference_ids = set(miniprot_df['Prot Id'])
     placed = miniprot_df[(miniprot_df['Start'] < miniprot_df['End'])
                          & ~((miniprot_df['Match Nt'] == 0) & (miniprot_df['Num nt'] == 0))]
     contig = placed['Contig'] if 'Contig' in placed.columns else pd.Series('', index=placed.index)
+    piece = (placed['Piece'].astype(bool) if 'Piece' in placed.columns
+             else pd.Series(False, index=placed.index))
     coords = {idx: (r['Start'], r['End'], r.get('Strand', '+'), contig[idx])
               for idx, r in placed.iterrows()}
 
@@ -60,36 +82,71 @@ def recover_missing_genes(combined_dict, miniprot_df, min_cover=0.5):
 
     def add_to_tree(coord, gene_id):
         tree = trees.setdefault(where(coord), IntervalTree())
-        tree[coord[0]:coord[1] + 1] = (_frame(coord), labels(coord, gene_id))
+        tree[coord[0]:coord[1] + 1] = (_frame(coord), labels(coord, gene_id), coord)
 
     def accounted(coord, prot_id):
+        """The genes of the dict that account for a placement, as
+        (coordinate, whether the gene stands for a known protein), the one
+        covering most of it first."""
         length = coord[1] - coord[0] + 1
+        found = []
         for iv in trees.get(where(coord), IntervalTree())[coord[0]:coord[1] + 1]:
-            frame, genes = iv.data
+            frame, genes, gene = iv.data
             if frame != _frame(coord) or (genes and prot_id not in genes):
                 continue
-            if min(coord[1] + 1, iv.end) - max(coord[0], iv.begin) >= min_cover * length:
-                return True
-        return False
+            cover = min(coord[1] + 1, iv.end) - max(coord[0], iv.begin)
+            if cover >= min_cover * length:
+                found.append((-cover, gene, bool(genes)))
+        return [(gene, has_name) for _, gene, has_name in sorted(found)]
+
+    def spans_half_its_protein(idx):
+        """Whether a placement covers at least half of its protein's codons,
+        stop included as miniprot counts it. Unknown counts as yes."""
+        if 'Prot len' not in placed.columns:
+            return True
+        residues = pd.to_numeric(placed.at[idx, 'Prot len'], errors='coerce')
+        span = placed.at[idx, 'End'] - placed.at[idx, 'Start'] + 1
+        return not residues > 0 or 2 * span >= 3 * residues
 
     for coord, gene_id in combined_dict.items():
         add_to_tree(coord, gene_id)
 
-    present = set()
+    named, accounted_only, stand_in = set(), set(), {}
     for idx, c in coords.items():
         prot_id = placed.at[idx, 'Prot Id']
-        if c in combined_dict or accounted(c, prot_id):
-            present.add(prot_id)
+        if piece[idx]:
+            continue
+        genes = accounted(c, prot_id)
+        if c in combined_dict or any(has_name for _, has_name in genes):
+            named.add(prot_id)
+        elif genes:
+            accounted_only.add(prot_id)
+            match = placed.at[idx, 'Match Nt']
+            if spans_half_its_protein(idx) and (prot_id not in stand_in
+                                                or match > stand_in[prot_id][0]):
+                stand_in[prot_id] = (match, genes[0][0])
+
+    # A protein that only a gene with no name accounts for names that gene.
+    # Each gene takes one name, its best match's; the others it accounts for
+    # stay accounted for, as they always were.
+    taken = set()
+    for prot_id, (_, gene) in sorted(stand_in.items(), key=lambda kv: (-kv[1][0], kv[0])):
+        if prot_id not in named and gene not in taken:
+            combined_dict[gene] = prot_id
+            taken.add(gene)
+    present = named | accounted_only
 
     # Best placements first, so a missing protein goes in where it fits best.
     for idx in placed.sort_values('Match Nt', ascending=False).index:
         prot_id = placed.at[idx, 'Prot Id']
         coord = coords[idx]
-        if prot_id in present or coord in combined_dict or accounted(coord, prot_id):
+        if ((prot_id in present and not piece[idx])
+                or coord in combined_dict or accounted(coord, prot_id)):
             continue
         combined_dict[coord] = prot_id
         add_to_tree(coord, prot_id)
-        present.add(prot_id)
+        if not piece[idx]:
+            present.add(prot_id)
 
 
 def deduplicate(combined_dict):
@@ -164,6 +221,7 @@ def write_corrected_tsv(combined_dict, miniprot_df, bakta_df, base_name):
 
     mp_contig = miniprot_df['Contig'] if 'Contig' in miniprot_df.columns else ''
     bk_contig = bakta_df['Contig'] if 'Contig' in bakta_df.columns else ''
+    reference_ids = set(miniprot_df['Prot Id'])
 
     singles = []
     multis = []
@@ -182,8 +240,12 @@ def write_corrected_tsv(combined_dict, miniprot_df, bakta_df, base_name):
 
         if not bk_matches.empty:
             cluster_id = format_cluster_id(bk_matches.iloc[0]['Locus Tag'], base_name)
-            rv_ids = ", ".join(mp_matches['Prot Id'].unique()) if not mp_matches.empty else ""
-            singles.append([cluster_id, strand, start, end, rv_ids, contig])
+            rv_ids = list(mp_matches['Prot Id'].unique()) if not mp_matches.empty else []
+            # A call that is the gene of a protein aligned short of it inside
+            # (recover_missing_genes) carries that protein's name.
+            if value in reference_ids and value not in rv_ids:
+                rv_ids.append(value)
+            singles.append([cluster_id, strand, start, end, ", ".join(rv_ids), contig])
         else:
             rv_ids = mp_matches['Prot Id'].unique() if not mp_matches.empty else []
             if len(rv_ids) == 0:

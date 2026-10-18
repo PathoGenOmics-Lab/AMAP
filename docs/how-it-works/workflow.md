@@ -1,63 +1,10 @@
----
-title: The workflow
----
-
 # The workflow
 
-```mermaid
-flowchart TB
-    subgraph INPUT
-    v0["GENOMES"]
-    end
-    v3([PATHOTYPR])
-    v4([BAKTA ANNOTATOR])
-    v6([MINIPROT])
-    v8([TYPE CASES])
-    v14([FIX ANNOTATION])
-    v20([GET DUPLICATIONS])
-    v17([EGGNOG DB])
-    v18([EGGNOG ANNOTATION])
-    v19([FUNCTIONAL ANNOTATION])
-    v16["FINAL RUN REPORT"]
-    v22([PANGENE])
-    subgraph RESULTS
-    v12["Bakta annotation
-    /BAKTA"]
-    v10["Case tables
-    /CDS_CASES"]
-    v13["Corrected annotation
-    /AMAP"]
-    v23["Duplicated genes
-    /DUPLICATIONS"]
-    v21["Pangenome
-    /PANGENE"]
-    v15["Lineage typing
-    /PATHOTYPR"]
-    end
-    v0 --> v3
-    v3 --> v4
-    v3 --> v6
-    v3 --> v15
-    v4 --> v12
-    v4 --> v6
-    v4 --> v8
-    v6 --> v8
-    v8 --> v10
-    v8 --> v14
-    v14 --> v13
-    v14 --> v19
-    v14 --> v20
-    v14 --> v22
-    v17 --> v18
-    v18 --> v19
-    v19 --> v13
-    v20 --> v13
-    v20 --> v23
-    v22 --> v21
-    v10 --> v16
-    v13 --> v16
-    v15 --> v16
-```
+The pipeline as a metro map: stations are the processes of `main.nf`, lines
+are what travels between them. Pick a station for what it does and where its
+files go, or switch an option to see what a run leaves out.
+
+<!-- figure: metro -->
 
 ## 1. eggNOG database setup
 
@@ -103,6 +50,12 @@ Output is PAF. Coordinates are converted from 0-based to 1-based on read, and
 for a protein hitting several positions, the best hit per position is kept so
 multi-copy families such as PE/PPE keep all their placements.
 
+In a draft assembly the genes a contig end cuts get a second pass. Miniprot
+places the larger piece of such a gene only, so what that placement lacks is
+aligned again as a protein of its own, and its placement at the end of another
+contig is the rest of the gene
+([pieces of cut genes](correction-algorithm.md#pieces-of-cut-genes)).
+
 ## 5. Case classification
 
 Every Bakta CDS is compared against the alignments and sorted into cases 1 to 4,
@@ -124,8 +77,9 @@ bp. Genes with internal stops are flagged as pseudogenes rather than discarded.
 Anything that cannot be translated at all is dropped, so the annotation table
 and the FASTA files always agree.
 
-Outputs are the corrected GFF3, GenBank, protein and nucleotide files under
-`AMAP/`.
+Outputs are the corrected gene table and its protein and nucleotide files
+under `AMAP/` (`*.AMAP.tsv`, `.faa`, `.fna`). The GFF3 and GenBank files follow
+once eggNOG has run, in step 7.
 
 ## 7. Functional annotation
 
@@ -146,9 +100,10 @@ attributes.
 ## 8. Duplication analysis
 
 Each proteome is searched against itself with Diamond to find within-genome
-duplications, which are grouped into families by connected components. Then all
-samples are pooled and searched all-against-all to build homologous communities
-across genomes, with network metrics computed per community.
+duplications, which are grouped into families by connected components. Then the
+proteins of every sample's families are pooled and searched all against all to
+build homologous communities across genomes, with network metrics computed per
+community.
 
 [Duplication metrics](duplications.md) explains the numbers.
 
@@ -158,6 +113,10 @@ across genomes, with network metrics computed per community.
 corrected annotations and produces a gene presence/absence matrix, which the
 report turns into core, softcore, shell and cloud classifications, a frequency
 spectrum and presence/absence heatmaps.
+
+Each sample's corrected proteins are aligned with miniprot onto every other
+sample's genome: the ones PATHOTYPR renamed or, with `--skip_typing`, the
+genomes of the sample sheet, each under its sample ID.
 
 ## 10. Report
 
@@ -169,6 +128,15 @@ statistics with the associated tests, and a searchable table of every gene.
 Alongside it, `pipeline_info/` collects the Nextflow execution report, timeline,
 DAG and trace, plus `software_versions.yml` and `params.yml` for your methods
 section.
+
+## 11. Interactive report
+
+`amap_report.html`, one self-contained file organised by question: how each
+genome annotated, where reference genes are missing or broken, one gene in
+every genome, what the correction changed and the pseudogenes by lineage. It
+reads the correction's outputs directly, so it is written with or without the
+functional annotation, and the functional steps add their sections when they
+run. [The interactive report](../user-guide/amap-report.md) goes through it.
 
 ## Next steps
 

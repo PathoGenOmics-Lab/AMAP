@@ -1,7 +1,3 @@
----
-title: Preparing inputs
----
-
 # Preparing inputs
 
 AMAP takes assembled genomes. It does not do assembly, so reads are not an input
@@ -18,23 +14,23 @@ G26690	/data/genomes/G26690.fasta
 L4_G12345	./assemblies/L4_G12345.fa
 ```
 
-`sampleId`
-: The name carried through every output directory and file. Must be unique.
+<!-- figure: sample-sheet -->
+
+- **`sampleId`**: The name carried through every output directory and file. Must be unique.
   Lineage typing puts the lineage in front, so `G26689` comes out as
   `L4_G26689`.
-
-`fasta`
-: Path to the assembled genome. Absolute, or relative to the directory you
+- **`fasta`**: Path to the assembled genome. Absolute, or relative to the directory you
   launch Nextflow from.
 
 The separator has to be an actual tab. Spaces will not do, and this is the most
 common reason a sample sheet is rejected.
 
-!!! warning "Avoid dots in sample IDs"
-
-    Several scripts derive the sample name by cutting at the first dot, so
-    `G26689.1` becomes `G26689` and two such samples would collide. Stick to
-    letters, digits and underscores.
+> [!WARNING]
+> **Avoid dots in sample IDs**
+>
+> Several scripts derive the sample name by cutting at the first dot, so
+> `G26689.1` becomes `G26689` and two such samples would collide. Stick to
+> letters, digits and underscores.
 
 ## Pre-flight validation
 
@@ -47,6 +43,8 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
 ```
 
 Results are written to `results/pipeline_info/validation.log`.
+
+<!-- figure: validation-ranges -->
 
 ### What fails the run
 
@@ -61,6 +59,7 @@ Results are written to `results/pipeline_info/validation.log`.
 | FASTA path | file does not exist or cannot be parsed |
 | Bakta database | not found, or no `version.json` or `bakta.db` in it |
 | eggNOG database | `eggnog_db.ok` in it while the database is incomplete, since Nextflow then never builds it again |
+| Reference files | `--ref_annotation`, `--ref_genome` or a [reference argument](../user-guide/parameters.md#reference-and-database-arguments) that the run reads but that is neither on the host nor inside the container |
 
 ### What only warns
 
@@ -73,6 +72,7 @@ Results are written to `results/pipeline_info/validation.log`.
 | Short contigs | any contig under 200 bp in a multi-contig assembly |
 | Non-standard characters | anything outside `ATGCNRYSWKMBDHV` |
 | eggNOG database | a `bacteria.dmnd` under 100 MB, which `EGGNOG_DB` takes for a truncated download and builds again |
+| Mycobrowser table | `--mycobrowser_ref` neither on the host nor inside the container, so the master table goes without Mycobrowser categories |
 
 Warnings do not stop a run. Add `--strict_validation` to have them stop it too.
 
@@ -96,23 +96,25 @@ rather than corrected.
 so it is dropped or flagged as a pseudogene. The 1% warning is worth taking
 seriously.
 
-!!! note "Contig names are kept"
+> [!NOTE]
+> **Contig names are kept**
+>
+> AMAP runs Bakta with `--keep-contig-headers`, so the sequence names you
+> supplied are the ones in `BAKTA/` and in the corrected annotation, and the
+> corrected tables say which contig each gene is on. Without that option
+> Bakta relabels everything `contig_1`, `contig_2` and so on, and
+> `classify_cases.py` stops with an error on a multi-contig assembly rather
+> than compare genes across contigs.
 
-    AMAP runs Bakta with `--keep-contig-headers`, so the sequence names you
-    supplied are the ones in `BAKTA/` and in the corrected annotation, and the
-    corrected tables say which contig each gene is on. Without that option
-    Bakta relabels everything `contig_1`, `contig_2` and so on, and
-    `classify_cases.py` stops with an error on a multi-contig assembly rather
-    than compare genes across contigs.
-
-!!! note "Draft assemblies"
-
-    Every contig of a draft assembly is numbered from 1, so the same
-    coordinates turn up on several contigs. The correction keys every gene on
-    its contig as well as its start, end and strand, only ever compares genes
-    on the same contig, and translates each one from its own contig. Cut into
-    40 contigs, CDC1551 gets every gene that lies within one contig exactly as
-    the closed genome does.
+> [!NOTE]
+> **Draft assemblies**
+>
+> Every contig of a draft assembly is numbered from 1, so the same
+> coordinates turn up on several contigs. The correction keys every gene on
+> its contig as well as its start, end and strand, only ever compares genes
+> on the same contig, and translates each one from its own contig. Cut into
+> 40 contigs, CDC1551 gets every gene that lies within one contig exactly as
+> the closed genome does.
 
 ## Reference data
 

@@ -1,7 +1,3 @@
----
-title: Parameters
----
-
 # Parameters
 
 Every AMAP parameter, what it defaults to, and when you would change it. Run
@@ -77,14 +73,15 @@ They must be given together; setting only one is an error. See
 
 ## Reference and database arguments
 
-!!! note "You almost certainly do not need these"
-
-    Every file below ships inside the Docker and Singularity images, under
-    `/reference/`. Running with `-profile docker` or `-profile singularity`
-    picks them up automatically.
-
-    They exist for running without a container, for swapping in updated
-    reference files, or for adapting the pipeline by hand.
+> [!NOTE]
+> **You almost certainly do not need these**
+>
+> Every file below ships inside the Docker and Singularity images, under
+> `/reference/`. Running with `-profile docker` or `-profile singularity`
+> picks them up automatically.
+>
+> They exist for running without a container, for swapping in updated
+> reference files, or for adapting the pipeline by hand.
 
 | Parameter | Description | Default inside the container |
 | :--- | :--- | :--- |
@@ -98,8 +95,11 @@ They must be given together; setting only one is an error. See
 | `--bakta_proteins` | Reference proteins GenBank file for Bakta. | `/reference/sequence.gb` |
 | `--mycobrowser_ref` | Mycobrowser functional categories table. | `/reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt` |
 
-A Bakta database on the host, the full one for instance, is mounted into the
-tasks that use it, so it works with the container profiles too.
+A database or a file of your own on the host, the full Bakta database or a
+newer Mycobrowser table for instance, is mounted into the tasks that use it, so
+it works with the container profiles too. A path that is not on the host is
+read inside the container, where the defaults are, and validation stops a run
+whose file is in neither place.
 
 The eggNOG database is the one exception: it is not bundled, because of its
 size. AMAP downloads and builds it on the first run and caches it at

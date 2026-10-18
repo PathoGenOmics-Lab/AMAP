@@ -1,7 +1,3 @@
----
-title: Tutorial
----
-
 # Tutorial: from an empty folder to an annotated genome
 
 Every command spelled out, nothing assumed. It uses a real genome you can
@@ -38,11 +34,12 @@ java -version
 nextflow -version
 ```
 
-!!! warning "Java 8 is not enough"
-
-    Nextflow will refuse to start on Java 8 with a message about an
-    unsupported class file version. Install a newer JDK, for example
-    `conda install -c conda-forge openjdk=17`.
+> [!WARNING]
+> **Java 8 is not enough**
+>
+> Nextflow will refuse to start on Java 8 with a message about an
+> unsupported class file version. Install a newer JDK, for example
+> `conda install -c conda-forge openjdk=17`.
 
 Then a container engine. Docker on a laptop, Singularity or Apptainer on a
 cluster:
@@ -54,16 +51,17 @@ docker --version        # or: singularity --version
 Full details, including running without a container, are on the
 [installation page](installation.md).
 
-!!! warning "On an Apple Silicon Mac, read this first"
-
-    The AMAP image is `linux/amd64` only, so on an M-series Mac every step runs
-    under emulation. The test profile in step 2 is fine. A real genome is slow
-    enough that a working run can look like a hung one, which is the part worth
-    knowing before you start wondering what you broke.
-
-    It is a reasonable way to learn what the pipeline does and to check your
-    sample sheet. For results you intend to use, move to an amd64 machine or a
-    cluster.
+> [!WARNING]
+> **On an Apple Silicon Mac, read this first**
+>
+> The AMAP image is `linux/amd64` only, so on an M-series Mac every step runs
+> under emulation. The test profile in step 2 is fine. A real genome is slow
+> enough that a working run can look like a hung one, which is the part worth
+> knowing before you start wondering what you broke.
+>
+> It is a reasonable way to learn what the pipeline does and to check your
+> sample sheet. For results you intend to use, move to an amd64 machine or a
+> cluster.
 
 ### The machine
 
@@ -83,10 +81,10 @@ Memory decides whether the run finishes at all. Two steps are heavy:
 | eggNOG annotation | 24 | 50 GB |
 | eggNOG database build | 16 | 45 GB |
 | Pangenome | 16 | 16 GB |
-| Duplication analysis | 6 | 10 GB |
+| Duplication analysis | 6 to 13 | 10 GB |
 | Report | 1 | 8 GB |
 | Bakta annotation | 12 | 6 GB |
-| Everything else | 1 to 8 | under 6 GB |
+| Everything else | 1 to 8 | 6 GB or less |
 
 Nextflow will not start a task that asks for more memory than the machine has,
 so on a laptop these requests are the thing that fails, not your data. Lower
@@ -105,24 +103,26 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --skip_functional_annotation
 ```
 
-You still get the corrected annotation, which is what AMAP exists to produce.
-What you lose is eggNOG categories, the pangenome and the duplication analysis.
-The heaviest step left asks for 8 GB.
+You still get the corrected genes, which is what AMAP exists to produce, as a
+table with their proteins and sequences. What you lose is eggNOG categories, the
+GFF3 and GenBank files written after it, the pangenome, the duplication analysis
+and the report. The heaviest step left asks for 6 GB.
 
-!!! danger "Docker Desktop has its own memory limit, and it is the one that counts"
-
-    On macOS and Windows, Docker runs your containers inside a virtual machine
-    with a memory ceiling of its own, often 8 GB by default no matter how much
-    the machine has. Nextflow sizes its requests against the host, so it will
-    happily start a 12 GB task that the VM then kills. You get exit code 137
-    and nothing that mentions Docker.
-
-    Raising `--max_memory` makes this worse, not better. Raise the VM instead,
-    in Docker Desktop under Settings, Resources, Memory, and keep
-    `--max_memory` at or below what you set there.
-
-    Linux has no such layer. Containers use host memory directly and this does
-    not apply.
+> [!CAUTION]
+> **Docker Desktop has its own memory limit, and it is the one that counts**
+>
+> On macOS and Windows, Docker runs your containers inside a virtual machine
+> with a memory ceiling of its own, often 8 GB by default no matter how much
+> the machine has. Nextflow sizes its requests against the host, so it will
+> happily start a 12 GB task that the VM then kills. You get exit code 137
+> and nothing that mentions Docker.
+>
+> Raising `--max_memory` makes this worse, not better. Raise the VM instead,
+> in Docker Desktop under Settings, Resources, Memory, and keep
+> `--max_memory` at or below what you set there.
+>
+> Linux has no such layer. Containers use host memory directly and this does
+> not apply.
 
 ## 2. Check the plumbing before touching real data
 
@@ -180,12 +180,13 @@ sampleId	fasta
 CDC1551	/path/to/amap-tutorial/cdc1551.fna
 ```
 
-!!! danger "It has to be a real tab"
-
-    Spaces will not do, and this is the single most common reason a sample
-    sheet is rejected. Check with `cat -t samples.tsv`: real tabs show up as
-    `^I`. (`cat -A` does the same on Linux but is not accepted by the `cat`
-    that ships with macOS.)
+> [!CAUTION]
+> **It has to be a real tab**
+>
+> Spaces will not do, and this is the single most common reason a sample
+> sheet is rejected. Check with `cat -t samples.tsv`: real tabs show up as
+> `^I`. (`cat -A` does the same on Linux but is not accepted by the `cat`
+> that ships with macOS.)
 
 Keep sample IDs to letters, digits and underscores. Several scripts cut the
 name at the first dot, so `G26689.1` becomes `G26689`.
@@ -264,6 +265,8 @@ case1_removed   130     "novel" genes that were not really novel
 case1_kept       11     kept as genuinely absent from H37Rv
 ```
 
+<!-- figure: case-counts -->
+
 Read that as: of 4077 Bakta calls, 2816 already agreed with the reference,
 1097 had to be adjudicated, and 97 reference genes Bakta had missed were
 rescued. Only 11 of the 141 apparently novel genes survived scrutiny, which is
@@ -296,12 +299,13 @@ out as `L4_CDC1551`:
 | Everything known per gene | `results/AMAP/L4_CDC1551/L4_CDC1551-AMAPmastertable.tsv` |
 | Tool versions for your methods | `results/pipeline_info/software_versions.yml` |
 
-!!! note "Two protein files, and they differ on purpose"
-
-    `*-AMAP.faa` has one entry per annotated gene, pseudogenes included, so it
-    matches the GFF3 gene for gene. `*-AMAP.clean.faa` drops pseudogenes and
-    anything with an internal stop codon, which is what orthology,
-    phylogenomics and dN/dS tools expect. It is legitimately shorter.
+> [!NOTE]
+> **Two protein files, and they differ on purpose**
+>
+> `*-AMAP.faa` has one entry per annotated gene, pseudogenes included, so it
+> matches the GFF3 gene for gene. `*-AMAP.clean.faa` drops pseudogenes and
+> anything with an internal stop codon, which is what orthology,
+> phylogenomics and dN/dS tools expect. It is legitimately shorter.
 
 Every directory is documented under [outputs](../user-guide/outputs.md).
 
@@ -382,12 +386,13 @@ Those 1356 are the prophages and the LEE island that O157:H7 carries and K-12
 lacks. Against a reference of your own species you should expect a large case 1
 when the strains genuinely differ, and a small one when they do not.
 
-!!! warning "The annotation and the genome must be the same assembly"
-
-    Coordinates from the annotation are used directly against the FASTA. An
-    annotation from a different assembly produces nonsense: proteins that do
-    not translate, and a nearly empty reference proteome. AMAP prints how many
-    proteins it extracted, so check the number looks like a genome's worth.
+> [!WARNING]
+> **The annotation and the genome must be the same assembly**
+>
+> Coordinates from the annotation are used directly against the FASTA. An
+> annotation from a different assembly produces nonsense: proteins that do
+> not translate, and a nearly empty reference proteome. AMAP prints how many
+> proteins it extracted, so check the number looks like a genome's worth.
 
 [Custom reference](../user-guide/custom-reference.md) goes into what makes a
 good reference and what changes when you use one.

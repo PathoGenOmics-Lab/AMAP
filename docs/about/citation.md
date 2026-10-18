@@ -1,7 +1,3 @@
----
-title: Citation
----
-
 # Citing AMAP
 
 > Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.1)

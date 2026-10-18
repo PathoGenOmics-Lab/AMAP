@@ -1,7 +1,3 @@
----
-title: The interactive report
----
-
 # The interactive report
 
 Next to `final_report.html`, every run now writes `results/amap_report.html`:

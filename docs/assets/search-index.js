@@ -160,7 +160,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Quickstart",
 "section": "3. Run it",
 "url": "getting-started/quickstart.html#3-run-it",
-"text": "Pick what you have, and copy the command: Or start from one of these: nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv Docker nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv Singularity nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm --tsv samples.tsv SLURM cluster The docker and singularity profiles cap every task at the machine's CPUs and 16 GB, and the scheduler profiles at 48 CPUs and 128 GB; a larger request, such as the 50 GB the eggNOG annotation asks for, is lowered to the cap. Nextflow refuses to start a task asking "
+"text": "Pick what you have, and copy the command: Or start from one of these: nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv Docker nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv Singularity nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm --tsv samples.tsv SLURM cluster Without a scheduler profile every task is capped at the machine's CPUs and 16 GB, and with the scheduler profiles at 48 CPUs and 128 GB, whichever order the profiles come in; a larger request, such as the 50 GB the eggNOG annotation asks for, is lowered to the cap."
 },
 {
 "page": "Quickstart",
@@ -262,7 +262,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Parameters",
 "section": "Resources",
 "url": "user-guide/parameters.html#resources",
-"text": "--max_cpus Ceiling on CPUs for any single process. integer 24 --max_memory Ceiling on memory for any single process. string 50.GB --max_time Ceiling on wall-clock time for any single process. string 72.h --scratch Use node-local scratch for I/O-heavy processes. On by default in the HPC profiles. boolean false These are ceilings, not requests. Each process asks for what it needs and is then clamped to these values, so lowering them makes AMAP fit a smaller machine rather than making it run faster. Memory scales on retry: a process killed by the out-of-memory killer is resubmitted with more, up "
+"text": "--max_cpus Ceiling on CPUs for any single process. integer the machine's CPUs --max_memory Ceiling on memory for any single process. string 16.GB --max_time Ceiling on wall-clock time for any single process. string 72.h --scratch Use node-local scratch for I/O-heavy processes. On by default in the HPC profiles. boolean false These are ceilings, not requests. Each process asks for what it needs and is then clamped to these values, so lowering them makes AMAP fit a smaller machine rather than making it run faster. The defaults are a single machine's. The HPC profiles raise them to 48 CPUs and 12"
 },
 {
 "page": "Parameters",

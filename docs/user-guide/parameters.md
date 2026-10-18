@@ -38,14 +38,19 @@ correctly improves the baseline annotation that AMAP then corrects.
 
 | Parameter | Description | Type | Default |
 | :--- | :--- | :--- | :--- |
-| `--max_cpus` | Ceiling on CPUs for any single process. | `integer` | `24` |
-| `--max_memory` | Ceiling on memory for any single process. | `string` | `50.GB` |
+| `--max_cpus` | Ceiling on CPUs for any single process. | `integer` | the machine's CPUs |
+| `--max_memory` | Ceiling on memory for any single process. | `string` | `16.GB` |
 | `--max_time` | Ceiling on wall-clock time for any single process. | `string` | `72.h` |
 | `--scratch` | Use node-local scratch for I/O-heavy processes. On by default in the HPC profiles. | `boolean` | `false` |
 
 These are ceilings, not requests. Each process asks for what it needs and is
 then clamped to these values, so lowering them makes AMAP fit a smaller machine
 rather than making it run faster.
+
+The defaults are a single machine's. The HPC profiles raise them to 48 CPUs
+and 128 GB, `-profile highmem` to 48 CPUs, 256 GB and 120 h, and
+`-profile test` sets 4 CPUs, 8 GB and 1 h, in whatever order `-profile` names
+them.
 
 Memory scales on retry: a process killed by the out-of-memory killer is
 resubmitted with more, up to the ceiling.

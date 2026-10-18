@@ -40,6 +40,7 @@ directly comparable with 1.0.1.
 ### 🧪 Testing
 - **`tests/selftest/h37rv_selftest.sh`** annotates H37Rv with itself inside the container and fails unless every GenBank CDS comes back exactly
 - **`tests/test_cache_keys.py`** fails when a process runs AMAP code that is not in its cache key, or when its script names a `bin/` entry as a bare word without declaring it
+- **`tests/benchmark/benchmark.sh`** scores the correction algorithm on seven genomes whose right answer is known (H37Rv twice, CDC1551 complete and in 40 contigs, M. bovis, E. coli K-12 and Sakai), downloading them and running Bakta and miniprot in the container the first time, and lists every gene that changed since an earlier run
 - **248 tests**, up from 92
 
 ## [1.0.1] - 2026-07-25

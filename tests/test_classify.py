@@ -253,11 +253,53 @@ class TestRecoverMissingGenes:
     def test_placement_a_codon_off_a_call_is_not_added_again(self):
         """Genes matched in case 2 and 3 are stored under Bakta locus tags, so
         every protein looked missing by name, and only an exact-coordinate
-        check kept it out: a placement a codon away went in as a second gene."""
+        check kept it out: a placement a codon away went in as a second gene.
+        The call is that protein's gene, and with no other gene named after
+        the protein, it takes the name."""
         from classify.reconciliation import recover_missing_genes
         combined = {(1000, 1900, '+', 'c1'): 'S1_00001'}
         recover_missing_genes(combined, self._mp([['Rv0001', 1003, 1900, '+', 897, 897, 'c1']]))
-        assert combined == {(1000, 1900, '+', 'c1'): 'S1_00001'}
+        assert combined == {(1000, 1900, '+', 'c1'): 'Rv0001'}
+
+    def test_a_call_that_won_over_a_shorter_alignment_takes_its_name(self):
+        """M. bovis mmpL6: H37Rv's Rv1557 is the 3' end of the gene, which the
+        TbD1 deletion cut short in H37Rv. Bakta's whole gene wins its locus
+        over the alignment, and came out with no name at all."""
+        from classify.reconciliation import recover_missing_genes
+        mp = self._mp([['Rv1557', 1_752_364, 1_753_518, '+', 1_149, 1_155, 'c1']]).assign(**{'Prot len': 398})
+        combined = {(1_750_615, 1_753_518, '+', 'c1'): 'S1_01628'}
+        recover_missing_genes(combined, mp)
+        assert combined == {(1_750_615, 1_753_518, '+', 'c1'): 'Rv1557'}
+
+    def test_a_remnant_of_a_protein_names_nothing(self):
+        """The RD12 deletion of M. bovis leaves the last 67 of cyp141's
+        (Rv3121) 400 residues at the end of a 321-codon gene, which is not
+        cyp141."""
+        from classify.reconciliation import recover_missing_genes
+        mp = self._mp([['Rv3121', 3_445_695, 3_445_895, '+', 195, 201, 'c1']]).assign(**{'Prot len': 401})
+        combined = {(3_444_933, 3_445_895, '+', 'c1'): 'S1_03214'}
+        recover_missing_genes(combined, mp)
+        assert combined == {(3_444_933, 3_445_895, '+', 'c1'): 'S1_03214'}
+
+    def test_a_protein_named_elsewhere_leaves_the_call_alone(self):
+        from classify.reconciliation import recover_missing_genes
+        mp = self._mp([['Rv0005', 1_300, 1_900, '+', 600, 600, 'c1'],
+                       ['Rv0005', 9_001, 9_600, '+', 600, 600, 'c1']])
+        combined = {(1_000, 1_900, '+', 'c1'): 'S1_00001', (9_001, 9_600, '+', 'c1'): 'Rv0005'}
+        recover_missing_genes(combined, mp)
+        assert combined == {(1_000, 1_900, '+', 'c1'): 'S1_00001',
+                            (9_001, 9_600, '+', 'c1'): 'Rv0005'}
+
+    def test_a_call_takes_one_name_the_best_match(self):
+        """Two proteins aligned inside one call in its frame: the better match
+        names it, and the other is still accounted for, not added as a second
+        gene in the same frame."""
+        from classify.reconciliation import recover_missing_genes
+        mp = self._mp([['Rv0006', 1_300, 1_900, '+', 590, 600, 'c1'],
+                       ['Rv0007', 1_300, 1_900, '+', 480, 600, 'c1']])
+        combined = {(1_000, 1_900, '+', 'c1'): 'S1_00001'}
+        recover_missing_genes(combined, mp)
+        assert combined == {(1_000, 1_900, '+', 'c1'): 'Rv0006'}
 
     def test_a_gene_in_another_frame_accounts_for_nothing(self):
         """Genes that really overlap sit in different frames."""
@@ -1716,6 +1758,61 @@ class TestParalogPlacements:
         assert len(drop_paralog_placements(df)) == len(df)
 
 
+class TestSyntenyAnchors:
+    """Where predict_ref_positions says a placement belongs depends on the
+    anchors around it, and on nothing else."""
+
+    COLS = TestParalogPlacements.COLS
+
+    @classmethod
+    def _anchors(cls, insertion_at=300_000, shift=48_000):
+        """A gene every 10 kb, placed once; the sample has 48 kb more than
+        the reference just before reference 300_000, as Sakai has a prophage
+        right before b2127."""
+        rows = []
+        for i in range(1, 60):
+            ref = 10_000 * i + 1
+            if ref == insertion_at + 1:
+                continue
+            pos = ref + (shift if ref > insertion_at else 0)
+            rows.append([f'g{i}', 300, '+', pos, pos + 899, 900, 900, ref, ref + 899, 'chr'])
+        return rows
+
+    def test_anchors_are_searched_in_the_order_of_their_midpoints(self):
+        """In Sakai, b1162 is placed once, on b2127's locus, starting where
+        b2127 does and ending 18 bp sooner, and a 48 kb prophage sits right
+        before them. Sorted by start, the anchors' midpoints, which the search
+        runs on, were out of order there: which window of anchors b2127 got
+        hung on the order of the rows, and adding unrelated rows to the table
+        moved its prediction 24 kb. An anchor that starts a little later but
+        ends sooner (B) does the same whatever the order."""
+        from classify.synteny import predict_ref_positions
+        rows = [r for r in self._anchors() if 240_000 < r[7] < 360_000] + [
+            ['T', 300, '+', 348_001, 348_900, 900, 900, 300_001, 300_900, 'chr'],
+            ['B', 300, '+', 348_011, 348_300, 290, 290, 100_011, 100_300, 'chr']]
+        for order in (rows, rows[::-1], rows[-1:] + rows[:-1]):
+            df = pd.DataFrame(order, columns=self.COLS)
+            pred = predict_ref_positions(df)
+            assert abs(pred[df['Prot Id'] == 'T'].iloc[0] - 300_451) < 1_000
+
+    def test_a_locus_several_proteins_share_anchors_nothing(self):
+        """M. bovis has a single IS6110, and each of H37Rv's 17 IS6110
+        proteins of a kind is placed there once. Their reference positions
+        are all over the genome, and they decided where everything near them
+        belonged: the copy came out named after another IS6110 of H37Rv."""
+        from classify.synteny import predict_ref_positions
+        rows = self._anchors(shift=0)
+        rows += [[f'IS{k}', 330, '-', 255_101, 256_087, 987, 987, ref, ref + 986, 'chr']
+                 for k, ref in enumerate([889_347, 1_541_994, 1_987_745, 1_996_427, 2_365_740,
+                                          2_430_159, 2_550_340, 2_635_903, 2_784_657, 255_101,
+                                          2_972_435, 3_551_556, 3_553_039, 3_710_708, 3_795_100,
+                                          3_891_105, 1_989_317])]
+        df = pd.DataFrame(rows, columns=self.COLS)
+        pred = predict_ref_positions(df)
+        assert abs(pred[df['Prot Id'] == 'IS9'].iloc[0] - 255_594) < 1_000
+        assert abs(pred[df['Prot Id'] == 'g26'].iloc[0] - 260_451) < 1_000
+
+
 class TestStrandOfResolvedHit:
     """Resolving a conflict takes the strand of the hit being resolved."""
 
@@ -1824,6 +1921,22 @@ class TestAlignmentQuality:
         case4 = self._case4([['S1_01840', 1_977_868, 1_979_412, '-', 1_545]])
         assert self._resolve(mp, case4) == {(1_977_868, 1_979_412, '-', ''): 'S1_01840'}
 
+    def test_the_call_that_gives_way_to_nothing_keeps_the_proteins_name(self, tmp_path, monkeypatch):
+        """CDC1551 carries a 4821 bp DNA methyltransferase gene whose first
+        506 residues are H37Rv's Rv2024c. The alignment stops short of the
+        protein's end, so Bakta's call wins the locus, and the table listed it
+        with no name: Rv2024c was nowhere in it."""
+        from classify.reconciliation import recover_missing_genes, write_corrected_tsv
+        mp = self._mp([['Rv2024c', 516, '-', 2_271_056, 2_272_573, 1_512, 1_518, False]]).assign(Contig='c1')
+        case4 = self._case4([['S1_02139', 2_267_753, 2_272_573, '-', 4_821]]).assign(Contig='c1')
+        combined = self._resolve(mp, case4)
+        recover_missing_genes(combined, mp)
+        bakta = case4.assign(Length_nt=case4['End'] - case4['Start'] + 1)
+        monkeypatch.chdir(tmp_path)
+        write_corrected_tsv(combined, mp, bakta, 'S1')
+        rows = [line.rstrip('\n').split('\t') for line in open(tmp_path / 'S1_corrected.tsv')]
+        assert rows == [['S1_02139', '-', '2267753', '2272573', 'Rv2024c', 'c1']]
+
     def test_complete_alignment_also_wins_among_several_calls(self):
         """The same alignment touching a second call by its last four bases
         is resolved with the multiple overlaps, under the same rule."""
@@ -1923,6 +2036,93 @@ class TestExactPlacements:
             ['gS', '+', 31, 57, 27, 27, 'chr', True, 1000.0, 1026.0],
             ['gQ', '+', q, q + 26, 27, 27, 'chr', True, 3000.0, 3026.0],
             ['gU', '+', u, u + 26, 27, 27, 'chr', True, 5000.0, 5026.0]]
+
+
+class TestNearPlacements:
+    """E. coli O157:H7 Sakai carries ten of K-12's micro-proteins with one to
+    four residues changed. miniprot places none of them where they are and
+    the exact search cannot, so none was annotated."""
+
+    FILL = "GCA" * 10
+
+    @staticmethod
+    def _revcomp(s):
+        return s[::-1].translate(str.maketrans("ACGT", "TGCA"))
+
+    @staticmethod
+    def _orf(protein, start="ATG"):
+        codon = {'M': 'ATG', 'K': 'AAA', 'L': 'CTG', 'V': 'GTT', 'W': 'TGG', 'F': 'TTT',
+                 'Y': 'TAT', 'H': 'CAT', 'R': 'CGT', 'E': 'GAA', 'S': 'TCT', '*': 'TAA'}
+        return start + "".join(codon[a] for a in protein[1:])
+
+    def _frames(self, d, genome):
+        from classify.exact import _six_frames
+        path = os.path.join(d, 'g.fasta')
+        with open(path, 'w') as f:
+            f.write(">chr\n" + genome + "\n")
+        return _six_frames(path)
+
+    def test_a_copy_with_a_few_substitutions_is_found(self):
+        """b4793, 23 residues, differs in four (83%); b4513 opens with GTG."""
+        from classify.exact import find_near
+        ref = 'MKLVWFYHRESKLVWFYHRESKL*'                     # 23 residues
+        got = 'MKLVWFYHREEKLVWFYHRESKF*'                     # two changed
+        genome = self.FILL + self._orf(got, 'GTG') + self.FILL + self._revcomp(self._orf(got)) + self.FILL
+        with tempfile.TemporaryDirectory() as d:
+            hits = list(find_near(ref, self._frames(d, genome)))
+        n = len(self._orf(got))
+        assert hits == [('chr', 31, 30 + n, '+', 2), ('chr', 61 + n, 60 + 2 * n, '-', 2)]
+
+    def test_too_many_differences_and_missing_ends_are_not(self):
+        """A fifth of the residues after the first may differ, no more; and a
+        copy still needs its start codon and its stop."""
+        from classify.exact import find_near
+        ref = 'MKLVWFYHRESKLVWFYHRESKL*'
+        five = 'MKLVWYYHREEKHVWFYHRFSKF*'                    # five of 22 changed
+        no_start = self._orf('MKLVWFYHREEKLVWFYHRESKF*', 'GCT')
+        no_stop = self._orf('MKLVWFYHREEKLVWFYHRESKF*')[:-3] + 'TGG'
+        with tempfile.TemporaryDirectory() as d:
+            for orf in (self._orf(five), no_start, no_stop):
+                assert list(find_near(ref, self._frames(d, self.FILL + orf + self.FILL))) == []
+
+    def test_a_stop_in_place_of_a_residue_is_a_difference(self):
+        """b1229 in Sakai: Q6 became a stop. The copy is found, and
+        check_cds.py makes it a pseudogene for its internal stop."""
+        from classify.exact import find_near
+        ref = 'MKLVWFYHRESKLVWFYHRESKL*'
+        with tempfile.TemporaryDirectory() as d:
+            hits = list(find_near(ref, self._frames(d, self.FILL + self._orf('MKLVW*YHRESKLVWFYHRESKL*') + self.FILL)))
+        assert [h[4] for h in hits] == [1]
+
+    def test_only_short_proteins_with_no_exact_copy_are_searched_this_way(self):
+        """gN has an exact copy, so its near one is not looked for; gL, 51
+        residues, is long enough for miniprot. gS is placed with its two
+        substitutions counted against it."""
+        from classify.exact import place_exact_matches
+        p_s = 'MKLVWFYHRESKLVWFYHRESKL*'
+        p_n = 'MRRRRRRRRRRRRRKKKK*'
+        p_l = 'M' + 'KLVWFYHRES' * 5 + '*'
+        orf_s = self._orf('MKLVWFYHREEKLVWFYHRESKF*')
+        orf_n, orf_n2 = self._orf(p_n), self._orf('MRRRRRRRRRRRRRKKKF*')
+        orf_l = self._orf('M' + 'KLVWFYHRES' * 4 + 'KLVWFYHREE' + '*')
+        genome = self.FILL.join(['', orf_s, orf_n, orf_n2, orf_l, ''])
+        s, n = genome.index(orf_s) + 1, genome.index(orf_n) + 1
+        cols = ['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt',
+                'Contig', 'Complete', 'Ref Start', 'Ref End']
+        mp = pd.DataFrame([[g, 0, '*', 1, 0, 0, 0, '*', False, 1.0, 2.0] for g in ('gS', 'gN', 'gL')],
+                          columns=cols)
+        with tempfile.TemporaryDirectory() as d:
+            genome_path = os.path.join(d, 'g.fasta')
+            with open(genome_path, 'w') as f:
+                f.write(">chr\n" + genome + "\n")
+            proteome = os.path.join(d, 'p.faa')
+            with open(proteome, 'w') as f:
+                f.write(f">gS_1-2\n{p_s}\n>gN_1-2\n{p_n}\n>gL_1-2\n{p_l}\n")
+            out = place_exact_matches(mp, genome_path, proteome)
+        placed = out[out['Contig'] != '*']
+        assert placed[['Prot Id', 'Start', 'End', 'Match Nt', 'Num nt']].values.tolist() == [
+            ['gS', s, s + 71, 66, 72], ['gN', n, n + 56, 57, 57]]
+        assert list(out.loc[out['Contig'] == '*', 'Prot Id']) == ['gL']
 
 
 # =============================================================================

@@ -146,7 +146,8 @@ annotate "$E" Sakai "${ECO[@]}"
 
 # --- the truth ------------------------------------------------------------------
 T=$WORK/truth
-if [ ! -s "$T/sakai.tsv" ]; then
+# Tables from before the 'aligned' column (October 2026) are made again.
+if [ ! -s "$T/sakai.tsv" ] || ! head -1 "$T/sakai.tsv" | grep -qw aligned; then
     log "truth tables"
     $BENCH truth-genbank "$REF/sequence.gb" "$MTB_AA" "$T/al.tsv"
     $BENCH truth-liftover "$REF/sequence.gb" "$I/mtb_cp/L4_H37Rv.fasta" "$T/al.tsv" "$T/cp_lifted.tsv" \

@@ -4,7 +4,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Tutorial",
 "section": "",
 "url": "getting-started/tutorial.html",
-"text": "Every command spelled out, nothing assumed. It uses a real genome you can download in one line, so you can follow along and compare your numbers against the ones printed here. Those numbers come from an actual run, not from memory. The genome is Mycobacterium tuberculosis CDC1551, corrected against the H37Rv reference that ships inside the AMAP container. At the end there is a second pass showing the same thing for a non-MTBC organism. The correction itself takes minutes on one genome. What dominates the first run is setup: pulling a 12 GB image and building the eggNOG database, both of which "
+"text": "Every command spelled out, nothing assumed. It uses a real genome you can download in one line, so you can follow along and compare your numbers against the ones printed here. Those numbers come from actual runs of these commands, not from memory, made on 18 October 2026 with AMAP at commit 947a99d. The runs skipped eggNOG, with --skip_functional_annotation. None of the numbers depends on it, and the one table shown here that is written after it was made by hand from the same run, as the sample check explains. The genome is Mycobacterium tuberculosis CDC1551, corrected against the H37Rv refere"
 },
 {
 "page": "Tutorial",
@@ -40,7 +40,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Tutorial",
 "section": "5. Validate before committing to a long run",
 "url": "getting-started/tutorial.html#5-validate-before-committing-to-a-long-run",
-"text": "nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv --validate_only --- FASTA Validation (1 samples) ---  ============================================================ Results: 1 OK, 0 warnings, 0 failed Total: 0 error(s), 0 warning(s) ============================================================    ✓ PASSED — all 1 samples look good This costs seconds and catches the mistakes that would otherwise surface twenty minutes in. Preparing inputs lists every check and its threshold."
+"text": "nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv --validate_only The checks write their verdict to results/pipeline_info/validation.log, which ends: tail -n 8 results/pipeline_info/validation.log --- FASTA Validation (1 samples) ---  ============================================================ Results: 1 OK, 0 warnings, 0 failed Total: 0 error(s), 0 warning(s) ============================================================    ✓ PASSED — all 1 samples look good This costs seconds and catches the mistakes that would otherwise surface minutes in. Preparing inputs lists eve"
 },
 {
 "page": "Tutorial",
@@ -52,19 +52,19 @@ window.AMAP_DOCS_INDEX = [
 "page": "Tutorial",
 "section": "7. Look at what came out",
 "url": "getting-started/tutorial.html#7-look-at-what-came-out",
-"text": "ls results/ AMAP/  BAKTA/  CDS_CASES/  DUPLICATIONS/  PANGENE/  PATHOTYPR/ pipeline_info/  final_report.html Open results/final_report.html first. It is self-contained, so it travels by email."
+"text": "ls -F results/ AMAP/  BAKTA/  CDS_CASES/  DUPLICATIONS/  PANGENE/  PATHOTYPR/ amap_report.html  final_report.html  pipeline_info/ A run without eggNOG, like the ones behind this page, has no DUPLICATIONS/, PANGENE/ or final_report.html. Open results/final_report.html first. It is self-contained, so it travels by email. results/amap_report.html goes through the same run question by question, and a run without eggNOG still gets it."
 },
 {
 "page": "Tutorial",
 "section": "Did the correction do anything?",
 "url": "getting-started/tutorial.html#did-the-correction-do-anything",
-"text": "column -t -s$'\\t' results/CDS_CASES/summary/*-summary.tsv Type           Number case2          2816     coordinates matched the reference exactly case3            24     coordinates matched, alignment length differed case4          1097     overlapped the reference but disagreed, resolved case1_initial   141     Bakta called it, the reference has nothing t Read that as: of 4077 Bakta calls, 2816 already agreed with the reference, 1097 had to be adjudicated, and 97 reference genes Bakta had missed were rescued. Only 11 of the 141 apparently novel genes survived scrutiny, which is what you would"
+"text": "column -t -s$'\\t' results/CDS_CASES/summary/*-summary.tsv Type           Number case2          2813     coordinates matched the reference exactly case3            24     coordinates matched, alignment length differed case4          1100     overlapped the reference but disagreed, resolved case1_initial   141     Bakta called it, the reference has nothing t Read that as: of 4077 Bakta calls, 2813 already agreed with the reference, 1100 had to be adjudicated, and 97 reference genes Bakta had missed were rescued. Only 11 of the 141 apparently novel genes survived scrutiny, which is what you would"
 },
 {
 "page": "Tutorial",
 "section": "Sanity check the sample",
 "url": "getting-started/tutorial.html#sanity-check-the-sample",
-"text": "column -t -s$'\\t' results/AMAP//-AMAP.qc.tsv genome_size  n_contigs  gc_pct  total_cds  pseudogene_count  coding_density_pct 4403837      1          65.61   4020       13                91.5 65.6% GC and 91.5% coding density are what a healthy MTBC genome looks like. A number well outside that is worth investigating before trusting the rest."
+"text": "column -t -s$'\\t' results/AMAP//-AMAP.qc.tsv Six of its eleven columns: genome_size  n_contigs  gc_pct  total_cds  pseudogene_count  coding_density_pct 4403837      1          65.61   4014       123               91.3 65.6% GC and 91.3% coding density are what a healthy MTBC genome looks like. A number well outside that is worth investigating before trusting the rest. This table is written after eggNOG, so a run without it has none. The line above was made by running that step's own script, GET_OUTPUTS, on the corrected genes of the run behind this page, with an eggNOG table that has no rows. "
 },
 {
 "page": "Tutorial",
@@ -400,7 +400,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Outputs",
 "section": "What a healthy summary looks like",
 "url": "user-guide/outputs.html#what-a-healthy-summary-looks-like",
-"text": "Two real runs, to calibrate expectations. On the left, M. tuberculosis CDC1551 against the bundled H37Rv reference. On the right, E. coli O157:H7 Sakai against K-12 MG1655, using a custom reference. case2, exact match 2816 3325 case3, length differs 24 34 case4, resolved conflict 1097 537 case1_kept, genuinely novel 11 1356 rv_missing, rescued 97 102 total_cds before correction 4077 5367 The one number that differs by two orders of magnitude is case 1, and that is biology: CDC1551 is the same species as the reference so almost nothing is genuinely new, while O157:H7 carries prophages and the L"
+"text": "Two real runs, those of the tutorial, to calibrate expectations. On the left, M. tuberculosis CDC1551 against the bundled H37Rv reference. On the right, E. coli O157:H7 Sakai against K-12 MG1655, using a custom reference. case2, exact match 2813 3324 case3, length differs 24 31 case4, resolved conflict 1100 507 case1_kept, genuinely novel 11 1387 rv_missing, rescued 97 133 total_cds before correction 4077 5367 The one number that differs by two orders of magnitude is case 1, and that is biology: CDC1551 is the same species as the reference so almost nothing is genuinely new, while O157:H7 carr"
 },
 {
 "page": "Outputs",
@@ -574,7 +574,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Custom reference",
 "section": "What to expect from a real run",
 "url": "user-guide/custom-reference.html#what-to-expect-from-a-real-run",
-"text": "E. coli O157:H7 Sakai corrected against K-12 MG1655, both straight from RefSeq: reference proteins extracted from the K-12 GenBank   4318 CDS Bakta called on that same reference genome       4296 Bakta false positives derived from the difference     142  case2                                                3325 case3                                                  34 case4     The 142 are the automatically derived equivalent of the hand-curated MTBC false-positive list, and 1356 case 1 genes is what you would expect between two E. coli strains that genuinely differ. If your case 2 comes out a"
+"text": "E. coli O157:H7 Sakai corrected against K-12 MG1655, both straight from RefSeq, in the tutorial's run: reference proteins extracted from the K-12 GenBank   4318 CDS Bakta called on that same reference genome       4296 Bakta false positives derived from the difference     142  case2                                                3324 case3                                                  31 case4     The 142 are the automatically derived equivalent of the hand-curated MTBC false-positive list, and 1387 case 1 genes is what you would expect between two E. coli strains that genuinely differ. If "
 },
 {
 "page": "Custom reference",

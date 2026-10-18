@@ -66,8 +66,7 @@ results/
 │
 ├── PATHOTYPR/
 │   ├── typing/*_summary.tsv            # Lineage assignment
-│   ├── fastas/*.fasta                  # Genomes renamed by lineage
-│   └── renamed_fastas.tsv              # Original ID to lineage-based name
+│   └── fastas/*.fasta                  # Genomes renamed by lineage
 │
 ├── pipeline_info/
 │   ├── execution_report_*.html         # Nextflow execution report
@@ -181,8 +180,10 @@ searchable master-table explorer.
   renamed by lineage.
 
 `--skip_functional_annotation`
-: The run stops after correction. No `AMAP/`, `DUPLICATIONS/`, `PANGENE/` or
-  `final_report.html`. You still get `BAKTA/` and `CDS_CASES/`, including
+: The run stops after correction. No `DUPLICATIONS/`, `PANGENE/` or
+  `final_report.html`, and `AMAP/` holds only the corrected table and sequences,
+  `*.AMAP.tsv`, `*.AMAP.faa` and `*.AMAP.fna`, without the GFF3, the GenBank or
+  the master table. You still get `BAKTA/` and `CDS_CASES/`, including
   `*_corrected.tsv` with the corrected coordinates.
 
 `--skip_mycobrowser`

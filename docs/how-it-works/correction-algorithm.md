@@ -22,8 +22,8 @@ contigs as the FASTA and Miniprot do; by default it renames them `contig_N`.
 Miniprot needs a seed of several residues and enough score to report an
 alignment, which a protein of a few dozen residues rarely gives it: annotating
 *E. coli* K-12 with its own proteome, it placed none of 33 proteins of 8 to 29
-residues, and it put the ldr toxin b4665, 19 residues three of which differ
-from its neighbour's, on that neighbour only. Every protein without an exact,
+residues, and it put the toxin IbsC (b4665), 19 residues three of which differ
+from its neighbour IbsD's, on that neighbour only. Every protein without an exact,
 complete placement is looked for in the six-frame translation of the genome,
 preceded by a start codon and followed by a stop, and each exact copy found
 where Miniprot did not already place the protein becomes a complete placement.

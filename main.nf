@@ -26,6 +26,8 @@ params.outdir = 'results'
 params.eggnog_db = 'eggnog_db'
 params.help = false
 params.validate_only = false
+// Validation warnings stop the run too, not only its errors
+params.strict_validation = false
 params.skip_typing = false
 params.skip_functional_annotation = false
 params.genus = "Mycobacterium"
@@ -100,6 +102,7 @@ def helpMessage() {
     --bakta_db                  Path to the Bakta database directory. (Default: "${params.bakta_db}")
     --skip_mycobrowser          Skip Mycobrowser functional categories (for non-MTBC organisms). (Default: ${params.skip_mycobrowser})
     --validate_only             Run input validation only (no pipeline execution).
+    --strict_validation         Stop on validation warnings too, not only on errors. (Default: ${params.strict_validation})
     --max_cpus                  Maximum CPUs per process. (Default: ${params.max_cpus})
     --max_memory                Maximum memory per process. (Default: ${params.max_memory})
     --max_time                  Maximum time per process. (Default: ${params.max_time})
@@ -149,7 +152,7 @@ def runSummary() {
     │  Typing      : ${params.skip_typing ? '⏭  skipped' : '✓  Pathotypr'}
     │  Annotation  : ${params.skip_functional_annotation ? '⏭  skipped' : '✓  eggNOG + Bakta'}
     │  Mycobrowser : ${params.skip_mycobrowser ? '⏭  skipped' : '✓  enabled'}
-    │  Validate    : ${params.validate_only ? '🔍 only (dry run)' : '✓  pre-flight'}
+    │  Validate    : ${params.validate_only ? '🔍 only (dry run)' : '✓  pre-flight'}${params.strict_validation ? ', strict' : ''}
     ├─────────────────────────────────────────────────┤
     │  Max CPUs    : ${params.max_cpus}
     │  Max Memory  : ${params.max_memory}
@@ -371,6 +374,19 @@ workflow {
         fasta_ch = readSampleSheet()
     }
 
+    // The databases. One on the host is staged into every task that reads it,
+    // like any other input, so that a container sees it; otherwise the tasks
+    // get nothing and look for its path inside the container, where the Bakta
+    // default lives. Handed over as a path, that default would make Nextflow
+    // mount the host's missing /data/bakta_db over the container's own (see
+    // BUNDLED_REFERENCE).
+    bakta_db_ch = (params.bakta_db && file(params.bakta_db).exists()) ? channel.value(file(params.bakta_db)) : channel.value([])
+    // eggNOG's is checked only when it is used, by the path EGGNOG_DB builds it
+    // at (a relative one is relative to launchDir), and staged if it is there
+    // already: it need not be.
+    def eggnog_dir = (!params.skip_functional_annotation && params.eggnog_db) ? file(params.eggnog_db) : null
+    eggnog_db_check_ch = channel.value(eggnog_dir ? tuple(eggnog_dir.toString(), eggnog_dir.exists() ? eggnog_dir : []) : tuple('', []))
+
     // 0. Input validation and reproducibility, before anything else. The test
     // profile has no sample sheet to validate, only the reference genome the
     // container ships, so validating params.tsv would fail on a file that was
@@ -379,7 +395,9 @@ workflow {
     if (!params.test_data) {
         VALIDATE_INPUTS(
             Channel.value(file(params.tsv)),
-            fasta_ch.toList().map { rows -> tuple(rows.collect { row -> row[0] }, rows.collect { row -> row[1] }) }
+            fasta_ch.toList().map { rows -> tuple(rows.collect { row -> row[0] }, rows.collect { row -> row[1] }) },
+            bakta_db_ch,
+            eggnog_db_check_ch
         )
     }
     SOFTWARE_VERSIONS()
@@ -410,14 +428,15 @@ workflow {
         }
 
         // 3. Annotate genomes with Bakta
-        BAKTA_ANNOTATOR(typed_ch.combine(Channel.value(params.genus)).combine(Channel.value(params.species)))
+        BAKTA_ANNOTATOR(typed_ch.combine(Channel.value(params.genus)).combine(Channel.value(params.species)), bakta_db_ch)
 
         // 4. Prepare reference proteome (custom or default H37Rv)
         if (params.ref_annotation && params.ref_genome) {
             log.info "Using custom reference: ${params.ref_annotation} + ${params.ref_genome}"
             PREPARE_REFERENCE(
                 Channel.value(file(params.ref_annotation)),
-                Channel.value(file(params.ref_genome))
+                Channel.value(file(params.ref_genome)),
+                bakta_db_ch
             )
             ref_proteome_ch     = PREPARE_REFERENCE.out.ref_proteome
             ref_genome_fasta_ch = PREPARE_REFERENCE.out.ref_genome_fasta

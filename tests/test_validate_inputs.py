@@ -17,9 +17,17 @@ a task directory laid out the way Nextflow lays one out, so they also fail if
 modules/local/validation.nf goes back to opening the sheet's paths. A folder
 the task cannot see, as a container sees no folder Nextflow does not mount
 for it, is one that does not exist.
+
+The databases had the same blind spot. The eggNOG path, relative to where
+Nextflow was launched, was looked for in the task directory, and one that is
+not built yet, which EGGNOG_DB builds, was an error, so every run with
+functional annotation stopped at validation. A Bakta database on the host was
+"path does not exist", and the container's own drew a warning about a file no
+Bakta database has.
 """
 
 import io
+import json
 import os
 import re
 import subprocess
@@ -127,12 +135,12 @@ class TestGenomeTable:
 # ---------------------------------------------------------------------------
 
 def _module():
-    """VALIDATE_INPUTS's script block as Nextflow strips it, and the pattern its
-    genomes are staged with (None when it stages none)."""
+    """VALIDATE_INPUTS's script block as Nextflow strips it, and the stageAs
+    pattern of each input that has one, by name."""
     text = MODULE.read_text()
     script = re.search(r'^    script:\n.*?^    """\n(.*?)\n    """\n', text, re.S | re.M)
-    stage = re.search(r"path\(genomes, stageAs: '([^']+)'\)", text)
-    return textwrap.dedent(script.group(1)) + '\n', stage.group(1) if stage else None
+    stages = dict(re.findall(r"path[( ](\w+), stageAs: '([^']+)'", text))
+    return textwrap.dedent(script.group(1)) + '\n', stages
 
 
 def _render(script, values):
@@ -177,13 +185,31 @@ def _quoted(value):
     return "'" + str(value).replace("'", "'\\''") + "'"
 
 
-def _run_module(tmp_path, rows, sources):
+def _options(databases, strict):
+    """The options the module's Groovy writes: each database by the path given,
+    and where it is staged if it was, then --strict for --strict_validation."""
+    options = []
+    for name in ('bakta', 'eggnog'):
+        if name in databases:
+            given, staged = databases[name]
+            options.append(f'--{name}-db {_quoted(given)}')
+            if staged:
+                options.append(f'--{name}-db-staged {_quoted(staged)}')
+    if strict:
+        options.append('--strict')
+    return ' '.join(options)
+
+
+def _run_module(tmp_path, rows, sources, databases=None, strict=False):
     """Run VALIDATE_INPUTS's script in a task directory under the launch
     folder's work/, the sheet and each genome staged as a link the way
     Nextflow stages them. `rows` is the sheet, (sampleId, path as written);
     `sources` the genome each row's path stands for, which the task reaches
-    only where the module stages it. (exit code, the log, task directory)."""
-    script, stage = _module()
+    only where the module stages it. `databases` maps bakta and eggnog to
+    (path given, the database on the host or None), staged likewise.
+    (exit code, the log, task directory)."""
+    script, stages = _module()
+    stage = stages.get('genomes')
     launch = tmp_path / 'runs' / 'after'
     sheet = _sheet(launch / 'samples.tsv', rows)
     work = launch / 'work' / 'ab' / 'cdef0123'
@@ -198,6 +224,16 @@ def _run_module(tmp_path, rows, sources):
             staged.symlink_to(source)
             genome_rows.append(f'{_quoted(sample)} {_quoted(staged.relative_to(work).as_posix())}')
 
+    staged_databases = {}
+    for name, (given, source) in (databases or {}).items():
+        staged = None
+        if source is not None and stages.get(f'{name}_db'):
+            staged = work / _staged_name(stages[f'{name}_db'], 1, source.name)
+            staged.parent.mkdir(parents=True, exist_ok=True)
+            staged.symlink_to(source)
+            staged = staged.relative_to(work).as_posix()
+        staged_databases[name] = (given, staged)
+
     tools = tmp_path / 'tools'
     tools.mkdir()
     (tools / 'python3').write_text(f'#!/bin/bash\nexec "{sys.executable}" "$@"\n')
@@ -206,8 +242,10 @@ def _run_module(tmp_path, rows, sources):
     rendered = _render(script, {
         'tsv_file': sheet.name,
         'genome_rows': ' '.join(genome_rows),
-        'bakta_arg': '',
-        'eggnog_arg': '',
+        "options.join(' ')": _options(staged_databases, strict),
+        # What the module wrote before it staged the databases
+        'bakta_arg': f"--bakta-db {_quoted(databases['bakta'][0])}" if 'bakta' in (databases or {}) else '',
+        'eggnog_arg': f"--eggnog-db {_quoted(databases['eggnog'][0])}" if 'eggnog' in (databases or {}) else '',
         'projectDir': str(ROOT),
     })
     (work / '.command.sh').write_text(rendered)
@@ -294,6 +332,176 @@ class TestModule:
 
     def test_module_stages_the_genomes_one_directory_each(self):
         # Without a directory each, two genomes called genome.fasta collide
-        _, stage = _module()
+        stage = _module()[1].get('genomes')
         assert stage is not None, 'VALIDATE_INPUTS does not stage the genomes'
         assert _staged_name(stage, 1, 'genome.fasta') != _staged_name(stage, 2, 'genome.fasta')
+
+
+# ---------------------------------------------------------------------------
+# The databases
+# ---------------------------------------------------------------------------
+
+LIGHT = {'date': '2025-02-24', 'major': 6, 'minor': 0, 'type': 'light',
+         'software-min': {'major': 1, 'minor': 11}}
+
+
+def _bakta_db(path, files=('bakta.db', 'pfam.h3f', 'pscc.dmnd')):
+    """A stand-in for a Bakta database, laid out as the container's light one:
+    version.json and some of its files, all empty."""
+    path.mkdir(parents=True)
+    (path / 'version.json').write_text(json.dumps(LIGHT))
+    for name in files:
+        (path / name).write_text('')
+    return path
+
+
+def _eggnog_db(path, dmnd_bytes=None, annotations=True, built=True):
+    """A stand-in for eggNOG's database: bacteria.dmnd of that many bytes (a
+    sparse file, so the real size costs nothing), eggnog.db and the
+    eggnog_db.ok that EGGNOG_DB's storeDir leaves."""
+    path.mkdir(parents=True)
+    if dmnd_bytes is not None:
+        with open(path / 'bacteria.dmnd', 'wb') as f:
+            f.truncate(dmnd_bytes)
+    if annotations:
+        (path / 'eggnog.db').write_text('')
+    if built:
+        (path / 'eggnog_db.ok').write_text('')
+    return path
+
+
+BUILT = 100_000_001
+
+
+def _check(tmp_path, *args):
+    """validate_inputs.py on a sheet whose genome passes, with these options."""
+    _write(tmp_path / 'G1.fasta', _genome())
+    _sheet(tmp_path / 'samples.tsv', [('G1', 'G1.fasta')])
+    return _validate(tmp_path, '--tsv', 'samples.tsv', *args)
+
+
+class TestBaktaDb:
+
+    def test_the_container_database_passes_without_a_warning(self, tmp_path):
+        # Its files are bakta.db and version.json; no Bakta database has a
+        # db.sqlite3, which drew a warning on every run
+        db = _bakta_db(tmp_path / 'db-light')
+        code, out = _check(tmp_path, '--bakta-db', str(db))
+        assert code == 0, out
+        assert f'✓ Bakta DB: {db} (light 6.0)' in out
+        assert '⚠' not in out
+
+    def test_one_on_the_host_is_read_where_staged(self, tmp_path):
+        on_host = _unseen(tmp_path, 'db-light')
+        _bakta_db(tmp_path / 'bakta-db' / 'db-light')
+        code, out = _check(tmp_path, '--bakta-db', on_host, '--bakta-db-staged', 'bakta-db/db-light')
+        assert code == 0, out
+        assert f'✓ Bakta DB: {on_host} (light 6.0)' in out
+
+    def test_one_that_is_not_there_stops_the_run(self, tmp_path):
+        on_host = _unseen(tmp_path, 'db-light')
+        code, out = _check(tmp_path, '--bakta-db', on_host)
+        assert code == 2
+        assert f'Bakta DB not found: {on_host}' in out
+
+    def test_a_folder_that_is_not_a_bakta_database_stops_the_run(self, tmp_path):
+        (tmp_path / 'genomes').mkdir()
+        code, out = _check(tmp_path, '--bakta-db', str(tmp_path / 'genomes'))
+        assert code == 2
+        assert 'has no version.json, so it is not a Bakta database' in out
+
+    def test_the_folder_it_was_downloaded_to_points_at_the_one_inside(self, tmp_path):
+        _bakta_db(tmp_path / 'bakta_db' / 'db-light')
+        code, out = _check(tmp_path, '--bakta-db', str(tmp_path / 'bakta_db'))
+        assert code == 2
+        assert f"point --bakta_db at {tmp_path / 'bakta_db' / 'db-light'}" in out
+
+    def test_one_without_bakta_db_stops_the_run(self, tmp_path):
+        db = _bakta_db(tmp_path / 'db-light', files=('pfam.h3f',))
+        code, out = _check(tmp_path, '--bakta-db', str(db))
+        assert code == 2
+        assert f'Bakta DB: {db} has no bakta.db' in out
+
+
+class TestEggnogDb:
+
+    def test_one_not_built_yet_is_no_error(self, tmp_path):
+        # EGGNOG_DB builds it, so a first run must get past validation
+        on_host = _unseen(tmp_path, 'eggnog_db')
+        code, out = _check(tmp_path, '--eggnog-db', on_host)
+        assert code == 0, out
+        assert f'✓ eggNOG DB: {on_host} (not built yet: EGGNOG_DB will download and build it' in out
+
+    def test_a_built_one_is_read_where_staged(self, tmp_path):
+        on_host = _unseen(tmp_path, 'eggnog_db')
+        _eggnog_db(tmp_path / 'eggnog-db' / 'eggnog_db', dmnd_bytes=BUILT)
+        code, out = _check(tmp_path, '--eggnog-db', on_host, '--eggnog-db-staged', 'eggnog-db/eggnog_db')
+        assert code == 0, out
+        assert f'✓ eggNOG DB: {on_host}\n' in out
+        assert '⚠' not in out
+
+    def test_eggnog_db_ok_with_nothing_built_stops_the_run(self, tmp_path):
+        # What EGGNOG_DB leaves on the host under Docker: Nextflow will never
+        # run it again, and eggNOG-mapper would find no database
+        db = _eggnog_db(tmp_path / 'eggnog_db', annotations=False)
+        code, out = _check(tmp_path, '--eggnog-db', str(db))
+        assert code == 2
+        assert ('has eggnog_db.ok, so EGGNOG_DB will not run again, but there is no '
+                'bacteria.dmnd; delete eggnog_db.ok to have it built again') in out
+
+    def test_a_short_bacteria_dmnd_is_built_again(self, tmp_path):
+        db = _eggnog_db(tmp_path / 'eggnog_db', dmnd_bytes=1000, built=False)
+        code, out = _check(tmp_path, '--eggnog-db', str(db))
+        assert code == 0, out
+        assert ('bacteria.dmnd in {} is only 1,000 bytes; EGGNOG_DB will take it for a '
+                'truncated download and build it again').format(db) in out
+
+    def test_a_short_bacteria_dmnd_under_eggnog_db_ok_stops_the_run(self, tmp_path):
+        db = _eggnog_db(tmp_path / 'eggnog_db', dmnd_bytes=1000)
+        code, out = _check(tmp_path, '--eggnog-db', str(db))
+        assert code == 2
+        assert 'but bacteria.dmnd is only 1,000 bytes; delete eggnog_db.ok to have it built again' in out
+
+    def test_no_eggnog_db_stops_the_run(self, tmp_path):
+        db = _eggnog_db(tmp_path / 'eggnog_db', dmnd_bytes=BUILT, annotations=False, built=False)
+        code, out = _check(tmp_path, '--eggnog-db', str(db))
+        assert code == 2
+        assert 'has no eggnog.db, which eggNOG-mapper needs' in out
+        assert 'delete bacteria.dmnd to have it built again' in out
+
+    def test_the_size_it_takes_for_truncated_is_eggnog_dbs(self):
+        from validate_inputs import EGGNOG_DMND_MIN_BYTES
+        text = (ROOT / 'modules' / 'local' / 'eggnog.nf').read_text()
+        assert re.findall(r'"\\\$DB_SIZE" -lt (\d+)', text) == [str(EGGNOG_DMND_MIN_BYTES)]
+
+
+class TestModuleDatabases:
+
+    def test_module_stages_each_database_in_a_folder_of_its_own(self):
+        stages = _module()[1]
+        assert stages.get('bakta_db') and stages.get('eggnog_db'), \
+            'VALIDATE_INPUTS does not stage the databases'
+        names = {_staged_name(stages[n], 1, 'db') for n in ('bakta_db', 'eggnog_db')}
+        assert len(names) == 2 and not any(n == 'db' for n in names)
+
+    def test_databases_on_the_host_are_read_where_staged(self, tmp_path):
+        sources = [_write(tmp_path / 'store' / 'G1.fasta', _genome())]
+        rows = [('G1', _unseen(tmp_path, 'G1.fasta'))]
+        bakta = _unseen(tmp_path, 'db-light')
+        eggnog = _unseen(tmp_path, 'eggnog_db')
+        databases = {'bakta': (bakta, _bakta_db(tmp_path / 'store' / 'db-light')),
+                     'eggnog': (eggnog, _eggnog_db(tmp_path / 'store' / 'eggnog_db', dmnd_bytes=BUILT))}
+        code, log, _ = _run_module(tmp_path, rows, sources, databases)
+        assert f'✓ Bakta DB: {bakta} (light 6.0)' in log
+        assert f'✓ eggNOG DB: {eggnog}\n' in log
+        assert code == 0
+
+    def test_strict_validation_stops_on_a_warning(self, tmp_path):
+        # Under 500 kb a genome passes with a warning
+        sources = [_write(tmp_path / 'store' / 'G1.fasta', _genome(110_000))]
+        rows = [('G1', _unseen(tmp_path, 'G1.fasta'))]
+        code, log, _ = _run_module(tmp_path, rows, sources)
+        assert code == 0
+        code, log, _ = _run_module(tmp_path / 'strict', rows, sources, strict=True)
+        assert code == 1
+        assert 'FAILED (strict mode): 1 warning(s)' in log

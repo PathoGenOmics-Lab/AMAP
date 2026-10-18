@@ -12,10 +12,13 @@ Each protein header includes the gene coordinates for downstream reconciliation:
 """
 
 import argparse
+import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 from Bio import SeqIO
 from Bio.Seq import Seq
+from Bio.SeqUtils import seq1
 
 
 def append_stop_codon(translation, start, end):
@@ -87,60 +90,114 @@ def extract_from_genbank(gbk_path, output_faa):
     return len(proteins)
 
 
-def extract_from_gff3(gff_path, fasta_path, output_faa):
-    """Extract CDS translations from a GFF3 file + FASTA genome."""
-    # Load genome
-    genome = SeqIO.to_dict(SeqIO.parse(fasta_path, "fasta"))
+# Shorter proteins say too little to be placed on sequence identity alone; the
+# same floor as the exact search in classify/exact.py.
+MIN_RESIDUES = 8
 
-    proteins = []
+
+def _gff3_cds(gff_path):
+    """The CDS of a GFF3 file, one per ID, with all the lines that share it.
+
+    A CDS can take several lines: a join across an insertion, or a programmed
+    frameshift such as prfB's. Lines without an ID fall back on their Parent,
+    and on being their own CDS.
+    """
+    cds, order = {}, []
     with open(gff_path) as f:
-        for line in f:
-            if line.startswith("#") or line.startswith("##FASTA"):
-                if line.startswith("##FASTA"):
-                    break  # Stop at embedded FASTA
+        for n, line in enumerate(f):
+            if line.startswith("##FASTA"):
+                break  # Stop at embedded FASTA
+            if line.startswith("#"):
                 continue
-            parts = line.strip().split('\t')
-            if len(parts) < 9:
+            parts = line.rstrip("\n").split('\t')
+            if len(parts) < 9 or parts[2] != "CDS":
                 continue
-            if parts[2] != "CDS":
-                continue
-
-            seq_id = parts[0]
-            start = int(parts[3])       # GFF3 is 1-based
-            end = int(parts[4])
-            strand = parts[6]
-
-            # Parse attributes
             attrs = {}
             for attr in parts[8].split(';'):
                 if '=' in attr:
                     k, v = attr.split('=', 1)
                     attrs[k.strip()] = v.strip()
+            key = (parts[0], attrs.get("ID") or attrs.get("Parent") or f"line {n}")
+            if key not in cds:
+                cds[key] = {"seq_id": parts[0], "strand": parts[6], "attrs": attrs, "segments": []}
+                order.append(key)
+            phase = int(parts[7]) if parts[7].isdigit() else 0
+            cds[key]["segments"].append((int(parts[3]), int(parts[4]), phase))  # GFF3 is 1-based
+    return [cds[k] for k in order]
 
-            gene_id = (
-                attrs.get("locus_tag") or
-                attrs.get("ID") or
-                attrs.get("gene") or
-                attrs.get("Name")
-            )
-            if not gene_id or seq_id not in genome:
-                continue
 
-            # Extract sequence
-            seq = genome[seq_id].seq[start - 1:end]
-            if strand == "-":
-                seq = seq.reverse_complement()
+def _exceptions(attrs, segments, strand, phase):
+    """Residues the annotation reads differently from the code, by codon:
+    transl_except=(pos:1547986..1547988,aa:Sec) is the selenocysteine of
+    E. coli fdoG, read through a UGA that is otherwise a stop."""
+    out = {}
+    value = unquote(attrs.get("transl_except", ""))
+    for m in re.finditer(r"pos:(complement\()?(\d+)\.\.(\d+)\)?,aa:(\w+)", value):
+        lo, hi, aa = int(m.group(2)), int(m.group(3)), seq1(m.group(4))
+        if not aa or aa == "X":
+            continue
+        offset = 0
+        for s, e, _ in (segments if strand != "-" else sorted(segments, key=lambda x: -x[1])):
+            if s <= (lo if strand != "-" else hi) <= e:
+                offset += (lo - s) if strand != "-" else (e - hi)
+                break
+            offset += e - s + 1
+        out[(offset - phase) // 3] = aa
+    return out
 
-            try:
-                translation = str(seq.translate(to_stop=True))
-            except Exception:
-                continue
 
-            translation = append_stop_codon(translation, start, end)
+def extract_from_gff3(gff_path, fasta_path, output_faa):
+    """Extract CDS translations from a GFF3 file + FASTA genome.
 
-            if translation and len(translation) > 10:  # Skip tiny fragments
-                header = f"{gene_id}_{start}-{end}"
-                proteins.append((header, translation))
+    Each line used to be translated on its own, which cut a CDS of several
+    lines into fragments, and everything under 11 residues was dropped to hide
+    them, taking small proteins with it (E. coli has some of 8 and 9). The
+    lines of a CDS are now joined, as GenBank's join() is, and the protein
+    translated from the whole, with the bacterial code, so that a GTG or TTG
+    start reads as the methionine the GenBank /translation gives.
+    """
+    genome = SeqIO.to_dict(SeqIO.parse(fasta_path, "fasta"))
+
+    proteins = []
+    for c in _gff3_cds(gff_path):
+        attrs = c["attrs"]
+        gene_id = (
+            attrs.get("locus_tag") or
+            attrs.get("ID") or
+            attrs.get("gene") or
+            attrs.get("Name")
+        )
+        if not gene_id or c["seq_id"] not in genome:
+            continue
+
+        segments = sorted(c["segments"])
+        seq = Seq("".join(str(genome[c["seq_id"]].seq[s - 1:e]) for s, e, _ in segments))
+        first = segments[-1] if c["strand"] == "-" else segments[0]
+        if c["strand"] == "-":
+            seq = seq.reverse_complement()
+        seq = seq[first[2]:]
+
+        exceptions = _exceptions(attrs, segments, c["strand"], first[2])
+        try:
+            if exceptions:
+                raise ValueError("translated codon by codon below")
+            translation = str(seq.translate(table=11, cds=True))
+        except Exception:
+            # Not a clean CDS (a frameshift, a partial gene, a selenocysteine):
+            # codon by codon, with the annotation's exceptions, to the first stop.
+            aa = list(str(seq[:len(seq) - len(seq) % 3].translate(table=11)))
+            for i, residue in exceptions.items():
+                if 0 <= i < len(aa):
+                    aa[i] = residue
+            if exceptions and aa and str(seq[:3]).upper() in ("GTG", "TTG", "CTG", "ATT", "ATC", "ATA"):
+                aa[0] = "M"
+            translation = "".join(aa).split("*")[0]
+
+        start, end = segments[0][0], max(e for _, e, _ in segments)
+        translation = append_stop_codon(translation, start, end)
+
+        if len(translation.rstrip('*')) >= MIN_RESIDUES:
+            proteins.append((f"{gene_id}_{start}-{end}", translation))
 
     with open(output_faa, 'w') as f:
         for header, seq in proteins:

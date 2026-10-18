@@ -46,8 +46,11 @@ paralog step reads them back to predict where each protein belongs in the
 sample, which tells its own locus from a paralog's, so the header format
 matters. From GenBank the existing
 `/translation` qualifier is used when present, otherwise the sequence is
-extracted and translated. From GFF3 everything is translated from the genome,
-and fragments under 10 amino acids are dropped.
+extracted and translated. From GFF3 the lines of each CDS are joined first, as
+GenBank's `join()` is, and translated with the bacterial code, reading
+`transl_except` (a selenocysteine) where it is given; on E. coli K-12 the two
+formats give the same 4318 proteins. A GFF3 protein under 8 amino acids is
+left out.
 
 The gene ID comes from `locus_tag`, then `gene`, then `protein_id` for GenBank;
 `locus_tag`, `ID`, `gene`, then `Name` for GFF3. A CDS with none of these is

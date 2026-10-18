@@ -560,6 +560,61 @@ class TestAppendStopCodon:
         assert append_stop_codon('', 1, 36) == ''
 
 
+class TestGff3Proteome:
+    """A reference given as GFF3 must give the proteins its GenBank gives:
+    E. coli K-12's GFF3 now yields all 4318, identical, where each line was
+    translated on its own and 24 went missing."""
+
+    FILL = "GCA" * 10
+
+    def test_proteins_come_out_whole(self):
+        """A CDS of two lines is one protein, a protein of 8 residues is kept,
+        a GTG start reads as M, a selenocysteine is read through its UGA, and
+        on the minus strand the phase that counts is that of the 5' line, the
+        one with the highest coordinates."""
+        from extract_ref_proteins import extract_from_gff3
+        from Bio.Seq import Seq
+        a1, gap, a2 = "ATG" + "GCT" * 5, "C" * 12, "GCT" * 5 + "TAA"
+        b = str(Seq("ATG" + "AAA" * 7 + "TAA").reverse_complement())
+        c = "GTG" + "GCT" * 9 + "TAG"
+        d = "ATG" + "GCT" * 4 + "TGA" + "GCT" * 4 + "TAA"
+        e5 = "G" + "ATG" + "CCC" * 4                      # 5' line, one base before the start
+        e3 = "CCC" * 4 + "TAA"
+        e_hi, e_lo = str(Seq(e5).reverse_complement()), str(Seq(e3).reverse_complement())
+        genome = (self.FILL + a1 + gap + a2 + self.FILL + b + self.FILL + c + self.FILL
+                  + d + self.FILL + e_lo + gap + e_hi + self.FILL)
+        pos = {}
+        cursor = 0
+        for name, piece in (("a1", a1), ("a2", a2), ("b", b), ("c", c), ("d", d),
+                            ("e_lo", e_lo), ("e_hi", e_hi)):
+            cursor = genome.index(piece, cursor)
+            pos[name] = (cursor + 1, cursor + len(piece))
+            cursor += len(piece)
+        sec = pos["d"][0] + 15
+        lines = [("a1", "+", 0, "ID=cds-A;locus_tag=gA"), ("a2", "+", 0, "ID=cds-A;locus_tag=gA"),
+                 ("b", "-", 0, "ID=cds-B;locus_tag=gB"), ("c", "+", 0, "ID=cds-C;locus_tag=gC"),
+                 ("d", "+", 0, f"ID=cds-D;locus_tag=gD;transl_except=(pos:{sec}..{sec + 2}%2Caa:Sec)"),
+                 ("e_lo", "-", 0, "ID=cds-E;locus_tag=gE"), ("e_hi", "-", 1, "ID=cds-E;locus_tag=gE")]
+        with tempfile.TemporaryDirectory() as d_:
+            fasta, gff, out = (os.path.join(d_, n) for n in ("g.fasta", "g.gff3", "p.faa"))
+            with open(fasta, "w") as f:
+                f.write(">chr1\n" + genome + "\n")
+            with open(gff, "w") as f:
+                f.write("##gff-version 3\n")
+                for piece, strand, phase, attrs in lines:
+                    f.write(f"chr1\t.\tCDS\t{pos[piece][0]}\t{pos[piece][1]}\t.\t{strand}\t{phase}\t{attrs}\n")
+            extract_from_gff3(gff, fasta, out)
+            with open(out) as f:
+                got = dict(zip(*[iter(l.strip().lstrip(">") for l in f)] * 2))
+        assert got == {
+            f"gA_{pos['a1'][0]}-{pos['a2'][1]}": "M" + "A" * 10,
+            f"gB_{pos['b'][0]}-{pos['b'][1]}": "M" + "K" * 7 + "*",
+            f"gC_{pos['c'][0]}-{pos['c'][1]}": "M" + "A" * 9 + "*",
+            f"gD_{pos['d'][0]}-{pos['d'][1]}": "MAAAAUAAAA*",
+            f"gE_{pos['e_lo'][0]}-{pos['e_hi'][1]}": "M" + "P" * 8,
+        }
+
+
 # =============================================================================
 # CHECK CDS TESTS
 # =============================================================================

@@ -103,12 +103,12 @@ if [ ! -s "$E/custom_ref_bad_bakta.faa" ]; then
         python3 "$REPO/bin/extract_ref_proteins.py" --ref-annotation k12.gbff \
             --ref-genome k12.fna --prefix custom_ref
         T=$(mktemp -d)
-        bakta --db "$BAKTA_DB" --skip-trna --threads "$THREADS" --genus Escherichia \
-            --species "Escherichia coli" --force --output bakta_ref --prefix bakta_ref \
-            --locus-tag bakta_ref --tmp-dir "$T" k12.fna
+        bakta --db "$BAKTA_DB" --keep-contig-headers --skip-trna --threads "$THREADS" \
+            --genus Escherichia --species "Escherichia coli" --force --output bakta_ref \
+            --prefix bakta_ref --locus-tag bakta_ref --tmp-dir "$T" k12.fna
         python3 "$REPO/bin/find_bakta_false_positives.py" --bakta-tsv bakta_ref/bakta_ref.tsv \
             --curated-faa custom_ref_ref_proteins.faa --bakta-faa bakta_ref/bakta_ref.faa \
-            --prefix custom_ref
+            --ref-genome k12.fna --prefix custom_ref
     ) > "$E/prepare_reference.log" 2>&1
 fi
 

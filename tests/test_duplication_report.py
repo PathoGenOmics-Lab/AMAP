@@ -138,11 +138,7 @@ def write_eggnog(path, categories):
 @pytest.fixture(scope='module')
 def communities(tmp_path_factory, tools):
     """GET_ALLDUP's homologous_communities.tsv, as text, for SAMPLES."""
-    with pytest.MonkeyPatch.context() as mp:
-        # Both scripts write their network with pyvis' show(), which opens it
-        # in a web browser wherever there is one
-        mp.setenv('BROWSER', 'true')
-        return _run_duplications(tmp_path_factory.mktemp('duplications'), tools)
+    return _run_duplications(tmp_path_factory.mktemp('duplications'), tools)
 
 
 def _run_duplications(base, tools):

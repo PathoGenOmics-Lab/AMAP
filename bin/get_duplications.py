@@ -53,11 +53,20 @@ def group_related_pairs(df):
     group_data = []
 
     for i, component in enumerate(components):
-        group_data.append({'Group': i, 'Members': list(component)})
+        # In alphabetical order: a set's order changes with Python's hash
+        # seed from one run to the next
+        group_data.append({'Group': i, 'Members': sorted(component)})
 
     df_groups = pd.DataFrame(group_data)
     df_groups['Length'] = df_groups['Members'].apply(len)
     return df_groups
+
+def in_order(graph):
+    """A copy of a graph with its nodes, and its links, in alphabetical order."""
+    ordered = nx.Graph()
+    ordered.add_nodes_from(sorted(graph))
+    ordered.add_edges_from(sorted(tuple(sorted(edge)) for edge in graph.edges()))
+    return ordered
 
 def plot_network(df, output_filename):
     G = nx.Graph()
@@ -94,8 +103,11 @@ def plot_network(df, output_filename):
         ax.set_visible(False)
     
     for i, nodes in enumerate(clusters):
-        subgraph = G.subgraph(nodes)
-        pos = nx.spring_layout(subgraph, k=0.15, iterations=50)
+        # The cluster's genes in alphabetical order, laid out from a fixed
+        # seed: G.subgraph() goes through a few nodes in the order of their
+        # set, and spring_layout started from random places every run
+        subgraph = in_order(G.subgraph(nodes))
+        pos = nx.spring_layout(subgraph, k=0.15, iterations=50, seed=42)
         ax = axes[i]
         nx.draw_networkx(subgraph, pos, ax=ax, with_labels=True, node_size=100, node_color='lightblue', edge_color='gray', font_size=8)
         ax.set_title(f'Cluster {i+1}', size=15)
@@ -116,8 +128,9 @@ def plot_network2(df, output_filename):
     for idx, row in df.iterrows():
         G.add_edge(row['qseqid'], row['sseqid'])
 
-    # Compute the best partition (community detection)
-    partition = community_louvain.best_partition(G)
+    # Compute the best partition (community detection), from a fixed seed:
+    # the communities, and so the colours, changed from one run to the next
+    partition = community_louvain.best_partition(G, random_state=42)
 
     # Generate unique colors for each partition
     n_clusters = len(set(partition.values()))
@@ -156,7 +169,8 @@ def plot_network2(df, output_filename):
     }
     """)
 
-    net.show(output_filename, notebook=False)
+    # Written, not shown: show() also opens the file in a web browser
+    net.write_html(output_filename)
 
 def main():
     parser = argparse.ArgumentParser(description="Read blast and generate cluster of duplications")
@@ -177,7 +191,7 @@ def main():
         plt.close()
         # Create empty interactive plot
         net = Network(height='1080px', width='100%', bgcolor='#FFFFFF')
-        net.show(args.file + "_network_interactive.html", notebook=False)
+        net.write_html(args.file + "_network_interactive.html")
         return
 
     df_with_groups = group_related_pairs(df)

@@ -3,7 +3,9 @@ process GET_DUPLICATIONS {
     // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
     ext code: { files("${projectDir}/bin/{rename_fastas.py,get_duplications.py,dup_ex_multifasta.py}") }
 
-    publishDir "${params.outdir}/DUPLICATIONS/${sampleId}",
+    // Per-sample paths are closures: the strict parser evaluates publishDir once,
+    // when the process is defined, so ${sampleId} has to wait for each task.
+    publishDir path: { "${params.outdir}/DUPLICATIONS/${sampleId}" },
            mode: 'link', overwrite: true,
            pattern: "duplications*"                  
 
@@ -47,7 +49,7 @@ process GET_OUTPUTS {
     // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
     ext code: { files("${projectDir}/bin/{generate_tsv_gff_gbk.py,to_panaroo.py,export_clean_proteome.py,annotation_qc.py,classify/*.py}") }
 
-    publishDir "${params.outdir}/AMAP/${sampleId}",
+    publishDir path: { "${params.outdir}/AMAP/${sampleId}" },
                mode: 'link', overwrite: true,
                pattern: "*AMAP*"
 
@@ -133,7 +135,7 @@ process GET_COUNT {
     // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
     ext code: { files("${projectDir}/bin/count_annot.py") }
 
-    publishDir "${params.outdir}/AMAP/${sampleId}",
+    publishDir path: { "${params.outdir}/AMAP/${sampleId}" },
                mode: 'link', overwrite: true,
                pattern: "*-AMAP.*.tsv"
 

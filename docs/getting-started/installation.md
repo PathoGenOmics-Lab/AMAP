@@ -26,7 +26,7 @@ If you do not have Conda, [Miniconda](https://docs.conda.io/en/latest/miniconda.
 is a lightweight installer. Any other Nextflow installation works equally well,
 see the [Nextflow documentation](https://www.nextflow.io/docs/latest/getstarted.html).
 
-AMAP requires Nextflow 23.04 or newer, which is enforced by the pipeline
+AMAP requires Nextflow 24.04 or newer, which is enforced by the pipeline
 manifest.
 
 ## 2. A container engine

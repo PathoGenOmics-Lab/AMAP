@@ -71,8 +71,14 @@ cluster. Skipped entirely under `--skip_functional_annotation`.
 
 [pathotypr](https://github.com/PathoGenOmics-Lab/pathotypr) assigns each genome
 to an MTBC lineage using phylogenetic marker SNPs, and the genomes are renamed
-accordingly (`L4_G26689`). That prefix carries through every downstream file and
-is what lets the report group results by lineage.
+after their sample ID with the lineage in front (`L4_G26689` for sample
+`G26689`). That prefix carries through every downstream file and is what lets
+the report group results by lineage.
+
+pathotypr types each contig of a draft on its own, and the lineage of the draft
+is the one the markers of all its contigs add up to. A genome of one sequence
+has that sequence renamed after the sample; the contigs of a draft keep their
+names. A genome with no lineage markers at all is named `NA_G26689`.
 
 MTBC-specific. Turn it off with `--skip_typing` for anything else, and sample
 IDs stay as you wrote them.

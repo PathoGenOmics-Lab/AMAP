@@ -1,0 +1,9 @@
+Type	Number	Sequence	Lineage	Sample
+case2	106	A4_AF2122	A4	AF2122
+case3	1	A4_AF2122	A4	AF2122
+case4	51	A4_AF2122	A4	AF2122
+case1_initial	4	A4_AF2122	A4	AF2122
+rv_missing	5	A4_AF2122	A4	AF2122
+total_cds	162	A4_AF2122	A4	AF2122
+case1_removed	4	A4_AF2122	A4	AF2122
+case1_kept	0	A4_AF2122	A4	AF2122

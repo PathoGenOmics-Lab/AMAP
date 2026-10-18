@@ -1,0 +1,9 @@
+Type	Number	Sequence	Lineage	Sample
+case2	133	L4_CDC1551draft	L4	CDC1551draft
+case3	3	L4_CDC1551draft	L4	CDC1551draft
+case4	60	L4_CDC1551draft	L4	CDC1551draft
+case1_initial	10	L4_CDC1551draft	L4	CDC1551draft
+rv_missing	8	L4_CDC1551draft	L4	CDC1551draft
+total_cds	205	L4_CDC1551draft	L4	CDC1551draft
+case1_removed	10	L4_CDC1551draft	L4	CDC1551draft
+case1_kept	0	L4_CDC1551draft	L4	CDC1551draft

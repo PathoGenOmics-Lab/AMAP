@@ -1,0 +1,9 @@
+Type	Number	Sequence	Lineage	Sample
+case2	131	L4_H37Rv	L4	H37Rv
+case3	0	L4_H37Rv	L4	H37Rv
+case4	48	L4_H37Rv	L4	H37Rv
+case1_initial	9	L4_H37Rv	L4	H37Rv
+rv_missing	6	L4_H37Rv	L4	H37Rv
+total_cds	188	L4_H37Rv	L4	H37Rv
+case1_removed	9	L4_H37Rv	L4	H37Rv
+case1_kept	0	L4_H37Rv	L4	H37Rv

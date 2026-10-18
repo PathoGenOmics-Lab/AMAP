@@ -20,7 +20,7 @@ process TYPE_CASES {
     output:
     tuple val(sampleId), path("${sampleId}_corrected.tsv"), emit: for_fix
     path "*-summary.tsv", emit: summaries
-    path "*-case*.tsv"
+    path "*-case*.tsv", emit: case_tables
     path "*-rvmissing.tsv", emit: rvmissing
     path "*.html"
 

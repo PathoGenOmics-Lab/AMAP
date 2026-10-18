@@ -52,6 +52,9 @@ directly comparable with 1.0.1.
 - **`--strict_validation`**: the documentation said validation warnings could be made to stop the run, but nothing passed the script's `--strict` on. The new parameter does
 - **eggNOG's database under Docker**: `EGGNOG_DB` built it in a folder it worked out for itself from `--eggnog_db`, and having no inputs, its container saw that folder only when Nextflow happened to mount it with the work directory and the pipeline's `bin/`, through a parent folder they share. Otherwise, as when running from `/data/project` with the pipeline in `~/.nextflow`, the database was downloaded and built inside the container and lost with it, and only `eggnog_db.ok` reached the host: later runs skipped `EGGNOG_DB`, and `ANNOT_EGGNOGMAP_BATCH` found no `bacteria.dmnd`. A database already there without `eggnog_db.ok` was built again. `main.nf` now makes the folder on the host and hands it to `EGGNOG_DB` as an input. A folder left with only `eggnog_db.ok` needs that file deleted, as validation says
 
+### 📊 Report
+- **A report organised by question, `results/amap_report.html`**: next to `final_report.html`, a new process, `AMAP_REPORT`, writes one self-contained file from each genome's own outputs: a table of the genomes with the values far from comparable genomes flagged, a map of every reference gene in every genome where regions of difference show as blocks, a lookup of one gene in every genome, the correction from Bakta's calls to AMAP's genes with the genes behind each step, the pseudogenes by lineage, what lies outside the reference, and the functional profile, the categories that differ most between lineages first. It needs only what the correction leaves, so a run with `--skip_functional_annotation`, which gets no `final_report.html`, gets this one, and it names the genomes of the sample sheet that produced no annotation. Fifteen MTBC genomes make 0.5 MB (`final_report.html` is 4.4 MB for twelve); it draws everything with its own JavaScript and needs only Python's standard library to write
+
 ### 🧹 Code
 - **`reconcile_coordinates` is gone**: it read reference coordinates from protein identifiers that have not carried them since March 2026, so it changed nothing. The paralog check does its job with the sample's own offsets
 
@@ -63,7 +66,8 @@ directly comparable with 1.0.1.
 - **`tests/test_sample_ids.py`** runs TYPE_CASES, GET_OUTPUTS, GET_COUNT, GET_DUPLICATIONS, REPORT_INPUTS and GET_ALLDUP as Nextflow renders them, chained as the pipeline chains them, for a typed and an untyped run whose sample IDs hold underscores, and then the report's own R code where R is installed
 - **`tests/test_validate_inputs.py`** runs `VALIDATE_INPUTS`'s own script, rendered as Nextflow renders it, in a task directory laid out as Nextflow lays one out: genomes in a folder the task cannot see, relative paths, two genomes with the same file name and a sheet of 500 samples; and checks both databases, eggNOG's in each state `EGGNOG_DB` can leave it in
 - **`tests/test_eggnog_db.py`** runs `EGGNOG_DB`'s own script, rendered as Nextflow renders it, with its folder staged as Nextflow stages an input and stand-ins for eggNOG-mapper's download and build: the database is built in that folder whatever it is called, one already there is used as it is, and a short `bacteria.dmnd` is built again
-- **352 tests**, up from 92
+- **`tests/test_amap_report.py`** writes the report from four genomes of a real run cut to two stretches of the reference (`tests/data/report/`, rebuilt by its `make_fixture.py`), where M. bovis lacks RD4 and a contig end cuts dnaE2, and checks that every gene, and every Bakta call AMAP did not keep, comes back out of the page as it went in, with Python and, where node is installed, with the page's own JavaScript, along with the states, the flags, the correction's steps and what the process hands the script
+- **414 tests**, up from 92
 
 ## [1.0.1] - 2026-07-25
 

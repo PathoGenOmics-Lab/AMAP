@@ -278,6 +278,7 @@ include { GET_ALLDUP }          from './modules/local/get'
 include { PANGENE }             from './modules/local/pangene'
 include { REPORT_INPUTS }       from './modules/local/freport'
 include { FINAL_REPORT }        from './modules/local/freport'
+include { AMAP_REPORT }         from './modules/local/amap_report'
 include { PREPARE_REFERENCE; BUNDLED_REFERENCE } from './modules/local/reference'
 include { VALIDATE_INPUTS }     from './modules/local/validation'
 include { SOFTWARE_VERSIONS }   from './modules/local/versions'
@@ -486,6 +487,12 @@ workflow {
         // 7. Correct CDS based on classified cases
         FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix), ref_proteome_ch)
 
+        // What the functional block below hands the interactive report, if it
+        // runs: the master tables, the pangenome and the duplication communities.
+        report_master_ch = channel.value([])
+        report_pangene_ch = channel.value([])
+        report_communities_ch = channel.value([])
+
         // --- FUNCTIONAL ANNOTATION AND DOWNSTREAM ANALYSIS ---
         // This entire block will be skipped if --skip_functional_annotation is used
         if (!params.skip_functional_annotation) {
@@ -553,7 +560,32 @@ workflow {
 
             // 15. Render the final HTML report
             FINAL_REPORT(REPORT_INPUTS.out, GET_ALLDUP.out)
+
+            // ifEmpty: a step that never runs, all its genomes having failed,
+            // must not keep the interactive report from being written.
+            report_master_ch = GET_OUTPUTS.out.master_table.map { _name, table -> table }.collect().ifEmpty([])
+            report_pangene_ch = REPORT_INPUTS.out.map { inputs -> inputs[6] }.ifEmpty([])
+            report_communities_ch = GET_ALLDUP.out.map { tsv, _html -> tsv }.ifEmpty([])
         }
+
+        // 16. The interactive report, results/amap_report.html. It needs only
+        // what the correction leaves, so it is written with or without the
+        // functional annotation. The sample IDs of the sheet let it name the
+        // genomes that produced nothing; a Mycobrowser table on the host is
+        // staged, and the default is read inside the container.
+        sample_ids_ch = genomes_ch.map { sampleId, _fasta -> sampleId }.collectFile(name: 'samples.txt', newLine: true, sort: true)
+        mycobrowser_ref_ch = (params.mycobrowser_ref && file(params.mycobrowser_ref).exists()) ? channel.value(file(params.mycobrowser_ref)) : channel.value([])
+        AMAP_REPORT(
+            FIX_CDS.out.for_downstream.map { row -> row[1] }.collect().ifEmpty([]),
+            TYPE_CASES.out.summaries.mix(TYPE_CASES.out.case_tables, TYPE_CASES.out.rvmissing).collect().ifEmpty([]),
+            BAKTA_ANNOTATOR.out.bakta_dir.collect().ifEmpty([]),
+            report_master_ch,
+            ref_proteome_ch,
+            report_pangene_ch,
+            report_communities_ch,
+            SOFTWARE_VERSIONS.out.versions_tsv.mix(DUMP_PARAMS.out, sample_ids_ch).collect(),
+            mycobrowser_ref_ch
+        )
     }
 }
 

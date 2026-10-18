@@ -1,0 +1,137 @@
+# Annotated with Bakta
+# Software: v1.12.0
+# Database: v6.0, light
+# DOI: 10.1099/mgen.0.000685
+# URL: github.com/oschwengers/bakta
+#Sequence Id	Type	Start	Stop	Strand	Locus Tag	Gene	Product	DbXrefs
+L4_H37Rv	cds	1689516	1690133	-	L4_H37Rv_01570		putative methyltransferase	
+L4_H37Rv	cds	1690347	1690559	-	L4_H37Rv_01571		Conserved protein	
+L4_H37Rv	cds	1691063	1692091	+	L4_H37Rv_01572		putative glycosyltransferase	
+L4_H37Rv	cds	1692103	1692924	+	L4_H37Rv_01573		Conserved hypothetical protein	
+L4_H37Rv	cds	1693137	1694036	+	L4_H37Rv_01574		Hypothetical protein	
+L4_H37Rv	cds	1695494	1696159	-	L4_H37Rv_01577		Conserved hypothetical protein	
+L4_H37Rv	cds	1696940	1697635	-	L4_H37Rv_01579		Conserved protein	
+L4_H37Rv	cds	1700079	1700441	+	L4_H37Rv_01581		Conserved hypothetical protein	
+L4_H37Rv	cds	1701508	1702806	+	L4_H37Rv_01584		Conserved putative membrane protein	
+L4_H37Rv	cds	1703287	1704309	+	L4_H37Rv_01585	gmdA	GDP-D-mannose dehydratase GmdA (GDP-mannose 4,6 dehydratase) (GMD)	
+L4_H37Rv	cds	1704306	1705274	+	L4_H37Rv_01586	epiA	putative nucleotide-sugar epimerase EpiA	
+L4_H37Rv	cds	1705271	1706002	+	L4_H37Rv_01587		Conserved protein	
+L4_H37Rv	cds	1706020	1706808	-	L4_H37Rv_01588		Conserved hypothetical protein	
+L4_H37Rv	cds	1706843	1707739	-	L4_H37Rv_01589		Conserved hypothetical protein	
+L4_H37Rv	cds	1707742	1708752	-	L4_H37Rv_01590		putative sugar transferase	
+L4_H37Rv	cds	1709084	1709848	+	L4_H37Rv_01591		Conserved hypothetical transmembrane protein	
+L4_H37Rv	cds	1709857	1710816	+	L4_H37Rv_01592		Conserved hypothetical protein	
+L4_H37Rv	cds	1711241	1712281	+	L4_H37Rv_01593		putative sugar transferase	
+L4_H37Rv	cds	1712515	1714266	+	L4_H37Rv_01595	fadD25	putative fatty-acid-AMP ligase FadD25 (fatty-acid-AMP synthetase) (fatty-acid-AMP synthase)	
+L4_H37Rv	cds	1988277	1988603	-	L4_H37Rv_01843		Putative transposase for insertion sequence element IS6110 (fragment)	
+L4_H37Rv	cds	3783442	3783906	+	L4_H37Rv_03520	spoU	putative tRNA/rRNA methylase SpoU (tRNA/rRNA methyltransferase)	
+L4_H37Rv	cds	3784273	3786048	+	L4_H37Rv_03521		hypothetical protein	
+L4_H37Rv	cds	3786049	3786693	-	L4_H37Rv_03522		putative oxidoreductase	
+L4_H37Rv	cds	3787215	3790454	-	L4_H37Rv_03525	dnaE2	putative DNA polymerase III (alpha chain) DnaE2 (DNA nucleotidyltransferase)	
+L4_H37Rv	cds	3790646	3791986	+	L4_H37Rv_03526		putative triacylglycerol synthase (diacylglycerol acyltransferase)	
+L4_H37Rv	cds	3792028	3793203	+	L4_H37Rv_03527	otsB2	Trehalose 6-phosphate phosphatase OtsB2 (trehalose-phosphatase) (TPP)	
+L4_H37Rv	cds	3795870	3796523	+	L4_H37Rv_03532		Conserved hypothetical protein	
+L4_H37Rv	cds	3796562	3798067	-	L4_H37Rv_03533		Halimadienyl diphosphate synthase	
+L4_H37Rv	cds	3798072	3798962	-	L4_H37Rv_03534		Diterpene synthase	
+L4_H37Rv	cds	3798971	3800581	-	L4_H37Rv_03535	dxs2	putative 1-deoxy-D-xylulose 5-phosphate synthase Dxs2 (1-deoxyxylulose-5-phosphate synthase) (DXP synthase) (DXPS)	
+L4_H37Rv	cds	3801749	3802075	-	L4_H37Rv_03538		Putative transposase for insertion sequence element IS6110 (fragment)	
+L4_H37Rv	cds	3802162	3803151	-	L4_H37Rv_03539	lytB1	putative LYTB-related protein LytB1	
+L4_H37Rv	cds	3803151	3804203	-	L4_H37Rv_03540	idsB	putative polyprenyl synthetase IdsB (polyprenyl transferase) (polyprenyl diphosphate synthase)	
+L4_H37Rv	cds	3804957	3805349	-	L4_H37Rv_03542	vapC46	putative toxin VapC46 Contains PIN domain	
+L4_H37Rv	cds	3806500	3807177	+	L4_H37Rv_03545		putative transposase	
+L4_H37Rv	cds	3807367	3809562	+	L4_H37Rv_03546		hypothetical protein	
+L4_H37Rv	cds	3809633	3810505	-	L4_H37Rv_03547	htdY	putative 3-hydroxyacyl-thioester dehydratase HtdY	
+L4_H37Rv	cds	3810579	3811289	+	L4_H37Rv_03548	lpqD	putative conserved lipoprotein LpqD	
+L4_H37Rv	cds	3811335	3813287	+	L4_H37Rv_03549	acrA1	putative multi-functional enzyme with acyl-CoA-reductase activity AcrA1	
+L4_H37Rv	cds	3813288	3814151	-	L4_H37Rv_03550	cmaA1	Cyclopropane-fatty-acyl-phospholipid synthase 1 CmaA1 (cyclopropane fatty acid synthase) (CFA synthase) (cyclopropane mycolic acid synthase 1)	
+L4_H37Rv	cds	3814175	3815101	+	L4_H37Rv_03551	iunH	putative nucleoside hydrolase IunH (purine nucleosidase)	
+L4_H37Rv	cds	3819804	3820712	-	L4_H37Rv_03556	phyA	putative phytoene synthase PhyA	
+L4_H37Rv	cds	3820741	3821820	-	L4_H37Rv_03557	idsA1	putative multifunctional geranylgeranyl pyrophosphate synthetase IdsA1 (GGPP synthetase) (ggppsase) (geranylgeranyl diphosphate synthase): dimethylallyltransferase (prenyltransferase) (geranyl-diphosphate synthase) + geranyltranstransferase (farnesyl-diphosphate synthase) (farnesyl-pyrophosphate synthetase) (farnesyl diphosphate synthetase) (FPP synthetase) + farnesyltranstransferase (geranylgeranyl-diphosphate synthase)	
+L4_H37Rv	cds	3822953	3823741	+	L4_H37Rv_03559		putative hydrolase	
+L4_H37Rv	cds	3823756	3826116	+	L4_H37Rv_03560		Conserved protein	
+L4_H37Rv	cds	3826367	3827605	-	L4_H37Rv_03562		Conserved hypothetical protein	
+L4_H37Rv	cds	3827976	3829577	-	L4_H37Rv_03563		Hypothetical protein	
+L4_H37Rv	cds	3829594	3830298	-	L4_H37Rv_03564		Conserved hypothetical protein	
+L4_H37Rv	cds	3830416	3830982	-	L4_H37Rv_03565		putative transcriptional regulatory protein	
+L4_H37Rv	cds	3831044	3831931	+	L4_H37Rv_03566		putative dioxygenase	
+L4_H37Rv	cds	3832705	3834441	-	L4_H37Rv_03569	choD	Cholesterol oxidase ChoD (cholesterol-O2 oxidoreductase)	
+L4_H37Rv	cds	3834497	3835624	-	L4_H37Rv_03570	guaB3	putative inosine-5'-monophosphate dehydrogenase GuaB3 (imp dehydrogenase) (inosinic acid dehydrogenase) (inosinate dehydrogenase) (imp oxidoreductase) (inosine-5'-monophosphate oxidoreductase) (IMPDH) (IMPD)	
+L4_H37Rv	cds	3835644	3837233	-	L4_H37Rv_03571	guaB2	putative inosine-5'-monophosphate dehydrogenase GuaB2 (imp dehydrogenase) (inosinic acid dehydrogenase) (inosinate dehydrogenase) (imp oxidoreductase) (inosine-5'-monophosphate oxidoreductase) (IMPDH) (IMPD)	
+L4_H37Rv	cds	3837440	3837850	+	L4_H37Rv_03572		Conserved hypothetical protein	
+L4_H37Rv	cds	3837860	3838759	-	L4_H37Rv_03573		Unknown alanine and proline rich protein	
+L4_H37Rv	cds	3840606	3840914	+	L4_H37Rv_03576	whiB3	Transcriptional regulatory protein WhiB-like WhiB3 Contains [4FE-4S] cluster	
+L4_H37Rv	cds	3840986	3842605	-	L4_H37Rv_03577	groEL1	60 kDa chaperonin 1 GroEL1 (protein CPN60-1) (GroEL protein 1)	
+L4_H37Rv	cds	3842700	3843002	-	L4_H37Rv_03578	groES	10 kDa chaperonin GroES (protein CPN10) (protein GroES) (BCG-a heat shock protein) (10 kDa antigen)	
+L4_H37Rv	cds	3843269	3844303	-	L4_H37Rv_03579	gcp	putative O-sialoglycoprotein endopeptidase Gcp (glycoprotease)	
+L4_H37Rv	cds	3844300	3844776	-	L4_H37Rv_03580	rimI	Ribosomal-protein-alanine acetyltransferase RimI (acetylating enzyme for N-terminal of ribosomal protein S18)	
+L4_H37Rv	cds	3844773	3845408	-	L4_H37Rv_03581		Conserved hypothetical protein	
+L4_H37Rv	cds	3845405	3845911	-	L4_H37Rv_03582		Conserved hypothetical protein	
+L4_H37Rv	cds	3845908	3847134	-	L4_H37Rv_03583	alr	Alanine racemase Alr	
+L4_H37Rv	cds	3847953	3848483	+	L4_H37Rv_03584	pPE57	PPE family protein PPE57	
+L4_H37Rv	cds	3848750	3849448	+	L4_H37Rv_03586	pPE58	PPE family protein PPE58	
+L4_H37Rv	cds	3849599	3850354	-	L4_H37Rv_03588		putative transposase	
+L4_H37Rv	cds	3850452	3851684	-	L4_H37Rv_03589		putative transposase	
+L4_H37Rv	cds	3852879	3853415	+	L4_H37Rv_03591	pPE59	PPE family protein PPE59	
+L4_H37Rv	cds	3853356	3854519	-	L4_H37Rv_03592		putative transposase	
+L4_H37Rv	cds	3855008	3855853	-	L4_H37Rv_03595		putative transposase (fragment)	
+L4_H37Rv	cds	3856086	3857468	-	L4_H37Rv_03596	gadB	putative glutamate decarboxylase GadB	
+L4_H37Rv	cds	3857506	3858927	-	L4_H37Rv_03597		Conserved protein	
+L4_H37Rv	cds	3860729	3862603	-	L4_H37Rv_03600	glmS	putative glucosamine--fructose-6-phosphate aminotransferase [isomerizing] GlmS (hexosephosphate aminotransferase) (D-fructose-6-phosphate amidotransferase) (GFAT) (L-glutamine-D-fructose-6-phosphate amidotransferase) (glucosamine-6-phosphate synthase)	
+L4_H37Rv	cds	3862625	3863101	+	L4_H37Rv_03601		putative conserved transmembrane protein	
+L4_H37Rv	cds	3863111	3863953	+	L4_H37Rv_03602		Conserved protein	
+L4_H37Rv	cds	3865379	3865690	-	L4_H37Rv_03604		Hypothetical protein	
+L4_H37Rv	cds	3865738	3867084	-	L4_H37Rv_03605	mrsA	putative phospho-sugar mutase / MrsA -like protein	
+L4_H37Rv	cds	3867209	3867664	-	L4_H37Rv_03606	rpsI	30S ribosomal protein S9 RpsI	
+L4_H37Rv	cds	3868337	3868639	-	L4_H37Rv_03608	esxT	Putative ESAT-6 like protein EsxT	
+L4_H37Rv	cds	3869030	3870244	-	L4_H37Rv_03610		Hypothetical alanine and valine rich protein	
+L4_H37Rv	cds	3870241	3873951	-	L4_H37Rv_03611	eccC4	ESX conserved component EccC4 ESX-4 type VII secretion system protein putative membrane protein	
+L4_H37Rv	cds	3874065	3875468	+	L4_H37Rv_03612	eccD4	ESX conserved component EccD4 ESX-4 type VII secretion system protein putative integral membrane protein	
+L4_H37Rv	cds	3875465	3876832	+	L4_H37Rv_03613	mycP4	putative membrane-anchored mycosin MycP4 (serine protease) (subtilisin-like protease) (subtilase-like) (mycosin-4)	
+L4_H37Rv	cds	3876797	3878209	-	L4_H37Rv_03614	eccB4	ESX conserved component EccB4 ESX-4 type VII secretion system protein putative membrane protein	
+L4_H37Rv	cds	3878330	3879118	+	L4_H37Rv_03615	cut3	putative cutinase precursor Cut3	
+L4_H37Rv	cds	3879165	3879845	+	L4_H37Rv_03616	cut4	putative cutinase precursor Cut4	
+L4_H37Rv	cds	3880117	3880449	+	L4_H37Rv_03617		putative conserved transmembrane protein	
+L4_H37Rv	cds	3882603	3883145	-	L4_H37Rv_03620		hypothetical protein	
+L4_H37Rv	cds	3883177	3884220	-	L4_H37Rv_03621	rpoA	putative DNA-directed RNA polymerase (alpha chain) RpoA (transcriptase alpha chain) (RNA polymerase alpha subunit) (DNA-directed RNA nucleotidyltransferase)	
+L4_H37Rv	cds	3884372	3884977	-	L4_H37Rv_03622	rpsD	30S ribosomal protein S4 RpsD	
+L4_H37Rv	cds	3884986	3885405	-	L4_H37Rv_03623	rpsK	30S ribosomal protein S11 RpsK	
+L4_H37Rv	cds	3885409	3885783	-	L4_H37Rv_03624	rpsM	30S ribosomal protein S13 RpsM	
+L4_H37Rv	cds	3886145	3886366	-	L4_H37Rv_03625	infA	putative translation initiation factor if-1 InfA	
+L4_H37Rv	cds	3886620	3887477	+	L4_H37Rv_03626		Conserved protein	
+L4_H37Rv	cds	3887550	3888545	+	L4_H37Rv_03627	rmlB	dTDP-glucose 4,6-dehydratase RmlB	
+L4_H37Rv	cds	3888547	3889155	+	L4_H37Rv_03628	rmlC	dTDP-4-dehydrorhamnose 3,5-epimerase RmlC (dTDP-4-keto-6-deoxyglucose 3,5-epimerase) (dTDP-L-rhamnose synthetase) (thymidine diphospho-4-keto-rhamnose 3,5-epimerase)	
+L4_H37Rv	cds	3890688	3891782	-	L4_H37Rv_03630		putative dTDP-glucose 4,6-dehydratase	
+L4_H37Rv	cds	3891786	3892796	-	L4_H37Rv_03631	mhpE	putative 4-hydroxy-2-oxovalerate aldolase MhpE (HOA)	
+L4_H37Rv	cds	3895075	3895581	+	L4_H37Rv_03634		Conserved protein	
+L4_H37Rv	cds	3895661	3896446	-	L4_H37Rv_03635	bpoA	putative peroxidase BpoA (non-haem peroxidase)	
+L4_H37Rv	cds	3896543	3896869	+	L4_H37Rv_03636		Putative transposase for insertion sequence element IS6110 (fragment)	
+L4_H37Rv	cds	3898084	3899433	-	L4_H37Rv_03638	kgtP	putative dicarboxylic acid transport integral membrane protein KgtP (dicarboxylate transporter)	
+L4_H37Rv	cds	3899806	3900102	+	L4_H37Rv_03639	pE31	PE family protein PE31	
+L4_H37Rv	cds	3900139	3901320	+	L4_H37Rv_03640	pPE60	PE family protein PPE60	
+L4_H37Rv	cds	3904622	3906115	-	L4_H37Rv_03642		putative triacylglycerol synthase (diacylglycerol acyltransferase)	
+L4_H37Rv	cds	3906206	3906895	-	L4_H37Rv_03643		putative integral membrane protein	
+L4_H37Rv	cds	3907863	3908525	-	L4_H37Rv_03645		putative exported protein	
+L4_H37Rv	cds	3908791	3910329	+	L4_H37Rv_03646	cpsA	putative conserved protein CpsA	
+L4_H37Rv	cds	3910335	3911279	-	L4_H37Rv_03647		putative short-chain type dehydrogenase/reductase	
+L4_H37Rv	cds	3913380	3913703	+	L4_H37Rv_03650		Conserved hypothetical protein	
+L4_H37Rv	cds	3913785	3913949	+	L4_H37Rv_03651		Unknown protein	
+L4_H37Rv	cds	3913949	3915451	+	L4_H37Rv_03652	otsA	Alpha, alpha-trehalose-phosphate synthase [UDP-forming] OtsA (trehalose-6-phosphate synthase) (UDP-glucose-glucosephosphate glucosyltransferase) (trehalosephosphate-UDP glucosyltransferase) (trehalose-6-phosphate synthetase) (trehalose-phosphate synthase) (trehalose-phosphate synthetase) (transglucosylase) (trehalosephosphate-UDP glucosyl transferase)	
+L4_H37Rv	cds	3915603	3916181	+	L4_H37Rv_03653		Unknown protein	
+L4_H37Rv	cds	3916178	3916660	-	L4_H37Rv_03654		Conserved hypothetical Mce associated protein	
+L4_H37Rv	cds	3916660	3917388	-	L4_H37Rv_03655		Conserved hypothetical Mce associated alanine and valine rich protein	
+L4_H37Rv	cds	3917388	3919082	-	L4_H37Rv_03656	mce4F	Mce-family protein Mce4F	
+L4_H37Rv	cds	3919093	3920247	-	L4_H37Rv_03657	lprN	putative Mce-family lipoprotein LprN (Mce-family lipoprotein Mce4E)	
+L4_H37Rv	cds	3921596	3922669	-	L4_H37Rv_03659	mce4C	Mce-family protein Mce4C	
+L4_H37Rv	cds	3922659	3923711	-	L4_H37Rv_03660	mce4B	Mce-family protein Mce4B	
+L4_H37Rv	cds	3923711	3924913	-	L4_H37Rv_03661	mce4A	Mce-family protein Mce4A	
+L4_H37Rv	cds	3924933	3925775	-	L4_H37Rv_03662	yrbE4B	Conserved integral membrane protein YrbE4B putative ABC transporter	
+L4_H37Rv	cds	3925810	3926574	-	L4_H37Rv_03663	yrbE4A	Conserved integral membrane protein YrbE4A putative ABC transporter	
+L4_H37Rv	cds	3926800	3927753	-	L4_H37Rv_03664		putative short-chain type dehydrogenase/reductase putative 17-beta-hydroxysteroid dehydrogenase	
+L4_H37Rv	cds	3927778	3927969	-	L4_H37Rv_03665	fdxD	putative ferredoxin FdxD	
+L4_H37Rv	cds	3928184	3929386	+	L4_H37Rv_03666	fadE26	putative acyl-CoA dehydrogenase FadE26	
+L4_H37Rv	cds	3929411	3930532	+	L4_H37Rv_03667	fadE27	putative acyl-CoA dehydrogenase FadE27	
+L4_H37Rv	cds	3930603	3932111	+	L4_H37Rv_03668	fadD17	Fatty-acid-CoA synthetase FadD17 (fatty-acid-CoA synthase) (fatty-acid-CoA ligase)	
+L4_H37Rv	cds	3932282	3936427	+	L4_H37Rv_03669		hypothetical protein	
+L4_H37Rv	cds	3943169	3944716	-	L4_H37Rv_03671	ilvX	putative acetohydroxyacid synthase IlvX (acetolactate synthase)	
+L4_H37Rv	cds	3944713	3945549	-	L4_H37Rv_03672		Conserved protein	
+L4_H37Rv	cds	3945909	3948053	+	L4_H37Rv_03673		hypothetical protein	

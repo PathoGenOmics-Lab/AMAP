@@ -1,0 +1,142 @@
+# Annotated with Bakta
+# Software: v1.12.0
+# Database: v6.0, light
+# DOI: 10.1099/mgen.0.000685
+# URL: github.com/oschwengers/bakta
+#Sequence Id	Type	Start	Stop	Strand	Locus Tag	Gene	Product	DbXrefs
+contig_4	cds	220995	223871	-	L4_CDC1551draft_00423	mmpL1	putative conserved transmembrane transport protein MmpL1	
+contig_4	cds	224916	225242	-	L4_CDC1551draft_00425		Putative transposase for insertion sequence element IS6110 (fragment)	
+contig_14	cds	130117	130734	-	L4_CDC1551draft_01591		putative methyltransferase	
+contig_14	cds	130948	131160	-	L4_CDC1551draft_01592		Conserved protein	
+contig_14	cds	131664	132692	+	L4_CDC1551draft_01593		putative glycosyltransferase	
+contig_14	cds	132704	133525	+	L4_CDC1551draft_01594		Conserved hypothetical protein	
+contig_14	cds	133738	134637	+	L4_CDC1551draft_01595		Hypothetical protein	
+contig_14	cds	136095	136760	-	L4_CDC1551draft_01598		Conserved hypothetical protein	
+contig_14	cds	136757	137257	-	L4_CDC1551draft_01599		Hypothetical protein	
+contig_14	cds	137541	138236	-	L4_CDC1551draft_01600		Conserved protein	
+contig_14	cds	140680	141042	+	L4_CDC1551draft_01602		Conserved hypothetical protein	
+contig_14	cds	143887	144909	+	L4_CDC1551draft_01607	gmdA	GDP-D-mannose dehydratase GmdA (GDP-mannose 4,6 dehydratase) (GMD)	
+contig_14	cds	144906	145874	+	L4_CDC1551draft_01608	epiA	putative nucleotide-sugar epimerase EpiA	
+contig_14	cds	145871	146602	+	L4_CDC1551draft_01609		Conserved protein	
+contig_14	cds	146620	147408	-	L4_CDC1551draft_01610		Conserved hypothetical protein	
+contig_14	cds	147443	148339	-	L4_CDC1551draft_01611		Conserved hypothetical protein	
+contig_14	cds	148342	149352	-	L4_CDC1551draft_01612		putative sugar transferase	
+contig_14	cds	149684	150448	+	L4_CDC1551draft_01613		Conserved hypothetical transmembrane protein	
+contig_14	cds	150457	151416	+	L4_CDC1551draft_01614		Conserved hypothetical protein	
+contig_14	cds	151841	152881	+	L4_CDC1551draft_01615		putative sugar transferase	
+contig_14	cds	153115	154866	+	L4_CDC1551draft_01617	fadD25	putative fatty-acid-AMP ligase FadD25 (fatty-acid-AMP synthetase) (fatty-acid-AMP synthase)	
+contig_14	cds	217514	218674	+	L4_CDC1551draft_01667	bioF1	putative 8-amino-7-oxononanoate synthase BioF1 (AONS) (8-amino-7-ketopelargonate synthase) (7-keto-8-amino-pelargonic acid synthetase) (7-KAP synthetase) (L-alanine--pimelyl CoA ligase)	
+contig_14	cds	218671	219351	+	L4_CDC1551draft_01668	bioD	Dethiobiotin synthetase BioD	
+contig_14	cds	219351	219860	+	L4_CDC1551draft_01669		Conserved protein	
+contig_31	cds	303233	303523	+	L4_CDC1551draft_03449	esxR	Secreted ESAT-6 like protein EsxR (TB10-3) (ESAT-6 like protein 9)	
+contig_31	cds	303991	304923	+	L4_CDC1551draft_03452		PPE domain-containing protein	
+contig_31	cds	305885	306211	-	L4_CDC1551draft_03454		Putative transposase for insertion sequence element IS6110 (fragment)	
+contig_31	cds	307207	307836	-	L4_CDC1551draft_03457	lpqA	putative lipoprotein LpqA	
+contig_32	cds	91992	92456	+	L4_CDC1551draft_03538	spoU	putative tRNA/rRNA methylase SpoU (tRNA/rRNA methyltransferase)	
+contig_32	cds	92823	94598	+	L4_CDC1551draft_03539		hypothetical protein	
+contig_32	cds	94599	95243	-	L4_CDC1551draft_03540		putative oxidoreductase	
+contig_33	cds	79041	79877	+	L4_CDC1551draft_03611		Conserved protein	
+contig_33	cds	81589	86697	-	L4_CDC1551draft_03614		hypothetical protein	
+contig_33	cds	86988	91142	-	L4_CDC1551draft_03615		hypothetical protein	
+contig_33	cds	91313	92821	-	L4_CDC1551draft_03616	fadD17	Fatty-acid-CoA synthetase FadD17 (fatty-acid-CoA synthase) (fatty-acid-CoA ligase)	
+contig_33	cds	92892	94013	-	L4_CDC1551draft_03617	fadE27	putative acyl-CoA dehydrogenase FadE27	
+contig_33	cds	94038	95240	-	L4_CDC1551draft_03618	fadE26	putative acyl-CoA dehydrogenase FadE26	
+contig_33	cds	95455	95646	+	L4_CDC1551draft_03619	fdxD	putative ferredoxin FdxD	
+contig_33	cds	96851	97615	+	L4_CDC1551draft_03621	yrbE4A	Conserved integral membrane protein YrbE4A putative ABC transporter	
+contig_33	cds	97650	98492	+	L4_CDC1551draft_03622	yrbE4B	Conserved integral membrane protein YrbE4B putative ABC transporter	
+contig_33	cds	98512	99714	+	L4_CDC1551draft_03623	mce4A	Mce-family protein Mce4A	
+contig_33	cds	99714	100766	+	L4_CDC1551draft_03624	mce4B	Mce-family protein Mce4B	
+contig_33	cds	100756	101829	+	L4_CDC1551draft_03625	mce4C	Mce-family protein Mce4C	
+contig_33	cds	103178	104332	+	L4_CDC1551draft_03627	lprN	putative Mce-family lipoprotein LprN (Mce-family lipoprotein Mce4E)	
+contig_33	cds	104343	106037	+	L4_CDC1551draft_03628	mce4F	Mce-family protein Mce4F	
+contig_33	cds	106037	106765	+	L4_CDC1551draft_03629		Conserved hypothetical Mce associated alanine and valine rich protein	
+contig_33	cds	106765	107247	+	L4_CDC1551draft_03630		Conserved hypothetical Mce associated protein	
+contig_33	cds	107244	107822	-	L4_CDC1551draft_03631		Unknown protein	
+contig_33	cds	107973	109475	-	L4_CDC1551draft_03632	otsA	Alpha, alpha-trehalose-phosphate synthase [UDP-forming] OtsA (trehalose-6-phosphate synthase) (UDP-glucose-glucosephosphate glucosyltransferase) (trehalosephosphate-UDP glucosyltransferase) (trehalose-6-phosphate synthetase) (trehalose-phosphate synthase) (trehalose-phosphate synthetase) (transglucosylase) (trehalosephosphate-UDP glucosyl transferase)	
+contig_33	cds	109475	109639	-	L4_CDC1551draft_03633		Unknown protein	
+contig_33	cds	109721	110044	-	L4_CDC1551draft_03634		Conserved hypothetical protein	
+contig_33	cds	112145	113089	+	L4_CDC1551draft_03637		putative short-chain type dehydrogenase/reductase	
+contig_33	cds	113095	114633	-	L4_CDC1551draft_03638	cpsA	putative conserved protein CpsA	
+contig_33	cds	114899	115561	+	L4_CDC1551draft_03639		putative exported protein	
+contig_33	cds	116529	117218	+	L4_CDC1551draft_03641		putative integral membrane protein	
+contig_33	cds	117309	118802	+	L4_CDC1551draft_03642		putative triacylglycerol synthase (diacylglycerol acyltransferase)	
+contig_33	cds	122104	123285	-	L4_CDC1551draft_03644	pPE19	PPE family protein PPE19	
+contig_33	cds	123322	123618	-	L4_CDC1551draft_03645	pE31	PE family protein PE31	
+contig_33	cds	123991	125340	+	L4_CDC1551draft_03646	kgtP	putative dicarboxylic acid transport integral membrane protein KgtP (dicarboxylate transporter)	
+contig_33	cds	126485	126991	-	L4_CDC1551draft_03648		Conserved protein	
+contig_33	cds	129270	130280	+	L4_CDC1551draft_03651	mhpE	putative 4-hydroxy-2-oxovalerate aldolase MhpE (HOA)	
+contig_33	cds	130284	131378	+	L4_CDC1551draft_03652		putative dTDP-glucose 4,6-dehydratase	
+contig_33	cds	131553	131963	+	L4_CDC1551draft_03653		putative PhiRv1 phage protein	
+contig_33	cds	134308	134820	-	L4_CDC1551draft_03657		putative PhiRv1 phage protein	
+contig_33	cds	134994	135464	-	L4_CDC1551draft_03658		putative PhiRv1 phage protein	
+contig_33	cds	135545	135859	-	L4_CDC1551draft_03659		putative PhiRv1 phage protein	
+contig_33	cds	135856	136128	-	L4_CDC1551draft_03660		putative PhiRv1 phage protein	
+contig_33	cds	136142	136537	-	L4_CDC1551draft_03661		putative PhiRv1 phage protein	
+contig_33	cds	136733	138148	-	L4_CDC1551draft_03663		putative PhiRv1 phage protein	
+contig_33	cds	138148	138546	-	L4_CDC1551draft_03664		putative PhiRv1 phage protein	
+contig_33	cds	142154	142762	-	L4_CDC1551draft_03668	rmlC	dTDP-4-dehydrorhamnose 3,5-epimerase RmlC (dTDP-4-keto-6-deoxyglucose 3,5-epimerase) (dTDP-L-rhamnose synthetase) (thymidine diphospho-4-keto-rhamnose 3,5-epimerase)	
+contig_33	cds	142764	143759	-	L4_CDC1551draft_03669	rmlB	dTDP-glucose 4,6-dehydratase RmlB	
+contig_33	cds	143832	144689	-	L4_CDC1551draft_03670		Conserved protein	
+contig_33	cds	144943	145164	+	L4_CDC1551draft_03671	infA	putative translation initiation factor if-1 InfA	
+contig_33	cds	145526	145900	+	L4_CDC1551draft_03672	rpsM	30S ribosomal protein S13 RpsM	
+contig_33	cds	145904	146323	+	L4_CDC1551draft_03673	rpsK	30S ribosomal protein S11 RpsK	
+contig_33	cds	146332	146937	+	L4_CDC1551draft_03674	rpsD	30S ribosomal protein S4 RpsD	
+contig_33	cds	147089	148132	+	L4_CDC1551draft_03675	rpoA	putative DNA-directed RNA polymerase (alpha chain) RpoA (transcriptase alpha chain) (RNA polymerase alpha subunit) (DNA-directed RNA nucleotidyltransferase)	
+contig_33	cds	148164	148706	+	L4_CDC1551draft_03676		hypothetical protein	
+contig_33	cds	148774	149544	+	L4_CDC1551draft_03677	truA	putative tRNA pseudouridine synthase a TruA (pseudouridylate synthase I) (pseudouridine synthase I) (uracil hydrolyase)	
+contig_33	cds	151463	152143	-	L4_CDC1551draft_03679	cut4	putative cutinase precursor Cut4	
+contig_33	cds	152190	152978	-	L4_CDC1551draft_03680	cut3	putative cutinase precursor Cut3	
+contig_33	cds	153099	154511	+	L4_CDC1551draft_03681	eccB4	ESX conserved component EccB4 ESX-4 type VII secretion system protein putative membrane protein	
+contig_33	cds	155840	157243	-	L4_CDC1551draft_03683	eccD4	ESX conserved component EccD4 ESX-4 type VII secretion system protein putative integral membrane protein	
+contig_33	cds	157357	161067	+	L4_CDC1551draft_03684	eccC4	ESX conserved component EccC4 ESX-4 type VII secretion system protein putative membrane protein	
+contig_33	cds	161064	162278	+	L4_CDC1551draft_03685		Hypothetical alanine and valine rich protein	
+contig_33	cds	162669	162971	+	L4_CDC1551draft_03687	esxT	Putative ESAT-6 like protein EsxT	
+contig_33	cds	163644	164099	+	L4_CDC1551draft_03689	rpsI	30S ribosomal protein S9 RpsI	
+contig_33	cds	164224	165570	+	L4_CDC1551draft_03690	mrsA	putative phospho-sugar mutase / MrsA -like protein	
+contig_33	cds	165618	165929	+	L4_CDC1551draft_03691		Hypothetical protein	
+contig_33	cds	167355	168197	-	L4_CDC1551draft_03693		Conserved protein	
+contig_33	cds	168207	168683	-	L4_CDC1551draft_03694		putative conserved transmembrane protein	
+contig_33	cds	168705	170579	+	L4_CDC1551draft_03695	glmS	putative glucosamine--fructose-6-phosphate aminotransferase [isomerizing] GlmS (hexosephosphate aminotransferase) (D-fructose-6-phosphate amidotransferase) (GFAT) (L-glutamine-D-fructose-6-phosphate amidotransferase) (glucosamine-6-phosphate synthase)	
+contig_33	cds	172381	173802	+	L4_CDC1551draft_03698		Conserved protein	
+contig_33	cds	173840	175222	+	L4_CDC1551draft_03699	gadB	putative glutamate decarboxylase GadB	
+contig_33	cds	175455	176300	+	L4_CDC1551draft_03700		putative transposase (fragment)	
+contig_33	cds	176788	177951	+	L4_CDC1551draft_03702		putative transposase	
+contig_33	cds	177892	178428	-	L4_CDC1551draft_03703	pPE59	PPE family protein PPE59	
+contig_33	cds	179247	180473	+	L4_CDC1551draft_03704	alr	Alanine racemase Alr	
+contig_33	cds	180470	180976	+	L4_CDC1551draft_03705		Conserved hypothetical protein	
+contig_33	cds	180973	181608	+	L4_CDC1551draft_03706		Conserved hypothetical protein	
+contig_33	cds	181605	182081	+	L4_CDC1551draft_03707	rimI	Ribosomal-protein-alanine acetyltransferase RimI (acetylating enzyme for N-terminal of ribosomal protein S18)	
+contig_33	cds	182078	183112	+	L4_CDC1551draft_03708	gcp	putative O-sialoglycoprotein endopeptidase Gcp (glycoprotease)	
+contig_33	cds	183379	183681	+	L4_CDC1551draft_03709	groES	10 kDa chaperonin GroES (protein CPN10) (protein GroES) (BCG-a heat shock protein) (10 kDa antigen)	
+contig_33	cds	183776	185395	+	L4_CDC1551draft_03710	groEL1	60 kDa chaperonin 1 GroEL1 (protein CPN60-1) (GroEL protein 1)	
+contig_33	cds	185467	185775	-	L4_CDC1551draft_03711	whiB3	Transcriptional regulatory protein WhiB-like WhiB3 Contains [4FE-4S] cluster	
+contig_33	cds	187622	188521	+	L4_CDC1551draft_03714		Unknown alanine and proline rich protein	
+contig_33	cds	188531	188941	-	L4_CDC1551draft_03715		Conserved hypothetical protein	
+contig_33	cds	189148	190737	+	L4_CDC1551draft_03716	guaB2	putative inosine-5'-monophosphate dehydrogenase GuaB2 (imp dehydrogenase) (inosinic acid dehydrogenase) (inosinate dehydrogenase) (imp oxidoreductase) (inosine-5'-monophosphate oxidoreductase) (IMPDH) (IMPD)	
+contig_33	cds	190757	191884	+	L4_CDC1551draft_03717	guaB3	putative inosine-5'-monophosphate dehydrogenase GuaB3 (imp dehydrogenase) (inosinic acid dehydrogenase) (inosinate dehydrogenase) (imp oxidoreductase) (inosine-5'-monophosphate oxidoreductase) (IMPDH) (IMPD)	
+contig_33	cds	191940	193676	+	L4_CDC1551draft_03718	choD	Cholesterol oxidase ChoD (cholesterol-O2 oxidoreductase)	
+contig_33	cds	194450	195337	-	L4_CDC1551draft_03721		putative dioxygenase	
+contig_33	cds	195399	195965	+	L4_CDC1551draft_03722		putative transcriptional regulatory protein	
+contig_33	cds	196083	196787	+	L4_CDC1551draft_03723		Conserved hypothetical protein	
+contig_33	cds	196804	198405	+	L4_CDC1551draft_03724		Hypothetical protein	
+contig_33	cds	198776	200014	+	L4_CDC1551draft_03725		Conserved hypothetical protein	
+contig_33	cds	200267	202627	-	L4_CDC1551draft_03726		Conserved protein	
+contig_33	cds	202642	203430	-	L4_CDC1551draft_03727		putative hydrolase	
+contig_33	cds	204563	205642	+	L4_CDC1551draft_03729	idsA1	putative multifunctional geranylgeranyl pyrophosphate synthetase IdsA1 (GGPP synthetase) (ggppsase) (geranylgeranyl diphosphate synthase): dimethylallyltransferase (prenyltransferase) (geranyl-diphosphate synthase) + geranyltranstransferase (farnesyl-diphosphate synthase) (farnesyl-pyrophosphate synthetase) (farnesyl diphosphate synthetase) (FPP synthetase) + farnesyltranstransferase (geranylgeranyl-diphosphate synthase)	
+contig_33	cds	205671	206579	+	L4_CDC1551draft_03730	phyA	putative phytoene synthase PhyA	
+contig_33	cds	211282	212208	-	L4_CDC1551draft_03735	iunH	putative nucleoside hydrolase IunH (purine nucleosidase)	
+contig_33	cds	212232	213095	+	L4_CDC1551draft_03736	cmaA1	Cyclopropane-fatty-acyl-phospholipid synthase 1 CmaA1 (cyclopropane fatty acid synthase) (CFA synthase) (cyclopropane mycolic acid synthase 1)	
+contig_33	cds	213096	215048	-	L4_CDC1551draft_03737	acrA1	putative multi-functional enzyme with acyl-CoA-reductase activity AcrA1	
+contig_33	cds	215094	215804	-	L4_CDC1551draft_03738	lpqD	putative conserved lipoprotein LpqD	
+contig_33	cds	215878	216750	+	L4_CDC1551draft_03739	htdY	putative 3-hydroxyacyl-thioester dehydratase HtdY	
+contig_33	cds	216821	219016	-	L4_CDC1551draft_03740		hypothetical protein	
+contig_33	cds	219206	219883	-	L4_CDC1551draft_03741		putative transposase	
+contig_33	cds	221034	221426	+	L4_CDC1551draft_03744	vapC46	putative toxin VapC46 Contains PIN domain	
+contig_33	cds	222180	223232	+	L4_CDC1551draft_03746	idsB	putative polyprenyl synthetase IdsB (polyprenyl transferase) (polyprenyl diphosphate synthase)	
+contig_33	cds	223232	224221	+	L4_CDC1551draft_03747	lytB1	putative LYTB-related protein LytB1	
+contig_33	cds	224444	226054	+	L4_CDC1551draft_03749	dxs2	putative 1-deoxy-D-xylulose 5-phosphate synthase Dxs2 (1-deoxyxylulose-5-phosphate synthase) (DXP synthase) (DXPS)	
+contig_33	cds	226063	226953	+	L4_CDC1551draft_03750		Diterpene synthase	
+contig_33	cds	226958	228463	+	L4_CDC1551draft_03751		Halimadienyl diphosphate synthase	
+contig_33	cds	228502	229155	-	L4_CDC1551draft_03752		Conserved hypothetical protein	
+contig_33	cds	231822	232997	-	L4_CDC1551draft_03757	otsB2	Trehalose 6-phosphate phosphatase OtsB2 (trehalose-phosphatase) (TPP)	
+contig_33	cds	233039	234379	-	L4_CDC1551draft_03758		putative triacylglycerol synthase (diacylglycerol acyltransferase)	

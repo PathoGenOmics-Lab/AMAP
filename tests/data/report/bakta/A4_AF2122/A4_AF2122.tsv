@@ -1,0 +1,113 @@
+# Annotated with Bakta
+# Software: v1.12.0
+# Database: v6.0, light
+# DOI: 10.1099/mgen.0.000685
+# URL: github.com/oschwengers/bakta
+#Sequence Id	Type	Start	Stop	Strand	Locus Tag	Gene	Product	DbXrefs
+A4_AF2122	cds	105360	106751	+	A4_AF2122_00107	pPE1	PPE family protein PPE1	
+A4_AF2122	cds	1690458	1691075	-	A4_AF2122_01580		putative methyltransferase	
+A4_AF2122	cds	1692005	1693033	+	A4_AF2122_01582		putative glycosyltransferase	
+A4_AF2122	cds	1693045	1693866	+	A4_AF2122_01583		Conserved hypothetical protein	
+A4_AF2122	cds	1696435	1697100	-	A4_AF2122_01587		Conserved hypothetical protein	
+A4_AF2122	cds	1697293	1698057	+	A4_AF2122_01588		Conserved hypothetical transmembrane protein	
+A4_AF2122	cds	1698066	1699025	+	A4_AF2122_01589		Conserved hypothetical protein	
+A4_AF2122	cds	1699450	1700490	+	A4_AF2122_01590		putative sugar transferase	
+A4_AF2122	cds	1700724	1702475	+	A4_AF2122_01592	fadD25	putative fatty-acid-AMP ligase FadD25 (fatty-acid-AMP synthetase) (fatty-acid-AMP synthase)	
+A4_AF2122	cds	3079186	3079998	+	A4_AF2122_02895		Conserved hypothetical protein	
+A4_AF2122	cds	3082393	3082719	-	A4_AF2122_02897		Putative transposase for insertion sequence element IS6110 (fragment)	
+A4_AF2122	cds	3735676	3736140	+	A4_AF2122_03477	spoU	putative tRNA/rRNA methylase SpoU (tRNA/rRNA methyltransferase)	
+A4_AF2122	cds	3736507	3738387	+	A4_AF2122_03478		hypothetical protein	
+A4_AF2122	cds	3738388	3739032	-	A4_AF2122_03479		putative oxidoreductase	
+A4_AF2122	cds	3739554	3742793	-	A4_AF2122_03482	dnaE2	putative DNA polymerase III (alpha chain) DnaE2 (DNA nucleotidyltransferase)	
+A4_AF2122	cds	3742985	3744325	+	A4_AF2122_03483		putative triacylglycerol synthase (diacylglycerol acyltransferase)	
+A4_AF2122	cds	3744367	3745542	+	A4_AF2122_03484	otsB2	Trehalose 6-phosphate phosphatase OtsB2 (trehalose-phosphatase) (TPP)	
+A4_AF2122	cds	3748209	3748862	+	A4_AF2122_03488		Conserved hypothetical protein	
+A4_AF2122	cds	3750410	3751300	-	A4_AF2122_03490		Diterpene synthase	
+A4_AF2122	cds	3753144	3754133	-	A4_AF2122_03492	lytB1	putative LYTB-related protein LytB1	
+A4_AF2122	cds	3754133	3755185	-	A4_AF2122_03493	idsB	putative polyprenyl synthetase IdsB (polyprenyl transferase) (polyprenyl diphosphate synthase)	
+A4_AF2122	cds	3755939	3756331	-	A4_AF2122_03495	vapC46	putative toxin VapC46 Contains PIN domain	
+A4_AF2122	cds	3757482	3758159	+	A4_AF2122_03498		putative transposase	
+A4_AF2122	cds	3760669	3761541	-	A4_AF2122_03500	htdY	putative 3-hydroxyacyl-thioester dehydratase HtdY	
+A4_AF2122	cds	3761615	3762325	+	A4_AF2122_03501	lpqD	putative conserved lipoprotein LpqD	
+A4_AF2122	cds	3762371	3764323	+	A4_AF2122_03502	acrA1	putative multi-functional enzyme with acyl-CoA-reductase activity AcrA1	
+A4_AF2122	cds	3764324	3765187	-	A4_AF2122_03503	cmaA1	Cyclopropane-fatty-acyl-phospholipid synthase 1 CmaA1 (cyclopropane fatty acid synthase) (CFA synthase) (cyclopropane mycolic acid synthase 1)	
+A4_AF2122	cds	3765211	3766137	+	A4_AF2122_03504	iunH	putative nucleoside hydrolase IunH (purine nucleosidase)	
+A4_AF2122	cds	3770840	3771748	-	A4_AF2122_03509	phyA	putative phytoene synthase PhyA	
+A4_AF2122	cds	3771777	3772856	-	A4_AF2122_03510	idsA1	putative multifunctional geranylgeranyl pyrophosphate synthetase IdsA1 (GGPP synthetase) (ggppsase) (geranylgeranyl diphosphate synthase): dimethylallyltransferase (prenyltransferase) (geranyl-diphosphate synthase) + geranyltranstransferase (farnesyl-diphosphate synthase) (farnesyl-pyrophosphate synthetase) (farnesyl diphosphate synthetase) (FPP synthetase) + farnesyltranstransferase (geranylgeranyl-diphosphate synthase)	
+A4_AF2122	cds	3773989	3774777	+	A4_AF2122_03512		putative hydrolase	
+A4_AF2122	cds	3774792	3777152	+	A4_AF2122_03513		Conserved protein	
+A4_AF2122	cds	3779303	3780904	-	A4_AF2122_03515		Hypothetical protein	
+A4_AF2122	cds	3780921	3781625	-	A4_AF2122_03516		Conserved hypothetical protein	
+A4_AF2122	cds	3781743	3782309	-	A4_AF2122_03517		putative transcriptional regulatory protein	
+A4_AF2122	cds	3782371	3783258	+	A4_AF2122_03518		putative dioxygenase	
+A4_AF2122	cds	3783293	3783592	+	A4_AF2122_03519	vapB47	putative antitoxin VapB47	
+A4_AF2122	cds	3784032	3785768	-	A4_AF2122_03521	choD	Cholesterol oxidase ChoD (cholesterol-O2 oxidoreductase)	
+A4_AF2122	cds	3785824	3786951	-	A4_AF2122_03522	guaB3	putative inosine-5'-monophosphate dehydrogenase GuaB3 (imp dehydrogenase) (inosinic acid dehydrogenase) (inosinate dehydrogenase) (imp oxidoreductase) (inosine-5'-monophosphate oxidoreductase) (IMPDH) (IMPD)	
+A4_AF2122	cds	3786971	3788560	-	A4_AF2122_03523	guaB2	putative inosine-5'-monophosphate dehydrogenase GuaB2 (imp dehydrogenase) (inosinic acid dehydrogenase) (inosinate dehydrogenase) (imp oxidoreductase) (inosine-5'-monophosphate oxidoreductase) (IMPDH) (IMPD)	
+A4_AF2122	cds	3788767	3789177	+	A4_AF2122_03524		Conserved hypothetical protein	
+A4_AF2122	cds	3789187	3790086	-	A4_AF2122_03525		Unknown alanine and proline rich protein	
+A4_AF2122	cds	3791933	3792241	+	A4_AF2122_03528	whiB3	Transcriptional regulatory protein WhiB-like WhiB3 Contains [4FE-4S] cluster	
+A4_AF2122	cds	3792313	3793932	-	A4_AF2122_03529	groEL1	60 kDa chaperonin 1 GroEL1 (protein CPN60-1) (GroEL protein 1)	
+A4_AF2122	cds	3794027	3794329	-	A4_AF2122_03530	groES	10 kDa chaperonin GroES (protein CPN10) (protein GroES) (BCG-a heat shock protein) (10 kDa antigen)	
+A4_AF2122	cds	3794596	3795630	-	A4_AF2122_03531	gcp	putative O-sialoglycoprotein endopeptidase Gcp (glycoprotease)	
+A4_AF2122	cds	3795627	3796103	-	A4_AF2122_03532	rimI	Ribosomal-protein-alanine acetyltransferase RimI (acetylating enzyme for N-terminal of ribosomal protein S18)	
+A4_AF2122	cds	3796100	3796735	-	A4_AF2122_03533		Conserved hypothetical protein	
+A4_AF2122	cds	3796732	3797238	-	A4_AF2122_03534		Conserved hypothetical protein	
+A4_AF2122	cds	3797235	3798461	-	A4_AF2122_03535	alr	Alanine racemase Alr	
+A4_AF2122	cds	3799757	3800920	-	A4_AF2122_03537		putative transposase	
+A4_AF2122	cds	3801409	3802254	-	A4_AF2122_03540		putative transposase (fragment)	
+A4_AF2122	cds	3802487	3803869	-	A4_AF2122_03541	gadB	putative glutamate decarboxylase GadB	
+A4_AF2122	cds	3803907	3805328	-	A4_AF2122_03542		Conserved protein	
+A4_AF2122	cds	3807130	3809004	-	A4_AF2122_03545	glmS	putative glucosamine--fructose-6-phosphate aminotransferase [isomerizing] GlmS (hexosephosphate aminotransferase) (D-fructose-6-phosphate amidotransferase) (GFAT) (L-glutamine-D-fructose-6-phosphate amidotransferase) (glucosamine-6-phosphate synthase)	
+A4_AF2122	cds	3809026	3809502	+	A4_AF2122_03546		putative conserved transmembrane protein	
+A4_AF2122	cds	3809512	3810354	+	A4_AF2122_03547		Conserved protein	
+A4_AF2122	cds	3811780	3812091	-	A4_AF2122_03549		Hypothetical protein	
+A4_AF2122	cds	3812139	3813485	-	A4_AF2122_03550	mrsA	putative phospho-sugar mutase / MrsA -like protein	
+A4_AF2122	cds	3813610	3814065	-	A4_AF2122_03551	rpsI	30S ribosomal protein S9 RpsI	
+A4_AF2122	cds	3814738	3815040	-	A4_AF2122_03553	esxT	Putative ESAT-6 like protein EsxT	
+A4_AF2122	cds	3815431	3816645	-	A4_AF2122_03555		Hypothetical alanine and valine rich protein	
+A4_AF2122	cds	3816642	3820352	-	A4_AF2122_03556	eccC4	ESX conserved component EccC4 ESX-4 type VII secretion system protein putative membrane protein	
+A4_AF2122	cds	3820466	3821869	+	A4_AF2122_03557	eccD4	ESX conserved component EccD4 ESX-4 type VII secretion system protein putative integral membrane protein	
+A4_AF2122	cds	3823198	3824610	-	A4_AF2122_03559	eccB4	ESX conserved component EccB4 ESX-4 type VII secretion system protein putative membrane protein	
+A4_AF2122	cds	3824731	3825519	+	A4_AF2122_03560	cut3	putative cutinase precursor Cut3	
+A4_AF2122	cds	3825566	3826246	+	A4_AF2122_03561	cut4	putative cutinase precursor Cut4	
+A4_AF2122	cds	3829003	3829545	-	A4_AF2122_03564		hypothetical protein	
+A4_AF2122	cds	3829577	3830620	-	A4_AF2122_03565	rpoA	putative DNA-directed RNA polymerase (alpha chain) RpoA (transcriptase alpha chain) (RNA polymerase alpha subunit) (DNA-directed RNA nucleotidyltransferase)	
+A4_AF2122	cds	3830768	3831373	-	A4_AF2122_03566	rpsD	30S ribosomal protein S4 RpsD	
+A4_AF2122	cds	3831382	3831801	-	A4_AF2122_03567	rpsK	30S ribosomal protein S11 RpsK	
+A4_AF2122	cds	3831805	3832179	-	A4_AF2122_03568	rpsM	30S ribosomal protein S13 RpsM	
+A4_AF2122	cds	3832541	3832762	-	A4_AF2122_03569	infA	putative translation initiation factor if-1 InfA	
+A4_AF2122	cds	3833016	3833873	+	A4_AF2122_03570		Conserved protein	
+A4_AF2122	cds	3833946	3834941	+	A4_AF2122_03571	rmlB	dTDP-glucose 4,6-dehydratase RmlB	
+A4_AF2122	cds	3834943	3835551	+	A4_AF2122_03572	rmlC	dTDP-4-dehydrorhamnose 3,5-epimerase RmlC (dTDP-4-keto-6-deoxyglucose 3,5-epimerase) (dTDP-L-rhamnose synthetase) (thymidine diphospho-4-keto-rhamnose 3,5-epimerase)	
+A4_AF2122	cds	3837084	3838178	-	A4_AF2122_03574		putative dTDP-glucose 4,6-dehydratase	
+A4_AF2122	cds	3838182	3839192	-	A4_AF2122_03575	mhpE	putative 4-hydroxy-2-oxovalerate aldolase MhpE (HOA)	
+A4_AF2122	cds	3841471	3841977	+	A4_AF2122_03578		Conserved protein	
+A4_AF2122	cds	3843122	3844471	-	A4_AF2122_03580	kgtP	putative dicarboxylic acid transport integral membrane protein KgtP (dicarboxylate transporter)	
+A4_AF2122	cds	3844844	3845140	+	A4_AF2122_03581	pE31	PE family protein PE31	
+A4_AF2122	cds	3845177	3846358	+	A4_AF2122_03582	pPE60	PE family protein PPE60	
+A4_AF2122	cds	3850529	3851218	-	A4_AF2122_03587		putative integral membrane protein	
+A4_AF2122	cds	3852186	3852848	-	A4_AF2122_03589		putative exported protein	
+A4_AF2122	cds	3853114	3854652	+	A4_AF2122_03590	cpsA	putative conserved protein CpsA	
+A4_AF2122	cds	3854658	3855602	-	A4_AF2122_03591		putative short-chain type dehydrogenase/reductase	
+A4_AF2122	cds	3857703	3858026	+	A4_AF2122_03594		Conserved hypothetical protein	
+A4_AF2122	cds	3858108	3858272	+	A4_AF2122_03595		Unknown protein	
+A4_AF2122	cds	3858272	3859774	+	A4_AF2122_03596	otsA	Alpha, alpha-trehalose-phosphate synthase [UDP-forming] OtsA (trehalose-6-phosphate synthase) (UDP-glucose-glucosephosphate glucosyltransferase) (trehalosephosphate-UDP glucosyltransferase) (trehalose-6-phosphate synthetase) (trehalose-phosphate synthase) (trehalose-phosphate synthetase) (transglucosylase) (trehalosephosphate-UDP glucosyl transferase)	
+A4_AF2122	cds	3859926	3860504	+	A4_AF2122_03597		Unknown protein	
+A4_AF2122	cds	3860501	3860983	-	A4_AF2122_03598		Conserved hypothetical Mce associated protein	
+A4_AF2122	cds	3860983	3861711	-	A4_AF2122_03599		Conserved hypothetical Mce associated alanine and valine rich protein	
+A4_AF2122	cds	3861711	3863405	-	A4_AF2122_03600	mce4F	Mce-family protein Mce4F	
+A4_AF2122	cds	3863416	3864570	-	A4_AF2122_03601	lprN	putative Mce-family lipoprotein LprN (Mce-family lipoprotein Mce4E)	
+A4_AF2122	cds	3865919	3866992	-	A4_AF2122_03603	mce4C	Mce-family protein Mce4C	
+A4_AF2122	cds	3866982	3868034	-	A4_AF2122_03604	mce4B	Mce-family protein Mce4B	
+A4_AF2122	cds	3868034	3869236	-	A4_AF2122_03605	mce4A	Mce-family protein Mce4A	
+A4_AF2122	cds	3869256	3870098	-	A4_AF2122_03606	yrbE4B	Conserved integral membrane protein YrbE4B putative ABC transporter	
+A4_AF2122	cds	3870133	3870897	-	A4_AF2122_03607	yrbE4A	Conserved integral membrane protein YrbE4A putative ABC transporter	
+A4_AF2122	cds	3871123	3872076	-	A4_AF2122_03608		putative short-chain type dehydrogenase/reductase putative 17-beta-hydroxysteroid dehydrogenase	
+A4_AF2122	cds	3872101	3872292	-	A4_AF2122_03609	fdxD	putative ferredoxin FdxD	
+A4_AF2122	cds	3872507	3873709	+	A4_AF2122_03610	fadE26	putative acyl-CoA dehydrogenase FadE26	
+A4_AF2122	cds	3873734	3874855	+	A4_AF2122_03611	fadE27	putative acyl-CoA dehydrogenase FadE27	
+A4_AF2122	cds	3874926	3876434	+	A4_AF2122_03612	fadD17	Fatty-acid-CoA synthetase FadD17 (fatty-acid-CoA synthase) (fatty-acid-CoA ligase)	
+A4_AF2122	cds	3876605	3880687	+	A4_AF2122_03613		hypothetical protein	
+A4_AF2122	cds	3885527	3887074	-	A4_AF2122_03615	ilvX	putative acetohydroxyacid synthase IlvX (acetolactate synthase)	
+A4_AF2122	cds	3887071	3887907	-	A4_AF2122_03616		Conserved protein	

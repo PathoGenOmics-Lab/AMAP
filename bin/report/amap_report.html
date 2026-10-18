@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="AMAP amap_report.py">
+<title>{{TITLE}}</title>
+<link rel="icon" href="{{LOGO}}">
+<script>
+  // Dark by default, as on the AMAP website; light only when chosen.
+  try { if (localStorage.getItem('amap.theme') === 'light') document.documentElement.dataset.theme = 'light'; } catch (e) {}
+</script>
+<style>
+/*{{STYLES}}*/
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the report</a>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="AMAP report, back to the top">
+      <img src="{{LOGO}}" alt="" width="57" height="40">
+      <span>Report</span>
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#samples">Genomes</a>
+      <a href="#map">Map</a>
+      <a href="#lookup">Gene</a>
+      <a href="#correction">Correction</a>
+      <a href="#pseudogenes">Pseudogenes</a>
+      <a href="#beyond" class="nav-optional">Beyond</a>
+      <a href="#function" class="nav-optional">Function</a>
+      <a href="#methods" class="nav-optional">Methods</a>
+    </nav>
+    <button class="icon-btn" id="theme" type="button" aria-label="Switch between dark and light">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="filters" id="filters" role="region" aria-label="Which genomes the report shows">
+  <div class="wrap filters-row">
+    <span class="filters-label">Genomes</span>
+    <div class="lineage-pills" id="lineage-pills"></div>
+    <label class="search-box">
+      <span class="sr-only">Show only genomes whose name contains</span>
+      <input id="sample-filter" type="search" placeholder="Filter genomes" autocomplete="off" spellcheck="false">
+    </label>
+    <span class="filters-count" id="filters-count" aria-live="polite"></span>
+    <button class="mini-btn" id="filters-reset" type="button" hidden>Show all</button>
+  </div>
+</div>
+
+<main id="main">
+  <section class="hero" id="top">
+    <div class="wrap">
+      <p class="eyebrow"><span class="dot"></span><span id="hero-eyebrow">AMAP run</span></p>
+      <h1 id="hero-title">How the run went, genome by genome and gene by gene</h1>
+      <p class="lead" id="hero-lead"></p>
+      <div class="tiles" id="hero-tiles"></div>
+      <div class="modes" id="hero-modes"></div>
+      <div id="hero-alerts"></div>
+    </div>
+  </section>
+
+  <section class="section" id="samples">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker">1 · Annotation quality</p>
+        <h2>Did each genome annotate well?</h2>
+        <p>One row per genome. Values far from comparable genomes are flagged, and a click on a row opens that genome.</p>
+      </div>
+      <div id="samples-body"></div>
+    </div>
+  </section>
+
+  <section class="section" id="map">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker">2 · Reference map</p>
+        <h2>Where on the reference are genes missing or broken?</h2>
+        <p>Every reference gene at its place on the reference, one row per genome, grouped by lineage. Deletions that several genomes share stand out as blocks. Drag across the map to zoom into a region and list its genes.</p>
+      </div>
+      <div id="map-body"></div>
+    </div>
+  </section>
+
+  <section class="section" id="lookup">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker">3 · Gene lookup</p>
+        <h2>What happened to one gene in every genome?</h2>
+        <p>Search by locus, gene name or product. The gene's state, place and length in each genome, next to what the reference says of it.</p>
+      </div>
+      <div id="lookup-body"></div>
+    </div>
+  </section>
+
+  <section class="section" id="correction">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker">4 · The correction</p>
+        <h2>What did AMAP change in Bakta's annotation?</h2>
+        <p>From Bakta's calls to the final genes: what each case kept, what the reference replaced, and what it added where Bakta called nothing. Click a bar for its genes.</p>
+      </div>
+      <div id="correction-body"></div>
+    </div>
+  </section>
+
+  <section class="section" id="pseudogenes">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker">5 · Pseudogenes</p>
+        <h2>Which genes are broken, and in which lineages?</h2>
+        <p>Every gene AMAP flags as a pseudogene in at least one genome, with the reason. Pseudogenes shared by a whole lineage come first.</p>
+      </div>
+      <div id="pseudo-body"></div>
+    </div>
+  </section>
+
+  <section class="section" id="beyond">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker">6 · Beyond the reference</p>
+        <h2>What do the genomes carry that the reference does not, and in how many copies?</h2>
+        <p>Genes with no reference counterpart, how the reference genes are shared across genomes, the genes found more than once, and the pangenome when the run built one.</p>
+      </div>
+      <div id="beyond-body"></div>
+    </div>
+  </section>
+
+  <section class="section" id="function">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker">7 · Functional profile</p>
+        <h2>Do the lineages differ in function?</h2>
+        <p>Functional categories by lineage, the categories that differ most first.</p>
+      </div>
+      <div id="function-body"></div>
+    </div>
+  </section>
+
+  <section class="section" id="methods">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker">8 · Methods and provenance</p>
+        <h2>How was this made?</h2>
+        <p>The version, the reference, the parameters and the software behind every number above, and what each state in this report means.</p>
+      </div>
+      <div id="methods-body"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-row">
+    <p>Made by <a href="https://github.com/PathoGenOmics-Lab/AMAP">AMAP</a>, PathoGenOmics Lab, I2SysBio (University of Valencia and CSIC).</p>
+    <p id="foot-generated"></p>
+  </div>
+</footer>
+
+<aside class="drawer" id="drawer" aria-hidden="true" aria-labelledby="drawer-title">
+  <div class="drawer-panel" role="dialog" aria-modal="true">
+    <div class="drawer-head">
+      <h2 id="drawer-title"></h2>
+      <button class="icon-btn" id="drawer-close" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </div>
+</aside>
+
+<div class="tip" id="tip" role="tooltip" hidden></div>
+<noscript><p class="noscript">This report draws everything with JavaScript. Allow scripts for this file to see it.</p></noscript>
+
+<script id="amap-data" type="application/json" data-encoding="{{ENCODING}}">{{DATA}}</script>
+<script>
+/*{{SCRIPT}}*/
+</script>
+</body>
+</html>

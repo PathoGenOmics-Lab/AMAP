@@ -1,0 +1,145 @@
+# Annotated with Bakta
+# Software: v1.12.0
+# Database: v6.0, light
+# DOI: 10.1099/mgen.0.000685
+# URL: github.com/oschwengers/bakta
+#Sequence Id	Type	Start	Stop	Strand	Locus Tag	Gene	Product	DbXrefs
+L2_CCDC5079	cds	102944	104335	+	L2_CCDC5079_00110	pPE1	PPE family protein PPE1	
+L2_CCDC5079	cds	1258151	1258387	+	L2_CCDC5079_01219		Hypothetical protein	
+L2_CCDC5079	cds	1260170	1260496	-	L2_CCDC5079_01222		Putative transposase for insertion sequence element IS6110 (fragment)	
+L2_CCDC5079	cds	1261901	1262143	+	L2_CCDC5079_01224		putative acetyl-CoA acetyltransferase (acetoacetyl-CoA thiolase)	
+L2_CCDC5079	cds	1688587	1689204	-	L2_CCDC5079_01611		putative methyltransferase	
+L2_CCDC5079	cds	1689418	1689630	-	L2_CCDC5079_01612		Conserved protein	
+L2_CCDC5079	cds	1690134	1691162	+	L2_CCDC5079_01613		putative glycosyltransferase	
+L2_CCDC5079	cds	1691174	1691995	+	L2_CCDC5079_01614		Conserved hypothetical protein	
+L2_CCDC5079	cds	1692208	1693107	+	L2_CCDC5079_01615		Hypothetical protein	
+L2_CCDC5079	cds	1694565	1695230	-	L2_CCDC5079_01618		Conserved hypothetical protein	
+L2_CCDC5079	cds	1696010	1696705	-	L2_CCDC5079_01620		Conserved protein	
+L2_CCDC5079	cds	1699150	1699512	+	L2_CCDC5079_01623		Conserved hypothetical protein	
+L2_CCDC5079	cds	1700579	1701877	+	L2_CCDC5079_01626		Conserved putative membrane protein	
+L2_CCDC5079	cds	1702358	1703380	+	L2_CCDC5079_01627	gmdA	GDP-D-mannose dehydratase GmdA (GDP-mannose 4,6 dehydratase) (GMD)	
+L2_CCDC5079	cds	1703377	1704345	+	L2_CCDC5079_01628	epiA	putative nucleotide-sugar epimerase EpiA	
+L2_CCDC5079	cds	1704342	1705073	+	L2_CCDC5079_01629		Conserved protein	
+L2_CCDC5079	cds	1705091	1705879	-	L2_CCDC5079_01630		Conserved hypothetical protein	
+L2_CCDC5079	cds	1705914	1706810	-	L2_CCDC5079_01631		Conserved hypothetical protein	
+L2_CCDC5079	cds	1706813	1707823	-	L2_CCDC5079_01632		putative sugar transferase	
+L2_CCDC5079	cds	1708155	1708919	+	L2_CCDC5079_01633		Conserved hypothetical transmembrane protein	
+L2_CCDC5079	cds	1708928	1709887	+	L2_CCDC5079_01634		Conserved hypothetical protein	
+L2_CCDC5079	cds	1710312	1711352	+	L2_CCDC5079_01635		putative sugar transferase	
+L2_CCDC5079	cds	1711586	1713337	+	L2_CCDC5079_01637	fadD25	putative fatty-acid-AMP ligase FadD25 (fatty-acid-AMP synthetase) (fatty-acid-AMP synthase)	
+L2_CCDC5079	cds	2019314	2021281	+	L2_CCDC5079_01920	pPE28	PPE family protein PPE28	
+L2_CCDC5079	cds	2023644	2024915	+	L2_CCDC5079_01923	pPE29	PPE family protein PPE29	
+L2_CCDC5079	cds	2248724	2249980	-	L2_CCDC5079_02169		Conserved hypothetical protein	
+L2_CCDC5079	cds	2251513	2251839	-	L2_CCDC5079_02172		Putative transposase for insertion sequence element IS6110 (fragment)	
+L2_CCDC5079	cds	2252264	2253304	+	L2_CCDC5079_02174		Transcriptional regulatory protein	
+L2_CCDC5079	cds	2352704	2353030	+	L2_CCDC5079_02270		Putative transposase for insertion sequence element IS6110 (fragment)	
+L2_CCDC5079	cds	2355302	2355628	-	L2_CCDC5079_02273		Putative transposase for insertion sequence element IS6110 (fragment)	
+L2_CCDC5079	cds	2355833	2356129	+	L2_CCDC5079_02274	pE22	PE family protein PE22	
+L2_CCDC5079	cds	2356185	2356916	+	L2_CCDC5079_02275	pPE36	PPE family protein PPE36	
+L2_CCDC5079	cds	3352003	3353307	-	L2_CCDC5079_03220	pPE46	PPE family protein PPE46	
+L2_CCDC5079	cds	3353669	3353995	+	L2_CCDC5079_03222		Putative transposase for insertion sequence element IS6110 (fragment)	
+L2_CCDC5079	cds	3354984	3355277	-	L2_CCDC5079_03224	esxS	ESAT-6 like protein EsxS	
+L2_CCDC5079	cds	3355324	3356400	-	L2_CCDC5079_03225		hypothetical protein	
+L2_CCDC5079	cds	3468081	3469115	+	L2_CCDC5079_03337		Conserved protein	
+L2_CCDC5079	cds	3470822	3471148	-	L2_CCDC5079_03341		Putative transposase for insertion sequence element IS6110 (fragment)	
+L2_CCDC5079	cds	3472267	3473658	-	L2_CCDC5079_03344	tgs1	Triacylglycerol synthase (diacylglycerol acyltransferase) Tgs1	
+L2_CCDC5079	cds	3761711	3762175	+	L2_CCDC5079_03612	spoU	putative tRNA/rRNA methylase SpoU (tRNA/rRNA methyltransferase)	
+L2_CCDC5079	cds	3764318	3764962	-	L2_CCDC5079_03614		putative oxidoreductase	
+L2_CCDC5079	cds	3768914	3770254	+	L2_CCDC5079_03619		putative triacylglycerol synthase (diacylglycerol acyltransferase)	
+L2_CCDC5079	cds	3770296	3771471	+	L2_CCDC5079_03620	otsB2	Trehalose 6-phosphate phosphatase OtsB2 (trehalose-phosphatase) (TPP)	
+L2_CCDC5079	cds	3774138	3774791	+	L2_CCDC5079_03625		Conserved hypothetical protein	
+L2_CCDC5079	cds	3774830	3776335	-	L2_CCDC5079_03626		Halimadienyl diphosphate synthase	
+L2_CCDC5079	cds	3776340	3777230	-	L2_CCDC5079_03627		Diterpene synthase	
+L2_CCDC5079	cds	3779074	3780063	-	L2_CCDC5079_03629	lytB1	putative LYTB-related protein LytB1	
+L2_CCDC5079	cds	3780505	3780831	+	L2_CCDC5079_03630		Putative transposase for insertion sequence element IS6110 (fragment)	
+L2_CCDC5079	cds	3783226	3783618	-	L2_CCDC5079_03634	vapC46	putative toxin VapC46 Contains PIN domain	
+L2_CCDC5079	cds	3784769	3785446	+	L2_CCDC5079_03637		putative transposase	
+L2_CCDC5079	cds	3785636	3787831	+	L2_CCDC5079_03638		hypothetical protein	
+L2_CCDC5079	cds	3787902	3788774	-	L2_CCDC5079_03639	htdY	putative 3-hydroxyacyl-thioester dehydratase HtdY	
+L2_CCDC5079	cds	3788848	3789558	+	L2_CCDC5079_03640	lpqD	putative conserved lipoprotein LpqD	
+L2_CCDC5079	cds	3789604	3791556	+	L2_CCDC5079_03641	acrA1	putative multi-functional enzyme with acyl-CoA-reductase activity AcrA1	
+L2_CCDC5079	cds	3791557	3792420	-	L2_CCDC5079_03642	cmaA1	Cyclopropane-fatty-acyl-phospholipid synthase 1 CmaA1 (cyclopropane fatty acid synthase) (CFA synthase) (cyclopropane mycolic acid synthase 1)	
+L2_CCDC5079	cds	3792444	3793370	+	L2_CCDC5079_03643	iunH	putative nucleoside hydrolase IunH (purine nucleosidase)	
+L2_CCDC5079	cds	3796485	3798062	-	L2_CCDC5079_03647	guaA	putative GMP synthase [glutamine-hydrolyzing] GuaA (glutamine amidotransferase) (GMP synthetase)	
+L2_CCDC5079	cds	3798074	3798982	-	L2_CCDC5079_03648	phyA	putative phytoene synthase PhyA	
+L2_CCDC5079	cds	3799011	3800090	-	L2_CCDC5079_03649	idsA1	putative multifunctional geranylgeranyl pyrophosphate synthetase IdsA1 (GGPP synthetase) (ggppsase) (geranylgeranyl diphosphate synthase): dimethylallyltransferase (prenyltransferase) (geranyl-diphosphate synthase) + geranyltranstransferase (farnesyl-diphosphate synthase) (farnesyl-pyrophosphate synthetase) (farnesyl diphosphate synthetase) (FPP synthetase) + farnesyltranstransferase (geranylgeranyl-diphosphate synthase)	
+L2_CCDC5079	cds	3801223	3802011	+	L2_CCDC5079_03651		putative hydrolase	
+L2_CCDC5079	cds	3802026	3804386	+	L2_CCDC5079_03652		Conserved protein	
+L2_CCDC5079	cds	3804869	3806107	-	L2_CCDC5079_03654		Conserved hypothetical protein	
+L2_CCDC5079	cds	3806478	3808079	-	L2_CCDC5079_03655		Hypothetical protein	
+L2_CCDC5079	cds	3808096	3808800	-	L2_CCDC5079_03656		Conserved hypothetical protein	
+L2_CCDC5079	cds	3808918	3809484	-	L2_CCDC5079_03657		putative transcriptional regulatory protein	
+L2_CCDC5079	cds	3809546	3810433	+	L2_CCDC5079_03658		putative dioxygenase	
+L2_CCDC5079	cds	3811207	3812943	-	L2_CCDC5079_03661	choD	Cholesterol oxidase ChoD (cholesterol-O2 oxidoreductase)	
+L2_CCDC5079	cds	3812999	3814126	-	L2_CCDC5079_03662	guaB3	putative inosine-5'-monophosphate dehydrogenase GuaB3 (imp dehydrogenase) (inosinic acid dehydrogenase) (inosinate dehydrogenase) (imp oxidoreductase) (inosine-5'-monophosphate oxidoreductase) (IMPDH) (IMPD)	
+L2_CCDC5079	cds	3814146	3815735	-	L2_CCDC5079_03663	guaB2	putative inosine-5'-monophosphate dehydrogenase GuaB2 (imp dehydrogenase) (inosinic acid dehydrogenase) (inosinate dehydrogenase) (imp oxidoreductase) (inosine-5'-monophosphate oxidoreductase) (IMPDH) (IMPD)	
+L2_CCDC5079	cds	3815942	3816352	+	L2_CCDC5079_03664		Conserved hypothetical protein	
+L2_CCDC5079	cds	3816362	3817261	-	L2_CCDC5079_03665		Unknown alanine and proline rich protein	
+L2_CCDC5079	cds	3819108	3819416	+	L2_CCDC5079_03668	whiB3	Transcriptional regulatory protein WhiB-like WhiB3 Contains [4FE-4S] cluster	
+L2_CCDC5079	cds	3819488	3821107	-	L2_CCDC5079_03669	groEL1	60 kDa chaperonin 1 GroEL1 (protein CPN60-1) (GroEL protein 1)	
+L2_CCDC5079	cds	3821202	3821504	-	L2_CCDC5079_03670	groES	10 kDa chaperonin GroES (protein CPN10) (protein GroES) (BCG-a heat shock protein) (10 kDa antigen)	
+L2_CCDC5079	cds	3821771	3822805	-	L2_CCDC5079_03671	gcp	putative O-sialoglycoprotein endopeptidase Gcp (glycoprotease)	
+L2_CCDC5079	cds	3822802	3823278	-	L2_CCDC5079_03672	rimI	Ribosomal-protein-alanine acetyltransferase RimI (acetylating enzyme for N-terminal of ribosomal protein S18)	
+L2_CCDC5079	cds	3823275	3823910	-	L2_CCDC5079_03673		Conserved hypothetical protein	
+L2_CCDC5079	cds	3823907	3824413	-	L2_CCDC5079_03674		Conserved hypothetical protein	
+L2_CCDC5079	cds	3824410	3825636	-	L2_CCDC5079_03675	alr	Alanine racemase Alr	
+L2_CCDC5079	cds	3828099	3828854	-	L2_CCDC5079_03681		putative transposase	
+L2_CCDC5079	cds	3832338	3832637	+	L2_CCDC5079_03685		PE domain-containing protein	
+L2_CCDC5079	cds	3832723	3833265	+	L2_CCDC5079_03686		hypothetical protein	
+L2_CCDC5079	cds	3833356	3833751	+	L2_CCDC5079_03687		hypothetical protein	
+L2_CCDC5079	cds	3835159	3835695	+	L2_CCDC5079_03688	pPE59	PPE family protein PPE59	
+L2_CCDC5079	cds	3835636	3836799	-	L2_CCDC5079_03689		putative transposase	
+L2_CCDC5079	cds	3837288	3838133	-	L2_CCDC5079_03692		putative transposase (fragment)	
+L2_CCDC5079	cds	3838366	3839748	-	L2_CCDC5079_03693	gadB	putative glutamate decarboxylase GadB	
+L2_CCDC5079	cds	3839786	3841207	-	L2_CCDC5079_03694		Conserved protein	
+L2_CCDC5079	cds	3843009	3844883	-	L2_CCDC5079_03697	glmS	putative glucosamine--fructose-6-phosphate aminotransferase [isomerizing] GlmS (hexosephosphate aminotransferase) (D-fructose-6-phosphate amidotransferase) (GFAT) (L-glutamine-D-fructose-6-phosphate amidotransferase) (glucosamine-6-phosphate synthase)	
+L2_CCDC5079	cds	3844905	3845381	+	L2_CCDC5079_03698		putative conserved transmembrane protein	
+L2_CCDC5079	cds	3845391	3846233	+	L2_CCDC5079_03699		Conserved protein	
+L2_CCDC5079	cds	3847659	3847970	-	L2_CCDC5079_03701		Hypothetical protein	
+L2_CCDC5079	cds	3849491	3849946	-	L2_CCDC5079_03704	rpsI	30S ribosomal protein S9 RpsI	
+L2_CCDC5079	cds	3849943	3850386	-	L2_CCDC5079_03705	rplM	50S ribosomal protein L13 RplM	
+L2_CCDC5079	cds	3850622	3850924	-	L2_CCDC5079_03706	esxT	Putative ESAT-6 like protein EsxT	
+L2_CCDC5079	cds	3851315	3852529	-	L2_CCDC5079_03708		Hypothetical alanine and valine rich protein	
+L2_CCDC5079	cds	3852526	3856236	-	L2_CCDC5079_03709	eccC4	ESX conserved component EccC4 ESX-4 type VII secretion system protein putative membrane protein	
+L2_CCDC5079	cds	3856350	3857753	+	L2_CCDC5079_03710	eccD4	ESX conserved component EccD4 ESX-4 type VII secretion system protein putative integral membrane protein	
+L2_CCDC5079	cds	3859082	3860494	-	L2_CCDC5079_03712	eccB4	ESX conserved component EccB4 ESX-4 type VII secretion system protein putative membrane protein	
+L2_CCDC5079	cds	3860615	3861403	+	L2_CCDC5079_03713	cut3	putative cutinase precursor Cut3	
+L2_CCDC5079	cds	3861450	3862130	+	L2_CCDC5079_03714	cut4	putative cutinase precursor Cut4	
+L2_CCDC5079	cds	3864887	3865429	-	L2_CCDC5079_03717		hypothetical protein	
+L2_CCDC5079	cds	3866657	3867262	-	L2_CCDC5079_03719	rpsD	30S ribosomal protein S4 RpsD	
+L2_CCDC5079	cds	3867271	3867690	-	L2_CCDC5079_03720	rpsK	30S ribosomal protein S11 RpsK	
+L2_CCDC5079	cds	3868488	3868709	-	L2_CCDC5079_03723	infA	putative translation initiation factor if-1 InfA	
+L2_CCDC5079	cds	3868963	3869820	+	L2_CCDC5079_03724		Conserved protein	
+L2_CCDC5079	cds	3869893	3870888	+	L2_CCDC5079_03725	rmlB	dTDP-glucose 4,6-dehydratase RmlB	
+L2_CCDC5079	cds	3870890	3871498	+	L2_CCDC5079_03726	rmlC	dTDP-4-dehydrorhamnose 3,5-epimerase RmlC (dTDP-4-keto-6-deoxyglucose 3,5-epimerase) (dTDP-L-rhamnose synthetase) (thymidine diphospho-4-keto-rhamnose 3,5-epimerase)	
+L2_CCDC5079	cds	3873031	3874125	-	L2_CCDC5079_03728		putative dTDP-glucose 4,6-dehydratase	
+L2_CCDC5079	cds	3874129	3875139	-	L2_CCDC5079_03729	mhpE	putative 4-hydroxy-2-oxovalerate aldolase MhpE (HOA)	
+L2_CCDC5079	cds	3877418	3877924	+	L2_CCDC5079_03732		Conserved protein	
+L2_CCDC5079	cds	3879069	3880418	-	L2_CCDC5079_03734	kgtP	putative dicarboxylic acid transport integral membrane protein KgtP (dicarboxylate transporter)	
+L2_CCDC5079	cds	3880791	3881087	+	L2_CCDC5079_03735	pE31	PE family protein PE31	
+L2_CCDC5079	cds	3881124	3882305	+	L2_CCDC5079_03736	pPE60	PE family protein PPE60	
+L2_CCDC5079	cds	3885607	3887100	-	L2_CCDC5079_03738		putative triacylglycerol synthase (diacylglycerol acyltransferase)	
+L2_CCDC5079	cds	3887191	3887880	-	L2_CCDC5079_03739		putative integral membrane protein	
+L2_CCDC5079	cds	3889777	3891315	+	L2_CCDC5079_03742	cpsA	putative conserved protein CpsA	
+L2_CCDC5079	cds	3891321	3892265	-	L2_CCDC5079_03743		putative short-chain type dehydrogenase/reductase	
+L2_CCDC5079	cds	3894366	3894689	+	L2_CCDC5079_03746		Conserved hypothetical protein	
+L2_CCDC5079	cds	3894771	3894935	+	L2_CCDC5079_03747		Unknown protein	
+L2_CCDC5079	cds	3894935	3896437	+	L2_CCDC5079_03748	otsA	Alpha, alpha-trehalose-phosphate synthase [UDP-forming] OtsA (trehalose-6-phosphate synthase) (UDP-glucose-glucosephosphate glucosyltransferase) (trehalosephosphate-UDP glucosyltransferase) (trehalose-6-phosphate synthetase) (trehalose-phosphate synthase) (trehalose-phosphate synthetase) (transglucosylase) (trehalosephosphate-UDP glucosyl transferase)	
+L2_CCDC5079	cds	3896589	3897167	+	L2_CCDC5079_03749		Unknown protein	
+L2_CCDC5079	cds	3897164	3897646	-	L2_CCDC5079_03750		Conserved hypothetical Mce associated protein	
+L2_CCDC5079	cds	3897646	3898374	-	L2_CCDC5079_03751		Conserved hypothetical Mce associated alanine and valine rich protein	
+L2_CCDC5079	cds	3898374	3900068	-	L2_CCDC5079_03752	mce4F	Mce-family protein Mce4F	
+L2_CCDC5079	cds	3900079	3901233	-	L2_CCDC5079_03753	lprN	putative Mce-family lipoprotein LprN (Mce-family lipoprotein Mce4E)	
+L2_CCDC5079	cds	3902582	3903655	-	L2_CCDC5079_03755	mce4C	Mce-family protein Mce4C	
+L2_CCDC5079	cds	3903645	3904697	-	L2_CCDC5079_03756	mce4B	Mce-family protein Mce4B	
+L2_CCDC5079	cds	3904697	3905899	-	L2_CCDC5079_03757	mce4A	Mce-family protein Mce4A	
+L2_CCDC5079	cds	3905919	3906761	-	L2_CCDC5079_03758	yrbE4B	Conserved integral membrane protein YrbE4B putative ABC transporter	
+L2_CCDC5079	cds	3906796	3907560	-	L2_CCDC5079_03759	yrbE4A	Conserved integral membrane protein YrbE4A putative ABC transporter	
+L2_CCDC5079	cds	3907786	3908739	-	L2_CCDC5079_03760		putative short-chain type dehydrogenase/reductase putative 17-beta-hydroxysteroid dehydrogenase	
+L2_CCDC5079	cds	3908764	3908955	-	L2_CCDC5079_03761	fdxD	putative ferredoxin FdxD	
+L2_CCDC5079	cds	3909170	3910372	+	L2_CCDC5079_03762	fadE26	putative acyl-CoA dehydrogenase FadE26	
+L2_CCDC5079	cds	3910397	3911518	+	L2_CCDC5079_03763	fadE27	putative acyl-CoA dehydrogenase FadE27	
+L2_CCDC5079	cds	3913270	3917415	+	L2_CCDC5079_03767		hypothetical protein	
+L2_CCDC5079	cds	3923578	3925125	-	L2_CCDC5079_03769	ilvX	putative acetohydroxyacid synthase IlvX (acetolactate synthase)	
+L2_CCDC5079	cds	3925122	3925958	-	L2_CCDC5079_03770		Conserved protein	
+L2_CCDC5079	cds	3926318	3928462	+	L2_CCDC5079_03771		hypothetical protein	

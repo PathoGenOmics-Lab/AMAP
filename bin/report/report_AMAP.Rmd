@@ -267,7 +267,9 @@ datos_cog <- datos_cog %>%
   ungroup()
 datos_cog$Percentage <- as.numeric(datos_cog$Percentage)
 datos_cog1 <- datos_cog
-lvl_cogs <- c("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","S","T","U","V","NA")
+# The categories there is a figure for, A to Z and None: a category left out
+# of the levels turns NA, and its genes are plotted in no figure of their own
+lvl_cogs <- names(cog_names)
 datos_cog1$Functional_Category <- factor(datos_cog1$Functional_Category, levels = lvl_cogs)
 
 # Dynamic color assignment for non-MTBC lineages

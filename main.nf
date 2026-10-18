@@ -276,6 +276,7 @@ include { GET_DUPLICATIONS }    from './modules/local/get'
 include { GET_OUTPUTS }         from './modules/local/get'
 include { GET_ALLDUP }          from './modules/local/get'
 include { PANGENE }             from './modules/local/pangene'
+include { PANGENE_GENOME }      from './modules/local/pangene'
 include { REPORT_INPUTS }       from './modules/local/freport'
 include { FINAL_REPORT }        from './modules/local/freport'
 include { PREPARE_REFERENCE; BUNDLED_REFERENCE } from './modules/local/reference'
@@ -566,16 +567,22 @@ workflow {
             GET_DUPLICATIONS(ch_for_downstream)
         
             // 10. Runs pangenome for the genes of each genome
-            // Collect typed FASTA files from PATHOTYPR step (or empty channel if skipped)
+            // Each sample's proteins are aligned onto every other sample's
+            // genome, which PANGENE tells apart by file name. The genomes
+            // PATHOTYPR renamed have names of their own; without typing, each
+            // sample's genome from the sheet is copied to <sampleId>.fasta, and
+            // that copy is also the one PANGENE leaves out as the sample's own.
             if (!params.skip_typing) {
                 ref_fastas_ch = PATHOTYPR.out.typed_fasta.map { it[1] }.collect()
+                pangene_ch = ch_for_downstream
             } else {
-                // Use a collected empty list instead of Channel.empty() so that
-                // PANGENE still executes (with 0 reference FASTAs → creates
-                // placeholder outputs). Channel.empty() prevents process execution entirely.
-                ref_fastas_ch = Channel.value([])
+                PANGENE_GENOME(genomes_ch)
+                ref_fastas_ch = PANGENE_GENOME.out.map { _sampleId, genome -> genome }.collect()
+                pangene_ch = ch_for_downstream.join(PANGENE_GENOME.out).map { sampleId, amap_tsv, amap_faa, amap_fna, bakta_tsv, _fasta, emapper, genome ->
+                    tuple(sampleId, amap_tsv, amap_faa, amap_fna, bakta_tsv, genome, emapper)
+                }
             }
-            PANGENE(ch_for_downstream, ref_fastas_ch)
+            PANGENE(pangene_ch, ref_fastas_ch)
 
             // 11. Count annotations per category
             GET_COUNT(GET_OUTPUTS.out.master_table.join(names_ch))

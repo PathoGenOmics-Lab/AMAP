@@ -1,7 +1,3 @@
----
-title: Parameters
----
-
 # Parameters
 
 Every AMAP parameter, what it defaults to, and when you would change it. Run
@@ -77,14 +73,15 @@ They must be given together; setting only one is an error. See
 
 ## Reference and database arguments
 
-!!! note "You almost certainly do not need these"
-
-    Every file below ships inside the Docker and Singularity images, under
-    `/reference/`. Running with `-profile docker` or `-profile singularity`
-    picks them up automatically.
-
-    They exist for running without a container, for swapping in updated
-    reference files, or for adapting the pipeline by hand.
+> [!NOTE]
+> **You almost certainly do not need these**
+>
+> Every file below ships inside the Docker and Singularity images, under
+> `/reference/`. Running with `-profile docker` or `-profile singularity`
+> picks them up automatically.
+>
+> They exist for running without a container, for swapping in updated
+> reference files, or for adapting the pipeline by hand.
 
 | Parameter | Description | Default inside the container |
 | :--- | :--- | :--- |

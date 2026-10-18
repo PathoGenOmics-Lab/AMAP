@@ -1,7 +1,3 @@
----
-title: Running AMAP
----
-
 # Running AMAP
 
 Nextflow runs the pipeline straight from GitHub, so there is nothing to clone
@@ -34,8 +30,11 @@ Combine them with commas:
 nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv
 ```
 
-Order does not matter, but a container profile and an executor profile are both
-worth setting. Without an executor profile everything runs on the local machine.
+Write the container profile first. From Nextflow 25.10 on, where two profiles
+set the same thing the later one wins, and the container profiles cap every task
+at 16 GB, which suits a laptop: `-profile slurm,singularity` would hold a cluster
+run to that, where `-profile singularity,slurm` gets the cluster's 128 GB.
+Without an executor profile everything runs on the local machine.
 
 ## On a laptop or workstation
 
@@ -79,12 +78,13 @@ nextflow run PathoGenOmics-Lab/AMAP \
 [Deployment on HPC](../deployment/hpc.md) goes into the details that actually
 bite: shared filesystems, scratch, and where the eggNOG database should live.
 
-!!! tip "Large datasets"
-
-    Past a hundred genomes, use a scheduler. The eggNOG step in particular runs
-    once over all samples at a time rather than once per sample, precisely so a
-    shared filesystem is not hammered by hundreds of jobs reading the same
-    Diamond database.
+> [!TIP]
+> **Large datasets**
+>
+> Past a hundred genomes, use a scheduler. The eggNOG step in particular runs
+> once over all samples at a time rather than once per sample, precisely so a
+> shared filesystem is not hammered by hundreds of jobs reading the same
+> Diamond database.
 
 ## Non-MTBC organisms
 
@@ -119,8 +119,10 @@ and its resume.
 ## Running only part of the pipeline
 
 `--skip_functional_annotation` stops after the correction step. You get the
-corrected annotation and the case tables, and skip eggNOG, duplications, the
-pangenome and the report. Much faster when the corrected GFF3 is all you are
+corrected genes as a table with their proteins and sequences (`*.AMAP.tsv`,
+`.faa`, `.fna`) and the case tables, and skip eggNOG, duplications, the
+pangenome and the report. The GFF3 and GenBank files are written after eggNOG,
+so they are skipped too. Much faster when the corrected genes are all you are
 after:
 
 ```bash

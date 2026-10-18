@@ -1,63 +1,10 @@
----
-title: The workflow
----
-
 # The workflow
 
-```mermaid
-flowchart TB
-    subgraph INPUT
-    v0["GENOMES"]
-    end
-    v3([PATHOTYPR])
-    v4([BAKTA ANNOTATOR])
-    v6([MINIPROT])
-    v8([TYPE CASES])
-    v14([FIX ANNOTATION])
-    v20([GET DUPLICATIONS])
-    v17([EGGNOG DB])
-    v18([EGGNOG ANNOTATION])
-    v19([FUNCTIONAL ANNOTATION])
-    v16["FINAL RUN REPORT"]
-    v22([PANGENE])
-    subgraph RESULTS
-    v12["Bakta annotation
-    /BAKTA"]
-    v10["Case tables
-    /CDS_CASES"]
-    v13["Corrected annotation
-    /AMAP"]
-    v23["Duplicated genes
-    /DUPLICATIONS"]
-    v21["Pangenome
-    /PANGENE"]
-    v15["Lineage typing
-    /PATHOTYPR"]
-    end
-    v0 --> v3
-    v3 --> v4
-    v3 --> v6
-    v3 --> v15
-    v4 --> v12
-    v4 --> v6
-    v4 --> v8
-    v6 --> v8
-    v8 --> v10
-    v8 --> v14
-    v14 --> v13
-    v14 --> v19
-    v14 --> v20
-    v14 --> v22
-    v17 --> v18
-    v18 --> v19
-    v19 --> v13
-    v20 --> v13
-    v20 --> v23
-    v22 --> v21
-    v10 --> v16
-    v13 --> v16
-    v15 --> v16
-```
+The pipeline as a metro map: stations are the processes of `main.nf`, lines
+are what travels between them. Pick a station for what it does and where its
+files go, or switch an option to see what a run leaves out.
+
+<!-- figure: metro -->
 
 ## 1. eggNOG database setup
 
@@ -130,8 +77,9 @@ bp. Genes with internal stops are flagged as pseudogenes rather than discarded.
 Anything that cannot be translated at all is dropped, so the annotation table
 and the FASTA files always agree.
 
-Outputs are the corrected GFF3, GenBank, protein and nucleotide files under
-`AMAP/`.
+Outputs are the corrected gene table and its protein and nucleotide files
+under `AMAP/` (`*.AMAP.tsv`, `.faa`, `.fna`). The GFF3 and GenBank files follow
+once eggNOG has run, in step 7.
 
 ## 7. Functional annotation
 
@@ -152,9 +100,10 @@ attributes.
 ## 8. Duplication analysis
 
 Each proteome is searched against itself with Diamond to find within-genome
-duplications, which are grouped into families by connected components. Then all
-samples are pooled and searched all-against-all to build homologous communities
-across genomes, with network metrics computed per community.
+duplications, which are grouped into families by connected components. Then the
+proteins of every sample's families are pooled and searched all against all to
+build homologous communities across genomes, with network metrics computed per
+community.
 
 [Duplication metrics](duplications.md) explains the numbers.
 

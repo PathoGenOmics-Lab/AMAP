@@ -23,7 +23,7 @@ directly comparable with 1.0.1.
 - **Missing genes are recovered by what covers them**: genes stored under Bakta locus tags looked missing by name, so a placement a codon off its gene went back in as a second copy. With the case 4 changes, ORFs annotated twice fall from 10 to 3 on CDC1551 and from 16 to 6 on M. bovis, where the reference has none
 - **Real copies of a gene are kept**: `deduplicate_rvs.py` deleted every copy of a gene but one, 34 genes on E. coli O157:H7 Sakai, which were then missing from the annotation and from the duplication analysis. Further copies get identifiers of their own
 - **Genes that lost their stop no longer swallow the next gene**: `check_cds.py` extended a gene without a stop to the next one in its frame, which after an indel is the next gene's, so that gene was annotated a second time in the same frame (M. bovis Rv0590 over Rv0590A, Rv3373 over Rv3374, Rv2293c over Rv2292c). Such a gene now keeps its extent as a pseudogene, unless the extension only restores residues its reference protein has. ORFs annotated twice fall from 3 to 2 on CDC1551 and from 6 to 3 on M. bovis, and none of those left comes from an extension
-- **Small proteins**: miniprot placed none of the 33 proteins of 8 to 29 residues in E. coli K-12, and put the ldr toxin b4665 only on its near-identical neighbour. Every protein without an exact placement is now looked for in the six-frame translation of the genome, which takes K-12 against itself from 4252 to all 4286 of its genes, its alternative-start isoforms counted with their gene, and Sakai from 198 to 220 of 220
+- **Small proteins**: miniprot placed none of the 33 proteins of 8 to 29 residues in E. coli K-12, and put the toxin IbsC (b4665) only on its near-identical neighbour IbsD. Every protein without an exact placement is now looked for in the six-frame translation of the genome, which takes K-12 against itself from 4252 to all 4286 of its genes, its alternative-start isoforms counted with their gene, and Sakai from 198 to 220 of 220
 - **Frameshifts and lost stops**: a gene was extended to the next stop in its frame however far that was, and came out as a complete gene with a C-terminus its reference lacks; 18 in CDC1551 and 20 in M. bovis. It now keeps its extent and is flagged as a pseudogene when that stop lies more than ten residues past the end of the reference protein, as PGAP and Bakta treat a frameshift, which also covers a frame that runs into the next gene
 - **Genes a contig end cuts**: in a draft assembly they came out as pseudogenes, or as complete genes, without a word. A gene whose frame runs off the contig, or that opens at its edge without a start codon, is now marked partial at that end. In CDC1551 cut into 40 contigs, the larger piece of each of the 25 genes a cut runs through is marked so
 - **The other pieces of a cut gene**: miniprot reports only the placements within 5% of a protein's best, so only the larger piece of a gene a contig end cuts was annotated. What that placement lacks is now aligned again as a protein of its own, and its placement at the end of another contig is annotated under the gene's name and marked partial: 47 of the 50 pieces in the CDC1551 draft instead of 25, the other three being five or six codons long. A gene that opens at a contig's edge with a codon that can also start one, as one in six codons inside H37Rv genes can, is marked partial too when its protein begins inside its reference protein
@@ -32,6 +32,7 @@ directly comparable with 1.0.1.
 - **Genes longer than their reference keep its name**: a Bakta call that won its locus over a shorter alignment in its frame kept no name, and the protein was missing from the table: Rv2024c in CDC1551 and M. bovis, mmpL6 (Rv1557, whole in M. bovis where TbD1 cut it in H37Rv), Rv1068c, Rv1917c and Rv3135 in M. bovis, fliD (b1923) and b0282 in Sakai. The call now takes the name when the alignment spans at least half of the protein, so a remnant does not name the gene it ends (the 67 residues of cyp141 that RD12 leaves in M. bovis)
 - **Small proteins with a few substitutions**: only exact copies were looked for, so Sakai's ten K-12 micro-proteins with one to four residues changed were not annotated. A protein of up to 50 residues with no exact copy is now looked for with up to a fifth of its residues changed; a stop codon in place of a residue counts, and the gene is then a pseudogene (b1229)
 - **Synteny no longer hangs on the order of the rows**: the anchors were sorted by start and searched by midpoint, so two anchors starting together sent a placement to whichever window the row order gave, and adding unrelated rows moved Sakai's b2127 24 kb and handed its locus to the paralog b1162. A locus several proteins are placed at exactly no longer anchors either: the single IS6110 of M. bovis made 34 anchors with reference positions all over the genome, and came out under all 17 IS6110 names of each of its genes; they are now Rv2814c and Rv2815c, its own
+- **Genes without a COG category are counted once**: `count_annot.py` filled in a missing category as `Unassigned` and split it into letters, as it splits `JK` into J and K, so every gene eggNOG gave no category was counted once in A, D, E, G, I and U and twice in N and S, in `*-AMAP.COG.tsv` and in the report's COG figures and statistics, where it also shrank every other category's share. A test-profile run with a stand-in for eggNOG that gave none of its 4036 genes a category reported 4036 genes in each of those six and 8072 in N and S. Such a gene now counts once, as `NaN`, which the report shows as None, and its percentage is of all the genome's genes like every other category's
 
 ### 🐛 Pipeline
 - **Pseudogenes in the GFF3 and GenBank**: the GFF3 never said which genes were pseudogenes, and the GenBank only for genes with an internal stop, though the master table knew. Both now carry AMAP's flag with its reason (`pseudo=true` and `Note`, `/pseudo` and `/note`), and mark the ends a contig cut off (`partial=true` with `start_range` or `end_range`, `<` or `>`); the master table and `*-AMAP.tsv` have them as their last columns
@@ -66,6 +67,15 @@ directly comparable with 1.0.1.
 ### 🧹 Code
 - **`reconcile_coordinates` is gone**: it read reference coordinates from protein identifiers that have not carried them since March 2026, so it changed nothing. The paralog check does its job with the sample's own offsets
 
+### 📚 Documentation
+- **A website in plain HTML, drawn with real genes**: MkDocs is gone. The front page starts a newcomer in three steps and builds the command for their machine, the pipeline is a metro map whose stations are `main.nf`'s processes, and the four cases, the missing genes and the harder cases (paralogs, small proteins, contig ends, frameshifts, copies) are drawn on genes of CDC1551, M. bovis and E. coli from the benchmark. The tutorial and user guide stay markdown, readable on GitHub, and `tools/build_docs.py` turns them into pages of the same site, dark by default
+- **The site is checked against the code**: `tools/check_site.py` runs every drawn window through `bin/`, compares the thresholds on the pages with the constants in the code, the metro map with `main.nf` and every option with the pipeline's parameters, so a change that makes the site wrong fails the docs workflow. `tools/figure_data.py` redraws the windows from a benchmark run
+- **What the docs said that the pipeline does not do**: with `--skip_functional_annotation` a run still writes `AMAP/`, with the corrected table and sequences, where the outputs page said it did not; no step writes `PATHOTYPR/renamed_fastas.tsv`; and the 19-residue toxin the algorithm page names is IbsC (b4665), not an ldr toxin
+- **A drawing on every page that explains something**: the duplication family and communities of CDC1551 and M. bovis, from a real run of both duplication steps; the sample sheet with its tabs and the messages the validator prints; the ranges a genome is validated against; the container and what it holds; a run on a cluster; what happens to a task that fails; the report section by section; the five outcomes and the three inputs of a decision; the command builder on the quickstart. Most are built from the code or the config, so they change when it does
+- **The benchmark on the front page**: the seven genomes whose answer is known, and how many of their genes AMAP finds, checked against `tests/benchmark/README.md`. A shared link to any page shows a card drawn from the front page's genes
+- **More that the docs got wrong**: the duplication page listed ten network metrics, the table has five, and its columns ending in 1 and 2 are the two communities of a pair, not two levels; Nextflow needs Java 17, not 11; with Nextflow 25.10 and later the order of `-profile` matters, and a container profile written last caps a cluster run at 16 GB; `--skip_functional_annotation` leaves no GFF3 or GenBank, which come after eggNOG; the container and scheduler profiles cap tasks at 16 GB and 128 GB, not 50 GB; and lineage typing is not skipped on its own for other species, only Mycobrowser is
+- **The README in the site's style**: the metro map and the five outcomes in light and dark, the benchmark's scores, and the links a newcomer needs first
+
 ### 🧪 Testing
 - **`tests/selftest/h37rv_selftest.sh`** annotates H37Rv with itself inside the container and fails unless every GenBank CDS comes back exactly
 - **`tests/test_cache_keys.py`** fails when a process runs AMAP code that is not in its cache key, or when its script names a `bin/` entry as a bare word without declaring it
@@ -78,7 +88,8 @@ directly comparable with 1.0.1.
 - **`tests/test_reference_files.py`** runs the scripts of `BAKTA_ANNOTATOR`, `PATHOTYPR`, `GET_OUTPUTS` and `BUNDLED_REFERENCE`, rendered as Nextflow renders them, their own Groovy included, with stand-ins for Bakta and pathotypr and each reference file on the host, under a relative path or inside the container; and fails when a process reads a reference file's param other than as what it falls back on when nothing is staged
 - **`tests/test_pangene_genomes.py`** runs PANGENE_GENOME and PANGENE's scripts as Nextflow renders them, with stand-ins for miniprot and pangene, and fails unless each sample is aligned onto every other sample's genome and never onto its own, typed or not
 - **`tests/test_report_tables.py`** merges two Rtabs as PANGENE writes them and checks that the report reads every table a `#` can reach without a comment character; where R is installed, as in the container, it also runs the report's pangenome code on the merged matrix
-- **482 tests**, up from 92
+- **`tests/test_cog_counts.py`** counts COG categories as `count_annot.py` does, for genes in none, in two and in lowercase, then runs the steps after the correction as `tests/test_sample_ids.py` chains them, with eggNOG giving some genes no category and then no gene one, and reads what the report's own per-COG figures plot where R is installed
+- **492 tests**, up from 92
 
 ## [1.0.1] - 2026-07-25
 
@@ -122,12 +133,12 @@ than by reading it. Several changed what the pipeline outputs, so results from
 - **`requirements-test.txt`**: one dependency list for CI, the docs and a local checkout. `environment.yml` was missing the Python `plotly`, so a conda environment built from it could not start `classify_cases.py`
 - **92 tests**, up from 58
 
-## [1.0.0] — 2026-04-01
+## [1.0.0] - 2026-04-01
 
 ### 🔬 Correctness
-- **Strand-aware gene dictionary**: `combined_dict` keys changed from `(Start, End)` to `(Start, End, Strand)` — genes on opposite strands at the same coordinates no longer collide silently
+- **Strand-aware gene dictionary**: `combined_dict` keys changed from `(Start, End)` to `(Start, End, Strand)`: genes on opposite strands at the same coordinates no longer collide silently
 - **Consistent 1-based lengths**: all length calculations now use `End - Start + 1` (15 sites fixed)
-- **Robust ID cleaning**: regex `_\d+-\d+$` replaces brittle 4-part underscore rule — PE_PGRS genes now handled correctly
+- **Robust ID cleaning**: regex `_\d+-\d+$` replaces brittle 4-part underscore rule, so PE_PGRS genes are handled correctly
 - **Exact gene name matching**: prevents false matches (Rv3508 ≠ Rv3508c, Rv1 ≠ Rv10)
 - **IntervalTree half-open intervals**: all 9 operations corrected from `[Start:End]` to `[Start:End+1]`
 - **Cross-strand gene preservation**: merge operations now include Strand to prevent loss
@@ -135,7 +146,7 @@ than by reading it. Several changed what the pipeline outputs, so results from
 - **Pseudogene propagation**: Is_Pseudogene column now reaches master table and report
 
 ### 🛡️ Robustness
-- **Pre-flight validation**: new `VALIDATE_INPUTS` process checks FASTA format, N-content, GC%, genome size, duplicate headers, database paths — runs before any computation
+- **Pre-flight validation**: new `VALIDATE_INPUTS` process checks FASTA format, N-content, GC%, genome size, duplicate headers and database paths, before any computation
 - **`--validate_only` mode**: check all inputs without executing the pipeline
 - **eggNOG DB integrity**: `bacteria.dmnd` <100 MB detected as corrupted → automatic rebuild
 - **Bakta DB pre-check**: actionable error message with download command
@@ -204,7 +215,7 @@ than by reading it. Several changed what the pipeline outputs, so results from
 - 20 critical (🔴) + 65 improvements (🟡)
 - See commit history on `fix` branch for full details
 
-## [0.1.0] — 2025
+## [0.1.0] - 2025
 
 - Initial release
 - MTBC-focused annotation pipeline

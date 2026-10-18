@@ -14,9 +14,9 @@ one pathotypr would call over all its rows together.
     name_by_lineage.py SAMPLE_ID SUMMARY_TSV FASTA
 
 Prints the name and writes the genome to <name>.fasta. A genome of one record
-has that record renamed after the sample, as before; the contigs of a draft
-keep their own names, so every gene can still be traced back to its contig.
-Without a lineage the name is NA_<sampleId>, as before.
+has that record renamed after the sample, its description kept; the contigs
+of a draft keep their own names, so every gene can still be traced back to
+its contig. Without a lineage the name is NA_<sampleId>, as before.
 """
 
 import sys
@@ -71,14 +71,23 @@ def sample_lineage(rows):
 def write_fasta(src, dst, name):
     """Write the genome to dst, renaming its record after the sample if it has
     only one. Line by line, ending every line with a newline, the way the awk
-    this replaces wrote it."""
+    this replaces wrote it.
+
+    Only the record's ID, the first word of its header, is replaced: the
+    description after it stays. Bakta reads from the description whether a
+    sequence is a complete, circular replicon ("complete genome" in NCBI's,
+    "circular=true" in Unicycler's) and only then joins its two ends, so a
+    closed genome renamed to its name alone was annotated as linear and a gene
+    across its origin came out as two pieces."""
     with open(src, 'rb') as fh:
         lines = fh.read().split(b'\n')
     if lines and lines[-1] == b'':
         lines.pop()
     headers = [i for i, line in enumerate(lines) if line.startswith(b'>')]
     if len(headers) == 1:
-        lines[headers[0]] = b'>' + name.encode()
+        words = lines[headers[0]][1:].split(None, 1)
+        description = words[1].strip() if len(words) > 1 else b''
+        lines[headers[0]] = b'>' + name.encode() + (b' ' + description if description else b'')
     with open(dst, 'wb') as out:
         out.writelines(line + b'\n' for line in lines)
 

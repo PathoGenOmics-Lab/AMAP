@@ -34,7 +34,9 @@ network in the matching HTML file.
 ## The columns
 
 A row describes two communities: the columns ending in `1` are the first, those
-ending in `2` the second. For each:
+ending in `2` the second. The first is the one whose sample comes first by
+name, or the one with the lower number when both are in the same sample, and
+the rows come in that order too, so a rerun writes the same file. For each:
 
 - **`Genome`, `Community`**: the sample, and the community's number in it.
 - **`Size`**: how many proteins it holds.

@@ -8,6 +8,9 @@ process BAKTA_ANNOTATOR {
 
     input:
     tuple val(sampleId), path(fasta), path(summary_log), val(genus), val(species)
+    // The database when it is on the host, staged so that a container sees
+    // it, or nothing: then params.bakta_db is a path inside the container
+    path bakta_db, stageAs: 'bakta-db/*'
 
     output:
     path(sampleId), emit: bakta_dir
@@ -20,11 +23,12 @@ process BAKTA_ANNOTATOR {
     // otherwise fall back to the default H37Rv proteins.
     // Bakta accepts GBK, GFF3, EMBL, and FASTA as --proteins input.
     def proteins_ref = params.ref_annotation ? params.ref_annotation : params.bakta_proteins
+    def db = bakta_db ?: params.bakta_db
     """
     echo "▸ [BAKTA] Annotating ${sampleId}..." >&2
 
     # Pre-check: verify Bakta DB path exists
-    if [ ! -d "${params.bakta_db}" ]; then
+    if [ ! -d "${db}" ]; then
         echo "ERROR: Bakta database not found at '${params.bakta_db}'" >&2
         echo "Download with: bakta_db download --output /path/to/bakta_db --type light" >&2
         exit 1
@@ -41,7 +45,7 @@ process BAKTA_ANNOTATOR {
     # contig_N, so its table no longer names the contigs the FASTA and the
     # miniprot alignments do, and genes cannot be matched to their contig.
     bakta \\
-        --db "${params.bakta_db}" \\
+        --db "${db}" \\
         --keep-contig-headers \\
         --skip-trna \\
         --threads ${task.cpus} \\

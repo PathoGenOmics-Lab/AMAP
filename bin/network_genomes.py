@@ -76,40 +76,78 @@ def load_and_filter_blast_results(blast_filepath: Path) -> pd.DataFrame:
     return df_final
 
 
-def get_genome_ids(df: pd.DataFrame) -> Set[str]:
+def read_genomes(genomes_filepath: Path) -> Dict[str, str]:
     """
-    Extracts unique genome identifiers from the sequence IDs in the BLAST results.
-    Assumes a sequence ID format of 'GenomeID_GeneID...'.
+    Reads which genome each sequence comes from: a TSV of sequence ID and
+    genome, one row per sequence, as GET_ALLDUP writes it from the FASTA file
+    each sample's sequences came in.
+
+    The genome used to be read out of the sequence ID, as its first two
+    underscore-separated fields, but an ID is <name>_<gene> and a name can
+    have any number of underscores of its own: L2_Beijing_1 and L2_Beijing_2
+    came out as one genome, and every gene of an untyped sample
+    (G26689_00042;S) as a genome of its own.
+
+    Args:
+        genomes_filepath: Path to the sequence-to-genome table.
+
+    Returns:
+        A dictionary mapping each sequence ID to its genome.
+    """
+    genome_of = {}
+    with open(genomes_filepath) as fh:
+        for line in fh:
+            fields = line.rstrip('\n').split('\t')
+            if len(fields) >= 2 and fields[0]:
+                genome_of[fields[0]] = fields[1]
+    return genome_of
+
+
+def get_genome_ids(df: pd.DataFrame, genome_of: Dict[str, str]) -> Set[str]:
+    """
+    The genomes the sequences in the BLAST results come from.
 
     Args:
         df: The filtered BLAST results DataFrame.
+        genome_of: Each sequence ID's genome, from read_genomes.
 
     Returns:
         A set of unique genome identifiers.
     """
     all_seq_ids = set(df['qseqid'].unique()) | set(df['sseqid'].unique())
-    genome_ids = {"_".join(seq_id.split('_')[:2]) for seq_id in all_seq_ids}
-    return genome_ids
+    # Every sequence searched came from one of the files the table was made
+    # from, so one with no genome means the two disagree: stop rather than
+    # leave its genes out of every network.
+    missing = sorted(all_seq_ids - genome_of.keys())
+    if missing:
+        raise ValueError(f"{len(missing)} sequence(s) in the BLAST results have no genome "
+                         f"in the genome table, e.g. {', '.join(missing[:3])}")
+    return {genome_of[seq_id] for seq_id in all_seq_ids}
 
 
 # --- 2. Network Construction and Community Detection ---
 
-def build_intra_genome_networks(df: pd.DataFrame, genome_ids: Set[str]) -> Dict[str, nx.Graph]:
+def build_intra_genome_networks(df: pd.DataFrame, genome_ids: Set[str],
+                                genome_of: Dict[str, str]) -> Dict[str, nx.Graph]:
     """
-    Builds a protein-protein interaction network for each individual genome.
+    Builds a protein-protein interaction network for each individual genome,
+    from the hits whose two sequences both come from it. Matching the start of
+    the sequence IDs instead also took in every genome whose name begins with
+    this one's: L2_Beijing_1's network held L2_Beijing_10's genes.
 
     Args:
         df: The filtered BLAST results DataFrame.
         genome_ids: A set of unique genome identifiers.
+        genome_of: Each sequence ID's genome, from read_genomes.
 
     Returns:
         A dictionary mapping each genome ID to its corresponding NetworkX graph.
     """
     networks = {}
+    query_genome = df['qseqid'].map(genome_of)
+    subject_genome = df['sseqid'].map(genome_of)
     for genome_id in genome_ids:
-        genome_df = df[
-            df['qseqid'].str.startswith(genome_id) & df['sseqid'].str.startswith(genome_id)
-        ]
+        genome_df = df[(query_genome == genome_id) & (subject_genome == genome_id)]
         G = nx.from_pandas_edgelist(genome_df, 'qseqid', 'sseqid')
         networks[genome_id] = G
     return networks
@@ -325,6 +363,10 @@ def main():
         "blast_file",
         help="Path to the input BLASTp output file (format 6)."
     )
+    parser.add_argument(
+        "--genomes", required=True,
+        help="Which genome each sequence comes from: a TSV of sequence ID and genome."
+    )
     args = parser.parse_args()
     
     input_path = Path(args.blast_file)
@@ -344,10 +386,11 @@ def main():
         print(f"Empty report at {output_tsv} and {output_html}")
         return
 
-    genome_ids = get_genome_ids(blast_df)
+    genome_of = read_genomes(Path(args.genomes))
+    genome_ids = get_genome_ids(blast_df, genome_of)
 
     # 2. Build networks and detect communities
-    networks = build_intra_genome_networks(blast_df, genome_ids)
+    networks = build_intra_genome_networks(blast_df, genome_ids, genome_of)
     labeled_communities = detect_and_label_communities(networks)
 
     # 3. Find homologous relationships

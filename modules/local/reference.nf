@@ -19,6 +19,8 @@ process PREPARE_REFERENCE {
     input:
     path ref_annotation
     path ref_genome
+    // The Bakta database when it is on the host, or nothing (see BAKTA_ANNOTATOR)
+    path bakta_db, stageAs: 'bakta-db/*'
 
     output:
     path "custom_ref_ref_proteins.faa", emit: ref_proteome
@@ -26,6 +28,7 @@ process PREPARE_REFERENCE {
     path "custom_ref_bad_bakta.faa", emit: bad_bakta
 
     script:
+    def db = bakta_db ?: params.bakta_db
     """
     # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     set -euo pipefail
@@ -39,7 +42,7 @@ process PREPARE_REFERENCE {
     # 2. Annotate the same reference genome with Bakta
     #    (to find what Bakta invents on a known genome)
     bakta \
-        --db "${params.bakta_db}" \
+        --db "${db}" \
         --skip-trna \
         --threads ${task.cpus} \
         --genus "${params.genus}" \

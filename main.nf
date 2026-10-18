@@ -25,7 +25,10 @@ params.tsv = 'samples.tsv'
 params.outdir = 'results'
 params.eggnog_db = 'eggnog_db'
 params.help = false
+params.version = false
 params.validate_only = false
+// Validation warnings stop the run too, not only its errors
+params.strict_validation = false
 params.skip_typing = false
 params.skip_functional_annotation = false
 params.genus = "Mycobacterium"
@@ -100,12 +103,13 @@ def helpMessage() {
     --bakta_db                  Path to the Bakta database directory. (Default: "${params.bakta_db}")
     --skip_mycobrowser          Skip Mycobrowser functional categories (for non-MTBC organisms). (Default: ${params.skip_mycobrowser})
     --validate_only             Run input validation only (no pipeline execution).
+    --strict_validation         Stop on validation warnings too, not only on errors. (Default: ${params.strict_validation})
     --max_cpus                  Maximum CPUs per process. (Default: ${params.max_cpus})
     --max_memory                Maximum memory per process. (Default: ${params.max_memory})
     --max_time                  Maximum time per process. (Default: ${params.max_time})
     --scratch                   Use node-local scratch for I/O-heavy processes. (Default: ${params.scratch})
     --help                      Display this help message.
-    --version                   Print pipeline version and exit.
+    --version                   Print pipeline and Nextflow versions and exit.
 
     Organism-Agnostic Mode:
     --ref_annotation            Path to a trusted reference annotation (GFF3 or GenBank).
@@ -149,7 +153,7 @@ def runSummary() {
     │  Typing      : ${params.skip_typing ? '⏭  skipped' : '✓  Pathotypr'}
     │  Annotation  : ${params.skip_functional_annotation ? '⏭  skipped' : '✓  eggNOG + Bakta'}
     │  Mycobrowser : ${params.skip_mycobrowser ? '⏭  skipped' : '✓  enabled'}
-    │  Validate    : ${params.validate_only ? '🔍 only (dry run)' : '✓  pre-flight'}
+    │  Validate    : ${params.validate_only ? '🔍 only (dry run)' : '✓  pre-flight'}${params.strict_validation ? ', strict' : ''}
     ├─────────────────────────────────────────────────┤
     │  Max CPUs    : ${params.max_cpus}
     │  Max Memory  : ${params.max_memory}
@@ -359,6 +363,13 @@ workflow {
         log.info helpMessage()
         exit 0
     }
+    if (params.version) {
+        // println rather than log.info, which Nextflow 26 prints with no line
+        // break between messages and `nextflow -q` does not print at all.
+        println "Pipeline    : ${workflow.manifest.name} v${workflow.manifest.version}"
+        println "Nextflow    : ${nextflow.version}"
+        exit 0
+    }
     log.info logo()
     log.info runSummary()
     workflow.onComplete = { onCompleteHandler() }
@@ -371,12 +382,31 @@ workflow {
         fasta_ch = readSampleSheet()
     }
 
+    // The databases. One on the host is staged into every task that reads it,
+    // like any other input, so that a container sees it; otherwise the tasks
+    // get nothing and look for its path inside the container, where the Bakta
+    // default lives. Handed over as a path, that default would make Nextflow
+    // mount the host's missing /data/bakta_db over the container's own (see
+    // BUNDLED_REFERENCE).
+    bakta_db_ch = (params.bakta_db && file(params.bakta_db).exists()) ? channel.value(file(params.bakta_db)) : channel.value([])
+    // eggNOG's is checked only when it is used, by the path EGGNOG_DB builds it
+    // at (a relative one is relative to launchDir), and staged if it is there
+    // already: it need not be.
+    def eggnog_dir = (!params.skip_functional_annotation && params.eggnog_db) ? file(params.eggnog_db) : null
+    eggnog_db_check_ch = channel.value(eggnog_dir ? tuple(eggnog_dir.toString(), eggnog_dir.exists() ? eggnog_dir : []) : tuple('', []))
+
     // 0. Input validation and reproducibility, before anything else. The test
     // profile has no sample sheet to validate, only the reference genome the
     // container ships, so validating params.tsv would fail on a file that was
-    // never meant to exist.
+    // never meant to exist. The genomes go in with the sheet, as the pipeline
+    // will annotate them: a container sees only the inputs Nextflow stages.
     if (!params.test_data) {
-        VALIDATE_INPUTS(Channel.value(file(params.tsv)))
+        VALIDATE_INPUTS(
+            Channel.value(file(params.tsv)),
+            fasta_ch.toList().map { rows -> tuple(rows.collect { row -> row[0] }, rows.collect { row -> row[1] }) },
+            bakta_db_ch,
+            eggnog_db_check_ch
+        )
     }
     SOFTWARE_VERSIONS()
     DUMP_PARAMS()
@@ -393,27 +423,34 @@ workflow {
         // 1b. Where the genomes come from: the sample sheet, or the container.
         genomes_ch = params.test_data ? TEST_GENOME() : fasta_ch
 
-        // 2. Perform MTB lineage typing or skip it
+        // 2. Perform MTB lineage typing or skip it. names_ch says, for every
+        // genome, the name its files carry, its sample ID and its lineage, for
+        // the steps that write the last two down: typing names a genome
+        // <lineage>_<sampleId>, and a sample ID can hold underscores of its
+        // own, so neither can be read back out of the name.
         if (!params.skip_typing) {
             PATHOTYPR(genomes_ch)
             typed_ch = PATHOTYPR.out.typed_fasta
+            names_ch = PATHOTYPR.out.names
         } else {
             // If skipping typing, create a placeholder file for caching.
             CREATE_EMPTY_FILE()
             typed_ch = genomes_ch.combine(CREATE_EMPTY_FILE.out).map { sampleId, fasta, empty_file ->
                 tuple(sampleId, fasta, empty_file)
             }
+            names_ch = genomes_ch.map { sampleId, _fasta -> tuple(sampleId, sampleId, 'Untyped') }
         }
 
         // 3. Annotate genomes with Bakta
-        BAKTA_ANNOTATOR(typed_ch.combine(Channel.value(params.genus)).combine(Channel.value(params.species)))
+        BAKTA_ANNOTATOR(typed_ch.combine(Channel.value(params.genus)).combine(Channel.value(params.species)), bakta_db_ch)
 
         // 4. Prepare reference proteome (custom or default H37Rv)
         if (params.ref_annotation && params.ref_genome) {
             log.info "Using custom reference: ${params.ref_annotation} + ${params.ref_genome}"
             PREPARE_REFERENCE(
                 Channel.value(file(params.ref_annotation)),
-                Channel.value(file(params.ref_genome))
+                Channel.value(file(params.ref_genome)),
+                bakta_db_ch
             )
             ref_proteome_ch     = PREPARE_REFERENCE.out.ref_proteome
             ref_genome_fasta_ch = PREPARE_REFERENCE.out.ref_genome_fasta
@@ -438,7 +475,7 @@ workflow {
         MINIPROT(BAKTA_ANNOTATOR.out.for_miniprot, ref_proteome_ch, ref_genome_fasta_ch, bad_bakta_ch)
 
         // 6. Classify CDS cases based on alignments
-        TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases), ref_proteome_ch)
+        TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases).join(names_ch), ref_proteome_ch)
 
         // 7. Correct CDS based on classified cases
         FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix), ref_proteome_ch)
@@ -472,7 +509,7 @@ workflow {
             ch_for_downstream = FIX_CDS.out.for_downstream.join(eggnog_results_ch)
 
             // 8. Generate final output files (GFF, GBK, Master Table)
-            GET_OUTPUTS(ch_for_downstream)
+            GET_OUTPUTS(ch_for_downstream.join(names_ch.map { name, _sample, lineage -> tuple(name, lineage) }))
 
             // 9. Find and analyze gene duplications
             GET_DUPLICATIONS(ch_for_downstream)
@@ -490,7 +527,7 @@ workflow {
             PANGENE(ch_for_downstream, ref_fastas_ch)
 
             // 11. Count annotations per category
-            GET_COUNT(GET_OUTPUTS.out.master_table)
+            GET_COUNT(GET_OUTPUTS.out.master_table.join(names_ch))
 
             // 12. Generate final reports
             // Collect summaries from different processes

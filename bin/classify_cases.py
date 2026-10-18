@@ -30,6 +30,7 @@ from classify.plotting import generate_overlap_plot
 from classify.ids import format_cluster_id
 from classify.synteny import drop_paralog_placements
 from classify.exact import place_exact_matches
+from classify.pieces import add_contig_end_pieces
 from classify import circular
 
 __author__ = 'Paula Ruiz-Rodriguez'
@@ -91,6 +92,8 @@ def main():
                                                "Needed to measure a gene that runs across the "
                                                "origin of a circular sequence.")
     parser.add_argument('-r', '--ref-proteome', help="Reference proteome the miniprot PAF was made from.")
+    parser.add_argument('--pieces', help="Miniprot PAF of what contig ends cut off the placements "
+                                         "in the first one (contig_end_pieces.py).")
     parser.add_argument('--sample', help="The sample's ID in the sample sheet, for the summary. "
                                          "Default: the name of the Bakta table.")
     parser.add_argument('--lineage', help="The lineage typing called the sample, for the summary. "
@@ -108,6 +111,10 @@ def main():
     # on a near-identical paralog; place the ones the genome encodes exactly.
     if args.genome and args.ref_proteome:
         miniprot_df = place_exact_matches(miniprot_df, args.genome, args.ref_proteome)
+    # A gene a contig end cut is placed by its larger piece alone; the others
+    # come from a second pass over what that placement lacks.
+    if args.pieces:
+        miniprot_df = add_contig_end_pieces(miniprot_df, args.pieces)
     # A protein with a paralog is placed at both loci; keep only the placements
     # that do not land on a locus another protein syntenically owns.
     miniprot_df = drop_paralog_placements(miniprot_df)

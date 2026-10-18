@@ -194,13 +194,41 @@ def to_contig_end(seq, start, end, strand):
     return end - 3 * (end // 3), end
 
 
-def cut_at_5_prime(seq, start, end, strand):
+def starts_inside(translated, ref_protein, w=20, min_identity=0.9):
+    """Whether a gene's protein begins inside its reference protein: its first
+    residues line up with the reference's further in, and not with its first
+    ones. Residue 0 is left out, since it depends on which start codon a naive
+    translation met."""
+    got, ref = str(translated).rstrip('*'), ref_protein.rstrip('*')
+    window = got[1:min(w, len(got))]
+
+    def lines_up(k):
+        part = ref[k + 1:k + 1 + len(window)]
+        return (len(part) == len(window)
+                and sum(a == b for a, b in zip(window, part)) >= min_identity * len(window))
+
+    return bool(window) and not lines_up(0) and any(lines_up(k) for k in range(1, len(ref) - len(window)))
+
+
+def cut_at_5_prime(seq, start, end, strand, translated=None, ref_protein=None):
     """Whether the contig cut off a gene's 5' end: the gene opens within a
     codon of the contig's edge, where an alignment of what is left of the
-    protein starts, and not with a start codon."""
+    protein starts, and not with a start codon.
+
+    A cut leaves whatever codon it falls before at the edge, and one in six
+    codons inside H37Rv genes is one a gene can also start with (CTG alone is
+    5%). Such a codon at the edge is taken for a start only when the gene's
+    protein (translated) does not begin inside its reference protein
+    (ref_protein): the C-terminal piece of a cut gene does.
+    """
     if strand == '+':
-        return start < 3 and seq[start:start + 3] not in START_CODONS
-    return len(seq) - end < 3 and _codon(seq, end, '-') not in START_CODONS
+        at_edge, first = start < 3, seq[start:start + 3]
+    else:
+        at_edge, first = len(seq) - end < 3, _codon(seq, end, '-')
+    if not at_edge:
+        return False
+    return (first not in START_CODONS
+            or (ref_protein is not None and starts_inside(translated, ref_protein)))
 
 
 def unrolled(fasta_seq):
@@ -543,14 +571,14 @@ def extract_and_translate_cds(fasta_file, annotation_df, ref_proteins=None):
                     else:
                         start, end = found
 
-        # The other end: a gene whose start the contig cut off.
-        if cut_at_5_prime(contig_seq, start, end, strand):
-            ends.insert(0, "5'")
-
         sequence = fasta_seq.seq[start:end]
         if strand == '-':
             sequence = sequence.reverse_complement()
         translated = sequence[:len(sequence) - len(sequence) % 3].translate()
+
+        # The other end: a gene whose start the contig cut off.
+        if cut_at_5_prime(contig_seq, start, end, strand, translated, ref[0] if ref else None):
+            ends.insert(0, "5'")
         n_internal = str(translated)[:-1].count("*") if str(translated).endswith("*") \
             else str(translated).count("*")
         if n_internal and pseudo is None:

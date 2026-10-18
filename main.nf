@@ -382,9 +382,13 @@ workflow {
     // 0. Input validation and reproducibility, before anything else. The test
     // profile has no sample sheet to validate, only the reference genome the
     // container ships, so validating params.tsv would fail on a file that was
-    // never meant to exist.
+    // never meant to exist. The genomes go in with the sheet, as the pipeline
+    // will annotate them: a container sees only the inputs Nextflow stages.
     if (!params.test_data) {
-        VALIDATE_INPUTS(Channel.value(file(params.tsv)))
+        VALIDATE_INPUTS(
+            Channel.value(file(params.tsv)),
+            fasta_ch.toList().map { rows -> tuple(rows.collect { row -> row[0] }, rows.collect { row -> row[1] }) }
+        )
     }
     SOFTWARE_VERSIONS()
     DUMP_PARAMS()

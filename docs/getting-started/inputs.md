@@ -20,6 +20,8 @@ L4_G12345	./assemblies/L4_G12345.fa
 
 `sampleId`
 : The name carried through every output directory and file. Must be unique.
+  Lineage typing puts the lineage in front, so `G26689` comes out as
+  `L4_G26689`.
 
 `fasta`
 : Path to the assembled genome. Absolute, or relative to the directory you

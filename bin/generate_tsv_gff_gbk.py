@@ -166,18 +166,18 @@ def locus_from_rvs(value):
     return clean_id(first)
 
 
-def generate_master_table(eggnog_pd, correctedtsv_pd, bakta_pd_cds, myco_pd, base_name):
+def generate_master_table(eggnog_pd, correctedtsv_pd, bakta_pd_cds, myco_pd, base_name,
+                          lineage="Untyped"):
     merged_df = pd.merge(correctedtsv_pd, eggnog_pd, on='simple_id', how='left')
     merged_df = pd.merge(merged_df, bakta_pd_cds, left_on='simple_id', right_on='Locus Tag', how='left')
     merged_df = merged_df.drop(columns=['query'])
     merged_df.drop_duplicates(subset='simple_id', inplace=True)
 
-    # Add explicit lineage column for downstream R report.
-    # base_name is "L4_G26689" (typed) or "G26689" (untyped).
-    # Without this column, the R report extracts lineage from the first column
-    # using sub("_.*", ""), which fails for untyped samples (returns genome ID).
-    parts = base_name.split("_")
-    merged_df['lineage'] = parts[0] if len(parts) >= 2 else "Untyped"
+    # The sample's lineage, for the report, as the pipeline passes it. Read off
+    # base_name it was wrong whenever the sample ID holds an underscore: typed,
+    # base_name is <lineage>_<sampleId>, but untyped it is the sample ID alone,
+    # and H37Rv_test came out as lineage H37Rv.
+    merged_df['lineage'] = lineage
     merged_df.reset_index(drop=True, inplace=True)
     merged_df['Locus'] = merged_df['rvs'].apply(locus_from_rvs)
     merged_df = pd.merge(merged_df, myco_pd, on='Locus', how='left')
@@ -414,6 +414,9 @@ def main():
     parser.add_argument("bakta", help="BaktaTsvFile")
     parser.add_argument("myco", help="MycobrowserTsvFile")
     parser.add_argument("fasta", help="FastaFile")
+    parser.add_argument("--lineage", default="Untyped",
+                        help="The lineage typing called the sample, for the master table's "
+                             "lineage column (default: Untyped)")
     args = parser.parse_args()
     base_name = args.correctedtsv.replace('.AMAP.tsv','')
     ruta_archivo_fasta = args.fasta
@@ -439,7 +442,8 @@ def main():
         # run without Mycobrowser (--skip_mycobrowser / organism-agnostic mode).
         myco_pd = pd.DataFrame(columns=name_myco)
 
-    merged_df = generate_master_table(eggnog_pd, correctedtsv_pd, bakta_pd_cds, myco_pd, base_name)
+    merged_df = generate_master_table(eggnog_pd, correctedtsv_pd, bakta_pd_cds, myco_pd, base_name,
+                                      lineage=args.lineage)
     nuevo_df = generate_tsv(merged_df,bakta_pd_rest,ruta_archivo_fasta, ruta_archivo)
     generate_gff(merged_df, nuevo_df, ruta_archivo_gff,ruta_archivo_fasta)
     tsv_to_gbk(ruta_archivo, ruta_archivo_fasta, base_name + '-AMAP.gbk')

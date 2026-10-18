@@ -65,6 +65,10 @@ process GET_OUTPUTS {
           path(fasta),
           path(emapper),
           val(lineage)       // what typing called the sample, Untyped under --skip_typing
+    // Mycobrowser's table when it is on the host, staged so that a container
+    // sees it, or nothing: then params.mycobrowser_ref is a path inside the
+    // container, where the default lives
+    path mycobrowser_ref, stageAs: 'mycobrowser-ref/*'
 
     output:
     tuple val(sampleId), path("*-AMAPmastertable.tsv"), emit: master_table
@@ -73,6 +77,7 @@ process GET_OUTPUTS {
     path "${sampleId}-AMAP.qc.tsv", emit: qc_stats
 
     script:
+    def myco_ref = mycobrowser_ref ?: params.mycobrowser_ref
     """
     # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     set -euo pipefail
@@ -94,7 +99,7 @@ process GET_OUTPUTS {
     mv _writable_amap.tsv ${sampleId}.AMAP.tsv
 
     # Determine Mycobrowser argument at runtime (file may not exist outside container)
-    MYCO_REF="${params.mycobrowser_ref}"
+    MYCO_REF="${myco_ref}"
     if [ "${params.skip_mycobrowser}" = "true" ]; then
         MYCO_ARG="NONE"
     elif [ -f "\$MYCO_REF" ]; then

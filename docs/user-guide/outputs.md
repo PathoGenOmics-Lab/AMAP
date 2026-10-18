@@ -14,6 +14,7 @@ leaves it, `L4_G26689` for sample `G26689`, or the sample ID alone under
 | What you want | File |
 | :--- | :--- |
 | The whole analysis, interactive | `results/final_report.html` |
+| Each genome and each gene, question by question | `results/amap_report.html` |
 | Corrected annotation for a sample | `results/AMAP/{sampleId}/*-AMAP.gff3` |
 | Proteins for downstream tools | `results/AMAP/{sampleId}/*-AMAP.clean.faa` |
 | Everything known about every gene | `results/AMAP/{sampleId}/*-AMAPmastertable.tsv` |
@@ -80,7 +81,8 @@ results/
 │   ├── validation.log                  # Pre-flight validation results
 │   └── run_summary.txt                 # Status, duration, sample counts
 │
-└── final_report.html                   # The full interactive report
+├── final_report.html                   # The full interactive report
+└── amap_report.html                    # The report by question, also without eggNOG
 ```
 
 ## The key files
@@ -178,6 +180,15 @@ shell, cloud, frequency spectrum, presence/absence heatmaps), COG and
 Mycobrowser distributions, case statistics and the associated tests, plus a
 searchable master-table explorer.
 
+### `amap_report.html`
+
+One self-contained file, organised by the questions a run raises: how each
+genome annotated, where genes are missing or broken on the reference, one gene
+in every genome, what the correction changed, the pseudogenes by lineage, what
+lies outside the reference, and the functional profile. Written with or without
+the functional annotation. [The interactive report](amap-report.md) goes
+through it.
+
 ## Effect of the skip options
 
 `--skip_typing`
@@ -185,9 +196,10 @@ searchable master-table explorer.
   renamed by lineage.
 
 `--skip_functional_annotation`
-: The run stops after correction. No `AMAP/`, `DUPLICATIONS/`, `PANGENE/` or
-  `final_report.html`. You still get `BAKTA/` and `CDS_CASES/`, including
-  `*_corrected.tsv` with the corrected coordinates.
+: The run stops after correction. No `DUPLICATIONS/`, `PANGENE/` or
+  `final_report.html`, and `AMAP/` has only the corrected genes
+  (`*.AMAP.tsv`, `.faa`, `.fna`). You still get `BAKTA/`, `CDS_CASES/` and
+  `amap_report.html`, without its eggNOG sections.
 
 `--skip_mycobrowser`
 : `*-AMAP.MycoBrowser.tsv` is written empty and the Mycobrowser sections drop

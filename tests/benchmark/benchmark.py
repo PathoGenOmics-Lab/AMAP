@@ -299,6 +299,8 @@ def score(args):
         line.update(_changed_found(changed, amap))
     if on_contigs and args.fasta and args.faa:
         line.update(_own_contig(amap, args.fasta, args.faa))
+    if on_contigs:
+        line.update(_cut_genes(args.truth, args.contig_map, amap))
     print(f"{args.label:<14} exact {len(res['exact'])}/{n} ({100 * len(res['exact']) / max(n, 1):.2f}%)"
           f"  wrong label {len(res['wrong label'])}  not exact {len(res['not exact'])}"
           + (f" ({isoforms} isoforms counted with their gene)" if isoforms else "")
@@ -306,7 +308,10 @@ def score(args):
           + (f"  | changed genes found with their name {line['changed_found']}/{line['changed']}"
              f" ({line['changed_pseudo']} of them pseudogenes)" if "changed" in line else "")
           + (f"  | proteins from their own contig {line['own_contig']}, from another {line['other_contig']}"
-             if "own_contig" in line else ""))
+             if "own_contig" in line else "")
+          + (f"  | genes cut by a contig end {line['cut']}: pieces with their name {line['cut_pieces_named']}"
+             f" of {line['cut_pieces']}, {line['cut_pieces_partial']} of them marked partial"
+             if "cut" in line else ""))
     res["changed, not found"] = line.pop("changed_missed", [])
     for k in ("wrong label", "not exact", "changed, not found"):
         if res[k]:
@@ -336,6 +341,35 @@ def _changed_found(changed, amap):
             missed.append(t.name)
     return {"changed": len(changed), "changed_found": found, "changed_pseudo": int(pseudo),
             "changed_missed": missed}
+
+
+def _cut_genes(truth_path, contig_map, amap):
+    """The truth genes a draft's cuts run through. Each piece on a contig
+    should still be annotated under the gene's name, marked as partial."""
+    truth = pd.read_csv(truth_path, sep="\t")
+    truth = truth[truth.status == "ok"]
+    cmap = pd.read_csv(contig_map, sep="\t")
+    partial = amap["partial"].fillna("") if "partial" in amap.columns else pd.Series("", index=amap.index)
+    cut = pieces = named = marked = 0
+    for t in truth.itertuples():
+        if not cmap[(cmap.orig_start <= t.start) & (cmap.orig_end >= t.end)].empty:
+            continue
+        cut += 1
+        for c in cmap.itertuples():
+            lo, hi = max(t.start, c.orig_start), min(t.end, c.orig_end)
+            if lo > hi:
+                continue
+            pieces += 1
+            if c.reverse:
+                s, e = c.orig_end - hi + 1, c.orig_end - lo + 1
+            else:
+                s, e = lo - c.orig_start + 1, hi - c.orig_start + 1
+            o = amap[(amap.contig == c.contig) & (amap.start <= e) & (amap.end >= s)]
+            hits = [i for i, r in o.iterrows() if _base(t.name) in {_base(x.strip()) for x in r.rvs.split(",")}]
+            if hits:
+                named += 1
+                marked += any(partial[i] for i in hits)
+    return {"cut": cut, "cut_pieces": pieces, "cut_pieces_named": named, "cut_pieces_partial": int(marked)}
 
 
 def _own_contig(amap, fasta, faa):

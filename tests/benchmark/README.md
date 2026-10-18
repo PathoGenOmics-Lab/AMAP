@@ -92,7 +92,8 @@ For each genome:
   reading frame, overlapping by at least half of the shorter). The references
   have none, except K-12, which nests eleven pairs of real genes this way.
 - for the draft, how many proteins are the translation of their gene on the
-  contig the table puts it on
+  contig the table puts it on, and for the genes the cuts run through, how many
+  of their pieces are annotated under the gene's name and marked partial
 
 A reference can give one gene several proteins from alternative start codons,
 all ending at its stop; K-12 does for cheA, infB, clpB and five more. AMAP
@@ -106,17 +107,22 @@ other, and whether a gene of the other run sits on the same reading frame there
 
 ## Expected results
 
-On `main` at 9c73f5b (October 2026):
+With the changes up to `annotation-fixes` (October 2026):
 
 | Genome | exact | changed genes found | genes in the table | ORFs twice |
 | :--- | ---: | ---: | ---: | ---: |
 | H37Rv against itself | 4026 / 4026 | | 4031 | 0 |
 | H37Rv CP110619 | 3986 / 3986 | 49 / 50 | 4036 | 0 |
-| CDC1551 | 3097 / 3097 | 855 / 863 | 4014 | 2 |
-| M. bovis | 2391 / 2391 | 1506 / 1515 | 3946 | 3 |
+| CDC1551 | 3097 / 3097 | 854 / 863 | 4014 | 2 |
+| M. bovis | 2391 / 2391 | 1506 / 1515 | 3947 | 3 |
 | CDC1551, 40 contigs | 3072 / 3072 | | 4015 | 2 |
-| E. coli K-12 against itself | 4285 / 4286 | | 4310 | 2 |
-| E. coli Sakai | 219 / 220 | 3337 / 3367 | 5320 | 11 |
+| E. coli K-12 against itself | 4286 / 4286 | | 4313 | 2 |
+| E. coli Sakai | 220 / 220 | 3337 / 3367 | 5322 | 11 |
+
+Of the 25 genes the draft's cuts run through, the larger piece of each is
+annotated under the gene's name and marked partial; the smaller piece is not,
+because miniprot only reports the placements that score within 5% of a
+protein's best.
 
 In the draft every one of the 4015 proteins is the translation of its gene on
 its own contig. The first run took 15 minutes with 12 threads on an M-series

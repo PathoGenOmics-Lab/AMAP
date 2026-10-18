@@ -9,9 +9,18 @@ Validates:
 3. Assembly metrics (total size, number of contigs, N50)
 4. Potential contamination flags (abnormal size, extreme GC)
 5. Database paths (Bakta DB, eggNOG DB)
+6. Reference files the tasks read inside the container
 
 Usage:
-    validate_inputs.py --tsv samples.tsv [--bakta-db /path] [--eggnog-db /path] [--strict]
+    validate_inputs.py --tsv samples.tsv [--genomes staged.tsv] [--bakta-db /path] [--eggnog-db /path]
+                       [--reference PARAM /path ...] [--strict]
+
+The sample sheet says where each genome is on the host, absolute or relative
+to where Nextflow was launched. A container sees only the folders Nextflow
+mounts for it, and a task runs in a directory of its own, so in the pipeline
+VALIDATE_INPUTS stages every genome as an input and passes --genomes, a table
+of where each sample's genome was staged, and each one is read from there.
+Messages still name the sheet's path.
 
 Exit codes:
     0 = all checks passed
@@ -21,9 +30,9 @@ Exit codes:
 
 import argparse
 import csv
+import json
 import sys
 import os
-from pathlib import Path
 from collections import Counter
 
 # Avoid requiring Biopython for validation — parse FASTA manually
@@ -61,27 +70,31 @@ def calc_n50(lengths):
     return 0
 
 
-def validate_fasta(path, sample_id, strict=False):
-    """Validate a single FASTA file. Returns (errors, warnings)."""
+def validate_fasta(path, sample_id, strict=False, shown_as=None):
+    """Validate a single FASTA file. Returns (errors, warnings).
+
+    `shown_as` is the name messages give the file, when it is read from
+    somewhere other than the path the user knows it by."""
     errors = []
     warnings = []
+    name = shown_as or path
 
     # Check file exists and is readable
     if not os.path.isfile(path):
-        return [f"FASTA file not found: {path}"], []
+        return [f"FASTA file not found: {name}"], []
     
     file_size = os.path.getsize(path)
     if file_size == 0:
-        return [f"FASTA file is empty: {path}"], []
+        return [f"FASTA file is empty: {name}"], []
 
     # Parse sequences
     try:
         contigs = list(parse_fasta(path))
     except Exception as e:
-        return [f"Cannot parse FASTA {path}: {e}"], []
+        return [f"Cannot parse FASTA {name}: {e}"], []
 
     if len(contigs) == 0:
-        return [f"No sequences found in {path}"], []
+        return [f"No sequences found in {name}"], []
 
     # Basic metrics
     n_contigs = len(contigs)
@@ -159,42 +172,113 @@ def validate_fasta(path, sample_id, strict=False):
     return errors, warnings
 
 
-def validate_database(db_path, db_name):
-    """Validate that a database directory exists and has expected contents."""
-    errors = []
-    warnings = []
+# EGGNOG_DB (modules/local/eggnog.nf) takes a smaller bacteria.dmnd for a
+# truncated download and builds it again. The two must agree.
+EGGNOG_DMND_MIN_BYTES = 100_000_000
 
-    if not db_path:
-        return errors, warnings  # Optional DB
 
-    db_path = Path(db_path)
-    
-    if not db_path.exists():
-        errors.append(f"{db_name} path does not exist: {db_path}")
-        return errors, warnings
+def validate_bakta_db(path, shown_as=None):
+    """Check a Bakta database directory. Returns (errors, warnings, note),
+    the note saying which database it is.
 
-    if not db_path.is_dir():
-        errors.append(f"{db_name} path is not a directory: {db_path}")
-        return errors, warnings
+    `shown_as` is the name messages give it, when it is read from somewhere
+    other than the path the user gave."""
+    name = shown_as or path
+    if not os.path.exists(path):
+        return [f"Bakta DB not found: {name}"], [], None
+    if not os.path.isdir(path):
+        return [f"Bakta DB is not a directory: {name}"], [], None
 
-    if db_name == 'Bakta DB':
-        # Bakta DB should have specific files
-        expected = ['db.sqlite3', 'version.json']  # Bakta light DB
-        found = os.listdir(db_path)
-        for exp in expected:
-            # Check recursively (Bakta DB can have nested structure)
-            if not any(exp in f for f in found):
-                warnings.append(f"{db_name}: expected file '{exp}' not found in {db_path}")
+    version_file = os.path.join(path, 'version.json')
+    if not os.path.isfile(version_file):
+        # `bakta_db download --output X` puts the database in X/db or X/db-light
+        inner = [d for d in ('db', 'db-light')
+                 if os.path.isfile(os.path.join(path, d, 'version.json'))]
+        if inner:
+            return [f"Bakta DB: {name} is the folder the database was downloaded to; "
+                    f"point --bakta_db at {os.path.join(name, inner[0])}"], [], None
+        return [f"Bakta DB: {name} has no version.json, so it is not a Bakta database"], [], None
+    try:
+        with open(version_file) as f:
+            version = json.load(f)
+        note = f"{version['major']}.{version['minor']}"
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        return [f"Bakta DB: cannot read the version.json in {name}: {e}"], [], None
+    if version.get('type'):
+        note = f"{version['type']} {note}"
 
-    elif db_name == 'eggNOG DB':
-        # eggNOG DB should have bacteria.dmnd at minimum
-        expected = ['bacteria.dmnd']
-        found = os.listdir(db_path)
-        for exp in expected:
-            if exp not in found:
-                warnings.append(f"{db_name}: '{exp}' not found in {db_path} (will be downloaded)")
+    if not os.path.isfile(os.path.join(path, 'bakta.db')):
+        return [f"Bakta DB: {name} has no bakta.db"], [], note
+    return [], [], note
 
-    return errors, warnings
+
+def validate_eggnog_db(path, shown_as=None):
+    """Check eggNOG's database as EGGNOG_DB and eggNOG-mapper will find it.
+    Returns (errors, warnings, note).
+
+    It need not exist yet: EGGNOG_DB downloads and builds it where there is no
+    bacteria.dmnd. Once eggnog_db.ok is in it, though, Nextflow takes it for
+    built and never runs EGGNOG_DB again (its storeDir), so whatever is
+    missing then stays missing."""
+    name = shown_as or path
+    if os.path.exists(path) and not os.path.isdir(path):
+        return [f"eggNOG DB is not a directory: {name}"], [], None
+
+    dmnd = os.path.join(path, 'bacteria.dmnd')
+    dmnd_bytes = os.path.getsize(dmnd) if os.path.isfile(dmnd) else None
+    dmnd_ok = dmnd_bytes is not None and dmnd_bytes >= EGGNOG_DMND_MIN_BYTES
+    # eggNOG-mapper's annotations, which it reads from --data_dir
+    annotations_ok = os.path.isfile(os.path.join(path, 'eggnog.db'))
+    if dmnd_ok and annotations_ok:
+        return [], [], None
+
+    if os.path.isfile(os.path.join(path, 'eggnog_db.ok')):
+        if dmnd_bytes is None:
+            missing = "there is no bacteria.dmnd"
+        elif not dmnd_ok:
+            missing = f"bacteria.dmnd is only {dmnd_bytes:,} bytes"
+        else:
+            missing = "there is no eggnog.db"
+        # Built again from scratch only when bacteria.dmnd is missing or short
+        delete = "eggnog_db.ok" if not dmnd_ok else "eggnog_db.ok and bacteria.dmnd"
+        return [f"eggNOG DB: {name} has eggnog_db.ok, so EGGNOG_DB will not run again, "
+                f"but {missing}; delete {delete} to have it built again"], [], None
+    if dmnd_bytes is None:
+        return [], [], "not built yet: EGGNOG_DB will download and build it, several gigabytes"
+    if not dmnd_ok:
+        return [], [f"eggNOG DB: bacteria.dmnd in {name} is only {dmnd_bytes:,} bytes; "
+                    f"EGGNOG_DB will take it for a truncated download and build it again"], None
+    return [f"eggNOG DB: {name} has no eggnog.db, which eggNOG-mapper needs, and EGGNOG_DB "
+            f"will not download it while bacteria.dmnd is there; delete bacteria.dmnd to "
+            f"have it built again"], [], None
+
+
+# The reference files a run goes on without, and what it does without them:
+# GET_OUTPUTS warns and leaves the Mycobrowser categories out.
+OPTIONAL_REFERENCES = {
+    'mycobrowser_ref': 'the master table will have no Mycobrowser categories',
+}
+
+
+def validate_reference(path, param):
+    """Check a reference file a task reads at this path, which the pipeline
+    parameter `param` gives. Returns (errors, warnings): a problem with one
+    the run cannot do without is an error, with any other a warning.
+
+    The pipeline passes only the ones that are not on the host, so that the
+    tasks read them inside the container; one on the host is staged into the
+    tasks that read it."""
+    if not os.path.exists(path):
+        problem = f"--{param}: {path} not found, neither on the host nor inside the container"
+    elif not os.path.isfile(path):
+        problem = f"--{param}: {path} is not a file"
+    elif os.path.getsize(path) == 0:
+        problem = f"--{param}: {path} is empty"
+    else:
+        return [], []
+    if param in OPTIONAL_REFERENCES:
+        return [], [f"{problem}; {OPTIONAL_REFERENCES[param]}"]
+    return [problem], []
 
 
 def validate_tsv(tsv_path):
@@ -238,12 +322,38 @@ def validate_tsv(tsv_path):
         return [f"Cannot parse TSV {tsv_path}: {e}"], []
 
 
+def read_genome_table(handle):
+    """{sampleId: path} from a table with the columns sampleId and fasta.
+
+    VALIDATE_INPUTS writes it with the path each genome was staged at. Nothing
+    in it is quoted: a sample ID or a file name may hold a quote character."""
+    reader = csv.DictReader(handle, delimiter='\t', quoting=csv.QUOTE_NONE)
+    return {row['sampleId']: row['fasta'] for row in reader}
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="AMAP pre-flight input validation.")
     parser.add_argument("--tsv", required=True, help="Input samples TSV.")
+    parser.add_argument("--genomes", type=argparse.FileType('r'), default=None,
+                        help="Where to read each sample's genome instead of the "
+                             "path in the TSV: a table with the columns sampleId "
+                             "and fasta, or '-' to read it from standard input.")
     parser.add_argument("--bakta-db", default=None, help="Bakta database path.")
-    parser.add_argument("--eggnog-db", default=None, help="eggNOG database path.")
+    parser.add_argument("--bakta-db-staged", default=None,
+                        help="Where to read the Bakta database instead, when the "
+                             "pipeline staged it; messages keep naming --bakta-db.")
+    parser.add_argument("--eggnog-db", default=None,
+                        help="eggNOG database path. It need not exist yet: "
+                             "EGGNOG_DB builds it.")
+    parser.add_argument("--eggnog-db-staged", default=None,
+                        help="Where to read the eggNOG database instead, when the "
+                             "pipeline staged it; messages keep naming --eggnog-db.")
+    parser.add_argument("--reference", nargs=2, action="append", default=[],
+                        metavar=("PARAM", "PATH"),
+                        help="A reference file read at PATH, which the pipeline "
+                             "parameter PARAM gives, named without its dashes; "
+                             "once for each.")
     parser.add_argument("--strict", action="store_true",
                         help="Treat warnings as errors (fail on any issue).")
     parser.add_argument("--quiet", action="store_true",
@@ -274,32 +384,49 @@ def main():
 
     # 2. Validate databases
     print(f"\n--- Database Checks ---")
-    for db_path, db_name in [(args.bakta_db, 'Bakta DB'), (args.eggnog_db, 'eggNOG DB')]:
-        db_err, db_warn = validate_database(db_path, db_name)
+    databases = [(args.bakta_db, args.bakta_db_staged, 'Bakta DB', validate_bakta_db),
+                 (args.eggnog_db, args.eggnog_db_staged, 'eggNOG DB', validate_eggnog_db)]
+    for db_path, db_staged, db_name, check in databases:
+        if not db_path:
+            print(f"  - {db_name}: not specified")
+            continue
+        db_err, db_warn, note = check(db_staged or db_path, shown_as=db_path)
         all_errors.extend(db_err)
         all_warnings.extend(db_warn)
-        if db_path:
-            status = "✓" if not db_err else "✗"
-            print(f"  {status} {db_name}: {db_path}")
-            for w in db_warn:
-                print(f"    ⚠ {w}")
-            for e in db_err:
-                print(f"    ✗ {e}")
-        else:
-            print(f"  - {db_name}: not specified")
+        status = "✓" if not db_err else "✗"
+        print(f"  {status} {db_name}: {db_path}" + (f" ({note})" if note else ""))
+        for w in db_warn:
+            print(f"    ⚠ {w}")
+        for e in db_err:
+            print(f"    ✗ {e}")
 
-    # 3. Validate each FASTA
+    # 3. Reference files read inside the container
+    if args.reference:
+        print(f"\n--- Reference Files ---")
+    for param, path in args.reference:
+        ref_err, ref_warn = validate_reference(path, param)
+        all_errors.extend(ref_err)
+        all_warnings.extend(ref_warn)
+        print(f"  {'✗' if ref_err else '⚠' if ref_warn else '✓'} --{param}: {path}")
+        for w in ref_warn:
+            print(f"    ⚠ {w}")
+        for e in ref_err:
+            print(f"    ✗ {e}")
+
+    # 4. Validate each FASTA
     print(f"\n--- FASTA Validation ({n_samples} samples) ---")
     
     n_ok = 0
     n_warn = 0
     n_fail = 0
+    staged = read_genome_table(args.genomes) if args.genomes else {}
 
     for row in rows:
         sample_id = row.get('sampleId', 'unknown')
         fasta_path = row.get('fasta', '')
 
-        errors, warnings = validate_fasta(fasta_path, sample_id, args.strict)
+        errors, warnings = validate_fasta(staged.get(sample_id, fasta_path), sample_id,
+                                          args.strict, shown_as=fasta_path)
         all_errors.extend(errors)
         all_warnings.extend(warnings)
 
@@ -315,7 +442,7 @@ def main():
         else:
             n_ok += 1
 
-    # 4. Summary
+    # 5. Summary
     print(f"\n{'=' * 60}")
     print(f"Results: {n_ok} OK, {n_warn} warnings, {n_fail} failed")
     print(f"Total: {len(all_errors)} error(s), {len(all_warnings)} warning(s)")
@@ -331,7 +458,8 @@ def main():
         sys.exit(2)
     elif all_warnings and args.strict:
         print(f"\n  ✗ FAILED (strict mode): {len(all_warnings)} warning(s)")
-        print(f"  Re-run without --strict to proceed, or fix the warnings.")
+        print(f"  Fix the warnings, or re-run without --strict_validation")
+        print(f"  (--strict when running this script yourself).")
         sys.exit(1)
     elif all_warnings:
         print(f"\n  ✓ PASSED with {len(all_warnings)} warning(s)")

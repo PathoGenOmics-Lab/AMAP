@@ -5,7 +5,9 @@ title: Outputs
 # Outputs
 
 Everything lands under `--outdir`, `results/` by default, in one subdirectory
-per pipeline stage.
+per pipeline stage. `{sampleId}` below is the sample's name as lineage typing
+leaves it, `L4_G26689` for sample `G26689`, or the sample ID alone under
+`--skip_typing`.
 
 ## Where to look first
 
@@ -65,9 +67,8 @@ results/
 │       └── *.stat                      # Graph statistics
 │
 ├── PATHOTYPR/
-│   ├── typing/*_summary.tsv            # Lineage assignment
-│   ├── fastas/*.fasta                  # Genomes renamed by lineage
-│   └── renamed_fastas.tsv              # Original ID to lineage-based name
+│   ├── typing/*_summary.tsv            # Lineage calls, one row per contig with markers
+│   └── fastas/*.fasta                  # Each genome as {lineage}_{sampleId}.fasta
 │
 ├── pipeline_info/
 │   ├── execution_report_*.html         # Nextflow execution report

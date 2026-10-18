@@ -294,7 +294,7 @@ def run_pipeline(base, samples, tools):
                  'amap_fna': f'{name}.AMAP.fna', 'bakta_tsv': f'{name}.tsv',
                  'fasta': f'{name}.fasta', 'emapper': f'{name}.emapper.annotations'}
         outputs = run_task(base / 'GET_OUTPUTS' / name, 'get.nf', 'GET_OUTPUTS', dict(
-            files, lineage=lineage, **{'params.mycobrowser_ref': myco,
+            files, lineage=lineage, **{'myco_ref': myco,
                                        'params.skip_mycobrowser': 'false'}), downstream, tools)
         master = outputs / f'{name}-AMAPmastertable.tsv'
         count = run_task(base / 'GET_COUNT' / name, 'get.nf', 'GET_COUNT', {
@@ -698,8 +698,8 @@ def _pathotypr(tmp_path, sample, summary=None):
     staged.symlink_to(genome)
     script = render(process_script('pathotypr.nf', 'PATHOTYPR'), {
         'sampleId': sample, 'fasta': staged.relative_to(work).as_posix(), 'projectDir': ROOT,
-        'params.pathotyper_snps': 'snps_lineages.tsv',
-        'params.pathotyper_ref': 'MTB_ancestor_reference.fasta'})
+        'markers': 'snps_lineages.tsv',
+        'markers_ref': 'MTB_ancestor_reference.fasta'})
     # Nextflow reads env() outputs after the script, as this does
     (work / '.command.sh').write_text(
         script + 'printf %s "$SAMPLE_NAME" > .name\nprintf %s "${LINEAGE-}" > .lineage\n')

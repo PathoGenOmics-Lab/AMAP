@@ -12,6 +12,11 @@ D, E, G, I and U and 8072 in N and S. Such a gene now counts once, as 'NaN',
 which the report reads as its category "NA", shown as "None". Percentages are
 still of all the genome's genes.
 
+The report's COG figures took their categories from a list that ran A to V,
+without R, and None: a gene of R, W, X, Y or Z was plotted as NA in the
+overview and in no figure of its own, so the figure X - Mobilome came out
+empty. They now come from the report's own list of figures.
+
 The tests count columns shaped like a master table's, then run the steps after
 the correction as Nextflow renders them, chained as tests/test_sample_ids.py
 chains them, with eggNOG giving some genes no category and then no gene one,
@@ -102,18 +107,30 @@ FIGURES = ('do.call(rbind, lapply(names(cog_names), function(code) {'
            ' data.frame(figure=rep(cog_names[[code]], nrow(d)), genome=d$genome,'
            ' Count=d$Count) }))')
 
+# The figure each category of the runs is drawn in
+FIGURE = {'J': 'J - Translation, ribosomal structure', 'K': 'K - Transcription',
+          'X': 'X - Mobilome: prophages, transposons', 'NaN': 'None'}
+
+# The category the overview plots each row under, R's NA written as "lost",
+# since write.table writes it as "NA", the category None's own
+OVERVIEW = ('data.frame(genome=datos_cog1$genome, Count=datos_cog1$Count,'
+            ' category=ifelse(is.na(datos_cog1$Functional_Category), "lost",'
+            ' as.character(datos_cog1$Functional_Category)))')
+
 
 @pytest.fixture(scope='module')
 def report(run, rscript):
     """(the report's COG table, {(figure, genome): count} of its per-COG
-    figures, what each sample's genes count as) for a run."""
+    figures, the rows of its overview, what each sample's genes count as)
+    for a run."""
     tasks, expected = run
     with pytest.MonkeyPatch.context() as mp:
         mp.setitem(chain.R_TABLES, FIGURES, 'cog_figures')
+        mp.setitem(chain.R_TABLES, OVERVIEW, 'cog_overview')
         tables = chain.report_tables(tasks, rscript)
     plotted = tables['cog_figures']
     figures = dict(zip(zip(plotted['figure'], plotted['genome']), plotted['Count']))
-    return tables['cog'], figures, expected
+    return tables['cog'], figures, tables['cog_overview'], expected
 
 
 class TestGetCount:
@@ -132,7 +149,7 @@ class TestGetCount:
 class TestReport:
 
     def test_category_counts(self, report):
-        cog, _, expected = report
+        cog, _, _, expected = report
         for k, (_, sample, _) in enumerate(SAMPLES):
             rows = cog[cog['genome'] == sample]
             # 'NaN' is the report's category "NA"
@@ -141,6 +158,21 @@ class TestReport:
             assert rows['Percentage'].sum() == pytest.approx(1.0)
 
     def test_the_figure_none_counts_them(self, report):
-        _, figures, expected = report
+        _, figures, _, expected = report
         for k, (_, sample, _) in enumerate(SAMPLES):
             assert figures.get(('None', sample)) == expected(k)['NaN']
+
+    def test_each_category_in_a_figure_of_its_own(self, report):
+        # the figure X - Mobilome plotted none of the X genes, before
+        _, figures, _, expected = report
+        for k, (_, sample, _) in enumerate(SAMPLES):
+            assert {figure: n for (figure, genome), n in figures.items() if genome == sample} == \
+                {FIGURE[c]: n for c, n in expected(k).items()}
+
+    def test_the_overview_plots_each_category_as_itself(self, report):
+        # and the overview plotted them as NA
+        _, _, overview, expected = report
+        for k, (_, sample, _) in enumerate(SAMPLES):
+            rows = overview[overview['genome'] == sample]
+            assert dict(zip(rows['category'], rows['Count'])) == \
+                {'NA' if c == 'NaN' else c: n for c, n in expected(k).items()}

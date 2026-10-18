@@ -592,7 +592,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The workflow",
 "section": "2. Lineage typing",
 "url": "how-it-works/workflow.html#2-lineage-typing",
-"text": "pathotypr assigns each genome to an MTBC lineage using phylogenetic marker SNPs, and the genomes are renamed after their sample ID with the lineage in front (L4_G26689 for sample G26689). That prefix carries through every downstream file and is what lets the report group results by lineage. pathotypr types each contig of a draft on its own, and the lineage of the draft is the one the markers of all its contigs add up to. A genome of one sequence has that sequence renamed after the sample; the contigs of a draft keep their names. A genome with no lineage markers at all is named NA_G26689. MTBC-"
+"text": "pathotypr assigns each genome to an MTBC lineage using phylogenetic marker SNPs, and the genomes are renamed after their sample ID with the lineage in front (L4_G26689 for sample G26689). That prefix carries through every downstream file and is what lets the report group results by lineage. pathotypr types each contig of a draft on its own, and the lineage of the draft is the one the markers of all its contigs add up to. A genome of one sequence has that sequence renamed after the sample and keeps the description that follows the name in its header, so Bakta still reads a closed genome as comp"
 },
 {
 "page": "The workflow",

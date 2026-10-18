@@ -107,6 +107,18 @@ seriously.
 > than compare genes across contigs.
 
 > [!NOTE]
+> **Closed genomes are read as circular from their header**
+>
+> Bakta takes a sequence for a complete, circular replicon when the
+> description after its name says so: `complete`, as NCBI's "complete genome"
+> and "complete sequence" do, or `circular=true`, as Unicycler's does. It then
+> joins the two ends, and a gene across the origin comes out whole. Lineage
+> typing renames a genome of one sequence after its sample and keeps that
+> description. A closed genome whose header says neither is annotated as
+> linear, and a gene across its origin is cut in two there; add
+> `circular=true` after its name to have it read as circular.
+
+> [!NOTE]
 > **Draft assemblies**
 >
 > Every contig of a draft assembly is numbered from 1, so the same

@@ -1065,7 +1065,8 @@ def ranges_figure() -> str:
         shown = None
         for value in ticks:
             minor = shown is not None and pos(value) - shown < 12
-            out.append(f'<span{" class=\"minor\"" if minor else ""} style="left:{pos(value):.2f}%">{fmt(value)}</span>')
+            cls = ' class="minor"' if minor else ""
+            out.append(f'<span{cls} style="left:{pos(value):.2f}%">{fmt(value)}</span>')
             if not minor:
                 shown = pos(value)
         out.append("</div>")

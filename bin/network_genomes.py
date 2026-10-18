@@ -151,7 +151,10 @@ def build_intra_genome_networks(df: pd.DataFrame, genome_ids: Set[str],
     networks = {}
     query_genome = df['qseqid'].map(genome_of)
     subject_genome = df['sseqid'].map(genome_of)
-    for genome_id in genome_ids:
+    # In the order of the genomes' names: a set's order changes with Python's
+    # hash seed from one run to the next, and the network drawn gave each
+    # genome its colour in this order.
+    for genome_id in sorted(genome_ids):
         genome_df = df[(query_genome == genome_id) & (subject_genome == genome_id)]
         G = nx.from_pandas_edgelist(genome_df, 'qseqid', 'sseqid')
         networks[genome_id] = G
@@ -198,12 +201,16 @@ def find_homologous_communities(
 
     Returns:
         A dictionary mapping a community (genome_id, community_name) to a list of
-        its homologous communities [(homolog_genome, homolog_community), ...].
+        its homologous communities [(homolog_genome, homolog_community), ...],
+        both in order: by genome name, then by community number.
     """
-    # Build inverted index: node → (genome_id, community_name)
+    # Build inverted index: node → (genome_id, community_name), and each
+    # community's place: its genome's name, then its number
     node_to_community = {}
+    place = {}
     for genome_id, communities in labeled_communities.items():
-        for comm_name, nodes in communities.items():
+        for i, (comm_name, nodes) in enumerate(communities.items()):
+            place[(genome_id, comm_name)] = (genome_id, i)
             for node in nodes:
                 node_to_community[node] = (genome_id, comm_name)
 
@@ -213,23 +220,41 @@ def find_homologous_communities(
         q_comm = node_to_community.get(row['qseqid'])
         s_comm = node_to_community.get(row['sseqid'])
         if q_comm and s_comm and q_comm != s_comm:
-            edge = tuple(sorted([q_comm, s_comm]))
+            edge = tuple(sorted([q_comm, s_comm], key=place.get))
             homologous_edges.add(edge)
 
-    # Build symmetric adjacency map
+    # Build symmetric adjacency map, the communities and each one's homologs
+    # in order of place: the set's order changes with Python's hash seed from
+    # one run to the next, and create_summary_report writes each pair once, at
+    # the first of its two communities, in the map's order.
     homologous_map = {}
-    for comm1, comm2 in homologous_edges:
+    for comm1, comm2 in sorted(homologous_edges, key=lambda edge: (place[edge[0]], place[edge[1]])):
         homologous_map.setdefault(comm1, []).append(comm2)
         homologous_map.setdefault(comm2, []).append(comm1)
 
-    return homologous_map
+    return dict(sorted(homologous_map.items(), key=lambda item: place[item[0]]))
 
 
 # --- 4. Network Metrics Calculation ---
 
+def in_order(graph: nx.Graph) -> nx.Graph:
+    """
+    A copy of a graph with its nodes, and its links, in alphabetical order.
+    A subgraph view of a few nodes of a large network goes through them in
+    the order of their set, which changes with Python's hash seed from one
+    run to the next.
+    """
+    ordered = nx.Graph()
+    ordered.add_nodes_from(sorted(graph))
+    ordered.add_edges_from(sorted(tuple(sorted(edge)) for edge in graph.edges()))
+    return ordered
+
+
 def calculate_subgraph_metrics(subgraph: nx.Graph) -> Dict[str, Any]:
     """
-    Calculates various topological metrics for a given subgraph.
+    Calculates various topological metrics for a given subgraph, node by node
+    in alphabetical order: the average clustering is a sum of floats, whose
+    last digit changed with the order the nodes came in.
 
     Modularity is not one of them: computed with the whole community as its
     only group, it was 0 for every community, whatever its shape.
@@ -241,6 +266,7 @@ def calculate_subgraph_metrics(subgraph: nx.Graph) -> Dict[str, Any]:
             'avg_path_length': np.nan
         }
 
+    subgraph = in_order(subgraph)
     metrics['avg_degree'] = np.mean(list(dict(subgraph.degree()).values()))
     metrics['density'] = nx.density(subgraph)
     metrics['avg_clustering'] = nx.average_clustering(subgraph)
@@ -389,7 +415,8 @@ def visualize_network(
             target_node = f"{g2_id}:{c2_name}"
             net.add_edge(source_node, target_node)
 
-    net.show(str(output_path), notebook=False)
+    # Written, not shown: show() also opens the file in a web browser
+    net.write_html(str(output_path))
     print(f"Successfully generated interactive network at {output_path}")
 
 
@@ -423,7 +450,7 @@ def main():
         pd.DataFrame().to_csv(output_tsv, sep="\t", index=False)
         # Create minimal HTML
         net = Network(height='100vh', width='100%', bgcolor='#FFFFFF', notebook=False)
-        net.show(str(output_html), notebook=False)
+        net.write_html(str(output_html))
         print(f"Empty report at {output_tsv} and {output_html}")
         return
 

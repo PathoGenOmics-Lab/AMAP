@@ -9,6 +9,10 @@ off the first row, the name was a contig's: CDC1551 cut into 40 contigs, sample
 CDC1551d, came out as L4_contig_14, and so did every file after it. The
 summaries below are pathotypr's own, from that draft and from the closed genome.
 
+A genome of one record is renamed after the sample and keeps the description
+of its header, from which Bakta reads whether it is a complete, circular
+replicon.
+
 The module tests run PATHOTYPR's script the way Nextflow renders it, with a
 stand-in for pathotypr that writes a given summary, so they also fail if the
 naming in modules/local/pathotypr.nf goes back to reading the summary's rows.
@@ -27,6 +31,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'bin'))
 
+from classify import circular  # noqa: E402
 from name_by_lineage import read_rows, sample_lineage, write_fasta  # noqa: E402
 
 SCRIPT = ROOT / 'bin' / 'name_by_lineage.py'
@@ -119,13 +124,41 @@ class TestSampleLineage:
         assert sample_lineage(read_rows(_summary(tmp_path, HEADER + 'a\t\tUnclassified\n'))) is None
 
 
+def _written(tmp_path, genome, name='L4_CDC1551'):
+    src = tmp_path / 'in.fa'
+    src.write_bytes(genome)
+    write_fasta(str(src), str(tmp_path / 'out.fa'), name)
+    return (tmp_path / 'out.fa').read_bytes()
+
+
 class TestWriteFasta:
 
     def test_one_record_is_renamed_and_its_sequence_left_alone(self, tmp_path):
-        src = tmp_path / 'in.fa'
-        src.write_bytes(b'>NC_002755.2 Mycobacterium tuberculosis CDC1551\nACGTN\nAC\n')
-        write_fasta(str(src), str(tmp_path / 'out.fa'), 'L4_CDC1551')
-        assert (tmp_path / 'out.fa').read_bytes() == b'>L4_CDC1551\nACGTN\nAC\n'
+        assert _written(tmp_path, b'>NC_002755.2 Mycobacterium tuberculosis CDC1551\nACGTN\nAC\n') \
+            == b'>L4_CDC1551 Mycobacterium tuberculosis CDC1551\nACGTN\nAC\n'
+
+    def test_a_header_without_a_description_is_the_name_alone(self, tmp_path):
+        assert _written(tmp_path, b'>CDC1551\nACGT\n') == b'>L4_CDC1551\nACGT\n'
+
+    @pytest.mark.parametrize('header', [
+        b'NC_002755.2 Mycobacterium tuberculosis CDC1551, complete sequence',
+        b'CP110619.1 Mycobacterium tuberculosis strain H37Rv-1 chromosome, complete genome',
+        b'1 length=4411532 depth=1.00x circular=true',
+        b'NZ_JAAXYZ010000001.1 Mycobacterium tuberculosis strain G1 contig_1, whole genome shotgun sequence',
+        b'contig_1 complete=false',
+    ])
+    def test_bakta_reads_a_renamed_genome_as_it_read_the_original(self, tmp_path, header):
+        # Bakta joins the ends of a sequence whose description says it is a
+        # complete, circular replicon, and of no other. Renamed to its name
+        # alone, CDC1551 reached it linear, and a gene across the origin of a
+        # closed genome came out as two partial pieces.
+        renamed = _written(tmp_path, b'>' + header + b'\nACGT\n').split(b'\n')[0][1:].decode()
+        assert renamed.split()[0] == 'L4_CDC1551'
+        assert circular.bakta_circular(renamed) == circular.bakta_circular(header.decode())
+
+    def test_spaces_and_tabs_around_the_description_are_not_kept(self, tmp_path):
+        assert _written(tmp_path, b'>NC_002755.2\t Mycobacterium  tuberculosis \r\nACGT\n') \
+            == b'>L4_CDC1551 Mycobacterium  tuberculosis\nACGT\n'
 
     def test_the_contigs_of_a_draft_keep_their_names(self, tmp_path):
         draft = b'>L4_CDC1551d\nACGT\n>contig_2 len=4\nGGCC\n>contig_14\nTTAA\n'
@@ -261,6 +294,10 @@ class TestModule:
         name, work = _run_module(tmp_path, 'CDC1551', 'cdc1551.fna', genome, CLOSED_NCBI)
         assert name == 'L4_CDC1551'
         assert _outputs(work, '*.fasta') == ['L4_CDC1551.fasta']
+        # What BAKTA_ANNOTATOR reads: the sample's name, and the description
+        # that tells Bakta the genome is complete and circular
+        assert (work / 'L4_CDC1551.fasta').read_bytes() \
+            == b'>L4_CDC1551 Mycobacterium tuberculosis CDC1551, complete sequence\nACGT\n'
 
     def test_failed_typing_gives_NA(self, tmp_path):
         name, work = _run_module(tmp_path, 'K12', 'K12.fasta', b'>K12\nACGT\n')

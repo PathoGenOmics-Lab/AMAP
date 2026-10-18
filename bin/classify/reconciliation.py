@@ -48,11 +48,20 @@ def recover_missing_genes(combined_dict, miniprot_df, min_cover=0.5):
     call holding no more than a remnant of it is another gene. The RD12
     deletion leaves the last 67 of the 400 residues of cyp141 (Rv3121) at the
     end of a 321-codon gene of M. bovis.
+
+    The pieces of a gene that contig ends cut (classify/pieces.py) are parts of
+    their protein, not copies of it, so each is missing on its own: one in the
+    dict does not stand for another. Counted as copies, the smaller piece of
+    Rv0100 in CDC1551 cut into contigs, placed on a contig of its own, kept
+    the larger one from coming back after a 7.5 kb Bakta call had displaced it.
+    Nor does a piece give its name to a call that has none.
     """
     reference_ids = set(miniprot_df['Prot Id'])
     placed = miniprot_df[(miniprot_df['Start'] < miniprot_df['End'])
                          & ~((miniprot_df['Match Nt'] == 0) & (miniprot_df['Num nt'] == 0))]
     contig = placed['Contig'] if 'Contig' in placed.columns else pd.Series('', index=placed.index)
+    piece = (placed['Piece'].astype(bool) if 'Piece' in placed.columns
+             else pd.Series(False, index=placed.index))
     coords = {idx: (r['Start'], r['End'], r.get('Strand', '+'), contig[idx])
               for idx, r in placed.iterrows()}
 
@@ -105,6 +114,8 @@ def recover_missing_genes(combined_dict, miniprot_df, min_cover=0.5):
     named, accounted_only, stand_in = set(), set(), {}
     for idx, c in coords.items():
         prot_id = placed.at[idx, 'Prot Id']
+        if piece[idx]:
+            continue
         genes = accounted(c, prot_id)
         if c in combined_dict or any(has_name for _, has_name in genes):
             named.add(prot_id)
@@ -129,11 +140,13 @@ def recover_missing_genes(combined_dict, miniprot_df, min_cover=0.5):
     for idx in placed.sort_values('Match Nt', ascending=False).index:
         prot_id = placed.at[idx, 'Prot Id']
         coord = coords[idx]
-        if prot_id in present or coord in combined_dict or accounted(coord, prot_id):
+        if ((prot_id in present and not piece[idx])
+                or coord in combined_dict or accounted(coord, prot_id)):
             continue
         combined_dict[coord] = prot_id
         add_to_tree(coord, prot_id)
-        present.add(prot_id)
+        if not piece[idx]:
+            present.add(prot_id)
 
 
 def deduplicate(combined_dict):

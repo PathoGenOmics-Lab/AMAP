@@ -71,8 +71,14 @@ cluster. Skipped entirely under `--skip_functional_annotation`.
 
 [pathotypr](https://github.com/PathoGenOmics-Lab/pathotypr) assigns each genome
 to an MTBC lineage using phylogenetic marker SNPs, and the genomes are renamed
-accordingly (`L4_G26689`). That prefix carries through every downstream file and
-is what lets the report group results by lineage.
+after their sample ID with the lineage in front (`L4_G26689` for sample
+`G26689`). That prefix carries through every downstream file and is what lets
+the report group results by lineage.
+
+pathotypr types each contig of a draft on its own, and the lineage of the draft
+is the one the markers of all its contigs add up to. A genome of one sequence
+has that sequence renamed after the sample; the contigs of a draft keep their
+names. A genome with no lineage markers at all is named `NA_G26689`.
 
 MTBC-specific. Turn it off with `--skip_typing` for anything else, and sample
 IDs stay as you wrote them.
@@ -96,6 +102,12 @@ candidates.
 Output is PAF. Coordinates are converted from 0-based to 1-based on read, and
 for a protein hitting several positions, the best hit per position is kept so
 multi-copy families such as PE/PPE keep all their placements.
+
+In a draft assembly the genes a contig end cuts get a second pass. Miniprot
+places the larger piece of such a gene only, so what that placement lacks is
+aligned again as a protein of its own, and its placement at the end of another
+contig is the rest of the gene
+([pieces of cut genes](correction-algorithm.md#pieces-of-cut-genes)).
 
 ## 5. Case classification
 
@@ -152,6 +164,10 @@ across genomes, with network metrics computed per community.
 corrected annotations and produces a gene presence/absence matrix, which the
 report turns into core, softcore, shell and cloud classifications, a frequency
 spectrum and presence/absence heatmaps.
+
+Each sample's corrected proteins are aligned with miniprot onto every other
+sample's genome: the ones PATHOTYPR renamed or, with `--skip_typing`, the
+genomes of the sample sheet, each under its sample ID.
 
 ## 10. Report
 

@@ -5,6 +5,15 @@ process EGGNOG_DB {
     // Once built, it's reused across ALL pipeline runs — never rebuilt.
     storeDir "${params.eggnog_db}"
 
+    input:
+    // The folder to build the database in, --eggnog_db, which main.nf makes
+    // on the host. A container sees only the folders Nextflow mounts for a
+    // task, its inputs' among them. When the script worked the folder out for
+    // itself, the container had it only if a mount happened to cover it;
+    // otherwise the database was built inside the container and lost with it,
+    // and storeDir moved only eggnog_db.ok to the host.
+    path eggnog_db
+
     output:
     path "eggnog_db.ok", emit: db_path
 
@@ -12,15 +21,8 @@ process EGGNOG_DB {
     """
     set -euo pipefail
 
-    # Resolve the user-provided eggnog_db path
-    # Use launchDir (where user ran nextflow) for relative paths, NOT projectDir
-    # (which points to the pipeline cache and is wrong for user-supplied paths)
-    EGGNOG_DB_DIR="${params.eggnog_db}"
-    if [[ ! "\$EGGNOG_DB_DIR" = /* ]]; then
-        EGGNOG_DB_DIR="${launchDir}/${params.eggnog_db}"
-    fi
-
-    mkdir -p "\$EGGNOG_DB_DIR"
+    # The folder on the host, staged here as a link to it
+    EGGNOG_DB_DIR="${eggnog_db}"
 
     # ------------------------------------------------------------
     # 0) Quick exit if the bacteria DB already exists
@@ -81,9 +83,15 @@ process ANNOT_EGGNOGMAP_BATCH {
   tag "batch_${faa_files.size()}_samples"
 
   input:
-  path faa_files    // collected FAA files from all samples
+  // Collected FAA files from all samples. A list even for one sample: Nextflow
+  // hands a single file over as itself, whose size() is its size in bytes.
+  path faa_files, arity: '1..*'
   val  sample_ids   // list of sampleIds in matching order
-  path eggnog_db
+  // The folder EGGNOG_DB built the database in, --eggnog_db. Nextflow stages
+  // a folder under its own name (/shared/databases/eggnog as eggnog), so it
+  // is staged here as eggnog_db whatever it is called: a name the script
+  // knows, and one that none of the files and folders it makes can take.
+  path eggnog_db, stageAs: 'eggnog_db'
 
   output:
   path "split/*.emapper.annotations", emit: split_annotations
@@ -188,7 +196,7 @@ PYEOF
       emapper.py \\
         -i unique.faa \\
         -m diamond \\
-        --dmnd_db eggnog_db/bacteria.dmnd \\
+        --dmnd_db "${eggnog_db}/bacteria.dmnd" \\
         --cpu ${task.cpus} \\
         --usemem \\
         --dbmem \\
@@ -198,7 +206,7 @@ PYEOF
         --tax_scope 2 \\
         --target_orthologs one2one \\
         -o batch \\
-        --data_dir eggnog_db \\
+        --data_dir "${eggnog_db}" \\
         --temp_dir tmp \\
         --scratch_dir scr_tmp
 

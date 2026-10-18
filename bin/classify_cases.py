@@ -30,6 +30,7 @@ from classify.plotting import generate_overlap_plot
 from classify.ids import format_cluster_id
 from classify.synteny import drop_paralog_placements
 from classify.exact import place_exact_matches
+from classify.pieces import add_contig_end_pieces
 
 __author__ = 'Paula Ruiz-Rodriguez'
 __credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
@@ -65,11 +66,12 @@ def match_bakta_contigs(bakta_df, miniprot_df):
     --keep-contig-headers, and miniprot keeps the FASTA headers. With nothing
     in common every comparison would be between different contigs and the
     whole classification would come out wrong without a word. One sequence
-    each can only be the same sequence; anything else is a hard error.
+    each can only be the same sequence; anything else is a hard error. With
+    no CDS from Bakta there is no name to compare.
     """
     bakta_contigs = set(bakta_df['Contig'])
     mp_contigs = set(miniprot_df.loc[miniprot_df['Contig'] != '*', 'Contig'])
-    if not mp_contigs or bakta_contigs & mp_contigs:
+    if not bakta_contigs or not mp_contigs or bakta_contigs & mp_contigs:
         return bakta_df
     if len(bakta_contigs) == 1 and len(mp_contigs) == 1:
         return bakta_df.assign(Contig=next(iter(mp_contigs)))
@@ -87,6 +89,12 @@ def main():
     parser.add_argument('-g', '--genome', help="Genome FASTA. With --ref-proteome, the proteins "
                                                "miniprot did not place exactly are looked for in it.")
     parser.add_argument('-r', '--ref-proteome', help="Reference proteome the miniprot PAF was made from.")
+    parser.add_argument('--pieces', help="Miniprot PAF of what contig ends cut off the placements "
+                                         "in the first one (contig_end_pieces.py).")
+    parser.add_argument('--sample', help="The sample's ID in the sample sheet, for the summary. "
+                                         "Default: the name of the Bakta table.")
+    parser.add_argument('--lineage', help="The lineage typing called the sample, for the summary. "
+                                          "Default: Untyped.")
     args = parser.parse_args()
 
     base_name = os.path.basename(args.bakta).split('.')[0]
@@ -99,6 +107,10 @@ def main():
     # or for the shortest, with a few substitutions.
     if args.genome and args.ref_proteome:
         miniprot_df = place_exact_matches(miniprot_df, args.genome, args.ref_proteome)
+    # A gene a contig end cut is placed by its larger piece alone; the others
+    # come from a second pass over what that placement lacks.
+    if args.pieces:
+        miniprot_df = add_contig_end_pieces(miniprot_df, args.pieces)
     # A protein with a paralog is placed at both loci; keep only the placements
     # that do not land on a locus another protein syntenically owns.
     miniprot_df = drop_paralog_placements(miniprot_df)
@@ -115,7 +127,8 @@ def main():
     write_summary(base_name,
                   [case2, case3, case4, case1, rv_missing, bakta_df, case1_remove, case1_keep],
                   ["case2", "case3", "case4", "case1_initial", "rv_missing",
-                   "total_cds", "case1_removed", "case1_kept"])
+                   "total_cds", "case1_removed", "case1_kept"],
+                  sample=args.sample, lineage=args.lineage)
 
     # --- 4. Build overlap groups ---
     mp_case4_overlaps = build_overlap_tree(miniprot_df, case4, 'Prot Id', 'Locus Tag')

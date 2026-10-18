@@ -15,8 +15,9 @@
 # The first run downloads four genomes, prepares the E. coli reference and
 # runs Bakta eight times, a quarter of an hour with 12 threads.
 # Everything up to the algorithm is cached in the workdir, so later runs only
-# redo classify_cases.py, check_cds.py and deduplicate_rvs.py and score them,
-# a few minutes for all seven genomes. See tests/benchmark/README.md.
+# redo MINIPROT's pass over what contig ends cut off, classify_cases.py,
+# check_cds.py and deduplicate_rvs.py and score them, a few minutes for all
+# seven genomes. See tests/benchmark/README.md.
 set -euo pipefail
 
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
@@ -162,6 +163,7 @@ if [ ! -s "$T/sakai.tsv" ] || ! head -1 "$T/sakai.tsv" | grep -qw aligned; then
 fi
 
 # --- the algorithm ----------------------------------------------------------------
+# The last step of MINIPROT, which runs AMAP code and so is never cached, then
 # TYPE_CASES and FIX_CDS as modules/local/cases.nf runs them.
 R=$WORK/runs/$RUN
 rm -rf "${R:?}"
@@ -171,9 +173,12 @@ correct() {
     mkdir -p "$out"
     (
         cd "$out"
+        python3 "$REPO/bin/contig_end_pieces.py" "$dir/$s.paf" "$proteome" > "$s-pieces.faa" 2> pieces.log
+        miniprot --outs=0.95 -L 10 -n 2 -Iut"$THREADS" -S "$dir/$s.fasta" "$s-pieces.faa" \
+            > "$s-pieces.paf" 2>> pieces.log
         python3 "$REPO/bin/classify_cases.py" -b "$dir/$s/$s.tsv" -p "$dir/$s.paf" \
             -bb "$dir/$s-badbakta.paf" -c "$dir/$s-ref.paf" \
-            --genome "$dir/$s.fasta" --ref-proteome "$proteome" > classify.log 2>&1
+            --genome "$dir/$s.fasta" --ref-proteome "$proteome" --pieces "$s-pieces.paf" > classify.log 2>&1
         python3 "$REPO/bin/check_cds.py" "$dir/$s.fasta" "${s}_corrected.tsv" \
             --ref-proteome "$proteome" > check.log 2>&1
         python3 "$REPO/bin/deduplicate_rvs.py" "$s.AMAP.tsv" --faa "$s.AMAP.faa" --fna "$s.AMAP.fna" \

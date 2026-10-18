@@ -131,8 +131,7 @@
 
   /* ── Command builder ── */
 
-  var builder = document.querySelector("[data-builder]");
-  if (builder) {
+  document.querySelectorAll("[data-builder]").forEach(function (builder) {
     var commandEl = builder.querySelector("[data-command]");
     var explainEl = builder.querySelector("[data-explain]");
     var noteEl = builder.querySelector("[data-builder-note]");
@@ -165,7 +164,7 @@
         out.push([["--ref_annotation", "ref.gbk", "--ref_genome", "ref.fna"], "Your trusted reference: its annotation and the genome it describes, the same assembly."]);
       }
       if (opt("small")) out.push([["--max_cpus", "4", "--max_memory", "12.GB"], "Ceilings: every task is clamped to them."]);
-      if (opt("only")) out.push([["--skip_functional_annotation"], "Stops after the correction: no eggNOG, duplications, pangenome or report."]);
+      if (opt("only")) out.push([["--skip_functional_annotation"], "Stops after the correction, with the corrected genes as a table and sequences: no eggNOG, GFF3 or GenBank, duplications, pangenome or report."]);
       if (opt("db")) out.push([["--eggnog_db", p.db], "Builds the eggNOG database there once, and reuses it."]);
       return out;
     }
@@ -217,7 +216,7 @@
     });
     builder.addEventListener("change", render);
     render();
-  }
+  });
 
   /* ── Embedded report ── */
 

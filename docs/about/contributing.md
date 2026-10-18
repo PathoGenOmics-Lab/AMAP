@@ -132,6 +132,12 @@ windows of real runs in `docs/assets/figure-data.js`. A line
 `<!-- figure: NAME -->` in a markdown page puts one of those drawings there, and
 GitHub shows nothing in its place.
 
+Some drawings are made from the code itself when the page is built, so they
+cannot drift from it: the sample sheet and its error messages run
+`bin/validate_inputs.py`, the validation ranges read its limits, the container
+reads `docker/Dockerfile`, and the cluster and failure drawings read
+`nextflow.config`. After changing any of those, run `build_docs.py` again.
+
 `check_site.py` fails when a page no longer matches its markdown, a link or an
 anchor is broken, a page uses an option the pipeline does not have, a threshold
 on a page differs from the code, the metro map's stations are out of the order
@@ -145,8 +151,25 @@ words of the drawing against what changed:
 python3 tools/figure_data.py benchmark_work final --reference /reference
 ```
 
+The duplications page draws a real family and a pair of communities from
+`docs/assets/dup-data.js`, which `check_site.py` puts back through
+`get_duplications.py` and `network_genomes.py`. `tools/dup_run.sh` runs the two
+duplication steps in the container on corrected proteomes, and
+`tools/dup_data.py` writes the data from what they found (both explain their
+arguments). The front page's benchmark scores are checked against
+`tests/benchmark/README.md`.
+
+The pictures, the example report's sections, the card a shared link shows and
+the README's light and dark drawings, are screenshots of the site taken by
+headless Chrome; take them again after the report or a drawing changes:
+
+```bash
+node tools/pictures.mjs
+```
+
 The workflow in `.github/workflows/docs.yml` runs both checks on every pull
-request that touches the docs, `bin/`, `modules/` or `main.nf`.
+request that touches the docs, `bin/`, `modules/`, `main.nf`,
+`nextflow.config`, `docker/Dockerfile` or the benchmark's expected results.
 
 ## Style
 

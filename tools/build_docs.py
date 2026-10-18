@@ -115,6 +115,60 @@ FIGURES = {
     "case1-kept": case_figure("case1-kept", "Case 1 kept: four calls in a stretch CDC1551 has and H37Rv lacks."),
     "case1-dropped": case_figure("case1-dropped", "Case 1 removed: a call that Bakta's known false positives cover end to end."),
     "missing": case_figure("missing", "A missing reference gene: Rv0031, put back between two of Bakta's calls."),
+    "three-inputs": (
+        '<figure class="fig case" data-inputs><div class="case-fig" data-fig-stage></div>'
+        "<figcaption>The three inputs over the first 12.4 kb of CDC1551: Bakta's calls, the H37Rv proteins miniprot placed, and "
+        "two of the calls Bakta makes on H37Rv itself that its curated annotation does not have, aligned here. Point at a gene "
+        "for its coordinates.</figcaption></figure>"
+    ),
+    "outcomes": (
+        '<figure class="fig outcomes" data-outcomes><div class="legend"><span><i class="chip bakta"></i>Bakta\'s call</span>'
+        '<span><i class="chip ref"></i>reference protein, aligned</span><span><i class="chip amap"></i>what AMAP keeps</span></div>'
+        '<div class="oc-grid">'
+        + "".join(
+            f'<a class="oc" href="{link}" data-mini="{key}"><span class="oc-head"><span class="case-tag {tag}">{case}</span><b>{title}</b></span>'
+            f'<span class="oc-fig" data-fig-stage></span><span class="oc-text">{text}</span><span class="oc-more">{more}</span></a>'
+            for key, tag, case, title, text, link, more in [
+                ("case2", "c2", "Case 2", "Perfect match", "Same start, end, strand and length as an aligned protein. Kept, tied to it.", "../how-it-works.html#agree", "Step through it"),
+                ("case3", "c3", "Case 3", "Imperfect match", "Same start, end and strand; the alignment's length differs. Kept, tied to the protein.", "correction-algorithm.html#1-classification", "The rule"),
+                ("case4-start", "c4", "Case 4", "Conflicting overlap", "Overlaps an aligned protein with other coordinates. The reference's win, unless the call is much longer.", "../how-it-works.html#late-start", "Step through it"),
+                ("case1-kept", "c1", "Case 1", "Potentially novel", "Nothing aligns. Kept, unless Bakta is known to call it wrongly or the reference genome has its protein.", "../how-it-works.html#new", "Step through it"),
+                ("missing", "cm", "Missing", "Put back", "A reference protein aligns where Bakta called nothing. It goes in at the alignment.", "../how-it-works.html#missed", "Step through it"),
+            ]
+        )
+        + '<div class="oc oc-harder"><span class="oc-head"><b>And the harder ones</b></span><ul>'
+        + "".join(
+            f'<li><a href="../how-it-works.html#{key}">{label}</a></li>'
+            for key, label in [("paralog", "A protein on its paralog's locus"), ("small", "Proteins too small for miniprot"),
+                               ("contig-end", "Genes a contig end cuts"), ("frameshift", "Frameshifts and lost stops"),
+                               ("copies", "Two real copies of a gene")]
+        )
+        + "</ul></div>"
+        + "</div><figcaption>The five outcomes, each on real genes of CDC1551: the same windows as the case pages, "
+        "drawn small. Each card opens its story, step by step.</figcaption></figure>"
+    ),
+    "dup-family": (
+        '<figure class="fig dup-fig" data-dup="family"><div class="case-fig" data-fig-stage></div>'
+        '<div class="legend"><span><i class="chip node-in"></i>in the family</span>'
+        '<span><i class="chip link-kept"></i>a link: identical residues cover 80% or more of one of the two</span>'
+        '<span><i class="chip link-near"></i>a hit under 80%: no link</span>'
+        '<span><i class="chip node-out"></i>a protein outside the family</span></div>'
+        "<figcaption>CDC1551's corrected proteome against itself, run as GET_DUPLICATIONS runs it: six transposases make one "
+        "family. Each line is a pair Diamond matched, with the larger of the two shares its identical residues cover; the "
+        "size of a protein is its length. Point at a protein or a line for its numbers.</figcaption></figure>"
+    ),
+    "dup-communities": (
+        '<figure class="fig dup-fig dup-pair" data-dup="communities"><div class="dup-sides">'
+        '<div class="dup-side" data-net><p class="dup-head" data-net-head></p><div class="case-fig" data-fig-stage></div></div>'
+        '<div class="dup-side" data-net><p class="dup-head" data-net-head></p><div class="case-fig" data-fig-stage></div></div>'
+        '<p class="dup-bridge" data-net-bridge></p></div>'
+        '<div class="table-wrap"><table class="dup-metrics" data-net-metrics></table></div>'
+        '<div class="legend"><span><i class="chip link-kept"></i>a link in this genome</span>'
+        '<span><i class="chip link-ghost"></i>a link only the other genome has</span></div>'
+        "<figcaption>The same family in GET_ALLDUP, pooled with M. bovis AF2122/97's families: one community in each genome, "
+        "joined by their hits, and the row of <code>homologous_communities.tsv</code> they make. Each protein of M. bovis sits "
+        "where its closest match in CDC1551 does.</figcaption></figure>"
+    ),
     "metro": (
         '<figure class="fig metro-wrap" data-metro><div class="metro-opts"><span>Run with</span>'
         '<label><input type="checkbox" data-metro-opt="skipTyping"><code>--skip_typing</code></label>'
@@ -650,7 +704,435 @@ def reference_steps(renderer: "Renderer", lines: list[str]) -> str:
     })
 
 
-DERIVED = {"case-counts": counts_from_code, "case-table": counts_from_table, "prepare-reference": reference_steps}
+# ── The sample sheet and the checks on it ──
+#
+# Drawn from bin/validate_inputs.py itself: its messages come from running it
+# on the sheets shown, and the ranges from its own comparisons, so a change
+# there leaves these pages stale until they are rebuilt.
+
+VALIDATOR = Path("bin/validate_inputs.py")
+SHEET = [("sampleId", "fasta"), ("G26689", "/data/genomes/G26689.fasta"), ("G26690", "/data/genomes/G26690.fasta"),
+         ("L4_G12345", "./assemblies/L4_G12345.fa")]
+
+
+def run_validator(sheet: str) -> list[str]:
+    """What validate_inputs.py prints, as a run of --validate_only shows it,
+    for a sample sheet: its error lines and its verdict."""
+    import contextlib
+    import io
+    import importlib.util
+    import tempfile
+
+    spec = importlib.util.spec_from_file_location("validate_inputs", VALIDATOR)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "samples.tsv"
+        path.write_text(sheet)
+        out = io.StringIO()
+        argv = sys.argv
+        sys.argv = ["validate_inputs.py", "--tsv", str(path)]
+        try:
+            with contextlib.redirect_stdout(out):
+                module.main()
+        except SystemExit:
+            pass
+        finally:
+            sys.argv = argv
+    lines = out.getvalue().replace(str(path), "samples.tsv").splitlines()
+    return [line for line in lines if line.strip().startswith(("✗", "FAILED"))]
+
+
+def validation_ranges() -> dict[str, float]:
+    """The limits validate_inputs.py checks a genome against, read off its code."""
+    code = VALIDATOR.read_text(encoding="utf-8")
+    patterns = {
+        "size_fail_low": r"(?<!el)if total_size < ([\d_]+):",
+        "size_warn_low": r"elif total_size < ([\d_]+):",
+        "size_fail_high": r"(?<!el)if total_size > ([\d_]+):",
+        "size_warn_high": r"elif total_size > ([\d_]+):",
+        "n_fail": r"(?<!el)if n_pct > ([\d.]+):",
+        "n_warn": r"elif n_pct > ([\d.]+):",
+        "gc_fail_low": r"(?<!el)if gc_pct < ([\d.]+) or gc_pct > [\d.]+:",
+        "gc_fail_high": r"(?<!el)if gc_pct < [\d.]+ or gc_pct > ([\d.]+):",
+        "gc_warn_low": r"elif gc_pct < ([\d.]+) or gc_pct > [\d.]+:",
+        "gc_warn_high": r"elif gc_pct < [\d.]+ or gc_pct > ([\d.]+):",
+        "contigs_warn_high": r"(?<!el)if n_contigs > ([\d_]+):",
+        "contigs_warn": r"elif n_contigs > ([\d_]+):",
+    }
+    out = {}
+    for key, pattern in patterns.items():
+        m = re.search(pattern, code)
+        if not m:
+            raise SystemExit(f"tools/build_docs.py: {VALIDATOR} no longer checks {key} the way validation_ranges() reads it")
+        out[key] = float(m.group(1).replace("_", ""))
+    return out
+
+
+# ── The container ──
+#
+# What the image holds, read off docker/Dockerfile, so the drawing cannot
+# name a version the image does not have.
+
+DOCKERFILE = Path("docker/Dockerfile")
+
+
+def image_contents() -> dict:
+    text = DOCKERFILE.read_text(encoding="utf-8")
+    final = text[text.rindex("\nFROM "):]
+
+    def version(pattern: str, where: str = text) -> str:
+        m = re.search(pattern, where)
+        if not m:
+            raise SystemExit(f"tools/build_docs.py: {DOCKERFILE} no longer says {pattern!r}; update image_contents()")
+        return m.group(1)
+
+    tools = [
+        ("Bakta", version(r"\bbakta=([\d.]+)", final)),
+        ("miniprot", version(r"--branch v([\d.]+) [^\n]*lh3/miniprot")),
+        ("Diamond", version(r"\bdiamond=([\d.]+)", final)),
+        ("eggNOG-mapper", version(r"\beggnog-mapper=([\d.]+)", final)),
+        ("pangene", version(r"pangene/releases/download/v([\d.]+)")),
+        ("pathotypr", version(r"\bpathotypr=([\d.]+)")),
+        ("gfatools", ""),
+    ]
+    runtimes = [("Python", version(r"\bpython=([\d.]+)", final)), ("R", version(r"\br-base=([\d.]+)", final))]
+    reference = sorted(set(re.findall(r"-O /reference/([\w.]+)", text)) | set(re.findall(r"-P /reference \S+/([\w.]+)", text)))
+    return {"tools": tools, "runtimes": runtimes, "reference": reference, "bakta_db": version(r"bakta_db download [^\n]*--type (\w+)")}
+
+
+def image_figure(_renderer: "Renderer", _lines: list[str]) -> str:
+    image = image_contents()
+    nf = re.search(r"nextflowVersion\s*=\s*'>=([\d.]+?)(?:\.0)?'", Path("nextflow.config").read_text(encoding="utf-8")).group(1)
+    pill = lambda name, v: f'<span class="img-pill"><b>{html.escape(name)}</b>{(" " + html.escape(v)) if v else ""}</span>'
+    host = (
+        '<div class="img-host"><p class="img-title">What you install</p><ul>'
+        f"<li><b>Nextflow</b> {nf} or newer, on Java 17 or newer</li>"
+        "<li><b>Docker</b>, or <b>Singularity</b> or <b>Apptainer</b> on a cluster</li></ul>"
+        '<p class="img-title img-later">What the first run builds</p><ul>'
+        "<li><b>The eggNOG database</b>, in the folder <code>--eggnog_db</code> names, kept for every run after</li></ul></div>"
+    )
+    box = (
+        '<div class="img-box"><p class="img-title"><code>paururo/amap</code><span>linux/amd64</span></p>'
+        '<div class="img-layer"><p>Tools</p><div>' + "".join(pill(n, v) for n, v in image["tools"]) + "</div></div>"
+        '<div class="img-layer"><p>Runtimes</p><div>' + "".join(pill(n, v) for n, v in image["runtimes"]) + "</div></div>"
+        '<div class="img-layer"><p>Data</p><div>'
+        + pill("Bakta database", image["bakta_db"])
+        + f'<span class="img-pill img-note"><b><code>/reference/</code></b> {len(image["reference"])} files: the H37Rv genome, proteome and GenBank, '
+        "Bakta's false positives on it, Mycobrowser's table and the lineage markers</span></div></div></div>"
+    )
+    return (
+        '<figure class="fig image-fig"><div class="img-grid">'
+        + host
+        + '<div class="img-arrow" aria-hidden="true"><span>pulled once</span><i class="img-left">&#8592;</i><i class="img-up">&#8593;</i></div>'
+        + box
+        + "</div><figcaption>Two things to install; everything AMAP runs comes in one image, its versions read off "
+        "<code>docker/Dockerfile</code>. Only the eggNOG database stays outside: too large to ship, it is built on the first "
+        "run that needs it.</figcaption></figure>"
+    )
+
+
+# ── A run on a cluster ──
+#
+# The scheduler's settings come from nextflow.config's profiles, and the
+# launcher's from the job script the HPC page gives, so neither can drift.
+
+
+def profile_settings(name: str) -> dict[str, str]:
+    config = Path("nextflow.config").read_text(encoding="utf-8")
+    block = re.search(rf"^    {name}\s*\{{(.*?)^    \}}", config[config.index("profiles {"):], re.M | re.S)
+    if not block:
+        raise SystemExit(f"tools/build_docs.py: nextflow.config has no profile {name}")
+    return dict(re.findall(r"^\s+([\w.]+)\s*=\s*'?([^'\n]+?)'?\s*(?://.*)?$", block.group(1), re.M))
+
+
+def local_processes() -> list[str]:
+    config = Path("nextflow.config").read_text(encoding="utf-8")
+    return re.findall(r"withName: '(\w+)' \{\s*executor = 'local'", config)
+
+
+def hpc_figure(_renderer: "Renderer", lines: list[str]) -> str:
+    slurm = profile_settings("slurm")
+    others = {name: profile_settings(name) for name in ("sge", "pbs", "lsf")}
+    script = "\n".join(lines)
+    sbatch = dict(re.findall(r"^#SBATCH --([\w-]+)=(\S+)", script, re.M))
+    rate = lambda s: s["executor.submitRateLimit"].replace("/1min", " a minute")
+    other_rates = sorted({rate(s) for s in others.values()})
+    memory = slurm["params.max_memory"].replace(".GB", " GB")
+    hours = int(sbatch["time"].split(":")[0])
+    launcher = (
+        '<div class="hpc-box hpc-launch"><p class="hpc-title">The launcher</p>'
+        f"<p><code>nextflow run</code>, in <code>tmux</code> or as a small job of its own: {sbatch['cpus-per-task']} CPUs, "
+        f"{sbatch['mem'].replace('G', ' GB')}, {hours} h. It submits, waits and resubmits.</p>"
+        '<p class="hpc-small">Runs here too: ' + ", ".join(f"<code>{p}</code>" for p in local_processes()) + "</p></div>"
+    )
+    queue = (
+        '<div class="hpc-box hpc-queue"><p class="hpc-title">The scheduler</p>'
+        f'<p>Up to <b>{slurm["executor.queueSize"]}</b> jobs at once, submitted at up to {rate(slurm)} with <code>slurm</code> '
+        f'({" or ".join(other_rates)} with <code>sge</code>, <code>pbs</code> and <code>lsf</code>).</p></div>'
+    )
+    nodes = (
+        '<div class="hpc-box hpc-nodes"><p class="hpc-title">The compute nodes</p>'
+        f"<p>One job per task, at most {slurm['params.max_cpus']} CPUs and {memory} each, in the AMAP image, "
+        + ("working on the node's own disk and copying back only the results.</p>" if slurm.get("params.scratch") == "true" else "</p>")
+        + '<div class="hpc-tasks"><span>per sample: Bakta, miniprot, the correction, duplications, pangenome</span>'
+        "<span>once for all: eggNOG, the genomes compared, the report</span></div></div>"
+    )
+    shared = (
+        '<div class="hpc-box hpc-shared"><p class="hpc-title">Shared storage</p><div class="hpc-places">'
+        '<span><code class="hpc-key">-work-dir</code>every task\'s files, which <code>-resume</code> needs</span>'
+        '<span><code class="hpc-key">NXF_SINGULARITY_CACHEDIR</code>the image, converted once</span>'
+        '<span><code class="hpc-key">--eggnog_db</code>the eggNOG database, built once</span>'
+        '<span><code class="hpc-key">--outdir</code>the results</span></div></div>'
+    )
+    return (
+        '<figure class="fig hpc-fig"><div class="hpc-flow">'
+        + launcher
+        + '<i class="hpc-arrow" aria-hidden="true"></i>'
+        + queue
+        + '<i class="hpc-arrow" aria-hidden="true"></i>'
+        + nodes
+        + "</div>"
+        + shared
+        + "<figcaption>A run on a cluster, with the settings of the <code>slurm</code> profile in <code>nextflow.config</code> "
+        "and the launcher of the job script below.</figcaption></figure>"
+    )
+
+
+# ── The report, section by section ──
+#
+# Pictures of the example report, taken by tools/report_shots.mjs; each card
+# opens the report at its section, and check_site.py checks those anchors.
+
+REPORT_SECTIONS = [
+    ("overview", "Overview", "Dataset composition, then sample quality and annotation quality: where an outlier sample shows itself."),
+    ("amap-annotation-results", "Annotation results", "Genes per lineage, the genes the reference does not have, the correction summary and the reference genes Bakta missed."),
+    ("functional-annotation", "Functional annotation", "COG and Mycobrowser categories, the comparison with the reference, PE/PPE families, KEGG pathways and pseudogenes."),
+    ("gene-duplications", "Duplications", "Community sizes, the communities shared across genomes and their network metrics."),
+    ("pangenome-analysis", "Pangenome", "Core and accessory genes, the gene frequency spectrum and the presence and absence of every gene."),
+    ("amap-cds-stats", "CDS statistics", "How many genes fall in each case, lineage by lineage: box and violin plots with Dunn's tests, the share of each case, a heatmap and a table per case."),
+    ("master-table-explorer", "Master table", "Every gene of every sample in one table to search, sort and export."),
+]
+
+
+def report_map(_renderer: "Renderer", _lines: list[str]) -> str:
+    cards = "".join(
+        f'<a class="rp-card" href="../examples/demo_report.html#{key}"><img src="../assets/report/{key}.webp" alt="The {title.lower()} section of the example report" '
+        f'width="460" height="320" loading="lazy"><span class="rp-text"><b>{title}</b><span>{text}</span></span></a>'
+        for key, title, text in REPORT_SECTIONS
+    )
+    return (
+        '<figure class="fig report-map"><p class="rp-head"><span>final_report.html, section by section</span>'
+        '<span class="tag-synthetic">synthetic data</span></p>'
+        f'<div class="rp-grid">{cards}</div>'
+        "<figcaption>The example report's seven sections, in their order. Each picture opens the report there; its twelve "
+        "genomes are made up, so read the layout, not the numbers.</figcaption></figure>"
+    )
+
+
+# ── The command builder ──
+#
+# The front page's, taken from docs/index.html so the two are always the same.
+
+
+def builder_figure(_renderer: "Renderer", _lines: list[str]) -> str:
+    front = (DOCS / "index.html").read_text(encoding="utf-8")
+    m = re.search(r'\n( *)<div class="builder" data-builder>(.*?)\n\1</div>\n', front, re.S)
+    if not m:
+        raise SystemExit("tools/build_docs.py: docs/index.html has no command builder to copy")
+    inner = "\n".join(line[len(m.group(1)):] if line.startswith(m.group(1)) else line for line in m.group(2).splitlines())
+    return (
+        '<figure class="fig builder-fig"><div class="builder" data-builder>' + inner + "\n</div>"
+        "<figcaption>The command for your machine and your genomes, with what each option does. "
+        'The same as on the <a href="../index.html#start">front page</a>.</figcaption></figure>'
+    )
+
+
+# ── When a task fails ──
+
+
+def failure_figure(_renderer: "Renderer", _lines: list[str]) -> str:
+    """What nextflow.config's error strategy does with a failed task."""
+    config = Path("nextflow.config").read_text(encoding="utf-8")
+    rule = re.search(
+        r"errorStrategy = \{ task\.exitStatus in \[([\d, ]+)\] \? 'retry' : \(task\.attempt <= (\d+) \? 'retry' : 'ignore'\) \}\s*maxRetries = (\d+)",
+        config,
+    )
+    # Each withName block, up to the next one or the end of process { }.
+    blocks = dict(re.findall(r"withName: '(\w+)' \{(.*?)\n    \}", config, re.S))
+    bakta = re.search(r"memory\s*=\s*\{ (\d+)\.GB \* task\.attempt \}", blocks.get("BAKTA_ANNOTATOR", ""))
+    terminate = [name for name, body in blocks.items() if "errorStrategy = 'terminate'" in body]
+    eggnog = re.search(r"errorStrategy = \{ task\.exitStatus in \[[\d, ]+\] \? 'retry' : 'terminate' \}", blocks.get("ANNOT_EGGNOGMAP_BATCH", ""))
+    if not (rule and bakta and eggnog):
+        raise SystemExit("tools/build_docs.py: nextflow.config no longer handles failures the way failure_figure() reads it")
+    codes = [c.strip() for c in rule.group(1).split(",")]
+    retries = int(rule.group(3))
+    base = int(bakta.group(1))
+    ladder = " GB, then ".join(str(base * k) for k in range(1, retries + 2)) + " GB"
+    code_list = ", ".join(codes[:-1]) + " or " + codes[-1]
+    lane = lambda cls, title, steps: (
+        f'<div class="fail-lane {cls}"><p class="fail-when">{title}</p><ol>'
+        + "".join(f"<li>{s}</li>" for s in steps)
+        + "</ol></div>"
+    )
+    return (
+        '<figure class="fig fail-fig"><div class="fail-lanes">'
+        + lane("fail-mem", f"Killed by the machine or the scheduler: exit {code_list}", [
+            f"Tried again, up to {retries} more times, asking for more memory each time: Bakta {ladder}.",
+            "Never past <code>--max_memory</code>: a request above it is lowered to it.",
+            "Still failing after that: the run stops. Raise <code>--max_memory</code>, or the memory Docker Desktop has.",
+        ])
+        + lane("fail-other", "Any other exit, in a step run per sample", [
+            f"Tried again, {int(rule.group(2))} more times.",
+            "Still failing: that sample's task is set aside, and the run carries on with the others.",
+            "Its work directory, named in the log, says why.",
+        ])
+        + "</div>"
+        + '<p class="fail-except">The steps run once for all the samples are retried too, and then stop the run. Some stop it '
+        + "at once: " + ", ".join(f"<code>{p}</code>" for p in terminate)
+        + " on any failure, and the eggNOG annotation on anything but memory or time.</p>"
+        + "<figcaption>What <code>nextflow.config</code> does with a task that fails.</figcaption></figure>"
+    )
+
+
+# The genomes of tests/benchmark, measured with validate_inputs.py's own
+# parser: every one passes with no warning.
+BENCHMARK_GENOMES = [
+    # (label, size in bp, sequences, GC %, N %)
+    ("M. tuberculosis H37Rv", 4411532, 1, 65.61, 0.0),
+    ("M. tuberculosis CDC1551", 4403837, 1, 65.61, 0.001),
+    ("CDC1551 cut into 40 contigs", 4403837, 40, 65.61, 0.001),
+    ("M. bovis AF2122/97", 4349904, 1, 65.63, 0.0),
+    ("E. coli K-12 MG1655", 4641652, 1, 50.79, 0.0),
+    ("E. coli O157:H7 Sakai", 5594605, 3, 50.48, 0.0),
+]
+
+
+def sheet_figure() -> str:
+    head, *rows = SHEET
+    tab = '<td class="sheet-tab" aria-label="a tab">&#8677;</td>'
+    body = "".join(f'<tr><td>{html.escape(a)}</td>{tab}<td class="sheet-path">{html.escape(b)}</td></tr>' for a, b in rows)
+    table = (
+        '<table class="sheet-table"><thead><tr><th><span class="sheet-n">1</span>sampleId</th>'
+        f'{tab}<th><span class="sheet-n">3</span>fasta</th></tr></thead><tbody>{body}</tbody></table>'
+    )
+    notes = (
+        '<ol class="sheet-notes">'
+        "<li><b><code>sampleId</code></b>: unique, and carried into every folder and file name. Letters, digits and underscores.</li>"
+        "<li><b>A real tab</b> between the two columns, on every line, header included. Spaces will not do.</li>"
+        "<li><b><code>fasta</code></b>: the assembled genome, as an absolute path or one relative to where you launch Nextflow.</li></ol>"
+    )
+    good = "\n".join(f"{a}\t{b}" for a, b in SHEET) + "\n"
+    spaced = "\n".join(f"{a:<12}{b}" for a, b in SHEET) + "\n"
+    checks = [
+        ("With spaces where the tabs go", run_validator(spaced)),
+        ("With tabs, and paths that do not exist yet", run_validator(good)),
+    ]
+    blocks = "".join(
+        f'<div class="sheet-check"><p class="sheet-when">{when}, <code>--validate_only</code> stops with:</p>'
+        f'<pre>{html.escape(chr(10).join(line.strip() for line in lines))}</pre></div>'
+        for when, lines in checks
+    )
+    return (
+        '<figure class="fig sheet-fig"><div class="sheet"><div class="sheet-file"><p class="sheet-name">samples.tsv'
+        '<span class="sheet-n sheet-n-tab">2</span></p>'
+        f"{table}</div>{notes}</div>"
+        f'<div class="sheet-checks">{blocks}</div>'
+        "<figcaption>The sample sheet, with its tabs drawn. Below it, what the check prints for the two mistakes it "
+        "catches most: both messages come from running <code>bin/validate_inputs.py</code> on this sheet.</figcaption></figure>"
+    )
+
+
+def ranges_figure() -> str:
+    import math
+
+    th = validation_ranges()
+
+    def gauge(name: str, unit: str, lo: float, hi: float, log: bool, zones: list, ticks: list, marks: list, fmt) -> str:
+        to = (lambda v: math.log10(v)) if log else (lambda v: v)
+        pos = lambda v: 100 * (to(min(max(v, lo), hi)) - to(lo)) / (to(hi) - to(lo))
+        out = [f'<div class="gauge"><p class="gauge-name"><b>{name}</b><span>{unit}</span></p><div class="gauge-track">']
+        for a, b, kind in zones:
+            out.append(f'<span class="gauge-zone gz-{kind}" style="left:{pos(a):.2f}%;width:{pos(b) - pos(a):.2f}%"></span>')
+        for k, (value, label) in enumerate(marks):
+            side = "up" if k % 2 == 0 else "down"
+            # A label near either end of the scale reads inward from its mark.
+            edge = " gm-start" if pos(value) < 12 else " gm-end" if pos(value) > 88 else ""
+            out.append(
+                f'<span class="gauge-mark gm-{side}{edge}" style="left:{pos(value):.2f}%"><i></i><em>{html.escape(label)}</em></span>'
+            )
+        out.append('</div><div class="gauge-ticks">')
+        # A tick too close to the one before it is left out on a phone.
+        shown = None
+        for value in ticks:
+            minor = shown is not None and pos(value) - shown < 12
+            out.append(f'<span{" class=\"minor\"" if minor else ""} style="left:{pos(value):.2f}%">{fmt(value)}</span>')
+            if not minor:
+                shown = pos(value)
+        out.append("</div>")
+        # On a phone the labels go under the scale, as a list.
+        out.append('<ul class="gauge-list">' + "".join(f"<li>{html.escape(label)}</li>" for _value, label in marks) + "</ul></div>")
+        return "".join(out)
+
+    def size(v: float) -> str:
+        return f"{v / 1e6:g} Mb" if v >= 1e6 else f"{v / 1e3:g} kb"
+
+    mtb = [g for g in BENCHMARK_GENOMES if g[0].startswith(("M.", "CDC"))]
+    coli = [g for g in BENCHMARK_GENOMES if g[0].startswith("E.")]
+    def span(gs: list, i: int, f) -> str:
+        low, high = f(min(g[i] for g in gs)), f(max(g[i] for g in gs))
+        return low if low == high else f"{low} to {high}"
+
+    mb = lambda v: f"{v / 1e6:.2f}"
+    gauges = [
+        gauge("Genome size", "log scale", 5e4, 3e7, True,
+              [(5e4, th["size_fail_low"], "fail"), (th["size_fail_low"], th["size_warn_low"], "warn"),
+               (th["size_warn_low"], th["size_warn_high"], "ok"), (th["size_warn_high"], th["size_fail_high"], "warn"),
+               (th["size_fail_high"], 3e7, "fail")],
+              [th["size_fail_low"], th["size_warn_low"], th["size_warn_high"], th["size_fail_high"]],
+              [(min(g[1] for g in mtb), f"M. tuberculosis, M. bovis: {span(mtb, 1, mb)} Mb"),
+               (min(g[1] for g in coli), f"E. coli: {span(coli, 1, mb)} Mb")], size),
+        gauge("GC content", "% of A, C, G and T", 0, 100, False,
+              [(0, th["gc_fail_low"], "fail"), (th["gc_fail_low"], th["gc_warn_low"], "warn"),
+               (th["gc_warn_low"], th["gc_warn_high"], "ok"), (th["gc_warn_high"], th["gc_fail_high"], "warn"),
+               (th["gc_fail_high"], 100, "fail")],
+              [0, th["gc_fail_low"], th["gc_warn_low"], 50, th["gc_warn_high"], th["gc_fail_high"], 100],
+              [(sum(g[3] for g in mtb) / len(mtb), f"tuberculosis complex: {span(mtb, 3, lambda v: f'{v:.1f}')}%"),
+               (sum(g[3] for g in coli) / len(coli), f"E. coli: {span(coli, 3, lambda v: f'{v:.1f}')}%")],
+              lambda v: f"{v:g}%"),
+        gauge("N content", "% of the bases", 0, 15, False,
+              [(0, th["n_warn"], "ok"), (th["n_warn"], th["n_fail"], "warn"), (th["n_fail"], 15, "fail")],
+              [0, th["n_warn"], 5, th["n_fail"], 15],
+              [(0, "all six: under 0.01%")], lambda v: f"{v:g}%"),
+        gauge("Sequences", "contigs, log scale", 1, 2000, True,
+              [(1, th["contigs_warn"], "ok"), (th["contigs_warn"], th["contigs_warn_high"], "warn"),
+               (th["contigs_warn_high"], 2000, "warn2")],
+              [1, 10, th["contigs_warn"], th["contigs_warn_high"], 2000],
+              [(1, "closed genomes: 1"), (3, "Sakai: 3"), (40, "CDC1551 in 40 contigs")], lambda v: f"{v:,.0f}"),
+    ]
+    key = (
+        '<div class="legend gauge-key"><span><i class="chip gz-ok"></i>passes</span><span><i class="chip gz-warn"></i>warns</span>'
+        '<span><i class="chip gz-warn2"></i>warns: highly fragmented</span><span><i class="chip gz-fail"></i>fails the run</span></div>'
+    )
+    return (
+        f'<figure class="fig gauges">{"".join(gauges)}{key}'
+        "<figcaption>Where a genome has to sit, with the limits read off <code>bin/validate_inputs.py</code>, and where the six "
+        "genomes of the accuracy benchmark sit: inside every range, with no warning.</figcaption></figure>"
+    )
+
+
+DERIVED = {
+    "case-counts": counts_from_code,
+    "case-table": counts_from_table,
+    "prepare-reference": reference_steps,
+    "sample-sheet": lambda _renderer, _lines: sheet_figure(),
+    "validation-ranges": lambda _renderer, _lines: ranges_figure(),
+    "image": image_figure,
+    "hpc": hpc_figure,
+    "failure": failure_figure,
+    "report-map": report_map,
+    "builder": builder_figure,
+}
 FIGURES["results-map"] = results_map()
 FIGURES["excerpt"] = EXCERPT
 
@@ -720,7 +1202,34 @@ def sidebar(root: str, current: str | None) -> str:
     return "".join(out)
 
 
-def page(root: str, title: str, description: str, body: str, figures: bool = False) -> str:
+# Data a figure needs beyond figure-data.js, loaded only on the pages that draw it.
+FIGURE_DATA = {"dup-family": "assets/dup-data.js", "dup-communities": "assets/dup-data.js"}
+
+
+SITE_URL = "https://pathogenomics-lab.github.io/AMAP/"
+
+
+def social(root: str, title: str, description: str, path: str) -> str:
+    """What a link to the page shows where it is shared: its title, its line
+    and the site's card, at the address Pages serves it from."""
+    t, d = html.escape(title), html.escape(description)
+    return (
+        '<meta property="og:type" content="website">\n'
+        '<meta property="og:site_name" content="AMAP">\n'
+        f'<meta property="og:title" content="{t}">\n'
+        f'<meta property="og:description" content="{d}">\n'
+        f'<meta property="og:url" content="{SITE_URL}{path}">\n'
+        f'<meta property="og:image" content="{SITE_URL}assets/social-card.png">\n'
+        '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n'
+        '<meta property="og:image:alt" content="Bakta calls the genes. AMAP checks every one: real genes of M. tuberculosis CDC1551, corrected against H37Rv.">\n'
+        '<meta name="twitter:card" content="summary_large_image">\n'
+        '<meta name="theme-color" content="#0b0f0e">\n'
+        f'<link rel="apple-touch-icon" href="{root}assets/touch-icon.png">\n'
+    )
+
+
+def page(root: str, title: str, description: str, body: str, figures: list[str] | None = None, path: str = "") -> str:
+    data = list(dict.fromkeys(FIGURE_DATA[f] for f in figures or [] if f in FIGURE_DATA))
     return (
         "<!doctype html>\n"
         '<html lang="en">\n<head>\n<meta charset="utf-8">\n'
@@ -728,14 +1237,17 @@ def page(root: str, title: str, description: str, body: str, figures: bool = Fal
         f"<title>{html.escape(title)}</title>\n"
         f'<meta name="description" content="{html.escape(description)}">\n'
         f'<link rel="icon" href="{root}assets/favicon.png" type="image/png">\n'
-        f'<link rel="stylesheet" href="{root}assets/site.css">\n'
+        + social(root, title, description, path)
+        + f'<link rel="stylesheet" href="{root}assets/site.css">\n'
         f"{THEME_BOOT}\n</head>\n<body>\n"
         '<a class="skip" href="#content">Skip to the content</a>\n'
         "<!-- Generated by tools/build_docs.py from the markdown next to this file. Edit that, then run it. -->\n"
         + body
         + f'<script src="{root}assets/search-index.js"></script>\n'
         + f'<script src="{root}assets/site.js"></script>\n'
-        + (f'<script src="{root}assets/figure-data.js"></script>\n<script src="{root}assets/figures.js"></script>\n' if figures else "")
+        + (f'<script src="{root}assets/figure-data.js"></script>\n' if figures else "")
+        + "".join(f'<script src="{root}{d}"></script>\n' for d in data)
+        + (f'<script src="{root}assets/figures.js"></script>\n' if figures else "")
         + "</body>\n</html>\n"
     )
 
@@ -788,7 +1300,7 @@ def doc_page(position: int) -> tuple[Path, str, list[dict]]:
         }
         for s in renderer.sections
     ]
-    html_page = page(root, f"{title} | AMAP docs", description, body, figures=bool(renderer.figures))
+    html_page = page(root, f"{title} | AMAP docs", description, body, figures=renderer.figures, path=href(path))
     return DOCS / f"{path[:-3]}.html", html_page, entries
 
 
@@ -814,7 +1326,7 @@ def index_page() -> tuple[Path, str]:
         + "</main>\n</div>\n"
         + footer("")
     )
-    return DOCS / INDEX, page("", "Documentation | AMAP", "AMAP's documentation, page by page.", body)
+    return DOCS / INDEX, page("", "Documentation | AMAP", "AMAP's documentation, page by page.", body, path=INDEX)
 
 
 def build() -> dict[Path, str]:

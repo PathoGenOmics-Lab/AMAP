@@ -29,6 +29,12 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
 
 ## 3. Run it
 
+Pick what you have, and copy the command:
+
+<!-- figure: builder -->
+
+Or start from one of these:
+
 **Docker**
 
 ```bash
@@ -48,10 +54,11 @@ nextflow run PathoGenOmics-Lab/AMAP \
     -profile singularity,slurm --tsv samples.tsv
 ```
 
-Resource requests are capped at 24 CPUs and 50 GB by default, which is what the
-eggNOG annotation step asks for. Nextflow refuses to start a task requesting
-more memory than the machine has, so on anything smaller than a server, lower
-the ceiling:
+The `docker` and `singularity` profiles cap every task at the machine's CPUs
+and 16 GB, and the scheduler profiles at 48 CPUs and 128 GB; a larger request,
+such as the 50 GB the eggNOG annotation asks for, is lowered to the cap.
+Nextflow refuses to start a task asking for more memory than the machine has,
+so on a smaller machine, lower the ceiling:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \
@@ -111,9 +118,10 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
 
 See [custom reference](../user-guide/custom-reference.md).
 
-**Just the corrected annotation.** If you do not need functional annotation,
+**Just the corrected genes.** If you do not need functional annotation,
 duplications, the pangenome or the report, stop after the correction step. It is
-much faster:
+much faster, and leaves the corrected genes as a table with their proteins and
+sequences; the GFF3 and GenBank files come after eggNOG, so there are none:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \

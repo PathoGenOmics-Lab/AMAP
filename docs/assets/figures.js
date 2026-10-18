@@ -620,7 +620,8 @@
       stepLabel.textContent = n + " of 4 · " + PHASES[n - 1].label;
       var on = PHASES[n - 1].tally;
       Object.keys(tallies).forEach(function (k) {
-        tallies[k].textContent = on ? String(counts[k]) : "-";
+        tallies[k].textContent = String(counts[k]);
+        tallies[k].parentNode.classList.toggle("t-off", !on);
       });
     }
     function play() {
@@ -966,11 +967,360 @@
     render();
   }
 
+  /* ── The overview: what goes into a decision, and what comes out ── */
+
+  // The hero's 12.4 kb of CDC1551 again, with the three things each decision
+  // reads: Bakta's calls, the reference proteins aligned, and the calls Bakta
+  // makes wrongly on the reference, aligned here.
+  function inputsSpec() {
+    var parts = rowsFor("hero");
+    return {
+      from: parts.win.from, to: parts.win.to, labelW: 84, geneH: 18, rowGap: 22, top: 8,
+      alt: "The first 12.4 kb of M. tuberculosis CDC1551: Bakta's twelve calls, the eight H37Rv proteins aligned, and two of Bakta's known false positives.",
+      rows: [
+        { label: "Bakta's\ncalls", cls: "bakta", genes: parts.bakta },
+        { label: parts.reference + "\nproteins", cls: "ref", genes: parts.ref },
+        { label: "Known false\npositives", cls: "drop", genes: parts.bad }
+      ],
+      // Where the false positives lie, and the call Bakta makes there.
+      marks: parts.bad.length ? [{
+        s: Math.min.apply(null, parts.bad.map(function (f) {
+          return f.s;
+        })),
+        e: Math.max.apply(null, parts.bad.map(function (f) {
+          return f.e;
+        })),
+        rows: [0, 2], label: "a call Bakta is known to make wrongly", labelAt: "left"
+      }] : [],
+      axis: true, tick: 2000,
+      tickLabel: function (t) {
+        return t / 1000 + " kb";
+      }
+    };
+  }
+
+  // A small drawing of one window: its rows without their names, no axis.
+  function miniSpec(key) {
+    var spec = windowSpec(key);
+    spec.labelW = 0;
+    spec.axis = false;
+    spec.geneH = 14;
+    spec.rowGap = 12;
+    spec.top = spec.marks.length ? 16 : 4;
+    spec.padRight = 2;
+    spec.marks.forEach(function (m) {
+      m.label = "";
+    });
+    spec.rows.forEach(function (row) {
+      row.genes.forEach(function (g) {
+        g.gapLabel = null;
+      });
+    });
+    spec.edges = [];
+    return spec;
+  }
+
+  function mountInputs(el) {
+    var stage = el.querySelector("[data-fig-stage]");
+    if (!DATA.windows.hero) return;
+    render(stage, inputsSpec);
+    attachTips(stage);
+  }
+
+  function mountOutcomes(el) {
+    el.querySelectorAll("[data-mini]").forEach(function (card) {
+      var key = card.getAttribute("data-mini");
+      var stage = card.querySelector("[data-fig-stage]");
+      if (!DATA.windows[key]) return;
+      render(stage, function () {
+        return miniSpec(key);
+      });
+    });
+  }
+
+  /* ── Duplications ──
+
+     A family of proteins and the pair of homologous communities that holds
+     it, from a real run of GET_DUPLICATIONS and GET_ALLDUP (dup-data.js);
+     check_site.py reruns both scripts on the hits and fails if the links,
+     the family, the communities or their numbers come out different. */
+
+  var DUP = window.AMAP_DUP_DATA || null;
+
+  function pct(x) {
+    return (Math.round(x * 10) / 10).toFixed(1) + "%";
+  }
+
+  // On a line, the share rounded down, so a link never reads as a miss.
+  function floorPct(x) {
+    return Math.floor(x + 1e-9) + "%";
+  }
+
+  // A network: nodes at x, y between 0 and 1, links between them, and a soft
+  // outline around the nodes of a family.
+  function netSvg(o, width) {
+    var W = Math.max(260, Math.round(width));
+    var H = Math.round(W < 520 ? W * (o.tall || 0.92) : Math.min(o.maxH || 380, W * (o.ratio || 0.56)));
+    var pad = 38;
+    var X = function (x) {
+      return pad + x * (W - 2 * pad);
+    };
+    var Y = function (y) {
+      return pad - 6 + y * (H - 2 * pad);
+    };
+    var out = ['<svg class="net" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(o.alt) + '">'];
+    if (o.hull && o.hull.length) {
+      var pts = o.hull.map(function (i) {
+        return X(o.nodes[i].x).toFixed(1) + "," + Y(o.nodes[i].y).toFixed(1);
+      });
+      out.push('<polygon class="net-hull" points="' + pts.join(" ") + '"/>');
+    }
+    // Every node, its name and every label so far, so that the next label
+    // finds a stretch of its line where it covers none of them.
+    var boxes = o.nodes.map(function (n) {
+      return { x: X(n.x) - n.r - 2, y: Y(n.y) - n.r - 2, w: 2 * n.r + 4, h: 2 * n.r + 20 };
+    });
+    var clear = function (b) {
+      return boxes.every(function (c) {
+        return b.x + b.w < c.x || c.x + c.w < b.x || b.y + b.h < c.y || c.y + c.h < b.y;
+      });
+    };
+    o.links.forEach(function (l) {
+      var a = o.nodes[l.a];
+      var b = o.nodes[l.b];
+      out.push(
+        '<g class="hot net-link ' + l.cls + '" tabindex="0" data-tip="' + esc(l.tip) + '">' +
+          '<line class="net-hit" x1="' + X(a.x).toFixed(1) + '" y1="' + Y(a.y).toFixed(1) + '" x2="' + X(b.x).toFixed(1) + '" y2="' + Y(b.y).toFixed(1) + '"/>' +
+          '<line class="net-line" x1="' + X(a.x).toFixed(1) + '" y1="' + Y(a.y).toFixed(1) + '" x2="' + X(b.x).toFixed(1) + '" y2="' + Y(b.y).toFixed(1) + '"/></g>'
+      );
+    });
+    // The labels over every line, the links' first, each where it fits.
+    var rank = { kept: 0, near: 1, far: 2, ghost: 3 };
+    o.links.slice().sort(function (x, y) {
+      return rank[x.cls] - rank[y.cls];
+    }).forEach(function (l) {
+      if (!l.label) return;
+      var a = o.nodes[l.a];
+      var b = o.nodes[l.b];
+      var lw = textWidth(l.label, 10.5) + 10;
+      var spot = null;
+      [0.5, 0.36, 0.64, 0.26, 0.74, 0.44, 0.56].some(function (f) {
+        var mx = X(a.x) + f * (X(b.x) - X(a.x));
+        var my = Y(a.y) + f * (Y(b.y) - Y(a.y));
+        var box = { x: mx - lw / 2, y: my - 8, w: lw, h: 16 };
+        if (clear(box)) spot = box;
+        return spot;
+      });
+      if (!spot) return;
+      boxes.push(spot);
+      out.push(
+        '<g class="hot net-link ' + l.cls + '" data-tip="' + esc(l.tip) + '">' +
+          '<rect class="net-pill" x="' + spot.x.toFixed(1) + '" y="' + spot.y.toFixed(1) + '" width="' + lw.toFixed(1) + '" height="16" rx="8"/>' +
+          '<text class="net-pct" x="' + (spot.x + lw / 2).toFixed(1) + '" y="' + (spot.y + 11.5).toFixed(1) + '" text-anchor="middle">' + esc(l.label) + "</text></g>"
+      );
+    });
+    o.nodes.forEach(function (n) {
+      var cx = X(n.x);
+      var cy = Y(n.y);
+      // The name goes under the node, or over it at the bottom of the frame.
+      var below = cy + n.r + 14 < H - 2;
+      out.push('<g class="hot net-node ' + n.cls + '" tabindex="0" data-tip="' + esc(n.tip) + '">');
+      out.push('<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + n.r.toFixed(1) + '"/>');
+      out.push('<text class="net-name" x="' + cx.toFixed(1) + '" y="' + (below ? cy + n.r + 13 : cy - n.r - 6).toFixed(1) + '" text-anchor="middle">' + esc(n.label) + "</text>");
+      out.push("</g>");
+    });
+    out.push("</svg>");
+    return out.join("");
+  }
+
+  // Draws into stage at its width, and again when that changes.
+  function onWidth(stage, paint) {
+    var holder = document.createElement("div");
+    holder.className = "fig-svg";
+    stage.insertBefore(holder, stage.firstChild);
+    var last = 0;
+    function go() {
+      var w = stage.clientWidth;
+      if (!w || Math.abs(w - last) < 8) return;
+      last = w;
+      holder.innerHTML = paint(w);
+    }
+    go();
+    if ("ResizeObserver" in window) new ResizeObserver(go).observe(stage);
+    else window.addEventListener("resize", go);
+    attachTips(stage);
+  }
+
+  function radius(aa, longest) {
+    return 6 + 10 * Math.sqrt(aa / longest);
+  }
+
+  function hullOf(points) {
+    // Andrew's monotone chain, over indices into points.
+    var idx = points.map(function (p, i) {
+      return i;
+    }).sort(function (a, b) {
+      return points[a].x - points[b].x || points[a].y - points[b].y;
+    });
+    var cross = function (o, a, b) {
+      return (points[a].x - points[o].x) * (points[b].y - points[o].y) - (points[a].y - points[o].y) * (points[b].x - points[o].x);
+    };
+    var lower = [];
+    var upper = [];
+    idx.forEach(function (i) {
+      while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], i) <= 0) lower.pop();
+      lower.push(i);
+    });
+    idx.slice().reverse().forEach(function (i) {
+      while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], i) <= 0) upper.pop();
+      upper.push(i);
+    });
+    return lower.slice(0, -1).concat(upper.slice(0, -1));
+  }
+
+  function proteinTip(n, genome) {
+    return "<b>" + esc(n.id) + "</b>" + (n.gene ? " (" + esc(n.gene) + ")" : "") + (n.product ? ", " + esc(n.product.charAt(0).toLowerCase() + n.product.slice(1)) : "") +
+      "<br>" + fmt(n.aa) + " residues" + (genome ? ", " + esc(genome) : "");
+  }
+
+  function mountDupFamily(el) {
+    var fam = DUP && DUP.family;
+    if (!fam) return;
+    var stage = el.querySelector("[data-fig-stage]");
+    var longest = Math.max.apply(null, fam.nodes.map(function (n) {
+      return n.aa;
+    }));
+    var members = [];
+    var nodes = fam.nodes.map(function (n, i) {
+      if (n.member) members.push(i);
+      return { x: n.x, y: n.y, r: radius(n.aa, longest), label: n.id, cls: n.member ? "in" : "out", tip: proteinTip(n) + (n.member ? "" : "<br>Not in the family: none of its hits is a link") };
+    });
+    // Each protein outside the family is drawn with its best hit only.
+    var best = {};
+    fam.pairs.forEach(function (p) {
+      [p.a, p.b].forEach(function (i) {
+        if (!fam.nodes[i].member && (!best[i] || p.cover > best[i].cover)) best[i] = p;
+      });
+    });
+    var links = fam.pairs.filter(function (p) {
+      var a = fam.nodes[p.a];
+      var b = fam.nodes[p.b];
+      return (a.member && b.member) || best[a.member ? p.b : p.a] === p;
+    }).map(function (p) {
+      var a = fam.nodes[p.a];
+      var b = fam.nodes[p.b];
+      var inside = a.member && b.member;
+      var cls = p.kept ? "kept" : inside ? "near" : "far";
+      return {
+        a: p.a, b: p.b, cls: cls, label: floorPct(p.cover),
+        tip: "<b>" + esc(a.id) + " and " + esc(b.id) + "</b><br>" + fmt(p.nident) + " identical residues: " + pct((100 * p.nident) / p.len[0]) + " of " + esc(a.id) +
+          ", " + pct((100 * p.nident) / p.len[1]) + " of " + esc(b.id) + "<br>" + (p.kept ? "A link: the family holds both." : inside ? "No link, though both are in the family through others." : "No link: the best hit " + esc(a.member ? b.id : a.id) + " has.")
+      };
+    });
+    // Links that do not count under the ones that do.
+    var order = { far: 0, near: 1, kept: 2 };
+    links.sort(function (x, y) {
+      return order[x.cls] - order[y.cls];
+    });
+    var hull = hullOf(members.map(function (i) {
+      return nodes[i];
+    })).map(function (k) {
+      return members[k];
+    });
+    onWidth(stage, function (w) {
+      return netSvg({
+        nodes: nodes, links: links, hull: hull, ratio: 0.62, maxH: 420, tall: 1.05,
+        alt: fam.label + ": " + members.length + " proteins make one duplication family; the lines are the pairs Diamond matched, with the share of the shorter protein their identical residues cover."
+      }, w);
+    });
+  }
+
+  function mountDupCommunities(el) {
+    var com = DUP && DUP.communities;
+    if (!com) return;
+    var panels = el.querySelectorAll("[data-net]");
+    var sides = com.sides;
+    var longest = 0;
+    sides.forEach(function (s) {
+      s.nodes.forEach(function (n) {
+        longest = Math.max(longest, n.aa);
+      });
+    });
+    // Each side's links, and the other side's as faint ghosts: a link one
+    // genome has and the other does not.
+    var keyOf = function (side, e) {
+      var a = side.nodes[e[0]].twin;
+      var b = side.nodes[e[1]].twin;
+      return a < b ? a + "|" + b : b + "|" + a;
+    };
+    var has = sides.map(function (s) {
+      var set = {};
+      s.edges.forEach(function (e) {
+        set[keyOf(s, e)] = true;
+      });
+      return set;
+    });
+    panels.forEach(function (panel, k) {
+      var side = sides[k];
+      var other = sides[1 - k];
+      var stage = panel.querySelector("[data-fig-stage]");
+      var head = panel.querySelector("[data-net-head]");
+      if (head) head.innerHTML = "<b>" + esc(side.label) + "</b><span>" + esc(side.community) + ", " + side.nodes.length + " proteins, " + side.edges.length + " links</span>";
+      var byTwin = {};
+      side.nodes.forEach(function (n, i) {
+        byTwin[n.twin] = i;
+      });
+      var nodes = side.nodes.map(function (n) {
+        return { x: n.x, y: n.y, r: radius(n.aa, longest), label: n.id, cls: "in", tip: proteinTip(n, side.label) };
+      });
+      var links = side.edges.map(function (e) {
+        return { a: e[0], b: e[1], cls: "kept", label: "", tip: "<b>" + esc(side.nodes[e[0]].id) + " and " + esc(side.nodes[e[1]].id) + "</b><br>A link in " + esc(side.label) + "." };
+      });
+      other.edges.forEach(function (e) {
+        var key = keyOf(other, e);
+        if (has[k][key]) return;
+        var a = byTwin[other.nodes[e[0]].twin];
+        var b = byTwin[other.nodes[e[1]].twin];
+        if (a == null || b == null) return;
+        links.unshift({ a: a, b: b, cls: "ghost", label: "", tip: "<b>" + esc(side.nodes[a].id) + " and " + esc(side.nodes[b].id) + "</b><br>A link in " + esc(other.label) + ", not in " + esc(side.label) + "." });
+      });
+      var hull = hullOf(nodes);
+      onWidth(stage, function (w) {
+        return netSvg({
+          nodes: nodes, links: links, hull: hull,
+          alt: side.label + ": " + side.community + ", " + side.nodes.length + " proteins and " + side.edges.length + " links."
+        }, w);
+      });
+    });
+    var bridge = el.querySelector("[data-net-bridge]");
+    if (bridge) bridge.textContent = com.cross + " hits between the two: a homologous pair";
+    var table = el.querySelector("[data-net-metrics]");
+    if (table) {
+      var rows = [
+        ["Size", "size", 0], ["AvgDegree", "avg_degree", 2], ["Density", "density", 2],
+        ["AvgClustering", "avg_clustering", 2], ["AvgPathLength", "avg_path_length", 2], ["Modularity", "modularity", 1]
+      ];
+      table.innerHTML =
+        "<thead><tr><th>Column</th>" + sides.map(function (s, k) {
+          return '<th class="num">' + esc(s.genome) + '<span class="th-sub">columns ending in ' + (k + 1) + "</span></th>";
+        }).join("") + "</tr></thead><tbody>" +
+        rows.map(function (r) {
+          return "<tr><td><code>" + r[0] + "</code></td>" + sides.map(function (s) {
+            return '<td class="num">' + s.metrics[r[1]].toFixed(r[2]) + "</td>";
+          }).join("") + "</tr>";
+        }).join("") + "</tbody>";
+    }
+  }
+
   /* ── Mount ── */
 
   document.querySelectorAll("[data-hero]").forEach(mountHero);
   document.querySelectorAll("[data-fig]").forEach(mountCase);
   document.querySelectorAll("[data-metro]").forEach(mountMetro);
+  document.querySelectorAll("[data-inputs]").forEach(mountInputs);
+  document.querySelectorAll("[data-outcomes]").forEach(mountOutcomes);
+  document.querySelectorAll('[data-dup="family"]').forEach(mountDupFamily);
+  document.querySelectorAll('[data-dup="communities"]').forEach(mountDupCommunities);
 
   window.AMAPFigures = { draw: draw, render: render, tickLabel: tickLabel, attachTips: attachTips, rowsFor: rowsFor, windowSpec: windowSpec, fmt: fmt, esc: esc, stations: STATIONS, metroOrder: METRO_ORDER };
 })();

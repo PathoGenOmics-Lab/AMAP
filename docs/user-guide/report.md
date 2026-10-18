@@ -20,6 +20,8 @@ MTBC genomes across four lineages.
 
 ## What is in it
 
+<!-- figure: report-map -->
+
 ### Overview
 
 Dataset composition, then a per-sample quality panel: CDS counts, correction
@@ -44,7 +46,8 @@ comparison against the reference distribution. Each has its own per-category
 breakdown in counts and percentages, with the statistical tests alongside.
 
 PE/PPE gene families get their own section, since they are both the hardest
-part of an MTBC genome to annotate and usually the most interesting.
+part of an MTBC genome to annotate and usually the most interesting. The
+pseudogenes of each lineage close it.
 
 ### KEGG pathways
 
@@ -60,6 +63,13 @@ each number means.
 
 Core, softcore, shell and cloud classification, the gene frequency spectrum,
 and presence/absence heatmaps.
+
+### CDS statistics
+
+How many genes fall in each case, lineage by lineage: box and violin plots with
+Dunn's tests between lineages, the share of each case in every lineage, a
+heatmap of the means, and a table per case with the count, mean, median and
+spread of each lineage.
 
 ### Master table explorer
 

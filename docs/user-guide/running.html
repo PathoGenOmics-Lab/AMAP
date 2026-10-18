@@ -6,6 +6,18 @@
 <title>Running AMAP | AMAP docs</title>
 <meta name="description" content="Profiles, schedulers and larger runs.">
 <link rel="icon" href="../assets/favicon.png" type="image/png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AMAP">
+<meta property="og:title" content="Running AMAP | AMAP docs">
+<meta property="og:description" content="Profiles, schedulers and larger runs.">
+<meta property="og:url" content="https://pathogenomics-lab.github.io/AMAP/user-guide/running.html">
+<meta property="og:image" content="https://pathogenomics-lab.github.io/AMAP/assets/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Bakta calls the genes. AMAP checks every one: real genes of M. tuberculosis CDC1551, corrected against H37Rv.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b0f0e">
+<link rel="apple-touch-icon" href="../assets/touch-icon.png">
 <link rel="stylesheet" href="../assets/site.css">
 <script>try { document.documentElement.dataset.theme = localStorage.getItem("amap.theme") === "light" ? "light" : "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; }</script>
 </head>
@@ -84,7 +96,7 @@
 <div class="table-wrap"><table><thead><tr><th>Profile</th><th>Kind</th><th>What it does</th></tr></thead><tbody><tr><td><code>docker</code></td><td>container</td><td>Runs every process in the AMAP Docker image.</td></tr><tr><td><code>singularity</code></td><td>container</td><td>Same image via Singularity or Apptainer.</td></tr><tr><td><code>standard</code></td><td>container</td><td>No container. Every tool must already be on <code>PATH</code>.</td></tr><tr><td><code>slurm</code></td><td>executor</td><td>Submits each process as a SLURM job.</td></tr><tr><td><code>sge</code></td><td>executor</td><td>Submits to Sun Grid Engine or Univa Grid Engine.</td></tr><tr><td><code>pbs</code></td><td>executor</td><td>Submits to PBS or Torque.</td></tr><tr><td><code>lsf</code></td><td>executor</td><td>Submits to IBM Spectrum LSF.</td></tr><tr><td><code>test</code></td><td>data</td><td>Small bundled dataset, for checking the installation.</td></tr><tr><td><code>highmem</code></td><td>resources</td><td>Raises the ceilings to 48 CPUs, 256 GB, 120 h.</td></tr></tbody></table></div>
 <p>Combine them with commas:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv</pre></div>
-<p>Order does not matter, but a container profile and an executor profile are both worth setting. Without an executor profile everything runs on the local machine.</p>
+<p>Write the container profile first. From Nextflow 25.10 on, where two profiles set the same thing the later one wins, and the container profiles cap every task at 16 GB, which suits a laptop: <code>-profile slurm,singularity</code> would hold a cluster run to that, where <code>-profile singularity,slurm</code> gets the cluster's 128 GB. Without an executor profile everything runs on the local machine.</p>
 <h2 id="on-a-laptop-or-workstation">On a laptop or workstation<a class="anchor" href="#on-a-laptop-or-workstation" aria-label="Link to this section">#</a></h2>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv</pre></div>
 <p>CPUs are auto-detected and memory is capped at 16 GB. Raise both if the machine allows:</p>
@@ -117,7 +129,7 @@
     --tsv samples.tsv -resume</pre></div>
 <p>Keep the parameters identical. Changing an input invalidates that task and everything downstream, which is correct behaviour but does mean the work is redone. The cache lives in the work directory, so do not delete it between a run and its resume.</p>
 <h2 id="running-only-part-of-the-pipeline">Running only part of the pipeline<a class="anchor" href="#running-only-part-of-the-pipeline" aria-label="Link to this section">#</a></h2>
-<p><code>--skip_functional_annotation</code> stops after the correction step. You get the corrected annotation and the case tables, and skip eggNOG, duplications, the pangenome and the report. Much faster when the corrected GFF3 is all you are after:</p>
+<p><code>--skip_functional_annotation</code> stops after the correction step. You get the corrected genes as a table with their proteins and sequences (<code>*.AMAP.tsv</code>, <code>.faa</code>, <code>.fna</code>) and the case tables, and skip eggNOG, duplications, the pangenome and the report. The GFF3 and GenBank files are written after eggNOG, so they are skipped too. Much faster when the corrected genes are all you are after:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --skip_functional_annotation</pre></div>
 <h2 id="what-a-run-produces">What a run produces<a class="anchor" href="#what-a-run-produces" aria-label="Link to this section">#</a></h2>

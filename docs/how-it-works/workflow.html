@@ -6,6 +6,18 @@
 <title>The workflow | AMAP docs</title>
 <meta name="description" content="Each step of the pipeline, on the metro map.">
 <link rel="icon" href="../assets/favicon.png" type="image/png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AMAP">
+<meta property="og:title" content="The workflow | AMAP docs">
+<meta property="og:description" content="Each step of the pipeline, on the metro map.">
+<meta property="og:url" content="https://pathogenomics-lab.github.io/AMAP/how-it-works/workflow.html">
+<meta property="og:image" content="https://pathogenomics-lab.github.io/AMAP/assets/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Bakta calls the genes. AMAP checks every one: real genes of M. tuberculosis CDC1551, corrected against H37Rv.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b0f0e">
+<link rel="apple-touch-icon" href="../assets/touch-icon.png">
 <link rel="stylesheet" href="../assets/site.css">
 <script>try { document.documentElement.dataset.theme = localStorage.getItem("amap.theme") === "light" ? "light" : "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; }</script>
 </head>
@@ -97,13 +109,13 @@
 <h2 id="6-correction">6. Correction<a class="anchor" href="#6-correction" aria-label="Link to this section">#</a></h2>
 <p>The cases are resolved into one corrected coordinate set: conflicts adjudicated, novel genes filtered, missing reference genes rescued, duplicates removed.</p>
 <p>Then <code>check_cds.py</code> translates every surviving CDS. A gene that does not end in a stop codon has its coordinates extended to the next in-frame stop, up to 300 bp. Genes with internal stops are flagged as pseudogenes rather than discarded. Anything that cannot be translated at all is dropped, so the annotation table and the FASTA files always agree.</p>
-<p>Outputs are the corrected GFF3, GenBank, protein and nucleotide files under <code>AMAP/</code>.</p>
+<p>Outputs are the corrected gene table and its protein and nucleotide files under <code>AMAP/</code> (<code>*.AMAP.tsv</code>, <code>.faa</code>, <code>.fna</code>). The GFF3 and GenBank files follow once eggNOG has run, in step 7.</p>
 <h2 id="7-functional-annotation">7. Functional annotation<a class="anchor" href="#7-functional-annotation" aria-label="Link to this section">#</a></h2>
 <p><a href="https://github.com/eggnogdb/eggnog-mapper">eggNOG-mapper</a> assigns COG categories, KEGG orthologs and pathways, GO terms, EC numbers, PFAM domains and CAZy families.</p>
 <p>This runs <strong>once over all samples together</strong>, not once per sample. With closely related genomes most proteins are identical across samples, so they are deduplicated first, annotated once, and the results propagated back. For a few hundred MTBC genomes that cuts the Diamond search by an order of magnitude and avoids hundreds of jobs contending for the same database on a shared filesystem.</p>
 <p>The results are merged into <code>*-AMAPmastertable.tsv</code> and into the GFF3 attributes.</p>
 <h2 id="8-duplication-analysis">8. Duplication analysis<a class="anchor" href="#8-duplication-analysis" aria-label="Link to this section">#</a></h2>
-<p>Each proteome is searched against itself with Diamond to find within-genome duplications, which are grouped into families by connected components. Then all samples are pooled and searched all-against-all to build homologous communities across genomes, with network metrics computed per community.</p>
+<p>Each proteome is searched against itself with Diamond to find within-genome duplications, which are grouped into families by connected components. Then the proteins of every sample's families are pooled and searched all against all to build homologous communities across genomes, with network metrics computed per community.</p>
 <p><a href="duplications.html">Duplication metrics</a> explains the numbers.</p>
 <h2 id="9-pangenome">9. Pangenome<a class="anchor" href="#9-pangenome" aria-label="Link to this section">#</a></h2>
 <p><a href="https://github.com/lh3/pangene">pangene</a> builds a pangenome graph from the corrected annotations and produces a gene presence/absence matrix, which the report turns into core, softcore, shell and cloud classifications, a frequency spectrum and presence/absence heatmaps.</p>

@@ -81,10 +81,10 @@ Memory decides whether the run finishes at all. Two steps are heavy:
 | eggNOG annotation | 24 | 50 GB |
 | eggNOG database build | 16 | 45 GB |
 | Pangenome | 16 | 16 GB |
-| Duplication analysis | 6 | 10 GB |
+| Duplication analysis | 6 to 13 | 10 GB |
 | Report | 1 | 8 GB |
 | Bakta annotation | 12 | 6 GB |
-| Everything else | 1 to 8 | under 6 GB |
+| Everything else | 1 to 8 | 6 GB or less |
 
 Nextflow will not start a task that asks for more memory than the machine has,
 so on a laptop these requests are the thing that fails, not your data. Lower
@@ -103,9 +103,10 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --skip_functional_annotation
 ```
 
-You still get the corrected annotation, which is what AMAP exists to produce.
-What you lose is eggNOG categories, the pangenome and the duplication analysis.
-The heaviest step left asks for 8 GB.
+You still get the corrected genes, which is what AMAP exists to produce, as a
+table with their proteins and sequences. What you lose is eggNOG categories, the
+GFF3 and GenBank files written after it, the pangenome, the duplication analysis
+and the report. The heaviest step left asks for 6 GB.
 
 > [!CAUTION]
 > **Docker Desktop has its own memory limit, and it is the one that counts**

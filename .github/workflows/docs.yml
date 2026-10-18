@@ -21,6 +21,8 @@ on:
       - "README.md"
       - "CHANGELOG.md"
       - "requirements-test.txt"
+      - "docker/Dockerfile"
+      - "tests/benchmark/README.md"
       - ".github/workflows/docs.yml"
   pull_request:
     paths:
@@ -33,6 +35,8 @@ on:
       - "README.md"
       - "CHANGELOG.md"
       - "requirements-test.txt"
+      - "docker/Dockerfile"
+      - "tests/benchmark/README.md"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
 

@@ -6,6 +6,18 @@
 <title>Containers | AMAP docs</title>
 <meta name="description" content="The AMAP image, what is in it, and building your own.">
 <link rel="icon" href="../assets/favicon.png" type="image/png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AMAP">
+<meta property="og:title" content="Containers | AMAP docs">
+<meta property="og:description" content="The AMAP image, what is in it, and building your own.">
+<meta property="og:url" content="https://pathogenomics-lab.github.io/AMAP/deployment/containers.html">
+<meta property="og:image" content="https://pathogenomics-lab.github.io/AMAP/assets/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Bakta calls the genes. AMAP checks every one: real genes of M. tuberculosis CDC1551, corrected against H37Rv.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b0f0e">
+<link rel="apple-touch-icon" href="../assets/touch-icon.png">
 <link rel="stylesheet" href="../assets/site.css">
 <script>try { document.documentElement.dataset.theme = localStorage.getItem("amap.theme") === "light" ? "light" : "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; }</script>
 </head>
@@ -82,6 +94,7 @@
 nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv</pre></div>
 <p>Nextflow pulls the image on first use and caches it. Singularity converts it to a <code>.sif</code> on the way, which takes a few minutes once.</p>
 <h2 id="what-is-inside">What is inside<a class="anchor" href="#what-is-inside" aria-label="Link to this section">#</a></h2>
+<figure class="fig image-fig"><div class="img-grid"><div class="img-host"><p class="img-title">What you install</p><ul><li><b>Nextflow</b> 24.04 or newer, on Java 17 or newer</li><li><b>Docker</b>, or <b>Singularity</b> or <b>Apptainer</b> on a cluster</li></ul><p class="img-title img-later">What the first run builds</p><ul><li><b>The eggNOG database</b>, in the folder <code>--eggnog_db</code> names, kept for every run after</li></ul></div><div class="img-arrow" aria-hidden="true"><span>pulled once</span><i class="img-left">&#8592;</i><i class="img-up">&#8593;</i></div><div class="img-box"><p class="img-title"><code>paururo/amap</code><span>linux/amd64</span></p><div class="img-layer"><p>Tools</p><div><span class="img-pill"><b>Bakta</b> 1.12.0</span><span class="img-pill"><b>miniprot</b> 0.18</span><span class="img-pill"><b>Diamond</b> 2.1.24</span><span class="img-pill"><b>eggNOG-mapper</b> 2.1.13</span><span class="img-pill"><b>pangene</b> 1.1</span><span class="img-pill"><b>pathotypr</b> 1.0.0</span><span class="img-pill"><b>gfatools</b></span></div></div><div class="img-layer"><p>Runtimes</p><div><span class="img-pill"><b>Python</b> 3.9</span><span class="img-pill"><b>R</b> 4.4</span></div></div><div class="img-layer"><p>Data</p><div><span class="img-pill"><b>Bakta database</b> light</span><span class="img-pill img-note"><b><code>/reference/</code></b> 9 files: the H37Rv genome, proteome and GenBank, Bakta's false positives on it, Mycobrowser's table and the lineage markers</span></div></div></div></div><figcaption>Two things to install; everything AMAP runs comes in one image, its versions read off <code>docker/Dockerfile</code>. Only the eggNOG database stays outside: too large to ship, it is built on the first run that needs it.</figcaption></figure>
 <p><strong>Tools</strong>: Bakta 1.12.0, Miniprot 0.18, Diamond 2.1.24, eggNOG-mapper 2.1.13, pangene 1.1, pathotypr 1.0.0, gfatools.</p>
 <p><strong>Runtimes</strong>: Python 3.9 with pandas, NumPy, Biopython, matplotlib, plotly, NetworkX, intervaltree, pyvis and python-louvain. R 4.4 with the report packages.</p>
 <p><strong>Bundled data</strong> under <code>/reference/</code>, so a standard MTBC run needs no downloads:</p>

@@ -6,6 +6,18 @@
 <title>HPC clusters | AMAP docs</title>
 <meta name="description" content="Schedulers, scratch, and where things should live.">
 <link rel="icon" href="../assets/favicon.png" type="image/png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AMAP">
+<meta property="og:title" content="HPC clusters | AMAP docs">
+<meta property="og:description" content="Schedulers, scratch, and where things should live.">
+<meta property="og:url" content="https://pathogenomics-lab.github.io/AMAP/deployment/hpc.html">
+<meta property="og:image" content="https://pathogenomics-lab.github.io/AMAP/assets/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Bakta calls the genes. AMAP checks every one: real genes of M. tuberculosis CDC1551, corrected against H37Rv.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b0f0e">
+<link rel="apple-touch-icon" href="../assets/touch-icon.png">
 <link rel="stylesheet" href="../assets/site.css">
 <script>try { document.documentElement.dataset.theme = localStorage.getItem("amap.theme") === "light" ? "light" : "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; }</script>
 </head>
@@ -79,6 +91,7 @@
 <h1 id="running-on-a-cluster">Running on a cluster</h1>
 <p>Past a couple of dozen genomes, a scheduler is worth the setup. Combine a container profile with an executor profile:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv</pre></div>
+<figure class="fig hpc-fig"><div class="hpc-flow"><div class="hpc-box hpc-launch"><p class="hpc-title">The launcher</p><p><code>nextflow run</code>, in <code>tmux</code> or as a small job of its own: 2 CPUs, 8 GB, 48 h. It submits, waits and resubmits.</p><p class="hpc-small">Runs here too: <code>VALIDATE_INPUTS</code>, <code>SOFTWARE_VERSIONS</code>, <code>DUMP_PARAMS</code></p></div><i class="hpc-arrow" aria-hidden="true"></i><div class="hpc-box hpc-queue"><p class="hpc-title">The scheduler</p><p>Up to <b>200</b> jobs at once, submitted at up to 100 a minute with <code>slurm</code> (20 a minute with <code>sge</code>, <code>pbs</code> and <code>lsf</code>).</p></div><i class="hpc-arrow" aria-hidden="true"></i><div class="hpc-box hpc-nodes"><p class="hpc-title">The compute nodes</p><p>One job per task, at most 48 CPUs and 128 GB each, in the AMAP image, working on the node's own disk and copying back only the results.</p><div class="hpc-tasks"><span>per sample: Bakta, miniprot, the correction, duplications, pangenome</span><span>once for all: eggNOG, the genomes compared, the report</span></div></div></div><div class="hpc-box hpc-shared"><p class="hpc-title">Shared storage</p><div class="hpc-places"><span><code class="hpc-key">-work-dir</code>every task's files, which <code>-resume</code> needs</span><span><code class="hpc-key">NXF_SINGULARITY_CACHEDIR</code>the image, converted once</span><span><code class="hpc-key">--eggnog_db</code>the eggNOG database, built once</span><span><code class="hpc-key">--outdir</code>the results</span></div></div><figcaption>A run on a cluster, with the settings of the <code>slurm</code> profile in <code>nextflow.config</code> and the launcher of the job script below.</figcaption></figure>
 <h2 id="the-executor-profiles">The executor profiles<a class="anchor" href="#the-executor-profiles" aria-label="Link to this section">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th>Profile</th><th>Scheduler</th><th>Submission rate</th></tr></thead><tbody><tr><td><code>slurm</code></td><td>SLURM</td><td>100 per minute</td></tr><tr><td><code>sge</code></td><td>Sun Grid Engine, Univa</td><td>20 per minute</td></tr><tr><td><code>pbs</code></td><td>PBS, Torque</td><td>20 per minute</td></tr><tr><td><code>lsf</code></td><td>IBM Spectrum LSF</td><td>20 per minute</td></tr></tbody></table></div>
 <p>All four queue up to 200 jobs at once, default to 48 CPUs and 128 GB per job, and enable node-local scratch. SGE additionally requests memory through <code>-l h_vmem</code>, and uses the <code>smp</code> parallel environment.</p>

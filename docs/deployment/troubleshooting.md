@@ -20,6 +20,8 @@ inside the container reproduces the failure by hand.
 CPU, memory and runtime, which is the fastest way to see whether a failure was
 resources or logic.
 
+<!-- figure: failure -->
+
 ## Before the pipeline starts
 
 - **"Unexpected input: '('" in `nextflow.config`**: Nextflow 25.10 and later read pipelines with a stricter parser, which older

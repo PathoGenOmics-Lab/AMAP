@@ -15,6 +15,8 @@ a `.sif` on the way, which takes a few minutes once.
 
 ## What is inside
 
+<!-- figure: image -->
+
 **Tools**: Bakta 1.12.0, Miniprot 0.18, Diamond 2.1.24, eggNOG-mapper 2.1.13,
 pangene 1.1, pathotypr 1.0.0, gfatools.
 

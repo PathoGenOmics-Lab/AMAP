@@ -8,9 +8,11 @@ live inside the AMAP image.
 You also do not need to clone this repository. Nextflow pulls the pipeline
 straight from GitHub.
 
+<!-- figure: image -->
+
 ## 1. Nextflow
 
-Nextflow needs Java 11 or newer. The simplest route is Conda:
+Nextflow needs Java 17 or newer, and Conda brings both:
 
 ```bash
 conda create -n nextflow-env

@@ -14,6 +14,8 @@ G26690	/data/genomes/G26690.fasta
 L4_G12345	./assemblies/L4_G12345.fa
 ```
 
+<!-- figure: sample-sheet -->
+
 - **`sampleId`**: The name carried through every output directory and file. Must be unique.
 - **`fasta`**: Path to the assembled genome. Absolute, or relative to the directory you
   launch Nextflow from.
@@ -39,6 +41,8 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
 ```
 
 Results are written to `results/pipeline_info/validation.log`.
+
+<!-- figure: validation-ranges -->
 
 ### What fails the run
 

@@ -29,6 +29,8 @@ characteristic mistakes, in other words. For MTBC this is a curated file; with a
 [custom reference](../user-guide/custom-reference.md) AMAP derives it by
 annotating the reference and taking the difference.
 
+<!-- figure: three-inputs -->
+
 ## The pipeline
 
 Ten steps, from genomes to report:
@@ -58,6 +60,8 @@ one of five outcomes:
 | Case 3 | Coordinates match but alignment length differs. Kept. |
 | Case 4 | Overlaps a reference gene, but the coordinates conflict. Must be resolved. |
 | Missing | The reference has a gene there, Bakta missed it. Rescued. |
+
+<!-- figure: outcomes -->
 
 Cases 1 and 4 are where the work is: deciding which novel genes are real, and
 which set of coordinates wins a conflict.

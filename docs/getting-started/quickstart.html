@@ -6,6 +6,18 @@
 <title>Quickstart | AMAP docs</title>
 <meta name="description" content="From an installed Nextflow to an open report.">
 <link rel="icon" href="../assets/favicon.png" type="image/png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AMAP">
+<meta property="og:title" content="Quickstart | AMAP docs">
+<meta property="og:description" content="From an installed Nextflow to an open report.">
+<meta property="og:url" content="https://pathogenomics-lab.github.io/AMAP/getting-started/quickstart.html">
+<meta property="og:image" content="https://pathogenomics-lab.github.io/AMAP/assets/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Bakta calls the genes. AMAP checks every one: real genes of M. tuberculosis CDC1551, corrected against H37Rv.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b0f0e">
+<link rel="apple-touch-icon" href="../assets/touch-icon.png">
 <link rel="stylesheet" href="../assets/site.css">
 <script>try { document.documentElement.dataset.theme = localStorage.getItem("amap.theme") === "light" ? "light" : "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; }</script>
 </head>
@@ -89,9 +101,41 @@ G26690	/data/genomes/G26690.fasta</pre></div>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --validate_only</pre></div>
 <h2 id="3-run-it">3. Run it<a class="anchor" href="#3-run-it" aria-label="Link to this section">#</a></h2>
-<div class="tabset"><div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" aria-controls="tabs-getting-started-quickstart-md-31-0" id="tabs-getting-started-quickstart-md-31-0-tab">Docker</button><button class="tab" role="tab" aria-selected="false" aria-controls="tabs-getting-started-quickstart-md-31-1" id="tabs-getting-started-quickstart-md-31-1-tab">Singularity</button><button class="tab" role="tab" aria-selected="false" aria-controls="tabs-getting-started-quickstart-md-31-2" id="tabs-getting-started-quickstart-md-31-2-tab">SLURM cluster</button></div><div class="tabpanel" role="tabpanel" id="tabs-getting-started-quickstart-md-31-0" aria-labelledby="tabs-getting-started-quickstart-md-31-0-tab"><div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv</pre></div></div><div class="tabpanel" role="tabpanel" id="tabs-getting-started-quickstart-md-31-1" aria-labelledby="tabs-getting-started-quickstart-md-31-1-tab" hidden><div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv</pre></div></div><div class="tabpanel" role="tabpanel" id="tabs-getting-started-quickstart-md-31-2" aria-labelledby="tabs-getting-started-quickstart-md-31-2-tab" hidden><div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP \
+<p>Pick what you have, and copy the command:</p>
+<figure class="fig builder-fig"><div class="builder" data-builder>
+  <div>
+    <div class="q">
+      <div class="q-title" id="q-engine">Where will it run?</div>
+      <div class="seg" role="group" aria-labelledby="q-engine" data-choice="engine">
+        <button type="button" data-value="docker" aria-pressed="true">Docker</button>
+        <button type="button" data-value="singularity" aria-pressed="false">Singularity</button>
+        <button type="button" data-value="slurm" aria-pressed="false">A SLURM cluster</button>
+      </div>
+    </div>
+    <div class="q">
+      <div class="q-title" id="q-organism">Which genomes?</div>
+      <div class="seg" role="group" aria-labelledby="q-organism" data-choice="organism">
+        <button type="button" data-value="mtbc" aria-pressed="true"><i>M. tuberculosis</i> complex</button>
+        <button type="button" data-value="other" aria-pressed="false">Another species</button>
+      </div>
+    </div>
+    <div class="q">
+      <div class="q-title">Anything else?</div>
+      <label class="opt"><input type="checkbox" data-opt="small"><b>A laptop or a small machine</b><small>Caps every task at 4 CPUs and 12 GB.</small></label>
+      <label class="opt"><input type="checkbox" data-opt="only"><b>Only the corrected genes</b><small>Much faster: stops after the correction.</small></label>
+      <label class="opt"><input type="checkbox" data-opt="db"><b>Keep the eggNOG database</b><small>Built on the first run, reused on every run after.</small></label>
+    </div>
+  </div>
+  <div>
+    <div class="code"><pre data-command></pre><button class="copy" type="button" data-copy-from="[data-command]">Copy</button></div>
+    <ul class="explain" data-explain></ul>
+    <p class="note" data-builder-note hidden></p>
+  </div>
+</div><figcaption>The command for your machine and your genomes, with what each option does. The same as on the <a href="../index.html#start">front page</a>.</figcaption></figure>
+<p>Or start from one of these:</p>
+<div class="tabset"><div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" aria-controls="tabs-getting-started-quickstart-md-37-0" id="tabs-getting-started-quickstart-md-37-0-tab">Docker</button><button class="tab" role="tab" aria-selected="false" aria-controls="tabs-getting-started-quickstart-md-37-1" id="tabs-getting-started-quickstart-md-37-1-tab">Singularity</button><button class="tab" role="tab" aria-selected="false" aria-controls="tabs-getting-started-quickstart-md-37-2" id="tabs-getting-started-quickstart-md-37-2-tab">SLURM cluster</button></div><div class="tabpanel" role="tabpanel" id="tabs-getting-started-quickstart-md-37-0" aria-labelledby="tabs-getting-started-quickstart-md-37-0-tab"><div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv</pre></div></div><div class="tabpanel" role="tabpanel" id="tabs-getting-started-quickstart-md-37-1" aria-labelledby="tabs-getting-started-quickstart-md-37-1-tab" hidden><div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv</pre></div></div><div class="tabpanel" role="tabpanel" id="tabs-getting-started-quickstart-md-37-2" aria-labelledby="tabs-getting-started-quickstart-md-37-2-tab" hidden><div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP \
     -profile singularity,slurm --tsv samples.tsv</pre></div></div></div>
-<p>Resource requests are capped at 24 CPUs and 50 GB by default, which is what the eggNOG annotation step asks for. Nextflow refuses to start a task requesting more memory than the machine has, so on anything smaller than a server, lower the ceiling:</p>
+<p>The <code>docker</code> and <code>singularity</code> profiles cap every task at the machine's CPUs and 16 GB, and the scheduler profiles at 48 CPUs and 128 GB; a larger request, such as the 50 GB the eggNOG annotation asks for, is lowered to the cap. Nextflow refuses to start a task asking for more memory than the machine has, so on a smaller machine, lower the ceiling:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --max_cpus 4 --max_memory 12.GB</pre></div>
 <p>The <a href="tutorial.html#the-machine">tutorial</a> has the per-step figures and what to do when the machine cannot reach them.</p>
@@ -112,7 +156,7 @@ G26690	/data/genomes/G26690.fasta</pre></div>
     --genus Escherichia --species &quot;Escherichia coli&quot; \
     --ref_annotation my_reference.gbk --ref_genome my_reference.fasta</pre></div>
 <p>See <a href="../user-guide/custom-reference.html">custom reference</a>.</p>
-<p><strong>Just the corrected annotation.</strong> If you do not need functional annotation, duplications, the pangenome or the report, stop after the correction step. It is much faster:</p>
+<p><strong>Just the corrected genes.</strong> If you do not need functional annotation, duplications, the pangenome or the report, stop after the correction step. It is much faster, and leaves the corrected genes as a table with their proteins and sequences; the GFF3 and GenBank files come after eggNOG, so there are none:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --skip_functional_annotation</pre></div>
 <h2 id="next-steps">Next steps<a class="anchor" href="#next-steps" aria-label="Link to this section">#</a></h2>

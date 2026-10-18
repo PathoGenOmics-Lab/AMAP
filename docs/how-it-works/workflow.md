@@ -65,8 +65,9 @@ bp. Genes with internal stops are flagged as pseudogenes rather than discarded.
 Anything that cannot be translated at all is dropped, so the annotation table
 and the FASTA files always agree.
 
-Outputs are the corrected GFF3, GenBank, protein and nucleotide files under
-`AMAP/`.
+Outputs are the corrected gene table and its protein and nucleotide files
+under `AMAP/` (`*.AMAP.tsv`, `.faa`, `.fna`). The GFF3 and GenBank files follow
+once eggNOG has run, in step 7.
 
 ## 7. Functional annotation
 
@@ -87,9 +88,10 @@ attributes.
 ## 8. Duplication analysis
 
 Each proteome is searched against itself with Diamond to find within-genome
-duplications, which are grouped into families by connected components. Then all
-samples are pooled and searched all-against-all to build homologous communities
-across genomes, with network metrics computed per community.
+duplications, which are grouped into families by connected components. Then the
+proteins of every sample's families are pooled and searched all against all to
+build homologous communities across genomes, with network metrics computed per
+community.
 
 [Duplication metrics](duplications.md) explains the numbers.
 

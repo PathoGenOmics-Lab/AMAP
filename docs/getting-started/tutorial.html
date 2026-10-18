@@ -6,6 +6,18 @@
 <title>Tutorial | AMAP docs</title>
 <meta name="description" content="From an empty folder to a corrected genome, with the numbers of a real run.">
 <link rel="icon" href="../assets/favicon.png" type="image/png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AMAP">
+<meta property="og:title" content="Tutorial | AMAP docs">
+<meta property="og:description" content="From an empty folder to a corrected genome, with the numbers of a real run.">
+<meta property="og:url" content="https://pathogenomics-lab.github.io/AMAP/getting-started/tutorial.html">
+<meta property="og:image" content="https://pathogenomics-lab.github.io/AMAP/assets/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Bakta calls the genes. AMAP checks every one: real genes of M. tuberculosis CDC1551, corrected against H37Rv.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b0f0e">
+<link rel="apple-touch-icon" href="../assets/touch-icon.png">
 <link rel="stylesheet" href="../assets/site.css">
 <script>try { document.documentElement.dataset.theme = localStorage.getItem("amap.theme") === "light" ? "light" : "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; }</script>
 </head>
@@ -98,14 +110,14 @@ nextflow -version</pre></div>
 <p>Worth checking before you start, because this is what stops a run rather than anything you will have got wrong.</p>
 <p>Disk goes first. The container is 12 GB unpacked. The eggNOG database is built on first use and cached: AMAP skips the 60 GB Diamond core that eggNOG-mapper would otherwise fetch and builds a bacteria-only index of about 3 GB instead, on top of the metadata it downloads. Nextflow keeps every intermediate under <code>work/</code>, which for one genome is a few GB and grows with the sample sheet.</p>
 <p>Memory decides whether the run finishes at all. Two steps are heavy:</p>
-<div class="table-wrap"><table><thead><tr><th>Step</th><th class="num">CPUs</th><th class="num">Memory requested</th></tr></thead><tbody><tr><td>eggNOG annotation</td><td class="num">24</td><td class="num">50 GB</td></tr><tr><td>eggNOG database build</td><td class="num">16</td><td class="num">45 GB</td></tr><tr><td>Pangenome</td><td class="num">16</td><td class="num">16 GB</td></tr><tr><td>Duplication analysis</td><td class="num">6</td><td class="num">10 GB</td></tr><tr><td>Report</td><td class="num">1</td><td class="num">8 GB</td></tr><tr><td>Bakta annotation</td><td class="num">12</td><td class="num">6 GB</td></tr><tr><td>Everything else</td><td class="num">1 to 8</td><td class="num">under 6 GB</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Step</th><th class="num">CPUs</th><th class="num">Memory requested</th></tr></thead><tbody><tr><td>eggNOG annotation</td><td class="num">24</td><td class="num">50 GB</td></tr><tr><td>eggNOG database build</td><td class="num">16</td><td class="num">45 GB</td></tr><tr><td>Pangenome</td><td class="num">16</td><td class="num">16 GB</td></tr><tr><td>Duplication analysis</td><td class="num">6 to 13</td><td class="num">10 GB</td></tr><tr><td>Report</td><td class="num">1</td><td class="num">8 GB</td></tr><tr><td>Bakta annotation</td><td class="num">12</td><td class="num">6 GB</td></tr><tr><td>Everything else</td><td class="num">1 to 8</td><td class="num">6 GB or less</td></tr></tbody></table></div>
 <p>Nextflow will not start a task that asks for more memory than the machine has, so on a laptop these requests are the thing that fails, not your data. Lower the ceiling and every request is clamped to it:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --max_cpus 4 --max_memory 12.GB</pre></div>
 <p>eggNOG will be slower and may still run out on a genuinely small machine. The alternative is to skip functional annotation altogether:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --skip_functional_annotation</pre></div>
-<p>You still get the corrected annotation, which is what AMAP exists to produce. What you lose is eggNOG categories, the pangenome and the duplication analysis. The heaviest step left asks for 8 GB.</p>
+<p>You still get the corrected genes, which is what AMAP exists to produce, as a table with their proteins and sequences. What you lose is eggNOG categories, the GFF3 and GenBank files written after it, the pangenome, the duplication analysis and the report. The heaviest step left asks for 6 GB.</p>
 <div class="callout callout-caution"><p class="callout-title">Docker Desktop has its own memory limit, and it is the one that counts</p><p>On macOS and Windows, Docker runs your containers inside a virtual machine with a memory ceiling of its own, often 8 GB by default no matter how much the machine has. Nextflow sizes its requests against the host, so it will happily start a 12 GB task that the VM then kills. You get exit code 137 and nothing that mentions Docker.</p>
 <p>Raising <code>--max_memory</code> makes this worse, not better. Raise the VM instead, in Docker Desktop under Settings, Resources, Memory, and keep <code>--max_memory</code> at or below what you set there.</p>
 <p>Linux has no such layer. Containers use host memory directly and this does not apply.</p></div>

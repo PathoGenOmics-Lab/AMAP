@@ -6,6 +6,18 @@
 <title>Overview | AMAP docs</title>
 <meta name="description" content="What goes into a decision, and the five outcomes.">
 <link rel="icon" href="../assets/favicon.png" type="image/png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AMAP">
+<meta property="og:title" content="Overview | AMAP docs">
+<meta property="og:description" content="What goes into a decision, and the five outcomes.">
+<meta property="og:url" content="https://pathogenomics-lab.github.io/AMAP/how-it-works/index.html">
+<meta property="og:image" content="https://pathogenomics-lab.github.io/AMAP/assets/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Bakta calls the genes. AMAP checks every one: real genes of M. tuberculosis CDC1551, corrected against H37Rv.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b0f0e">
+<link rel="apple-touch-icon" href="../assets/touch-icon.png">
 <link rel="stylesheet" href="../assets/site.css">
 <script>try { document.documentElement.dataset.theme = localStorage.getItem("amap.theme") === "light" ? "light" : "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; }</script>
 </head>
@@ -84,6 +96,7 @@
 <p><strong>The Bakta annotation.</strong> Every CDS Bakta called on your genome, with coordinates and a locus tag.</p>
 <p><strong>The Miniprot alignments.</strong> Every reference protein aligned onto your genome, with the coordinates where it landed. The reference proteins carry their own coordinates in their headers (<code>Rv0001_1-1524</code>), which lets a later step tell a real locus from a paralogous placement.</p>
 <p><strong>The false-positive set.</strong> Proteins that a de novo annotator calls on the reference genome itself but that are not in the curated annotation. Bakta's characteristic mistakes, in other words. For MTBC this is a curated file; with a <a href="../user-guide/custom-reference.html">custom reference</a> AMAP derives it by annotating the reference and taking the difference.</p>
+<figure class="fig case" data-inputs><div class="case-fig" data-fig-stage></div><figcaption>The three inputs over the first 12.4 kb of CDC1551: Bakta's calls, the H37Rv proteins miniprot placed, and two of the calls Bakta makes on H37Rv itself that its curated annotation does not have, aligned here. Point at a gene for its coordinates.</figcaption></figure>
 <h2 id="the-pipeline">The pipeline<a class="anchor" href="#the-pipeline" aria-label="Link to this section">#</a></h2>
 <p>Ten steps, from genomes to report:</p>
 <ol><li><strong>eggNOG database setup</strong>, skipped if it is already built</li><li><strong>Lineage typing</strong> with pathotypr, MTBC only</li><li><strong>Annotation</strong> with Bakta</li><li><strong>Protein alignment</strong> with Miniprot</li><li><strong>Case classification</strong>: every CDS sorted by how it relates to the reference</li><li><strong>Correction</strong>: conflicts resolved, missing genes rescued, stop codons checked</li><li><strong>Functional annotation</strong> with eggNOG-mapper</li><li><strong>Duplication analysis</strong>: within and across genomes</li><li><strong>Pangenome</strong> with pangene</li><li><strong>Report</strong></li></ol>
@@ -91,6 +104,7 @@
 <h2 id="the-correction-itself">The correction itself<a class="anchor" href="#the-correction-itself" aria-label="Link to this section">#</a></h2>
 <p>Steps 5 and 6 are what makes AMAP more than a wrapper. Every CDS is sorted into one of five outcomes:</p>
 <div class="table-wrap"><table><thead><tr><th>Case</th><th>Meaning</th></tr></thead><tbody><tr><td>Case 1</td><td>Bakta called it, the reference has nothing there. Potentially novel.</td></tr><tr><td>Case 2</td><td>Coordinates match the reference exactly. Kept.</td></tr><tr><td>Case 3</td><td>Coordinates match but alignment length differs. Kept.</td></tr><tr><td>Case 4</td><td>Overlaps a reference gene, but the coordinates conflict. Must be resolved.</td></tr><tr><td>Missing</td><td>The reference has a gene there, Bakta missed it. Rescued.</td></tr></tbody></table></div>
+<figure class="fig outcomes" data-outcomes><div class="legend"><span><i class="chip bakta"></i>Bakta's call</span><span><i class="chip ref"></i>reference protein, aligned</span><span><i class="chip amap"></i>what AMAP keeps</span></div><div class="oc-grid"><a class="oc" href="../how-it-works.html#agree" data-mini="case2"><span class="oc-head"><span class="case-tag c2">Case 2</span><b>Perfect match</b></span><span class="oc-fig" data-fig-stage></span><span class="oc-text">Same start, end, strand and length as an aligned protein. Kept, tied to it.</span><span class="oc-more">Step through it</span></a><a class="oc" href="correction-algorithm.html#1-classification" data-mini="case3"><span class="oc-head"><span class="case-tag c3">Case 3</span><b>Imperfect match</b></span><span class="oc-fig" data-fig-stage></span><span class="oc-text">Same start, end and strand; the alignment's length differs. Kept, tied to the protein.</span><span class="oc-more">The rule</span></a><a class="oc" href="../how-it-works.html#late-start" data-mini="case4-start"><span class="oc-head"><span class="case-tag c4">Case 4</span><b>Conflicting overlap</b></span><span class="oc-fig" data-fig-stage></span><span class="oc-text">Overlaps an aligned protein with other coordinates. The reference's win, unless the call is much longer.</span><span class="oc-more">Step through it</span></a><a class="oc" href="../how-it-works.html#new" data-mini="case1-kept"><span class="oc-head"><span class="case-tag c1">Case 1</span><b>Potentially novel</b></span><span class="oc-fig" data-fig-stage></span><span class="oc-text">Nothing aligns. Kept, unless Bakta is known to call it wrongly or the reference genome has its protein.</span><span class="oc-more">Step through it</span></a><a class="oc" href="../how-it-works.html#missed" data-mini="missing"><span class="oc-head"><span class="case-tag cm">Missing</span><b>Put back</b></span><span class="oc-fig" data-fig-stage></span><span class="oc-text">A reference protein aligns where Bakta called nothing. It goes in at the alignment.</span><span class="oc-more">Step through it</span></a><div class="oc oc-harder"><span class="oc-head"><b>And the harder ones</b></span><ul><li><a href="../how-it-works.html#paralog">A protein on its paralog's locus</a></li><li><a href="../how-it-works.html#small">Proteins too small for miniprot</a></li><li><a href="../how-it-works.html#contig-end">Genes a contig end cuts</a></li><li><a href="../how-it-works.html#frameshift">Frameshifts and lost stops</a></li><li><a href="../how-it-works.html#copies">Two real copies of a gene</a></li></ul></div></div><figcaption>The five outcomes, each on real genes of CDC1551: the same windows as the case pages, drawn small. Each card opens its story, step by step.</figcaption></figure>
 <p>Cases 1 and 4 are where the work is: deciding which novel genes are real, and which set of coordinates wins a conflict. <a href="correction-algorithm.html">The correction algorithm</a> gives the rules and the thresholds.</p>
 <h2 id="in-this-section">In this section<a class="anchor" href="#in-this-section" aria-label="Link to this section">#</a></h2>
 <ul><li><a href="workflow.html">The workflow</a>: the ten steps in detail</li><li><a href="correction-algorithm.html">The correction algorithm</a>: case classification, conflict resolution, quality control</li><li><a href="duplications.html">Duplication metrics</a>: what the network numbers mean</li></ul>
@@ -129,5 +143,7 @@
 </footer>
 <script src="../assets/search-index.js"></script>
 <script src="../assets/site.js"></script>
+<script src="../assets/figure-data.js"></script>
+<script src="../assets/figures.js"></script>
 </body>
 </html>

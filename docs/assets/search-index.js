@@ -106,7 +106,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Installation",
 "section": "1. Nextflow",
 "url": "getting-started/installation.html#1-nextflow",
-"text": "Nextflow needs Java 11 or newer. The simplest route is Conda: conda create -n nextflow-env conda activate nextflow-env conda install -c bioconda nextflow If you do not have Conda, Miniconda is a lightweight installer. Any other Nextflow installation works equally well, see the Nextflow documentation. AMAP requires Nextflow 24.04 or newer, which is enforced by the pipeline manifest."
+"text": "Nextflow needs Java 17 or newer, and Conda brings both: conda create -n nextflow-env conda activate nextflow-env conda install -c bioconda nextflow If you do not have Conda, Miniconda is a lightweight installer. Any other Nextflow installation works equally well, see the Nextflow documentation. AMAP requires Nextflow 24.04 or newer, which is enforced by the pipeline manifest."
 },
 {
 "page": "Installation",
@@ -160,7 +160,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Quickstart",
 "section": "3. Run it",
 "url": "getting-started/quickstart.html#3-run-it",
-"text": "nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv Docker nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv Singularity nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm --tsv samples.tsv SLURM cluster Resource requests are capped at 24 CPUs and 50 GB by default, which is what the eggNOG annotation step asks for. Nextflow refuses to start a task requesting more memory than the machine has, so on anything smaller than a server, lower the ceiling: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv --max_cpus "
+"text": "Pick what you have, and copy the command: Or start from one of these: nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv Docker nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv Singularity nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm --tsv samples.tsv SLURM cluster The docker and singularity profiles cap every task at the machine's CPUs and 16 GB, and the scheduler profiles at 48 CPUs and 128 GB; a larger request, such as the 50 GB the eggNOG annotation asks for, is lowered to the cap. Nextflow refuses to start a task asking "
 },
 {
 "page": "Quickstart",
@@ -178,7 +178,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Quickstart",
 "section": "Common variations",
 "url": "getting-started/quickstart.html#common-variations",
-"text": "A non-MTBC organism. Lineage typing and Mycobrowser are specific to tuberculosis, so turn them off and supply your own reference: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv \\     --skip_typing --skip_mycobrowser \\     --genus Escherichia --species \"Escherichia coli\" \\     --ref_annotation my_reference.gbk --ref_genome my_reference.fasta See custom reference. Just the corrected annotation. If you do not need functional annotation, duplications, the pangenome or the report, stop after the correction step. It is much faster: nextflow run PathoGenOmics-Lab/AMAP -pr"
+"text": "A non-MTBC organism. Lineage typing and Mycobrowser are specific to tuberculosis, so turn them off and supply your own reference: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv \\     --skip_typing --skip_mycobrowser \\     --genus Escherichia --species \"Escherichia coli\" \\     --ref_annotation my_reference.gbk --ref_genome my_reference.fasta See custom reference. Just the corrected genes. If you do not need functional annotation, duplications, the pangenome or the report, stop after the correction step. It is much faster, and leaves the corrected genes as a table wi"
 },
 {
 "page": "Quickstart",
@@ -328,7 +328,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Running AMAP",
 "section": "Running only part of the pipeline",
 "url": "user-guide/running.html#running-only-part-of-the-pipeline",
-"text": "--skip_functional_annotation stops after the correction step. You get the corrected annotation and the case tables, and skip eggNOG, duplications, the pangenome and the report. Much faster when the corrected GFF3 is all you are after: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv --skip_functional_annotation"
+"text": "--skip_functional_annotation stops after the correction step. You get the corrected genes as a table with their proteins and sequences (*.AMAP.tsv, .faa, .fna) and the case tables, and skip eggNOG, duplications, the pangenome and the report. The GFF3 and GenBank files are written after eggNOG, so they are skipped too. Much faster when the corrected genes are all you are after: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv --skip_functional_annotation"
 },
 {
 "page": "Running AMAP",
@@ -448,7 +448,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The report",
 "section": "Functional annotation",
 "url": "user-guide/report.html#functional-annotation",
-"text": "COG categories from eggNOG, Mycobrowser functional categories for MTBC, and a comparison against the reference distribution. Each has its own per-category breakdown in counts and percentages, with the statistical tests alongside. PE/PPE gene families get their own section, since they are both the hardest part of an MTBC genome to annotate and usually the most interesting."
+"text": "COG categories from eggNOG, Mycobrowser functional categories for MTBC, and a comparison against the reference distribution. Each has its own per-category breakdown in counts and percentages, with the statistical tests alongside. PE/PPE gene families get their own section, since they are both the hardest part of an MTBC genome to annotate and usually the most interesting. The pseudogenes of each lineage close it."
 },
 {
 "page": "The report",
@@ -467,6 +467,12 @@ window.AMAP_DOCS_INDEX = [
 "section": "Pangenome",
 "url": "user-guide/report.html#pangenome",
 "text": "Core, softcore, shell and cloud classification, the gene frequency spectrum, and presence/absence heatmaps."
+},
+{
+"page": "The report",
+"section": "CDS statistics",
+"url": "user-guide/report.html#cds-statistics",
+"text": "How many genes fall in each case, lineage by lineage: box and violin plots with Dunn's tests between lineages, the share of each case in every lineage, a heatmap of the means, and a table per case with the count, mean, median and spread of each lineage."
 },
 {
 "page": "The report",
@@ -610,7 +616,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The workflow",
 "section": "6. Correction",
 "url": "how-it-works/workflow.html#6-correction",
-"text": "The cases are resolved into one corrected coordinate set: conflicts adjudicated, novel genes filtered, missing reference genes rescued, duplicates removed. Then check_cds.py translates every surviving CDS. A gene that does not end in a stop codon has its coordinates extended to the next in-frame stop, up to 300 bp. Genes with internal stops are flagged as pseudogenes rather than discarded. Anything that cannot be translated at all is dropped, so the annotation table and the FASTA files always agree. Outputs are the corrected GFF3, GenBank, protein and nucleotide files under AMAP/."
+"text": "The cases are resolved into one corrected coordinate set: conflicts adjudicated, novel genes filtered, missing reference genes rescued, duplicates removed. Then check_cds.py translates every surviving CDS. A gene that does not end in a stop codon has its coordinates extended to the next in-frame stop, up to 300 bp. Genes with internal stops are flagged as pseudogenes rather than discarded. Anything that cannot be translated at all is dropped, so the annotation table and the FASTA files always agree. Outputs are the corrected gene table and its protein and nucleotide files under AMAP/ (*.AMAP.t"
 },
 {
 "page": "The workflow",
@@ -622,7 +628,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The workflow",
 "section": "8. Duplication analysis",
 "url": "how-it-works/workflow.html#8-duplication-analysis",
-"text": "Each proteome is searched against itself with Diamond to find within-genome duplications, which are grouped into families by connected components. Then all samples are pooled and searched all-against-all to build homologous communities across genomes, with network metrics computed per community. Duplication metrics explains the numbers."
+"text": "Each proteome is searched against itself with Diamond to find within-genome duplications, which are grouped into families by connected components. Then the proteins of every sample's families are pooled and searched all against all to build homologous communities across genomes, with network metrics computed per community. Duplication metrics explains the numbers."
 },
 {
 "page": "The workflow",
@@ -740,21 +746,27 @@ window.AMAP_DOCS_INDEX = [
 },
 {
 "page": "Duplication metrics",
-"section": "How the communities are built",
-"url": "how-it-works/duplications.html#how-the-communities-are-built",
-"text": "Each corrected proteome is searched against itself with Diamond, excluding self-hits. A pair is kept when the aligned identical residues cover 80% or more of either the query or the subject, so a short domain match between two otherwise unrelated proteins is not counted as duplication. Surviving pairs become edges in a graph, and connected components become duplication families. All samples are then pooled and searched all-against-all. The resulting graph is partitioned into homologous communities with the Louvain algorithm, and the metrics below are computed per community. Results land in DUP"
+"section": "How the families are found",
+"url": "how-it-works/duplications.html#how-the-families-are-found",
+"text": "Each corrected proteome is searched against itself with Diamond, excluding self-hits. A pair is kept when the identical residues of the alignment cover 80% or more of either the query or the subject, so a short domain match between two otherwise unrelated proteins is not counted as duplication. Kept pairs become links in a graph, and its connected pieces become the duplication families, listed in DUPLICATIONS/{sample}/duplications_{sample}_groups.tsv. Because the rule takes the larger of the two shares, a fragment joins the family of the gene it came from: a match that covers almost all of a s"
 },
 {
 "page": "Duplication metrics",
-"section": "The metrics",
-"url": "how-it-works/duplications.html#the-metrics",
-"text": "Each appears in the table suffixed 1 and 2, for the two levels of the analysis. Degree centrality (AverageDegree1-2): Average number of direct connections per node. High values mean genes in the community are similar to many others in it, the signature of a large expanded family. Closeness centrality (AverageCloseness1-2): Average distance from a node to every other. High closeness means a compact community where members are all mutually similar, rather than a chain of progressively diverging copies. Betweenness centrality (AverageBetweenness1-2): How often a node sits on the shortest path bet"
+"section": "How the communities are built",
+"url": "how-it-works/duplications.html#how-the-communities-are-built",
+"text": "The proteins of every sample's families are then pooled and searched all against all. Within each genome, the pairs that pass the same rule make a network, which the Louvain method splits into communities, with a fixed seed so that a rerun splits it the same way. Two communities are homologous when at least one hit joins them, and each homologous pair is one row of DUPLICATIONS/homologous_communities.tsv, with an interactive network in the matching HTML file."
+},
+{
+"page": "Duplication metrics",
+"section": "The columns",
+"url": "how-it-works/duplications.html#the-columns",
+"text": "A row describes two communities: the columns ending in 1 are the first, those ending in 2 the second. For each: Genome, Community: the sample, and the community's number in it. Size: how many proteins it holds. Elements: the eggNOG COG categories of its proteins, with how many have each. AvgDegree: links per protein, on average. In a community of n proteins it reaches n - 1 when every protein is linked to every other. Density: the links it has as a share of the pairs it could have. 1 means every protein matches every other. AvgClustering: for each protein, how often two of its partners are lin"
 },
 {
 "page": "Duplication metrics",
 "section": "Reading them together",
 "url": "how-it-works/duplications.html#reading-them-together",
-"text": "Two patterns come up repeatedly. Dense, high-modularity communities are recent expansions: many near-identical copies, clearly separated from everything else. In MTBC these are typically PE/PPE genes and IS elements. Sparse, low-modularity communities are ancient duplications that have diverged, or, less happily, an artefact of assembly fragmentation where one gene broken across contigs looks like several partial copies. Cross-checking against the contig count in *-AMAP.qc.tsv distinguishes the two. Duplications and assembly quality Repetitive families are exactly what short-read assemblers co"
+"text": "Density and clustering at 1 mean copies that all match each other: a recent expansion of near-identical copies. In CDC1551 these are the transposases of insertion sequences, the ESAT-6-like Esx proteins and PE proteins. Lower density and longer paths mean copies that have drifted apart, each still matching some of the others but not all, as M. bovis's copies of the transposases above have. Or, less happily, an artefact of assembly fragmentation, where one gene broken across contigs looks like several partial copies. Cross-checking against the contig count in *-AMAP.qc.tsv tells the two apart. "
 },
 {
 "page": "Duplication metrics",

@@ -2,28 +2,36 @@
 """Check the website in docs/ against the pipeline it describes.
 
 The site is plain HTML with no build step, so nothing renders it and nothing
-fails when it drifts. This does, in seven parts:
+fails when it drifts. This does, in nine parts:
 
-  links       every internal link and #anchor resolves, and no page loads a
-              stylesheet, script or image from another host (the site has to
-              open from a clone, offline);
+  links       every internal link and #anchor resolves (the stories how.js
+              opens and the sections of the example report included), no page
+              loads a stylesheet, script or image from another host (the site
+              has to open from a clone, offline), and every page carries the
+              card a shared link shows;
   docs        the documentation pages are what tools/build_docs.py makes of the
-              markdown today, and the markdown has no MkDocs syntax left that
-              would print as text;
+              markdown and the code today, and the markdown has no MkDocs
+              syntax left that would print as text;
   options     every --option the pages or the command builder use is a
               parameter of main.nf or nextflow.config, and every -profile is
               one nextflow.config defines;
   drawings    every window of real genes in assets/figure-data.js, put through
-              bin/classify, gives the cases and the kept genes it draws;
-  thresholds  the numbers the drawings and the correction algorithm page give
-              for each rule are the ones in bin/;
+              bin/classify, gives the cases and the kept genes it draws, and the
+              duplication family and communities of assets/dup-data.js are the
+              ones bin/get_duplications.py and bin/network_genomes.py find;
+  thresholds  the numbers the pages give for each rule, each validation limit,
+              each step's resources, each profile's caps and each tool's
+              version are the ones in bin/, nextflow.config and the Dockerfile;
+  benchmark   the front page's scores are tests/benchmark's expected results;
   metro       the metro map's stations are main.nf's processes, in the order
               its workflow runs them;
-  readme      README.md's links to the website land on a page and an anchor
-              that exist;
+  readme      README.md's links land on a page and an anchor that exist, its
+              pictures are in the repository, and its scores are the
+              benchmark's;
   dashes      no em-dashes.
 
-Run from the repository root (the drawings need pandas and intervaltree):
+Run from the repository root, with what requirements-test.txt installs (the
+drawings run bin/):
 
     python3 tools/check_site.py
 
@@ -48,6 +56,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build_docs  # noqa: E402  (tools/build_docs.py, next to this file)
 
 FIGURE_DATA = SITE / "assets" / "figure-data.js"
+DUP_DATA = SITE / "assets" / "dup-data.js"
 FIGURES_JS = SITE / "assets" / "figures.js"
 SITE_JS = SITE / "assets" / "site.js"
 HOW_JS = SITE / "assets" / "how.js"
@@ -73,6 +82,7 @@ class Page(HTMLParser):
         self.remote_assets: list[str] = []
         self.code_elems: list[tuple[str, str]] = []  # (tag, text) of each <code> and <pre>
         self.text: list[str] = []
+        self.meta: dict[str, str] = {}  # og: properties, what a shared link shows
         self._code_open: list[tuple[str, list[str]]] = []
         self._skip = 0
 
@@ -80,6 +90,8 @@ class Page(HTMLParser):
         a = dict(attrs)
         if "id" in a:
             self.ids.add(a["id"])
+        if tag == "meta" and a.get("property"):
+            self.meta[a["property"]] = a.get("content") or ""
         for key in ("href", "src"):
             if key in a and a[key] is not None:
                 self.links.append((tag, a[key]))
@@ -127,8 +139,15 @@ def all_pages() -> dict[str, Page]:
 # ── links ──
 
 
+def story_keys() -> set[str]:
+    """The stories of how-it-works.html, which how.js opens from the #key in its address."""
+    return set(re.findall(r'^\s+key: "([\w-]+)", group:', HOW_JS.read_text(encoding="utf-8"), re.M)) if HOW_JS.exists() else set()
+
+
 def check_links(pages: dict[str, Page]) -> list[str]:
     problems = []
+    stories = story_keys()
+    report_ids = None
     for name, page in pages.items():
         for url in page.remote_assets:
             problems.append(f"{name}: loads {url} from another host; the site must work offline")
@@ -148,8 +167,29 @@ def check_links(pages: dict[str, Page]) -> list[str]:
             if resolved.startswith("..") or not (SITE / resolved).exists():
                 problems.append(f"{name}: <{tag}> points at {target}, which does not exist")
                 continue
+            if anchor and resolved == "how-it-works.html" and anchor in stories:
+                continue
+            if anchor and resolved == "examples/demo_report.html":
+                # The example report is not checked as a page, but the
+                # sections the site opens it at have to be there.
+                if report_ids is None:
+                    report_ids = parse(SITE / resolved).ids
+                if anchor not in report_ids:
+                    problems.append(f"{name}: link to {target}#{anchor}, which the example report has no section for")
+                continue
             if anchor and resolved in pages and anchor not in pages[resolved].ids:
                 problems.append(f"{name}: link to {target}#{anchor}, which no element there has")
+        # What a link to the page shows where it is shared: the card has to be
+        # there, and the address has to be the page's own.
+        for prop in ("og:title", "og:description", "og:image", "og:url"):
+            if not page.meta.get(prop):
+                problems.append(f"{name}: no {prop}, so a shared link to it shows no card")
+        image = page.meta.get("og:image", "")
+        if image and not (image.startswith(SITE_URL) and (SITE / image[len(SITE_URL):]).exists()):
+            problems.append(f"{name}: og:image {image} is not a file of the site")
+        url = page.meta.get("og:url")
+        if url and name != "404.html" and url != SITE_URL + ("" if name == "index.html" else name):
+            problems.append(f"{name}: og:url is {url}, the page is at {SITE_URL}{name}")
     return problems
 
 
@@ -161,11 +201,11 @@ MKDOCS_LEFTOVER = re.compile(r"\{ ?[.#:]|\{ ?target=|^!!! |^\?\?\? |^=== \"|--8<
 
 
 def check_docs_built() -> list[str]:
-    stale = [
-        path.as_posix()
-        for path, text in build_docs.build().items()
-        if not path.exists() or path.read_text(encoding="utf-8") != text
-    ]
+    try:
+        built = build_docs.build()
+    except SystemExit as error:
+        return [str(error)]
+    stale = [path.as_posix() for path, text in built.items() if not path.exists() or path.read_text(encoding="utf-8") != text]
     problems = [f"{p}: does not match its markdown; run python3 tools/build_docs.py" for p in stale]
     for _section, path, _title, _line in build_docs.PAGES:
         if path.endswith(".md"):
@@ -383,7 +423,7 @@ def check_drawings() -> list[str]:
                 problems.append(f"assets/figure-data.js: {name}: AMAP keeps something check_cds.py would have to change; add the genome it reads")
         if "exact" in win:
             problems += check_exact(name, win)
-    return problems
+    return problems + check_duplications()
 
 
 def check_synteny(name: str, win: dict) -> list[str]:
@@ -480,6 +520,97 @@ def check_translate(name: str, win: dict) -> list[str]:
     return []
 
 
+def dup_data() -> dict:
+    text = DUP_DATA.read_text(encoding="utf-8")
+    start = text.index("window.AMAP_DUP_DATA =") + len("window.AMAP_DUP_DATA =")
+    return json.loads(text[start:].strip().rstrip(";"))
+
+
+def write_hits(path: Path, names: list[str], rows: list[list[int]]) -> None:
+    """Diamond's table, as GET_DUPLICATIONS writes it, from the hits a drawing
+    carries: the columns the scripts read, and placeholders for the rest."""
+    lines = ["# DIAMOND, rebuilt by tools/check_site.py"]
+    for q, s, nident, qlen, slen in rows:
+        lines.append("\t".join(map(str, [names[q], names[s], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, qlen, slen, nident])))
+    path.write_text("\n".join(lines) + "\n")
+
+
+def check_duplications() -> list[str]:
+    """The family drawn is the one get_duplications.py finds in its hits, with
+    the links it keeps; the communities and their numbers are the ones
+    network_genomes.py gives."""
+    if not DUP_DATA.exists():
+        return []
+    sys.path.insert(0, str(ROOT / "bin"))
+    try:
+        import get_duplications
+        import network_genomes
+    except ImportError as error:
+        return [f"assets/dup-data.js: cannot run bin/ ({error}); pip install -r requirements-test.txt"]
+    data = dup_data()
+    problems = []
+    fam = data["family"]
+    with tempfile.TemporaryDirectory() as tmp:
+        hits = Path(tmp) / "duplications"
+        write_hits(hits, fam["names"], fam["rows"])
+        kept = get_duplications.read_and_create(str(hits))
+        groups = get_duplications.group_related_pairs(kept) if len(kept) else None
+    pairs = {tuple(sorted((fam["names"].index(q), fam["names"].index(s)))) for q, s in zip(kept["qseqid"], kept["sseqid"])}
+    for p in fam["pairs"]:
+        if ((p["a"], p["b"]) in pairs) != p["kept"]:
+            problems.append(
+                f"assets/dup-data.js: draws {fam['nodes'][p['a']]['id']} and {fam['nodes'][p['b']]['id']} as "
+                f"{'a link' if p['kept'] else 'no link'}, get_duplications.py says otherwise"
+            )
+    members = {fam["names"][i] for i, n in enumerate(fam["nodes"]) if n["member"]}
+    found = [set(m) for m in groups["Members"]] if groups is not None else []
+    if members not in found:
+        problems.append(f"assets/dup-data.js: the family drawn is not one get_duplications.py finds: it finds {found}")
+
+    com = data["communities"]
+    with tempfile.TemporaryDirectory() as tmp:
+        hits = Path(tmp) / "all_vs_all.diamond"
+        write_hits(hits, com["names"], com["rows"])
+        with contextlib.redirect_stdout(io.StringIO()):
+            df = network_genomes.load_and_filter_blast_results(hits)
+    networks = network_genomes.build_intra_genome_networks(df, network_genomes.get_genome_ids(df))
+    labelled = network_genomes.detect_and_label_communities(networks)
+    homologous = network_genomes.find_homologous_communities(labelled, df)
+    for side in com["sides"]:
+        name = side["genome"]
+        got = labelled.get(name, {}).get(side["community"])
+        if got is None or set(got) != set(side["members"]):
+            problems.append(f"assets/dup-data.js: network_genomes.py does not split {name} into the {side['community']} drawn")
+            continue
+        metrics = network_genomes.calculate_subgraph_metrics(networks[name].subgraph(got))
+        metrics["size"] = len(got)
+        for key, value in side["metrics"].items():
+            if abs(float(metrics[key]) - value) > 1e-9:
+                problems.append(f"assets/dup-data.js: {name} {side['community']}: {key} is drawn as {value}, network_genomes.py gives {metrics[key]}")
+        edges = {tuple(sorted((side["members"].index(a), side["members"].index(b)))) for a, b in networks[name].subgraph(got).edges()}
+        if edges != {tuple(e) for e in side["edges"]}:
+            problems.append(f"assets/dup-data.js: {name} {side['community']}: the links drawn are not the network's")
+    a, b = ((s["genome"], s["community"]) for s in com["sides"])
+    if b not in homologous.get(a, []):
+        problems.append(f"assets/dup-data.js: network_genomes.py does not pair {a} with {b}")
+    one, two = (set(s["members"]) for s in com["sides"])
+    cross = sum((q in one and s in two) or (q in two and s in one) for q, s in zip(df["qseqid"], df["sseqid"]))
+    if cross != com["cross"]:
+        problems.append(f"assets/dup-data.js: {com['cross']} hits are said to join the two communities, the filtered hits have {cross}")
+    # The run behind the data searches the way the pipeline does.
+    def searches(text: str) -> list[tuple]:
+        out = []
+        for call in re.findall(r"diamond blastp(.*?)>", text, re.S):
+            call = call.replace("\\", " ")
+            out.append((tuple(sorted(set(re.findall(r"(?<![\w-])(--?[a-z][\w-]*)", call)))), re.search(r"--outfmt([ \w]+)", call).group(1).split()))
+        return out
+    pipeline = searches((ROOT / "modules/local/get.nf").read_text(encoding="utf-8"))
+    ours = searches((ROOT / "tools/dup_run.sh").read_text(encoding="utf-8"))
+    if pipeline != ours:
+        problems.append(f"tools/dup_run.sh: runs Diamond as {ours}, modules/local/get.nf as {pipeline}")
+    return problems
+
+
 # ── thresholds ──
 
 
@@ -506,6 +637,8 @@ RULES = {
     "copy_length": ("bin/deduplicate_rvs.py", r"^MIN_COPY_LENGTH = ([\d.]+)"),
     "stop_search_bp": ("bin/check_cds.py", r"reach = (\d+)"),
     "past_reference_residues": ("bin/check_cds.py", r"^COMPLETION_SLACK = (\d+)"),
+    "dup_cover_pct": ("bin/get_duplications.py", r"\(df_filtered\['p_query'\] >= (\d+)\)"),
+    "dup_cover_pct_all": ("bin/network_genomes.py", r"\(df_filtered\['query_coverage'\] >= (\d+)\)"),
 }
 
 
@@ -521,6 +654,8 @@ def check_thresholds() -> list[str]:
     said = {
         "single_bp": [("index.html", r"longer by more than ([\d,]+) bp")],
         "false_positive_pct": [("index.html", r"genome at (\d+)% identity")],
+        "dup_cover_pct": [("how-it-works/duplications.html", r"(\d+)% or more"), ("how-it-works/duplications.html", r"under (\d+)%")],
+        "dup_cover_pct_all": [("how-it-works/duplications.html", r"(\d+)% or more")],
     }
     for rule, places in said.items():
         for page, pattern in places:
@@ -537,6 +672,93 @@ def check_thresholds() -> list[str]:
                     problems.append(f"assets/how.js: RULES has {rule}, which tools/check_site.py does not know")
                 elif values[rule] is not None and float(number) != values[rule]:
                     problems.append(f"assets/how.js: {rule} is {number}, the code says {values[rule]:g}")
+    # The tables of what fails a run and what only warns, on the inputs page.
+    try:
+        limits = build_docs.validation_ranges()
+    except SystemExit as error:
+        problems.append(str(error))
+        limits = None
+    if limits:
+        mb = lambda v: f"{v / 1e6:g} Mb" if v >= 1e6 else f"{v / 1e3:g} kb"
+        expected = {
+            ("What fails the run", "Genome size"): f"below {mb(limits['size_fail_low'])}, or above {mb(limits['size_fail_high'])}",
+            ("What fails the run", "N content"): f"above {limits['n_fail']:g}%",
+            ("What fails the run", "GC content"): f"below {limits['gc_fail_low']:g}% or above {limits['gc_fail_high']:g}%",
+            ("What only warns", "Genome size"): f"below {mb(limits['size_warn_low'])}, or above {mb(limits['size_warn_high'])}",
+            ("What only warns", "N content"): f"above {limits['n_warn']:g}%",
+            ("What only warns", "GC content"): f"below {limits['gc_warn_low']:g}% or above {limits['gc_warn_high']:g}%",
+            ("What only warns", "Assembly fragmentation"): f"more than {limits['contigs_warn']:g} contigs, and again above {limits['contigs_warn_high']:g}",
+        }
+        inputs_md = SITE / "getting-started" / "inputs.md"
+        heading, seen_rows = None, set()
+        for line in inputs_md.read_text(encoding="utf-8").splitlines():
+            if line.startswith("### "):
+                heading = line[4:].strip()
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) == 2 and (heading, cells[0]) in expected:
+                seen_rows.add((heading, cells[0]))
+                if cells[1] != expected[(heading, cells[0])]:
+                    problems.append(f"{inputs_md}: {heading}, {cells[0]}: reads {cells[1]!r}, bin/validate_inputs.py says {expected[(heading, cells[0])]!r}")
+        for missing in sorted(set(expected) - seen_rows):
+            problems.append(f"{inputs_md}: no row for {missing[1]} under {missing[0]!r} to check")
+    # What each step asks for, in the tutorial's table, and the caps the
+    # profiles set, where the pages give them.
+    config = CONFIG.read_text(encoding="utf-8")
+    blocks = dict(re.findall(r"withName: '(\w+)' \{(.*?)\n    \}", config, re.S))
+
+    def asks(process: str) -> tuple[int, int]:
+        body = blocks.get(process, "")
+        cpus = re.search(r"cpus\s*=\s*(\d+)", body)
+        memory = re.search(r"memory\s*=\s*\{?\s*'?(\d+)\.GB", body)
+        return (int(cpus.group(1)) if cpus else None, int(memory.group(1)) if memory else None)
+
+    steps = {
+        "eggNOG annotation": ["ANNOT_EGGNOGMAP_BATCH"], "eggNOG database build": ["EGGNOG_DB"], "Pangenome": ["PANGENE"],
+        "Duplication analysis": ["GET_DUPLICATIONS", "GET_ALLDUP"], "Report": ["FINAL_REPORT"], "Bakta annotation": ["BAKTA_ANNOTATOR"],
+    }
+    tutorial = SITE / "getting-started" / "tutorial.md"
+    for line in tutorial.read_text(encoding="utf-8").splitlines():
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) == 3 and cells[0] in steps:
+            got = [asks(name) for name in steps[cells[0]]]
+            cpus = sorted({c for c, _ in got})
+            memory = sorted({m for _, m in got})
+            want_cpus = str(cpus[0]) if len(cpus) == 1 else f"{cpus[0]} to {cpus[-1]}"
+            want_memory = " or ".join(f"{m} GB" for m in memory)
+            if (cells[1], cells[2]) != (want_cpus, want_memory):
+                problems.append(f"{tutorial}: {cells[0]} asks for {cells[1]} CPUs and {cells[2]}, nextflow.config says {want_cpus} and {want_memory}")
+    caps = {name: build_docs.profile_settings(name) for name in ("docker", "singularity", "slurm")}
+    gb = lambda s: int(s["params.max_memory"].split(".")[0])
+    said_caps = [
+        (SITE / "user-guide" / "running.md", r"container profiles cap every task\s+at (\d+) GB", gb(caps["docker"])),
+        (SITE / "user-guide" / "running.md", r"the cluster's (\d+) GB", gb(caps["slurm"])),
+        (SITE / "getting-started" / "quickstart.md", r"the machine's CPUs\s+and (\d+) GB", gb(caps["docker"])),
+        (SITE / "getting-started" / "quickstart.md", r"scheduler profiles at \d+ CPUs and (\d+) GB", gb(caps["slurm"])),
+        (SITE / "getting-started" / "quickstart.md", r"scheduler profiles at (\d+) CPUs", int(caps["slurm"]["params.max_cpus"])),
+    ]
+    for page, pattern, value in said_caps:
+        m = re.search(pattern, page.read_text(encoding="utf-8"))
+        if not m:
+            problems.append(f"{page}: no longer says {pattern!r}; update tools/check_site.py")
+        elif int(m.group(1)) != value:
+            problems.append(f"{page}: says {m.group(0)!r}, nextflow.config says {value}")
+    # The versions the containers page gives are the image's.
+    try:
+        image = build_docs.image_contents()
+    except SystemExit as error:
+        problems.append(str(error))
+        image = None
+    if image:
+        page = SITE / "deployment" / "containers.md"
+        text = page.read_text(encoding="utf-8")
+        for name, version in image["tools"] + image["runtimes"]:
+            if not version:
+                continue
+            said = re.search(rf"\b{re.escape(name)} ([\d.]+)\b", text, re.I)
+            if not said:
+                problems.append(f"{page}: does not give {name}'s version ({version} in docker/Dockerfile)")
+            elif said.group(1).rstrip(".") != version:
+                problems.append(f"{page}: says {name} {said.group(1)}, docker/Dockerfile installs {version}")
     # The threshold table of the correction algorithm page.
     table = {
         ("Bakta length advantage", "single overlaps"): ("single_bp", "{:g} bp"),
@@ -565,6 +787,35 @@ def check_thresholds() -> list[str]:
         expected = form.format(values[rule] / scale)
         if cells[2] != expected:
             problems.append(f"{ALGORITHM_MD}: {cells[0]} ({cells[1]}) reads {cells[2]!r}, the code says {expected!r}")
+    return problems
+
+
+# ── benchmark ──
+
+
+BENCHMARK = Path("tests/benchmark/README.md")
+
+
+def check_benchmark(pages: dict[str, Page]) -> list[str]:
+    """The front page's scores are the benchmark's expected results, row by row."""
+    text = BENCHMARK.read_text(encoding="utf-8")
+    table = text[text.index("## Expected results"):]
+    expected = []
+    for line in table.splitlines():
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) == 5 and re.match(r"\d+ / \d+", cells[1]):
+            pair = lambda c: tuple(int(n) for n in c.split(" / ")) if c else None
+            expected.append((cells[0], pair(cells[1]), pair(cells[2])))
+    front = (SITE / "index.html").read_text(encoding="utf-8")
+    rows = re.findall(r'<div class="pf-row"><span class="pf-name"><b>([^<]+)</b>.*?</div>', front, re.S)
+    bars = re.findall(r'<div class="pf-row"><span class="pf-name">.*?</div>', front, re.S)
+    problems = []
+    if len(bars) != len(expected):
+        return [f"index.html: shows {len(bars)} genomes of the benchmark, {BENCHMARK} has {len(expected)}"]
+    for (genome, exact, changed), row, label in zip(expected, bars, rows):
+        got = {cls: (int(f), int(n)) for cls, f, n in re.findall(r'class="pf-bar (pf-\w+)" data-found="(\d+)" data-total="(\d+)"', row)}
+        if got.get("pf-exact") != exact or got.get("pf-changed") != changed:
+            problems.append(f"index.html: {label} shows {got}, {BENCHMARK} expects exact {exact} and changed {changed} ({genome})")
     return problems
 
 
@@ -631,6 +882,30 @@ def check_readme(pages: dict[str, Page]) -> list[str]:
             problems.append(f"README.md: links to {url}, and docs/{target} has no #{anchor}")
     if "mkdocs" in text.lower():
         problems.append("README.md: still mentions MkDocs")
+    # Its pictures are files of the repository.
+    for src in re.findall(r'(?:src|srcset)="([^"]+)"', text) + re.findall(r"!\[[^\]]*\]\(([^)\s]+)", text):
+        if not re.match(r"^https?:", src) and not Path(src).exists():
+            problems.append(f"README.md: shows {src}, which is not in the repository")
+    # GitHub takes a <picture> out of a link and then shows one picture in
+    # both themes, so none may sit inside an <a>.
+    for anchor in re.findall(r"<a\b[^>]*>(.*?)</a>", text, re.S):
+        if "<picture" in anchor:
+            problems.append("README.md: a <picture> inside a link loses its dark version on GitHub")
+    # The benchmark's scores, as tests/benchmark/README.md expects them.
+    bench = BENCHMARK.read_text(encoding="utf-8")
+    pair = lambda c: tuple(int(n) for n in c.split(" / ")) if c.strip() else None
+    expected = [
+        (pair(cells[1]), pair(cells[2]))
+        for cells in ([c.strip() for c in line.strip().strip("|").split("|")] for line in bench[bench.index("## Expected results"):].splitlines())
+        if len(cells) == 5 and re.match(r"\d+ / \d+", cells[1])
+    ]
+    shown = [
+        (pair(cells[1]), pair(cells[2]))
+        for cells in ([c.strip() for c in line.strip().strip("|").split("|")] for line in text[text.index("## Does it work?"):].splitlines())
+        if len(cells) == 3 and re.match(r"\d+ / \d+", cells[1])
+    ] if "## Does it work?" in text else []
+    if shown and shown != expected:
+        problems.append(f"README.md: the benchmark table shows {shown}, {BENCHMARK} expects {expected}")
     return problems
 
 
@@ -649,7 +924,7 @@ def check_dashes() -> list[str]:
         p for p in SITE.rglob("*")
         if p.suffix in (".html", ".md", ".js", ".css") and p.name not in ("demo_report.html", "search-index.js")
     ]
-    files += [README, Path("CHANGELOG.md"), Path("tools/build_docs.py"), Path("tools/check_site.py"), Path("tools/figure_data.py")]
+    files += [README, Path("CHANGELOG.md")] + sorted(Path("tools").glob("*.*"))
     for path in files:
         text = path.read_text(encoding="utf-8")
         if path.suffix == ".html":
@@ -671,6 +946,7 @@ def main() -> int:
         ("options", lambda: check_options(pages)),
         ("drawings", check_drawings),
         ("thresholds", check_thresholds),
+        ("benchmark", lambda: check_benchmark(pages)),
         ("metro", check_metro),
         ("readme", lambda: check_readme(pages)),
         ("dashes", check_dashes),

@@ -5,7 +5,9 @@ title: Outputs
 # Outputs
 
 Everything lands under `--outdir`, `results/` by default, in one subdirectory
-per pipeline stage.
+per pipeline stage. `{sampleId}` below is the sample's name as lineage typing
+leaves it, `L4_G26689` for sample `G26689`, or the sample ID alone under
+`--skip_typing`.
 
 ## Where to look first
 
@@ -65,9 +67,8 @@ results/
 │       └── *.stat                      # Graph statistics
 │
 ├── PATHOTYPR/
-│   ├── typing/*_summary.tsv            # Lineage assignment
-│   ├── fastas/*.fasta                  # Genomes renamed by lineage
-│   └── renamed_fastas.tsv              # Original ID to lineage-based name
+│   ├── typing/*_summary.tsv            # Lineage calls, one row per contig with markers
+│   └── fastas/*.fasta                  # Each genome as {lineage}_{sampleId}.fasta
 │
 ├── pipeline_info/
 │   ├── execution_report_*.html         # Nextflow execution report
@@ -139,7 +140,10 @@ The audit trail for the correction. Each case table lists the genes that fell
 into it, so you can see exactly what was changed and why. The
 [correction algorithm](../how-it-works/correction-algorithm.md) explains the
 cases; `*-summary.tsv` aggregates the counts across samples and feeds the
-report.
+report. Its last three columns say which sample the counts are for: `Sequence`
+is the name its files carry (`L4_G26689`), `Lineage` what typing called it
+(`Untyped` under `--skip_typing`) and `Sample` its ID in the sample sheet
+(`G26689`).
 
 #### What a healthy summary looks like
 

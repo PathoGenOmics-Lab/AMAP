@@ -201,19 +201,6 @@ cog_names <- c("A"="A - RNA processing and modification","B"="B - Chromatin stru
   "Y"="Y - Nuclear structure","Z"="Z - Cytoskeleton","NA"="None")
 
 # ------------- HELPER FUNCTIONS -------------
-process_id <- function(id) {
-  id <- as.character(id)
-  if (is.na(id) || id == "" || startsWith(id, "_")) {
-    lineage <- "NA"
-    genome <- ifelse(is.na(id) || id == "", NA_character_, sub("^_", "", id))
-  } else {
-    parts <- str_split(id, "_", n = 2)[[1]]
-    lineage <- parts[1]
-    genome <- ifelse(length(parts) > 1, parts[2], NA_character_)
-  }
-  return(c(lineage, genome))
-}
-
 make_dt <- function(df, fname = "table") {
   datatable(df, rownames = FALSE, extensions = 'Buttons',
     options = list(dom = 'Bfrtip', pageLength = 15, scrollX = TRUE,
@@ -262,9 +249,11 @@ create_scatter_plot <- function(df, category_value, value_col, y_axis_label, plo
 }
 
 # ------------- DATA LOADING -------------
+# Every table below says which sample each row is, and its lineage, in
+# columns of their own. Sample IDs can hold underscores (Beijing_1,
+# H37Rv_test), so neither is ever cut out of a name.
 # COG
 datos_cog <- read.table(params$cog_file, sep="\t", dec=".", header=F, fill=T, stringsAsFactors=F, quote="", col.names=paste0("V",1:5))
-datos_cog$V2 <- sapply(strsplit(datos_cog$V2, "_"), `[`, 1)
 colnames(datos_cog) <- c("Lineages","genome","Functional_Category","Count","Percentage")
 datos_cog$Lineages[is.na(datos_cog$Lineages) | datos_cog$Lineages == ""] <- "NA"
 datos_cog <- datos_cog %>% filter(!is.na(Lineages) & Lineages != "")
@@ -309,7 +298,6 @@ if (has_mycobrowser_data && nrow(datos_myco) > 0) {
 }
 
 if (has_mycobrowser_data && nrow(datos_myco) > 0) {
-datos_myco$V2 <- sapply(strsplit(as.character(datos_myco$V2), "_"), `[`, 1)
 colnames(datos_myco) <- c("Lineages","genome","Functional_Category","Count","Percentage")
 datos_myco$Lineages[is.na(datos_myco$Lineages) | datos_myco$Lineages == ""] <- "NA"
 datos_myco <- datos_myco %>% filter(!is.na(Lineages) & Lineages != "")
@@ -344,16 +332,17 @@ if (nrow(datos_myco) > 0) {
   merged_data <- data.frame()
 }
 
-# Case summary data
-data_raw <- read.table(params$summary_file, header=F, sep="\t", col.names=c("V1","V2","V3","ID"), fill=T, stringsAsFactors=F, quote="")
-# Use V3 (Sequence = full sample name like "L8_G26689") for ID parsing,
-# NOT ID (Lineage = just "L8"). The Lineage column from write_summary
-# has no genome info, causing genome=NA and table collapse.
-processed_ids <- lapply(data_raw$V3, process_id)
+# Case summary data: the case, its count, the sample's name (L8_G26689), its
+# lineage and its sample ID (G26689), as TYPE_CASES wrote them down
+data_raw <- read.table(params$summary_file, header=F, sep="\t", col.names=c("V1","V2","V3","Lineage","Sample"), fill=T, stringsAsFactors=F, quote="")
+# A sample typing found no lineage for is lineage "NA", which read.table reads as missing
+data_raw$Lineage[is.na(data_raw$Lineage) | data_raw$Lineage == ""] <- "NA"
 data <- tibble(
   V1=data_raw$V1, V2=data_raw$V2, V3=data_raw$V3,
-  V4=sapply(processed_ids, `[`, 1), genome=sapply(processed_ids, `[`, 2))
+  V4=data_raw$Lineage, genome=data_raw$Sample)
 data <- data %>% filter(!is.na(V4) & V4 != "")
+# Each sample's lineage by its name, for the tables that only carry the name
+lineage_by_name <- setNames(as.character(data$V4), data$V3)
 # Dynamic lineage ordering: use MTBC order for known lineages, alphabetical for others
 mtbc_order <- rev(c("A4","A3","A2","A1","L10","L9","L6","L5","L4","L3","L2","L7","L1","L8","NA"))
 observed_lineages <- unique(as.character(data$V4))
@@ -389,9 +378,10 @@ if (has_rvmissing) {
       colnames(rvmissing_raw)[1:5] <- base_names
     }
     rvmissing_raw$Rv_gene <- sub("_\\d+-\\d+$", "", rvmissing_raw$Prot_Id)
-    # Extract lineage from sample name
+    # The sample's lineage, looked up by its name in the case summary
     if ("Sample" %in% colnames(rvmissing_raw)) {
-      rvmissing_raw$Lineage <- sub("_.*", "", rvmissing_raw$Sample)
+      rvmissing_raw$Lineage <- unname(lineage_by_name[as.character(rvmissing_raw$Sample)])
+      rvmissing_raw$Lineage[is.na(rvmissing_raw$Lineage)] <- "NA"
     }
   } else { has_rvmissing <- FALSE }
 }
@@ -403,10 +393,11 @@ if (has_mastertable) {
     read.table(params$mastertable_file, sep="\t", header=T, fill=T, stringsAsFactors=F, quote="", comment.char=""),
     error = function(e) NULL)
   if (is.null(mastertable)) has_mastertable <- FALSE
-  # Use explicit 'lineage' column if present (added by generate_master_table);
-  # otherwise fall back to extracting from the first column (legacy compat).
+  # The lineage column generate_master_table writes. A table without one says
+  # nothing of its lineage, and the gene IDs cannot: a sample ID can hold
+  # underscores.
   if (has_mastertable && !"lineage" %in% colnames(mastertable)) {
-    mastertable$lineage <- sub("_.*", "", mastertable[[colnames(mastertable)[1]]])
+    mastertable$lineage <- "NA"
   }
 }
 
@@ -569,15 +560,29 @@ print(p_cds_dist)
 ## CDS not in Reference
 
 ```{r cds_NoH37Rv, echo=FALSE, fig.align='center', fig.width=12, message=FALSE, warning=FALSE}
-datos_noH <- read.table(params$empty_file, sep="\t", dec=".", header=T, fill=T, stringsAsFactors=F, quote="", col.names=paste0("V",1:2))
-resultado <- datos_noH %>% mutate(genome=sapply(strsplit(V1,"_"),`[`,1)) %>% count(genome, V2)
+# Genome (the sample ID) and lineage of every gene not in the reference.
+# REPORT_INPUTS strips each file's header, so every line is a gene.
+datos_noH <- read.table(params$empty_file, sep="\t", dec=".", header=F, fill=T, stringsAsFactors=F, quote="", col.names=paste0("V",1:2))
+# Counted for every sample of the case summary: one whose genes all match the
+# reference counts 0 rather than drop out of its lineage's box, and when no
+# sample has any (H37Rv against itself) the file above is empty.
+resultado <- data %>%
+  distinct(genome = as.character(genome), V2 = V4) %>%
+  left_join(count(datos_noH, genome = as.character(V1)), by = "genome") %>%
+  mutate(n = coalesce(n, 0L))
 
-p_false_cds <- ggplot(resultado, aes(x=V2, y=n, colour=V2)) +
-  geom_boxplot(outlier.shape=NA, fill=NA) + geom_jitter(alpha=0.4, width=0.2) +
-  scale_color_manual(values=colors) +
-  labs(x="Lineage", y="CDS not in Reference") + theme_pubr() +
-  theme(legend.position="none", axis.text.x=element_text(angle=45, hjust=1))
-print(p_false_cds)
+if (sum(resultado$n) == 0) {
+  cat("Every CDS of every sample matches a reference gene.\n")
+} else {
+  # Counts: each point at its own whole number, on an axis from 0
+  p_false_cds <- ggplot(resultado, aes(x=V2, y=n, colour=V2)) +
+    geom_boxplot(outlier.shape=NA, fill=NA) + geom_jitter(alpha=0.4, width=0.2, height=0) +
+    scale_color_manual(values=colors) +
+    scale_y_continuous(breaks = function(x) unique(floor(pretty(x)))) + expand_limits(y=0) +
+    labs(x="Lineage", y="CDS not in Reference") + theme_pubr() +
+    theme(legend.position="none", axis.text.x=element_text(angle=45, hjust=1))
+  print(p_false_cds)
+}
 ```
 
 ## CDS Correction Summary

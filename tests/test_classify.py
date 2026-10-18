@@ -2066,6 +2066,95 @@ class TestContigs:
 
 
 # =============================================================================
+# EMPTY CASES
+# =============================================================================
+
+class TestEmptyCases:
+    """A genome annotated against itself, or a very small one, can leave no
+    Bakta call outside cases 2 and 3. Case 1 and case 4 then have no rows, and
+    TYPE_CASES stopped with a KeyError instead of classifying the rest."""
+
+    # Two genes of 100 codons: 101-400 on the forward strand, 601-900 on the reverse.
+    GENES = [('Rv0001', 101, 400, '+', "ATG" + "GCT" * 98 + "TAA"),
+             ('Rv0002', 601, 900, '-', "ATG" + "AAA" * 98 + "TAG")]
+    HEADER = ("# Annotated with Bakta\n"
+              "#Sequence Id\tType\tStart\tStop\tStrand\tLocus Tag\tGene\tProduct\tDbXrefs\n")
+
+    @staticmethod
+    def _revcomp(s):
+        return s[::-1].translate(str.maketrans("ACGT", "TGCA"))
+
+    def _classify(self, d, bakta_rows):
+        """Run classify_cases.py as TYPE_CASES does, with one complete miniprot
+        placement per gene; the summary counts and the corrected table."""
+        import subprocess
+        a, b = self.GENES[0][4], self.GENES[1][4]
+        genome = "C" * 100 + a + "C" * 200 + self._revcomp(b) + "C" * 300
+        files = {
+            'S1.fasta': ">chr\n" + genome + "\n",
+            'ref.faa': "".join(f">{n}_{s}-{e}\n{'M' + ('A' if n == 'Rv0001' else 'K') * 98}*\n"
+                               for n, s, e, _, _ in self.GENES),
+            'S1.tsv': self.HEADER + bakta_rows,
+            'S1.paf': "".join(f"{n}_{s}-{e}\t100\t0\t100\t{st}\tchr\t{len(genome)}\t{s - 1}\t{e}\t300\t300\t0"
+                              f"\tnp:i:100\tfs:i:0\tst:i:1\n" for n, s, e, st, _ in self.GENES),
+            'S1-badbakta.paf': "",
+            'S1-ref.paf': "",
+        }
+        for name, text in files.items():
+            with open(os.path.join(d, name), 'w') as f:
+                f.write(text)
+        script = os.path.join(os.path.dirname(__file__), '..', 'bin', 'classify_cases.py')
+        run = subprocess.run([sys.executable, script, '-b', 'S1.tsv', '-p', 'S1.paf',
+                              '-bb', 'S1-badbakta.paf', '-c', 'S1-ref.paf',
+                              '--genome', 'S1.fasta', '--ref-proteome', 'ref.faa'],
+                             cwd=d, capture_output=True, text=True)
+        assert run.returncode == 0, run.stderr
+        summary = pd.read_csv(os.path.join(d, 'S1-summary.tsv'), sep='\t')
+        with open(os.path.join(d, 'S1_corrected.tsv')) as f:
+            corrected = [line.rstrip('\n').split('\t') for line in f]
+        return dict(zip(summary['Type'], summary['Number'])), corrected
+
+    def test_every_call_matching_exactly(self):
+        bakta = "".join(f"chr\tcds\t{s}\t{e}\t{st}\tS1_0000{i}\t\thypothetical protein\t\n"
+                        for i, (_, s, e, st, _) in enumerate(self.GENES, 1))
+        with tempfile.TemporaryDirectory() as d:
+            counts, corrected = self._classify(d, bakta)
+            case1 = pd.read_csv(os.path.join(d, 'S1-case1.tsv'), sep='\t')
+            case4 = pd.read_csv(os.path.join(d, 'S1-case4.tsv'), sep='\t')
+        assert counts == {'case2': 2, 'case3': 0, 'case4': 0, 'case1_initial': 0, 'rv_missing': 0,
+                          'total_cds': 2, 'case1_removed': 0, 'case1_kept': 0}
+        assert corrected == [['S1_00001', '+', '101', '400', 'Rv0001', 'chr'],
+                             ['S1_00002', '-', '601', '900', 'Rv0002', 'chr']]
+        cols = ['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt', 'Contig']
+        assert list(case1.columns) == cols and case1.empty
+        assert list(case4.columns) == cols and case4.empty
+
+    @pytest.mark.parametrize('features', ["", "chr\ttRNA\t1000\t1072\t+\tS1_00001\ttrnA\ttRNA-Ala\t\n"],
+                             ids=['nothing', 'no_cds'])
+    def test_bakta_calls_no_cds(self, features):
+        """The reference genes are then all missing from Bakta. With no CDS
+        there was no contig name to compare, which read as Bakta naming the
+        sequences differently, and with nothing at all the table did not read."""
+        with tempfile.TemporaryDirectory() as d:
+            counts, corrected = self._classify(d, features)
+        assert counts['total_cds'] == 0 and counts['rv_missing'] == 2
+        assert corrected == [['S1_Rv0001', '+', '101', '400', 'Rv0001', 'chr'],
+                             ['S1_Rv0002', '-', '601', '900', 'Rv0002', 'chr']]
+
+    def test_no_alignment_at_all(self):
+        """find_rv_missing had the same mask: an empty miniprot table stopped it."""
+        from classify.cases import find_rv_missing
+        from classify.io import read_bakta, read_miniprot
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, 'S1.tsv'), 'w') as f:
+                f.write(self.HEADER + "chr\tcds\t101\t400\t+\tS1_00001\t\thypothetical protein\t\n")
+            open(os.path.join(d, 'S1.paf'), 'w').close()
+            missing = find_rv_missing(read_miniprot(os.path.join(d, 'S1.paf'), ref_coords=True),
+                                      read_bakta(os.path.join(d, 'S1.tsv')))
+        assert missing.empty and 'Prot Id' in missing.columns
+
+
+# =============================================================================
 # PIECES OF THE GENES A CONTIG END CUT (contig_end_pieces.py, pieces.py)
 # =============================================================================
 

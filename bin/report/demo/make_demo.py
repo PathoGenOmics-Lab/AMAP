@@ -86,7 +86,8 @@ for lin, gid in SAMPLES:
                  ("case1_initial", case1_init), ("rv_missing", rvmiss),
                  ("total_cds", case2 + case3 + case4 + case1_init),
                  ("case1_removed", case1_removed), ("case1_kept", case1_kept)]:
-        summary_rows.append(f"{t}\t{n}\t{sample}\t{lin}")
+        # as TYPE_CASES writes it: the name, the lineage and the sample ID
+        summary_rows.append(f"{t}\t{n}\t{sample}\t{lin}\t{gid}")
 
     # --- QC ---
     gsize = jitter(4403837, 0.012)

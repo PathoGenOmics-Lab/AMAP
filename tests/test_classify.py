@@ -253,11 +253,53 @@ class TestRecoverMissingGenes:
     def test_placement_a_codon_off_a_call_is_not_added_again(self):
         """Genes matched in case 2 and 3 are stored under Bakta locus tags, so
         every protein looked missing by name, and only an exact-coordinate
-        check kept it out: a placement a codon away went in as a second gene."""
+        check kept it out: a placement a codon away went in as a second gene.
+        The call is that protein's gene, and with no other gene named after
+        the protein, it takes the name."""
         from classify.reconciliation import recover_missing_genes
         combined = {(1000, 1900, '+', 'c1'): 'S1_00001'}
         recover_missing_genes(combined, self._mp([['Rv0001', 1003, 1900, '+', 897, 897, 'c1']]))
-        assert combined == {(1000, 1900, '+', 'c1'): 'S1_00001'}
+        assert combined == {(1000, 1900, '+', 'c1'): 'Rv0001'}
+
+    def test_a_call_that_won_over_a_shorter_alignment_takes_its_name(self):
+        """M. bovis mmpL6: H37Rv's Rv1557 is the 3' end of the gene, which the
+        TbD1 deletion cut short in H37Rv. Bakta's whole gene wins its locus
+        over the alignment, and came out with no name at all."""
+        from classify.reconciliation import recover_missing_genes
+        mp = self._mp([['Rv1557', 1_752_364, 1_753_518, '+', 1_149, 1_155, 'c1']]).assign(**{'Prot len': 398})
+        combined = {(1_750_615, 1_753_518, '+', 'c1'): 'S1_01628'}
+        recover_missing_genes(combined, mp)
+        assert combined == {(1_750_615, 1_753_518, '+', 'c1'): 'Rv1557'}
+
+    def test_a_remnant_of_a_protein_names_nothing(self):
+        """The RD12 deletion of M. bovis leaves the last 67 of cyp141's
+        (Rv3121) 400 residues at the end of a 321-codon gene, which is not
+        cyp141."""
+        from classify.reconciliation import recover_missing_genes
+        mp = self._mp([['Rv3121', 3_445_695, 3_445_895, '+', 195, 201, 'c1']]).assign(**{'Prot len': 401})
+        combined = {(3_444_933, 3_445_895, '+', 'c1'): 'S1_03214'}
+        recover_missing_genes(combined, mp)
+        assert combined == {(3_444_933, 3_445_895, '+', 'c1'): 'S1_03214'}
+
+    def test_a_protein_named_elsewhere_leaves_the_call_alone(self):
+        from classify.reconciliation import recover_missing_genes
+        mp = self._mp([['Rv0005', 1_300, 1_900, '+', 600, 600, 'c1'],
+                       ['Rv0005', 9_001, 9_600, '+', 600, 600, 'c1']])
+        combined = {(1_000, 1_900, '+', 'c1'): 'S1_00001', (9_001, 9_600, '+', 'c1'): 'Rv0005'}
+        recover_missing_genes(combined, mp)
+        assert combined == {(1_000, 1_900, '+', 'c1'): 'S1_00001',
+                            (9_001, 9_600, '+', 'c1'): 'Rv0005'}
+
+    def test_a_call_takes_one_name_the_best_match(self):
+        """Two proteins aligned inside one call in its frame: the better match
+        names it, and the other is still accounted for, not added as a second
+        gene in the same frame."""
+        from classify.reconciliation import recover_missing_genes
+        mp = self._mp([['Rv0006', 1_300, 1_900, '+', 590, 600, 'c1'],
+                       ['Rv0007', 1_300, 1_900, '+', 480, 600, 'c1']])
+        combined = {(1_000, 1_900, '+', 'c1'): 'S1_00001'}
+        recover_missing_genes(combined, mp)
+        assert combined == {(1_000, 1_900, '+', 'c1'): 'Rv0006'}
 
     def test_a_gene_in_another_frame_accounts_for_nothing(self):
         """Genes that really overlap sit in different frames."""
@@ -1750,6 +1792,22 @@ class TestAlignmentQuality:
         mp = self._mp([['Rv1755c', 281, '-', 1_977_868, 1_978_710, 843, 843, False]])
         case4 = self._case4([['S1_01840', 1_977_868, 1_979_412, '-', 1_545]])
         assert self._resolve(mp, case4) == {(1_977_868, 1_979_412, '-', ''): 'S1_01840'}
+
+    def test_the_call_that_gives_way_to_nothing_keeps_the_proteins_name(self, tmp_path, monkeypatch):
+        """CDC1551 carries a 4821 bp DNA methyltransferase gene whose first
+        506 residues are H37Rv's Rv2024c. The alignment stops short of the
+        protein's end, so Bakta's call wins the locus, and the table listed it
+        with no name: Rv2024c was nowhere in it."""
+        from classify.reconciliation import recover_missing_genes, write_corrected_tsv
+        mp = self._mp([['Rv2024c', 516, '-', 2_271_056, 2_272_573, 1_512, 1_518, False]]).assign(Contig='c1')
+        case4 = self._case4([['S1_02139', 2_267_753, 2_272_573, '-', 4_821]]).assign(Contig='c1')
+        combined = self._resolve(mp, case4)
+        recover_missing_genes(combined, mp)
+        bakta = case4.assign(Length_nt=case4['End'] - case4['Start'] + 1)
+        monkeypatch.chdir(tmp_path)
+        write_corrected_tsv(combined, mp, bakta, 'S1')
+        rows = [line.rstrip('\n').split('\t') for line in open(tmp_path / 'S1_corrected.tsv')]
+        assert rows == [['S1_02139', '-', '2267753', '2272573', 'Rv2024c', 'c1']]
 
     def test_complete_alignment_also_wins_among_several_calls(self):
         """The same alignment touching a second call by its last four bases

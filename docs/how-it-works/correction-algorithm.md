@@ -121,8 +121,9 @@ down to its stop codon, has not fragmented: a longer call in its frame ends at
 the same stop and only starts further upstream (plcD, Rv1755c, 843 bp in H37Rv
 and 1545 bp in Bakta's call on CDC1551). A call in another frame is another
 gene, and keeps its chance to win on length; the alignment then comes back in
-step 5. If the Bakta CDS overlaps more than one alignment, the reference wins
-regardless.
+step 5. A call that wins in the alignment's frame is the protein's gene, longer
+than in the reference, and takes its name in step 5. If the Bakta CDS overlaps
+more than one alignment, the reference wins regardless.
 
 ### Multiple overlaps
 
@@ -162,6 +163,17 @@ frames (Rv0724A and Rv0725c); another reference gene in the same frame does not
 count either, since some are nested (*E. coli* hokC inside mokC). Placements on
 other genes' loci have already been dropped in step 0, so what is left to rescue
 sits where the gene belongs or at a locus nobody claims.
+
+A gene that stands for no reference protein accounts for any placement in its
+frame: the Bakta call that won its locus in step 3 over a shorter alignment.
+When no gene carries the protein's name, that call takes it, as long as the
+alignment spans at least **half** of the protein. Otherwise the gene came out
+with no name and the protein was missing from the table. In *M. bovis*, H37Rv's
+mmpL6 (Rv1557) is the 3' end of a 2904 bp gene that the TbD1 deletion cut short
+in H37Rv; CDC1551 and *M. bovis* carry a 4821 bp DNA methyltransferase gene
+whose first 506 residues are H37Rv's Rv2024c. A remnant names nothing: the
+RD12 deletion of *M. bovis* leaves the last 67 of cyp141's (Rv3121) 400
+residues at the end of a 321-codon gene that is not cyp141.
 
 ## 6. Final deduplication
 
@@ -255,6 +267,7 @@ sets of coordinates overlap, which one survives into the curated annotation.
 | Cover to claim another protein's placement | paralog placements | 50% |
 | Shortest protein looked for exactly | small proteins | 8 residues |
 | Cover for a gene to account for a placement | rescuing missing genes | 50% |
+| Share of its protein an alignment spans to name a longer call | rescuing missing genes | 50% |
 | Length of a further copy, next to the first | final deduplication | 90% |
 | Cover by another reference gene that rules a copy out | final deduplication | 50% |
 | Stop codon search | quality control | 300 bp, or what the reference protein is missing |

@@ -223,6 +223,8 @@ def write_sample(d, name, copies):
             f.write(f'{key}_{s}-{e}\t{n}\t0\t{n}\t{st}\t{contig}\t{length}\t{s - 1}\t{e}\t{nt}\t{nt}\t0\t'
                     f'AS:i:500\tms:i:500\tnp:i:{n}\tfs:i:0\tst:i:1\tda:i:0\tdo:i:0\tcg:Z:{n}M\tcs:Z::{n}\n')
     (d / f'{name}-badbakta.paf').write_text('')
+    # one contig each, so no contig end cuts a gene: MINIPROT's second pass places nothing
+    (d / f'{name}-pieces.paf').write_text('')
     # Bakta's proteins of reference genes are all in the reference genome
     with open(d / f'{name}-ref.paf', 'w') as f:
         for key, s, e, st in ref:
@@ -283,10 +285,10 @@ def run_pipeline(base, samples, tools):
         cases = run_task(base / 'TYPE_CASES' / name, 'cases.nf', 'TYPE_CASES', {
             'sampleId': name, 'sample': sample, 'lineage': lineage,
             'miniprot_paf': f'{name}.paf', 'badbakta_paf': f'{name}-badbakta.paf',
-            'h37rv_paf': f'{name}-ref.paf', 'fasta': f'{name}.fasta',
-            'bakta_tsv': f'{name}.tsv', 'ref_proteome': 'ref.faa',
+            'h37rv_paf': f'{name}-ref.paf', 'pieces_paf': f'{name}-pieces.paf',
+            'fasta': f'{name}.fasta', 'bakta_tsv': f'{name}.tsv', 'ref_proteome': 'ref.faa',
         }, [d / f for f in (f'{name}.paf', f'{name}-badbakta.paf', f'{name}-ref.paf',
-                            f'{name}.fasta', f'{name}.tsv', 'ref.faa')], tools)
+                            f'{name}-pieces.paf', f'{name}.fasta', f'{name}.tsv', 'ref.faa')], tools)
 
         downstream = [d / f for f in (f'{name}.AMAP.tsv', f'{name}.AMAP.faa', f'{name}.AMAP.fna',
                                       f'{name}.tsv', f'{name}.fasta', f'{name}.emapper.annotations')]

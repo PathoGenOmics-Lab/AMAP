@@ -32,9 +32,11 @@ docker run --rm --platform linux/amd64 -v "$PWD:/amap" -w /amap \
 The first run downloads four genomes from NCBI, prepares the E. coli
 reference and runs Bakta eight times: a quarter of an hour with 12 threads,
 longer with fewer. All of that is cached in the working directory, so later runs only
-redo `classify_cases.py`, `check_cds.py` and `deduplicate_rvs.py`, with the
-arguments `modules/local/cases.nf` gives them, and score the result: a few
-minutes for all seven genomes. `THREADS` (default 8) sets the threads for
+redo MINIPROT's second pass, over what contig ends cut off the placements
+(it runs AMAP code, `bin/contig_end_pieces.py`), and `classify_cases.py`,
+`check_cds.py` and `deduplicate_rvs.py`, with the arguments
+`modules/local/miniprot.nf` and `modules/local/cases.nf` give them, and score
+the result: a few minutes for all seven genomes. `THREADS` (default 8) sets the threads for
 Bakta, miniprot and minimap2.
 
 ## The genomes
@@ -107,7 +109,7 @@ other, and whether a gene of the other run sits on the same reading frame there
 
 ## Expected results
 
-With the changes up to `annotation-fixes` (October 2026):
+With the changes up to `contig-end-pieces` (October 2026):
 
 | Genome | exact | changed genes found | genes in the table | ORFs twice |
 | :--- | ---: | ---: | ---: | ---: |
@@ -115,16 +117,17 @@ With the changes up to `annotation-fixes` (October 2026):
 | H37Rv CP110619 | 3986 / 3986 | 49 / 50 | 4036 | 0 |
 | CDC1551 | 3097 / 3097 | 854 / 863 | 4014 | 2 |
 | M. bovis | 2391 / 2391 | 1506 / 1515 | 3947 | 3 |
-| CDC1551, 40 contigs | 3072 / 3072 | | 4015 | 2 |
+| CDC1551, 40 contigs | 3072 / 3072 | | 4050 | 2 |
 | E. coli K-12 against itself | 4286 / 4286 | | 4313 | 2 |
 | E. coli Sakai | 220 / 220 | 3337 / 3367 | 5322 | 11 |
 
-Of the 25 genes the draft's cuts run through, the larger piece of each is
-annotated under the gene's name and marked partial; the smaller piece is not,
-because miniprot only reports the placements that score within 5% of a
-protein's best.
+Of the 50 pieces of the 25 genes the draft's cuts run through, 47 are
+annotated under the gene's name and marked partial at the cut end. miniprot
+places the larger piece of each; the smaller one comes from MINIPROT's second
+pass, over what that placement lacks. The other three pieces are five or six
+codons long (Rv2643, Rv2881c, Rv3903c), too short to look for.
 
-In the draft every one of the 4015 proteins is the translation of its gene on
+In the draft every one of the 4050 proteins is the translation of its gene on
 its own contig. The first run took 15 minutes with 12 threads on an M-series
 Mac, Bakta included; a run on the cache takes under two minutes.
 

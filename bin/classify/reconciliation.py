@@ -35,11 +35,19 @@ def recover_missing_genes(combined_dict, miniprot_df, min_cover=0.5):
     one does not account for the other. Neither does a different reference
     gene in the same frame: E. coli nests hokC inside mokC and b4706 inside
     b2537, and both genes of each pair are real.
+
+    The pieces of a gene that contig ends cut (classify/pieces.py) are parts of
+    their protein, not copies of it, so each is missing on its own: one in the
+    dict does not stand for another. Counted as copies, the smaller piece of
+    Rv0100 in CDC1551 cut into contigs, placed on a contig of its own, kept
+    the larger one from coming back after a 7.5 kb Bakta call had displaced it.
     """
     reference_ids = set(miniprot_df['Prot Id'])
     placed = miniprot_df[(miniprot_df['Start'] < miniprot_df['End'])
                          & ~((miniprot_df['Match Nt'] == 0) & (miniprot_df['Num nt'] == 0))]
     contig = placed['Contig'] if 'Contig' in placed.columns else pd.Series('', index=placed.index)
+    piece = (placed['Piece'].astype(bool) if 'Piece' in placed.columns
+             else pd.Series(False, index=placed.index))
     coords = {idx: (r['Start'], r['End'], r.get('Strand', '+'), contig[idx])
               for idx, r in placed.iterrows()}
 
@@ -78,18 +86,20 @@ def recover_missing_genes(combined_dict, miniprot_df, min_cover=0.5):
     present = set()
     for idx, c in coords.items():
         prot_id = placed.at[idx, 'Prot Id']
-        if c in combined_dict or accounted(c, prot_id):
+        if not piece[idx] and (c in combined_dict or accounted(c, prot_id)):
             present.add(prot_id)
 
     # Best placements first, so a missing protein goes in where it fits best.
     for idx in placed.sort_values('Match Nt', ascending=False).index:
         prot_id = placed.at[idx, 'Prot Id']
         coord = coords[idx]
-        if prot_id in present or coord in combined_dict or accounted(coord, prot_id):
+        if ((prot_id in present and not piece[idx])
+                or coord in combined_dict or accounted(coord, prot_id)):
             continue
         combined_dict[coord] = prot_id
         add_to_tree(coord, prot_id)
-        present.add(prot_id)
+        if not piece[idx]:
+            present.add(prot_id)
 
 
 def deduplicate(combined_dict):

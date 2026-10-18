@@ -153,23 +153,21 @@ def read_miniprot_unfiltered(miniprot_path):
     return miniprot_df[PAF_COLS + ['Contig']]
 
 
-def write_summary(base_name, data_frames, case_types):
-    """Write a summary TSV with counts per case type."""
-    # Extract lineage from base_name: "L4_G26689" → "L4", "G26689" → "Untyped"
-    parts = base_name.split("_")
-    if len(parts) >= 2:
-        lineage = parts[0]
-        sequence = base_name
-    else:
-        # Untyped samples have no lineage prefix (e.g., just "G26689").
-        # Emit Sequence as "Untyped_G26689" so downstream process_id() in
-        # the R report can parse it as lineage="Untyped", genome="G26689".
-        lineage = "Untyped"
-        sequence = f"Untyped_{base_name}"
+def write_summary(base_name, data_frames, case_types, sample=None, lineage=None):
+    """Write a summary TSV with counts per case type.
+
+    Sequence is the name the sample's files carry, Sample its ID in the sample
+    sheet and Lineage what lineage typing called it. The pipeline passes the
+    last two: typing names a genome <lineage>_<sampleId>, and a sample ID can
+    hold underscores of its own, so neither can be read back out of the name
+    (L4_H37Rv_test, or H37Rv_test under --skip_typing). Without them the sample
+    is its name and nothing typed it.
+    """
     summary_data = {
         "Type": case_types,
         "Number": [len(df) for df in data_frames],
-        "Sequence": sequence,
-        "Lineage": lineage
+        "Sequence": base_name,
+        "Lineage": lineage or "Untyped",
+        "Sample": sample or base_name,
     }
     pd.DataFrame(summary_data).to_csv(f"{base_name}-summary.tsv", sep='\t', index=False)

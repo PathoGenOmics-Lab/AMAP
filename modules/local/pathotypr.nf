@@ -9,6 +9,10 @@ process PATHOTYPR {
 
     output:
     tuple env('SAMPLE_NAME'), path("*.fasta"), path("*_summary.tsv"), emit: typed_fasta
+    // The name, the sample ID and the lineage, for the steps that write the
+    // last two down: a sample ID can hold underscores, so they cannot be read
+    // back out of the name.
+    tuple env('SAMPLE_NAME'), val(sampleId), env('LINEAGE'), emit: names
 
     script:
     """
@@ -38,21 +42,25 @@ process PATHOTYPR {
     if [ -s "${sampleId}_summary.tsv" ]; then
         # 3. Extract the new name: <lineage>_<sampleId>
         newName=\$(awk -F'\\t' 'NR==2 {print \$NF"_"\$1}' "${sampleId}_summary.tsv")
+        lineage=\$(awk -F'\\t' 'NR==2 {print \$NF}' "${sampleId}_summary.tsv")
 
         if [ -n "\$newName" ]; then
             # Rename FASTA header (first contig only)
             awk -v name="\$newName" 'BEGIN{first=1} /^>/{if(first){print ">"name; first=0}else{print}; next} {print}' "${fasta}" > "\${newName}.fasta"
             # Export as env var for Nextflow (no stdout pollution)
             export SAMPLE_NAME="\$newName"
+            export LINEAGE="\${lineage:-NA}"
         else
             echo "Error: Could not determine new name from summary file. Using original sampleId." >&2
             awk -v name="NA_${sampleId}" 'BEGIN{first=1} /^>/{if(first){print ">"name; first=0}else{print}; next} {print}' "${fasta}" > "NA_${sampleId}.fasta"
             export SAMPLE_NAME="NA_${sampleId}"
+            export LINEAGE=NA
         fi
     else
         echo "Error: Summary file not found or empty. Using original sampleId." >&2
         awk -v name="NA_${sampleId}" 'BEGIN{first=1} /^>/{if(first){print ">"name; first=0}else{print}; next} {print}' "${fasta}" > "NA_${sampleId}.fasta"
         export SAMPLE_NAME="NA_${sampleId}"
+        export LINEAGE=NA
     fi
     """
 }

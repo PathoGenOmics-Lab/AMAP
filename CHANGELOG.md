@@ -38,6 +38,7 @@ directly comparable with 1.0.1.
 - **Nextflow 25.10 and later**: the pipeline stopped before running anything, because the strict parser those versions use by default rejects the helper functions in `nextflow.config`, the statements outside the workflow in `main.nf`, the bare `env(SAMPLE_NAME)` output and `publishDir` paths that name a task input. Nextflow 26.10 also refuses the `return` that ended a `--validate_only` run. The resource caps are now the `resourceLimits` directive, which still takes `--max_cpus`, `--max_memory` and `--max_time` from the command line, a profile or a `-c` config. Nextflow 24.04, where that directive first appeared, is the new minimum
 - **`--skip_mycobrowser` in organism-agnostic mode**: a custom reference from another genus turned it on by reassigning the parameter, which current Nextflow ignores with a warning, so the run went ahead with Mycobrowser enabled. It is now worked out in the parameter's default
 - **Tasks leave the pipeline untouched**: the first time a copy of AMAP ran, Python cached the bytecode of AMAP's own modules inside it, in `bin/classify/__pycache__`, and with `pathotypr classify` naming that directory in PATHOTYPR's script, the first `-resume` re-ran PATHOTYPR, Bakta and everything after them. Tasks now run with `PYTHONDONTWRITEBYTECODE=1`
+- **Sample IDs with underscores**: the steps after the correction told a sample's lineage from its sample ID by splitting its name at underscores, though typing only puts the lineage in front and sample IDs may hold underscores of their own. `L4_H37Rv_test` was counted as genome `H37Rv`, the tutorial's `Beijing_1` and a `Beijing_2` as one genome `Beijing` in the category counts, the report and the duplication network, an untyped `H37Rv_test` as lineage `H37Rv`, and each gene of an untyped sample with no underscore as a genome of its own in the network. PATHOTYPR now says which lineage it named a genome after and every step is handed the sample ID and the lineage. The case summary gains a `Sample` column and names an untyped sample as it is, not `Untyped_<sampleId>`, and the report no longer reads the first gene not in the reference as a header, nor stops when every gene has one
 
 ### 🧹 Code
 - **`reconcile_coordinates` is gone**: it read reference coordinates from protein identifiers that have not carried them since March 2026, so it changed nothing. The paralog check does its job with the sample's own offsets
@@ -46,7 +47,8 @@ directly comparable with 1.0.1.
 - **`tests/selftest/h37rv_selftest.sh`** annotates H37Rv with itself inside the container and fails unless every GenBank CDS comes back exactly
 - **`tests/test_cache_keys.py`** fails when a process runs AMAP code that is not in its cache key, or when its script names a `bin/` entry as a bare word without declaring it
 - **`tests/benchmark/benchmark.sh`** scores the correction algorithm on seven genomes whose right answer is known (H37Rv twice, CDC1551 complete and in 40 contigs, M. bovis, E. coli K-12 and Sakai), downloading them and running Bakta and miniprot in the container the first time, and lists every gene that changed since an earlier run
-- **257 tests**, up from 92
+- **`tests/test_sample_ids.py`** runs TYPE_CASES, GET_OUTPUTS, GET_COUNT, GET_DUPLICATIONS, REPORT_INPUTS and GET_ALLDUP as Nextflow renders them, chained as the pipeline chains them, for a typed and an untyped run whose sample IDs hold underscores, and then the report's own R code where R is installed
+- **292 tests**, up from 92
 
 ## [1.0.1] - 2026-07-25
 

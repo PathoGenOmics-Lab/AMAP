@@ -15,6 +15,7 @@ the following steps:
 """
 
 import argparse
+from collections import Counter
 import pandas as pd
 import numpy as np
 import networkx as nx
@@ -22,7 +23,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from pyvis.network import Network
 from pathlib import Path
-from typing import List, Dict, Set, Tuple, Any
+from typing import List, Dict, Set, Tuple, Any, Iterable
 
 __author__ = 'Paula Ruiz-Rodriguez'
 __credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
@@ -32,6 +33,10 @@ __maintainer__ = '@paururo'
 __email__ = 'paula.ruiz.rodriguez@csic.es'
 __status__ = 'finished'
 __lab__ = 'PathoGenOmics (I2SysBio)'
+
+# What Elements counts a protein without a COG category as: eggNOG's own mark
+# for none.
+NO_COG = '-'
 
 
 # --- 1. Data Loading and Preparation ---
@@ -223,19 +228,23 @@ def find_homologous_communities(
 # --- 4. Network Metrics Calculation ---
 
 def calculate_subgraph_metrics(subgraph: nx.Graph) -> Dict[str, Any]:
-    """Calculates various topological metrics for a given subgraph."""
+    """
+    Calculates various topological metrics for a given subgraph.
+
+    Modularity is not one of them: computed with the whole community as its
+    only group, it was 0 for every community, whatever its shape.
+    """
     metrics = {}
     if not subgraph or subgraph.number_of_nodes() == 0:
         return {
             'avg_degree': 0, 'density': 0, 'avg_clustering': 0,
-            'avg_path_length': np.nan, 'modularity': np.nan
+            'avg_path_length': np.nan
         }
 
     metrics['avg_degree'] = np.mean(list(dict(subgraph.degree()).values()))
     metrics['density'] = nx.density(subgraph)
     metrics['avg_clustering'] = nx.average_clustering(subgraph)
-    metrics['modularity'] = nx.community.modularity(subgraph, [set(subgraph.nodes())])
-    
+
     if nx.is_connected(subgraph):
         metrics['avg_path_length'] = nx.average_shortest_path_length(subgraph)
     else:
@@ -250,6 +259,42 @@ def calculate_subgraph_metrics(subgraph: nx.Graph) -> Dict[str, Any]:
     return metrics
 
 
+def cog_category(seq_id: str) -> str:
+    """
+    A protein's eggNOG COG category, from its sequence ID. rename_fastas.py
+    writes the ID of a protein eggNOG gave a category as <name>;<category>,
+    and leaves any other protein's as FIX_CDS wrote it,
+    <name>;<strand>;<start>-<end>, whose second field is the strand: Elements
+    counted those proteins in categories '+' and '-'.
+
+    Args:
+        seq_id: A sequence ID, as GET_DUPLICATIONS writes it.
+
+    Returns:
+        The protein's COG category, or NO_COG when it has none.
+    """
+    fields = seq_id.split(';')
+    return fields[1] if len(fields) == 2 and fields[1] else NO_COG
+
+
+def count_categories(nodes: Iterable[str]) -> Dict[str, int]:
+    """
+    How many of a community's proteins each COG category holds, the largest
+    first and ties in alphabetical order. The counts are plain ints: pandas'
+    value_counts gave numpy integers, which numpy 2 writes as np.int64(4).
+    And ties came in the order of the set of proteins, which changes from one
+    run to the next.
+
+    Args:
+        nodes: The community's sequence IDs.
+
+    Returns:
+        A dictionary mapping each COG category to its number of proteins.
+    """
+    counts = Counter(cog_category(node) for node in nodes)
+    return dict(sorted(counts.items(), key=lambda item: (-item[1], item[0])))
+
+
 def get_community_report_row(
     genome_id: str,
     community_name: str,
@@ -260,20 +305,16 @@ def get_community_report_row(
     nodes = labeled_communities[genome_id][community_name]
     subgraph = network.subgraph(nodes)
     metrics = calculate_subgraph_metrics(subgraph)
-    
-    # Extract gene names (assuming format '...;GeneName;...')
-    elements = [node.split(';')[1] if len(node.split(';')) > 1 else 'Unknown' for node in nodes]
 
     return [
         genome_id,
         community_name,
         len(nodes),
-        dict(pd.Series(elements).value_counts()),
+        count_categories(nodes),
         metrics.get('avg_degree', 0),
         metrics.get('density', 0),
         metrics.get('avg_clustering', 0),
         metrics.get('avg_path_length', np.nan),
-        metrics.get('modularity', np.nan),
         ", ".join(sorted(list(nodes)))
     ]
 
@@ -301,9 +342,9 @@ def create_summary_report(
 
     columns = [
         "Genome1", "Community1", "Size1", "Elements1", "AvgDegree1", "Density1",
-        "AvgClustering1", "AvgPathLength1", "Modularity1", "Nodes1",
+        "AvgClustering1", "AvgPathLength1", "Nodes1",
         "Genome2", "Community2", "Size2", "Elements2", "AvgDegree2", "Density2",
-        "AvgClustering2", "AvgPathLength2", "Modularity2", "Nodes2"
+        "AvgClustering2", "AvgPathLength2", "Nodes2"
     ]
     return pd.DataFrame(report_rows, columns=columns)
 

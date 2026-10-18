@@ -230,7 +230,7 @@ def communities(work: Path, genome: str, protein: str, ref: dict, bakta: dict, p
             "members": [n.strip() for n in pick[f"Nodes{k}"].split(", ")],
             "metrics": {key: float(pick[f"{col}{k}"]) for key, col in (
                 ("size", "Size"), ("avg_degree", "AvgDegree"), ("density", "Density"), ("avg_clustering", "AvgClustering"),
-                ("avg_path_length", "AvgPathLength"), ("modularity", "Modularity"))},
+                ("avg_path_length", "AvgPathLength"))},
         })
     genomes = {s["genome"] for s in sides}
     # Which genome each sequence comes from, as GET_ALLDUP writes it from the

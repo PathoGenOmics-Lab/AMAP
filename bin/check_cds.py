@@ -2,12 +2,19 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import os
+import sys
 import pandas as pd
 from Bio import SeqIO
 from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 import logging
 import re
 import warnings
+
+# Allow importing from bin/classify/ when run as a script, as classify_cases.py does.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from classify import circular
 
 __author__ = 'Paula Ruiz-Rodriguez'
 __credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
@@ -224,6 +231,28 @@ def cut_at_5_prime(seq, start, end, strand, translated=None, ref_protein=None):
             or (ref_protein is not None and starts_inside(translated, ref_protein)))
 
 
+def unrolled(fasta_seq):
+    """A circular sequence three times over, its genes read on the middle copy.
+
+    Bakta writes a gene across the origin from its start near the end of the
+    sequence to its stop near the beginning (stcE on plasmid pO157 of E. coli
+    Sakai is 92563..2502), and read on the sequence as it comes, such a gene
+    had no bases at all and was dropped as invalid coordinates. On the middle
+    copy it reads like any other gene, a stop codon searched for runs on
+    across the origin (Bakta called only the first 141 bp of Rop on pOSAK1,
+    whose stop lies past it), and the origin is never taken for the end of a
+    contig, which a circular sequence does not have.
+    """
+    return SeqRecord(fasta_seq.seq + fasta_seq.seq + fasta_seq.seq, id=fasta_seq.id)
+
+
+def rolled_back(start, end, n):
+    """Coordinates on unrolled() (0-based start, end exclusive) on the
+    sequence itself: a gene that runs across the origin comes back with its
+    start after its end."""
+    return start % n, (end - 1) % n + 1
+
+
 def read_reference_proteins(path):
     """Reference proteins by name, with the length of the span each was cut from.
 
@@ -347,6 +376,13 @@ def extract_and_translate_cds(fasta_file, annotation_df, ref_proteins=None):
                         f"guessing each gene's contig from its coordinates, which is usually wrong")
     default_contig = sorted_contigs[0]
     contig_seqs = {}
+    # The sequences Bakta joined end to end, and any a gene runs across
+    # (see classify/circular.py)
+    circular_ids = {r.id for r in fasta_records.values() if circular.bakta_circular(r.description)}
+    if has_contig:
+        circular_ids |= {str(r['contig']) for _, r in annotation_df.iterrows()
+                         if circular.wraps(r['start'], r['end'])}
+    unrolled_seqs = {}
     cds_amino_acids = {}
     cds_nts = {}
     # Kept per row, not per id: copies of a gene only miniprot placed share
@@ -392,6 +428,18 @@ def extract_and_translate_cds(fasta_file, annotation_df, ref_proteins=None):
         if fasta_seq.id not in contig_seqs:
             contig_seqs[fasta_seq.id] = str(fasta_seq.seq).upper()
         contig_seq = contig_seqs[fasta_seq.id]
+
+        # A gene of a circular sequence, across its origin or not
+        n = len(fasta_seq.seq)
+        on_circle = fasta_seq.id in circular_ids and 0 <= start < n and 0 < end <= n
+        if on_circle:
+            if fasta_seq.id not in unrolled_seqs:
+                record = unrolled(fasta_seq)
+                unrolled_seqs[fasta_seq.id] = (record, str(record.seq).upper())
+            fasta_seq, contig_seq = unrolled_seqs[fasta_seq.id]
+            size = (end - start) % n or n
+            start += n
+            end = start + size
 
         # Validate coordinates
         if start < 0 or end <= start or end > len(fasta_seq.seq):
@@ -536,6 +584,9 @@ def extract_and_translate_cds(fasta_file, annotation_df, ref_proteins=None):
         if n_internal and pseudo is None:
             logging.warning(f"Gene {ide} has {n_internal} internal stop codon(s), likely a pseudogene or frameshift")
             pseudo = f"{n_internal} internal stop codon(s)"
+
+        if on_circle:
+            start, end = rolled_back(start, end, n)
 
         cds_id = f"{ide};{strand};{start}-{end}"
         cds_amino_acids[cds_id] = translated

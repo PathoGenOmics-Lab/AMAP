@@ -20,7 +20,7 @@ fails when it drifts. This does, in nine parts:
               duplication family and communities of assets/dup-data.js are the
               ones bin/get_duplications.py and bin/network_genomes.py find;
   thresholds  the numbers the pages give for each rule, each validation limit,
-              each step's resources, each profile's caps and each tool's
+              each step's resources, the caps on a task and each tool's
               version are the ones in bin/, nextflow.config and the Dockerfile;
   benchmark   the front page's scores are tests/benchmark's expected results;
   metro       the metro map's stations are main.nf's processes, in the order
@@ -627,7 +627,7 @@ def code_value(path: str, pattern: str) -> float | None:
 # problem in its own right: the code moved and this table has to follow it.
 RULES = {
     "single_bp": ("bin/classify/overlaps.py", r"abs\(bakta_len - rv_len\) > (\d+)"),
-    "multiple_bp": ("bin/classify/overlaps.py", r"\(_range_length\(best\[0\]\) - _range_length\(miniprot_range\)\) < (\d+)"),
+    "multiple_bp": ("bin/classify/overlaps.py", r"\(best_len - _range_length\(miniprot_range\)\) < (\d+)"),
     "insert_overlap_pct": ("bin/classify/overlaps.py", r"if pct >= (\d+):"),
     "insert_margin_bp": ("bin/classify/overlaps.py", r"def _insert_with_dedup\(combined_dict, new_coord, new_id, threshold=(\d+)"),
     "false_positive_pct": ("bin/classify/cases.py", r"case1\['Overlap_Percentage'\] >= (\d+)"),
@@ -746,21 +746,33 @@ def check_thresholds() -> list[str]:
             want_memory = " or ".join(f"{m} GB" for m in memory)
             if (cells[1], cells[2]) != (want_cpus, want_memory):
                 problems.append(f"{tutorial}: {cells[0]} asks for {cells[1]} CPUs and {cells[2]}, nextflow.config says {want_cpus} and {want_memory}")
-    caps = {name: build_docs.profile_settings(name) for name in ("docker", "singularity", "slurm")}
-    gb = lambda s: int(s["params.max_memory"].split(".")[0])
+    # The caps nextflow.config sets after its profiles, where the pages give
+    # them: each named group of a pattern is checked against that cap.
+    caps = build_docs.caps()
+    number = lambda value: int(re.match(r"\d+", value).group())
+    running, quickstart, parameters = (SITE / "user-guide" / "running.md", SITE / "getting-started" / "quickstart.md",
+                                       SITE / "user-guide" / "parameters.md")
     said_caps = [
-        (SITE / "user-guide" / "running.md", r"container profiles cap every task\s+at (\d+) GB", gb(caps["docker"])),
-        (SITE / "user-guide" / "running.md", r"the cluster's (\d+) GB", gb(caps["slurm"])),
-        (SITE / "getting-started" / "quickstart.md", r"the machine's CPUs\s+and (\d+) GB", gb(caps["docker"])),
-        (SITE / "getting-started" / "quickstart.md", r"scheduler profiles at \d+ CPUs and (\d+) GB", gb(caps["slurm"])),
-        (SITE / "getting-started" / "quickstart.md", r"scheduler profiles at (\d+) CPUs", int(caps["slurm"]["params.max_cpus"])),
+        (running, r"(?P<cpus>\d+) CPUs, (?P<memory>\d+) GB and (?P<time>\d+) h with `highmem`", "highmem"),
+        (running, r"(?P<cpus>\d+) CPUs, (?P<memory>\d+) GB and (?P<time>\d+) h with `test`", "test"),
+        (running, r"(?P<cpus>\d+) CPUs, (?P<memory>\d+) GB and (?P<time>\d+) h with an executor profile", "scheduler"),
+        (running, r"otherwise the machine's CPUs, (?P<memory>\d+) GB and (?P<time>\d+) h", "machine"),
+        (quickstart, r"the machine's CPUs and (?P<memory>\d+) GB", "machine"),
+        (quickstart, r"scheduler profiles at (?P<cpus>\d+) CPUs and (?P<memory>\d+) GB", "scheduler"),
+        (parameters, r"\| `--max_memory` \|[^|]*\|[^|]*\| `(?P<memory>\d+)\.GB` \|", "machine"),
+        (parameters, r"\| `--max_time` \|[^|]*\|[^|]*\| `(?P<time>\d+)\.h` \|", "machine"),
+        (parameters, r"HPC profiles raise them to (?P<cpus>\d+) CPUs and (?P<memory>\d+) GB", "scheduler"),
+        (parameters, r"`-profile highmem` to (?P<cpus>\d+) CPUs, (?P<memory>\d+) GB and (?P<time>\d+) h", "highmem"),
+        (parameters, r"`-profile test` sets (?P<cpus>\d+) CPUs, (?P<memory>\d+) GB and (?P<time>\d+) h", "test"),
     ]
-    for page, pattern, value in said_caps:
-        m = re.search(pattern, page.read_text(encoding="utf-8"))
+    for page, pattern, kind in said_caps:
+        m = re.search(pattern, re.sub(r"\s+", " ", page.read_text(encoding="utf-8")))
         if not m:
             problems.append(f"{page}: no longer says {pattern!r}; update tools/check_site.py")
-        elif int(m.group(1)) != value:
-            problems.append(f"{page}: says {m.group(0)!r}, nextflow.config says {value}")
+            continue
+        for cap, said in m.groupdict().items():
+            if int(said) != number(caps[kind][cap]):
+                problems.append(f"{page}: says {m.group(0)!r}, nextflow.config gives {caps[kind][cap]} ({kind})")
     # The versions the containers page gives are the image's.
     try:
         image = build_docs.image_contents()

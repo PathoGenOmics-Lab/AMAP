@@ -12,7 +12,7 @@ process TYPE_CASES {
     publishDir path: { "${params.outdir}/CDS_CASES/${sampleId}" }, pattern: "*_corrected.tsv", mode: 'link', overwrite: true
 
     input:
-    tuple val(sampleId), path(miniprot_paf), path(badbakta_paf), path(h37rv_paf), path(fasta), path(bakta_tsv), path(bakta_faa)
+    tuple val(sampleId), path(miniprot_paf), path(badbakta_paf), path(h37rv_paf), path(pieces_paf), path(fasta), path(bakta_tsv), path(bakta_faa)
     path ref_proteome      // the proteome miniprot aligned, to place exactly what it could not
 
     output:
@@ -33,6 +33,7 @@ process TYPE_CASES {
         -c ${h37rv_paf} \\
         --genome ${fasta} \\
         --ref-proteome ${ref_proteome} \\
+        --pieces ${pieces_paf} \\
     || {
         echo "ERROR: Classification failed for sample ${sampleId}" >&2
         echo "Input sizes: bakta=\$(wc -l < ${bakta_tsv})L miniprot=\$(wc -l < ${miniprot_paf})L" >&2

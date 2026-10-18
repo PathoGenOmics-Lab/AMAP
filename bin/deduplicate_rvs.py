@@ -13,7 +13,9 @@ gene's locus; a pseudogene must also be nearly as long as the reference
 protein. A genome can
 carry a gene more than once, and those copies are what the duplication analysis
 counts; E. coli O157:H7 Sakai has several of K-12's prophage genes many times
-over, and every copy but one used to be deleted here.
+over, and every copy but one used to be deleted here. Nor are the pieces of a
+gene that contig ends cut removed, when the first is one of them: each is
+marked partial at the end a cut is on, and the pieces fit in one gene.
 
 Also removes genes without an Rv that overlap >90% with an Rv-assigned gene.
 """
@@ -27,6 +29,11 @@ from collections import defaultdict
 # A further copy must be at least this long next to the first, so that pieces
 # of one gene do not pass for copies of it.
 MIN_COPY_LENGTH = 0.9
+
+# The pieces contig ends cut a gene into are together at most this long next
+# to the reference gene, stop codon included: what one gene leaves, give or
+# take an indel.
+MAX_PIECES_LENGTH = 1.1
 
 
 def parse_amap_tsv(path):
@@ -157,6 +164,37 @@ def is_copy(gene, kept, others=(), ref_residues=None):
             and not _covered(gene, others))
 
 
+def _open_ends(g):
+    """The ends of a gene that a contig end cut off: check_cds.py's partial
+    column, "5'", "3'" or both."""
+    return {e.strip() for e in g.get('partial', '').split(',') if e.strip()}
+
+
+def is_piece(gene, kept, others=(), ref_residues=None):
+    """Whether gene is one more piece of a gene that contig ends cut, the
+    first gene kept, kept[0], being one of its pieces.
+
+    A draft cuts the genes its contig breaks run through, check_cds.py marks
+    each piece partial at the end a cut is on, and the pieces of one gene lie
+    on different contigs, or at the two ends of one. So a piece is kept when
+    it is open at an end, no piece kept is open at that end alone (a gene has
+    one first piece and one last, and any number between that a contig holds
+    whole), it is clear of every gene kept and of other reference genes'
+    loci, and the pieces together fit in the reference gene (ref_residues). A
+    piece of a gene beside a whole copy of it stays what it was, not a copy.
+    """
+    ends = _open_ends(gene)
+    pieces = [k for k in kept if _open_ends(k)]
+    if not ends or not pieces or pieces[0] is not kept[0]:
+        return False
+    if len(ends) == 1 and any(_open_ends(k) == ends for k in pieces):
+        return False
+    total = _length(gene) + sum(_length(k) for k in pieces)
+    return ((not ref_residues or total <= MAX_PIECES_LENGTH * 3 * (ref_residues + 1))
+            and not any(_overlap(gene, k) for k in kept)
+            and not _covered(gene, others))
+
+
 def deduplicate(genes, bakta_cds=frozenset(), distance=None, ref_residues=None):
     """Remove duplicate Rv assignments and overlapping no-Rv genes."""
     distance = distance or {}
@@ -203,7 +241,8 @@ def deduplicate(genes, bakta_cds=frozenset(), distance=None, ref_residues=None):
             g = genes[idx]
             others = [o for o in by_contig[g.get('contig', '')]
                       if o.get('rvs', '').strip() not in ('', rv)]
-            if is_copy(g, kept, others, ref_residues.get(rv)):
+            if (is_copy(g, kept, others, ref_residues.get(rv))
+                    or is_piece(g, kept, others, ref_residues.get(rv))):
                 kept.append(g)
             else:
                 remove.add(idx)

@@ -287,6 +287,36 @@ class TestRecoverMissingGenes:
                                                   ['Rv0003', 9000, 9900, '+', 900, 900, 'c1']]))
         assert combined == {(9000, 9900, '+', 'c1'): 'Rv0003'}
 
+    def test_a_piece_does_not_stand_for_the_rest_of_its_gene(self):
+        """In CDC1551 cut into contigs, a 7.5 kb Bakta call displaced the
+        larger piece of Rv0100, and the smaller piece, on a contig of its own,
+        kept it from coming back as if it were a copy of the protein."""
+        from classify.reconciliation import recover_missing_genes
+        mp = self._mp([['Rv0100', 149443, 149598, '-', 156, 156, 'c3'],
+                       ['Rv0101', 141923, 149461, '-', 7539, 7539, 'c3'],
+                       ['Rv0100', 2, 79, '-', 78, 78, 'c2']]).assign(Piece=[False, False, True])
+        combined = {(141923, 149461, '-', 'c3'): 'S1_00232', (2, 79, '-', 'c2'): 'Rv0100'}
+        recover_missing_genes(combined, mp)
+        assert combined[(149443, 149598, '-', 'c3')] == 'Rv0100'
+
+        # The pieces of one protein are not copies of it: a copy in the dict still is.
+        combined = {(141923, 149461, '-', 'c3'): 'S1_00232', (2, 79, '-', 'c2'): 'Rv0100'}
+        recover_missing_genes(combined, mp.assign(Piece=False))
+        assert (149443, 149598, '-', 'c3') not in combined
+
+    def test_a_piece_nothing_accounts_for_comes_back(self):
+        from classify.reconciliation import recover_missing_genes
+        mp = self._mp([['Rv0100', 149443, 149598, '-', 156, 156, 'c3'],
+                       ['Rv0100', 2, 79, '-', 78, 78, 'c2']]).assign(Piece=[False, True])
+        combined = {(149443, 149598, '-', 'c3'): 'Rv0100'}
+        recover_missing_genes(combined, mp)
+        assert combined == {(149443, 149598, '-', 'c3'): 'Rv0100', (2, 79, '-', 'c2'): 'Rv0100'}
+
+        # A call in its frame covering it stands for it, as for any placement.
+        combined = {(149443, 149598, '-', 'c3'): 'Rv0100', (1, 79, '-', 'c2'): 'S1_00110'}
+        recover_missing_genes(combined, mp)
+        assert (2, 79, '-', 'c2') not in combined
+
 
 # =============================================================================
 # INTEGRATION-STYLE TESTS
@@ -1042,9 +1072,61 @@ class TestDeduplicateRvs:
     """Tests for deduplicate_rvs.py."""
 
     @staticmethod
-    def _gene(id_, start, end, rvs, strand='+', pseudo='no', contig='c1'):
+    def _gene(id_, start, end, rvs, strand='+', pseudo='no', contig='c1', partial=''):
         return {'id': id_, 'strand': strand, 'start': str(start), 'end': str(end),
-                'rvs': rvs, 'pseudogene': pseudo, 'contig': contig}
+                'rvs': rvs, 'pseudogene': pseudo, 'contig': contig, 'partial': partial}
+
+    def test_the_pieces_of_a_gene_contig_ends_cut_are_kept(self):
+        """Rv0038 in CDC1551 cut into contigs: 142 bp at the start of one
+        contig, 465 at the end of another. The smaller piece is no copy, but
+        it is the rest of the gene."""
+        from deduplicate_rvs import deduplicate
+        genes = [self._gene('S1_Rv0038', 2, 142, 'Rv0038', '-', contig='c1', partial="3'"),
+                 self._gene('S1_Rv0038', 67996, 68460, 'Rv0038', '-', contig='c2', partial="5'")]
+        kept, removed = deduplicate(genes, ref_residues={'Rv0038': 202})
+        assert len(kept) == 2 and not removed
+
+    def test_a_gene_has_one_first_piece_one_last_and_any_between(self):
+        """A contig shorter than a gene holds a piece open at both ends."""
+        from deduplicate_rvs import deduplicate
+        genes = [self._gene('S1_last', 1, 600, 'g1', contig='c2', partial="5'"),
+                 self._gene('S1_first', 9851, 10000, 'g1', contig='c1', partial="3'"),
+                 self._gene('S1_another_first', 4851, 5000, 'g1', contig='c3', partial="3'"),
+                 self._gene('S1_middle', 1, 90, 'g1', contig='c4', partial="5',3'")]
+        kept, _ = deduplicate(genes, ref_residues={'g1': 279})
+        assert [g['id'] for g in kept] == ['S1_last', 'S1_first', 'S1_middle']
+
+    def test_the_pieces_fit_in_one_gene(self):
+        """Two pieces longer together than the reference gene are not one gene's."""
+        from deduplicate_rvs import deduplicate
+        genes = [self._gene('S1_last', 1, 600, 'g1', contig='c2', partial="5'"),
+                 self._gene('S1_first', 9551, 10000, 'g1', contig='c1', partial="3'")]
+        kept, _ = deduplicate(genes, ref_residues={'g1': 299})
+        assert [g['id'] for g in kept] == ['S1_last']
+        kept, _ = deduplicate(genes, ref_residues={'g1': 349})
+        assert len(kept) == 2
+
+    def test_only_pieces_go_with_pieces(self):
+        """Beside a whole copy, a piece stays what it was, and a short gene
+        with no cut end is no piece."""
+        from deduplicate_rvs import deduplicate
+        whole = [self._gene('S1_whole', 1000, 1899, 'g1'),
+                 self._gene('S1_first', 9851, 10000, 'g1', contig='c1', partial="3'")]
+        unmarked = [self._gene('S1_last', 1, 600, 'g1', contig='c2', partial="5'"),
+                    self._gene('S1_short', 9851, 10000, 'g1', contig='c1')]
+        for genes in (whole, unmarked):
+            kept, _ = deduplicate(genes, ref_residues={'g1': 299})
+            assert [g['id'] for g in kept] == [genes[0]['id']]
+
+    def test_pieces_are_clear_of_each_other(self):
+        """At the two ends of one contig, as across the origin of a circular
+        sequence, not on top of one another."""
+        from deduplicate_rvs import deduplicate
+        genes = [self._gene('S1_last', 1, 600, 'g1', partial="5'"),
+                 self._gene('S1_first', 9851, 10000, 'g1', partial="3'")]
+        assert len(deduplicate(genes, ref_residues={'g1': 299})[0]) == 2
+        genes[1].update(start='451', end='600')
+        assert len(deduplicate(genes, ref_residues={'g1': 299})[0]) == 1
 
     def test_tie_goes_to_the_copy_bakta_also_called(self):
         """Between copies that tie and cannot both stay, one Bakta called at
@@ -1981,3 +2063,153 @@ class TestContigs:
             out = generate_tsv(merged, rest, fasta, os.path.join(d, 'out.tsv'))
         placed = dict(zip(out['Locus Tag'], out['Sequence Id']))
         assert placed == {'S1_00001': 'big', 'S1_00002': 'small'}
+
+
+# =============================================================================
+# PIECES OF THE GENES A CONTIG END CUT (contig_end_pieces.py, pieces.py)
+# =============================================================================
+
+class TestContigEndPieces:
+    """miniprot places only the larger piece of a gene a contig end cut, since
+    --outs=0.95 reports the placements within 5% of a protein's best: in
+    CDC1551 cut into 40 contigs, none of the 25 smaller pieces was annotated.
+    What such a placement lacks is aligned as a protein of its own, and its
+    placements that run off a contig edge are the rest of the gene."""
+
+    PROTEIN = TestCutAtAStartLikeCodon.PROTEIN
+    CODON = TestCutAtAStartLikeCodon.CODON
+    FILL = "GCA" * 10
+
+    @staticmethod
+    def _paf_line(name, qlen, qstart, qend, strand, contig, clen, tstart, tend):
+        n = tend - tstart
+        return f"{name}\t{qlen}\t{qstart}\t{qend}\t{strand}\t{contig}\t{clen}\t{tstart}\t{tend}\t{n}\t{n}\t0\tst:i:1\n"
+
+    def test_a_placement_cut_by_its_contig(self):
+        """It lacks residues at one end of its protein, it ends within 30 bp of
+        the contig's edge on that side, and they would not fit there."""
+        from contig_end_pieces import cut_ends
+        assert cut_ends(100, 40, 100, '+', 5000, 1, 181) == ['N']
+        assert cut_ends(100, 40, 100, '-', 5000, 4819, 4999) == ['N']
+        assert cut_ends(100, 0, 60, '+', 5000, 4818, 4998) == ['C']
+        assert cut_ends(100, 0, 60, '-', 5000, 2, 182) == ['C']
+        assert cut_ends(100, 10, 90, '+', 240, 0, 240) == ['N', 'C']
+        # 31 bp from the edge, or residues missing that fit in the bases left
+        assert cut_ends(100, 40, 100, '+', 5000, 31, 211) == []
+        assert cut_ends(100, 3, 100, '+', 5000, 12, 303) == []
+        # the end it lacks is not the one at the edge
+        assert cut_ends(100, 40, 100, '+', 5000, 4818, 5000) == []
+
+    def test_what_cut_placements_lack_is_written_once(self):
+        import subprocess
+        seqs = {f'g{c}_{i}-{i + 302}': 'M' + c * 99 + '*' for i, c in zip(range(1, 2000, 400), 'ABCDE')}
+        names = list(seqs)
+        rows = [self._paf_line(names[0], 101, 40, 101, '+', 'c1', 5000, 1, 184),     # first 40 cut off
+                self._paf_line(names[1], 101, 0, 60, '-', 'c2', 3000, 2, 182),       # last 41
+                f"{names[2]}\t101\t0\t0\t*\t*\t0\t0\t0\t0\t0\t0\n",                  # not placed
+                self._paf_line(names[3], 101, 40, 101, '+', 'c1', 5000, 2000, 2183), # far in
+                self._paf_line(names[4], 101, 5, 101, '+', 'c1', 5000, 1, 289),      # too few
+                self._paf_line(names[0], 101, 40, 101, '+', 'c1', 5000, 1, 184)]
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, 's.paf'), 'w') as f:
+                f.writelines(rows)
+            with open(os.path.join(d, 'ref.faa'), 'w') as f:
+                f.writelines(f">{h}\n{s}\n" for h, s in seqs.items())
+            out = subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), '..', 'bin',
+                                                               'contig_end_pieces.py'), 's.paf', 'ref.faa'],
+                                 cwd=d, check=True, capture_output=True, text=True).stdout
+        assert out == (f">{names[0]}|0-40|101\n{seqs[names[0]][:40]}\n"
+                       f">{names[1]}|60-101|101\n{seqs[names[1]][60:]}\n")
+
+    def test_a_piece_runs_off_on_the_side_of_the_cut(self):
+        """The 3' side for the protein's first residues, the 5' side for its
+        last, whichever the strand."""
+        from classify.pieces import runs_off
+        assert runs_off('+', 4900, 4998, 5000, True) and not runs_off('+', 2, 100, 5000, True)
+        assert runs_off('-', 2, 100, 5000, True) and not runs_off('-', 4900, 4998, 5000, True)
+        assert runs_off('+', 2, 100, 5000, False) and not runs_off('+', 4900, 4998, 5000, False)
+        assert runs_off('-', 4900, 4998, 5000, False) and not runs_off('-', 2, 100, 5000, False)
+
+    def test_pieces_become_placements_of_their_protein(self):
+        from classify.pieces import add_contig_end_pieces, read_pieces
+        a, b = 'gA_1-303|0-40|101', 'gB_400-702|60-101|101'
+        rows = [self._paf_line(a, 40, 0, 39, '+', 'c2', 5000, 4880, 4997),   # at the end: a piece
+                self._paf_line(a, 40, 0, 39, '+', 'c3', 5000, 2000, 2117),   # inside a contig
+                self._paf_line(b, 41, 1, 41, '+', 'c3', 5000, 2, 122),       # at the start: a piece
+                self._paf_line(b, 41, 1, 41, '+', 'c4', 5000, 4878, 4998),   # the wrong end
+                f"{b}\t41\t0\t0\t*\t*\t0\t0\t0\t0\t0\t0\n",
+                self._paf_line(b, 41, 34, 41, '+', 'c5', 5000, 2, 23)]       # seven residues
+        with tempfile.NamedTemporaryFile('w', suffix='.paf', delete=False) as f:
+            f.writelines(rows)
+        try:
+            got = read_pieces(f.name)
+            assert got.values.tolist() == [
+                ['gA', 101, '+', 4881, 4997, 117, 117, 'c2', False, 1.0, 303.0],
+                ['gB', 101, '+', 3, 122, 120, 120, 'c3', False, 400.0, 702.0]]
+
+            # Where the first pass placed the protein already, nothing is added.
+            mp = got.iloc[:1].drop(columns='Complete').assign(Complete=True)[got.columns]
+            out = add_contig_end_pieces(mp, f.name)
+        finally:
+            os.unlink(f.name)
+        assert out[['Prot Id', 'Contig', 'Start', 'Piece']].values.tolist() == [
+            ['gA', 'c2', 4881, False], ['gB', 'c3', 3, True]]
+
+    def test_the_two_passes_agree_on_what_a_cut_is(self):
+        import contig_end_pieces
+        import check_cds
+        from classify import exact, pieces
+        assert contig_end_pieces.EDGE == pieces.EDGE == 3 * check_cds.COMPLETION_SLACK
+        assert contig_end_pieces.MIN_RESIDUES == pieces.MIN_RESIDUES == exact.MIN_RESIDUES
+
+    def test_both_pieces_are_annotated_under_the_name_and_partial(self):
+        """A 40-residue gene cut inside codon 16: its last 23 codons open the
+        contig c1 with a CTG, its first 16 and two bases end c2. Through
+        classify_cases.py, check_cds.py and deduplicate_rvs.py as FIX_CDS runs
+        them, with the second miniprot pass played by hand."""
+        import subprocess
+        bin_dir = os.path.join(os.path.dirname(__file__), '..', 'bin')
+        gene = "".join(self.CODON[a] for a in self.PROTEIN) + "TAA"
+        q_gene = "ATGGCCGAGAAGCGCGACCTGTCCACCTGGTAA"                 # MAEKRDLSTW, placed too
+        r_gene = "ATG" + "AAG" * 5 + "TGA"                          # a call of Bakta's alone
+        c1 = gene[50:] + self.FILL + q_gene + self.FILL + r_gene + self.FILL
+        c2 = self.FILL + gene[:50]
+        q, r = c1.index(q_gene), c1.index(r_gene)
+
+        def run(d, *args):
+            return subprocess.run([sys.executable, *args], cwd=d, check=True, capture_output=True, text=True)
+
+        def annotate(d, with_pieces):
+            for f in os.listdir(d):
+                if f.startswith('S1') and f != 'S1.tsv':
+                    os.unlink(os.path.join(d, f))
+            pieces = ['--pieces', 'pieces.paf'] if with_pieces else []
+            run(d, os.path.join(bin_dir, 'classify_cases.py'), '-b', 'S1.tsv', '-p', 'main.paf',
+                '-bb', 'bad.paf', '-c', 'ref.paf', '--genome', 'g.fasta', '--ref-proteome', 'ref.faa', *pieces)
+            run(d, os.path.join(bin_dir, 'check_cds.py'), 'g.fasta', 'S1_corrected.tsv', '--ref-proteome', 'ref.faa')
+            run(d, os.path.join(bin_dir, 'deduplicate_rvs.py'), 'S1.AMAP.tsv', '--faa', 'S1.AMAP.faa',
+                '--fna', 'S1.AMAP.fna', '--bakta', 'S1.tsv', '--ref-proteome', 'ref.faa')
+            t = pd.read_csv(os.path.join(d, 'S1.AMAP.tsv'), sep='\t', dtype=str, keep_default_na=False)
+            return sorted(map(tuple, t[t.rvs == 'gP'][['id', 'contig', 'start', 'end', 'partial']].values))
+
+        with tempfile.TemporaryDirectory() as d:
+            files = {
+                'g.fasta': f">c1\n{c1}\n>c2\n{c2}\n",
+                'ref.faa': f">gP_1000-1122\n{self.PROTEIN}*\n>gQ_5000-5032\nMAEKRDLSTW*\n",
+                'S1.tsv': "#Sequence Id\tType\tStart\tStop\tStrand\tLocus Tag\tGene\tProduct\tDbXrefs\n"
+                          f"c1\tcds\t{q + 1}\t{q + 33}\t+\tS1_00001\t\thypothetical protein\t\n"
+                          f"c1\tcds\t{r + 1}\t{r + 21}\t+\tS1_00002\t\thypothetical protein\t\n",
+                'main.paf': self._paf_line('gP_1000-1122', 41, 17, 41, '+', 'c1', len(c1), 1, 73)
+                            + self._paf_line('gQ_5000-5032', 11, 0, 11, '+', 'c1', len(c1), q, q + 33),
+                'bad.paf': "", 'ref.paf': ""}
+            for name, text in files.items():
+                with open(os.path.join(d, name), 'w') as f:
+                    f.write(text)
+            fragments = run(d, os.path.join(bin_dir, 'contig_end_pieces.py'), 'main.paf', 'ref.faa').stdout
+            assert fragments == f">gP_1000-1122|0-17|41\n{self.PROTEIN[:17]}\n"
+            with open(os.path.join(d, 'pieces.paf'), 'w') as f:
+                f.write(self._paf_line('gP_1000-1122|0-17|41', 17, 0, 16, '+', 'c2', len(c2), 30, 78))
+
+            assert annotate(d, with_pieces=False) == [('S1_gP', 'c1', '2', '73', "5'")]
+            assert annotate(d, with_pieces=True) == [('S1_gP', 'c1', '2', '73', "5'"),
+                                                     ('S1_gP_2', 'c2', '31', '78', "3'")]

@@ -196,7 +196,8 @@ class TestClassifier:
     def test_recovery_reads_a_gene_across_the_origin_on_both_sides(self):
         """It stopped the run: the trees refuse an interval that ends before
         it starts. Now it accounts for a placement in its frame past the
-        origin, and not for one in another frame."""
+        origin, whose name it takes as it has none of its own, and not for
+        one in another frame, which goes in beside it."""
         from classify.reconciliation import recover_missing_genes
         # 3001 bases: the gene is read in frame 1 (2851 % 3) before the origin
         # and in frame 0 ((2851 - 3001) % 3) after it
@@ -206,7 +207,7 @@ class TestClassifier:
                           columns=['Prot Id', 'Start', 'End', 'Strand', 'Match Nt', 'Num nt', 'Contig'])
         combined = {(2851, 150, '+', 'c1'): 'S1_00001'}
         recover_missing_genes(combined, mp)
-        assert set(combined.values()) == {'S1_00001', 'Rv0002'}
+        assert combined == {(2851, 150, '+', 'c1'): 'Rv0001', (34, 141, '+', 'c1'): 'Rv0002'}
 
     def test_a_copy_inside_another_gene_across_the_origin_goes(self):
         """As anywhere else: a placement of a gene placed twice that lies

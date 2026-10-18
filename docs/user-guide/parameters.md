@@ -98,8 +98,11 @@ They must be given together; setting only one is an error. See
 | `--bakta_proteins` | Reference proteins GenBank file for Bakta. | `/reference/sequence.gb` |
 | `--mycobrowser_ref` | Mycobrowser functional categories table. | `/reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt` |
 
-A Bakta database on the host, the full one for instance, is mounted into the
-tasks that use it, so it works with the container profiles too.
+A database or a file of your own on the host, the full Bakta database or a
+newer Mycobrowser table for instance, is mounted into the tasks that use it, so
+it works with the container profiles too. A path that is not on the host is
+read inside the container, where the defaults are, and validation stops a run
+whose file is in neither place.
 
 The eggNOG database is the one exception: it is not bundled, because of its
 size. AMAP downloads and builds it on the first run and caches it at

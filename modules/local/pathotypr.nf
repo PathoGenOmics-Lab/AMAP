@@ -6,11 +6,18 @@ process PATHOTYPR {
 
     input:
     tuple val(sampleId), path(fasta)
+    // The lineage markers and the genome they are defined on, when they are on
+    // the host, staged so that a container sees them, or nothing: then the
+    // params are paths inside the container, where the defaults live
+    path pathotyper_snps, stageAs: 'pathotyper-snps/*'
+    path pathotyper_ref, stageAs: 'pathotyper-ref/*'
 
     output:
     tuple env('SAMPLE_NAME'), path("*.fasta"), path("*_summary.tsv"), emit: typed_fasta
 
     script:
+    def markers = pathotyper_snps ?: params.pathotyper_snps
+    def markers_ref = pathotyper_ref ?: params.pathotyper_ref
     """
     #!/bin/bash
     set -o pipefail
@@ -25,8 +32,8 @@ process PATHOTYPR {
     # bin/classify package, which this task never runs.
     pathotypr 'classify' \\
         -i ${fasta} \\
-        -m "${params.pathotyper_snps}" \\
-        -r "${params.pathotyper_ref}" \\
+        -m "${markers}" \\
+        -r "${markers_ref}" \\
         --output-prefix "${sampleId}" || true
 
     # 2. Ensure summary file exists (even if empty) — Nextflow output glob requires it.

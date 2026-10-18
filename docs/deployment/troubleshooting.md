@@ -46,6 +46,12 @@ resources or logic.
 : A path in the sample sheet does not resolve. Absolute paths avoid the
   ambiguity.
 
+**"not found, neither on the host nor inside the container"**
+: A reference file the run reads is in neither place: a typo in its path, or
+  one of the defaults, which ship in the container, on a run without one. Give
+  the path to your own copy with its
+  [reference argument](../user-guide/parameters.md#reference-and-database-arguments).
+
 **Validation failures**
 : `results/pipeline_info/validation.log` says which check failed and for which
   sample. Thresholds are in [preparing inputs](../getting-started/inputs.md).

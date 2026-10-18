@@ -10,7 +10,9 @@
  * Nextflow was launched, not to the task. So each genome is read where
  * Nextflow staged it, and the sheet's paths only name them in messages. The
  * same goes for a database on the host; one that lives in the container, as
- * the Bakta default does, is checked there.
+ * the Bakta default does, is checked there. So are the reference files that
+ * are not on the host, which the tasks read inside the container: a path
+ * that is in neither place is a typo, or a default run without the container.
  *
  * Exit codes:
  *   0 = passed (warnings are non-fatal)
@@ -38,6 +40,10 @@ process VALIDATE_INPUTS {
     // eggNOG's by the path EGGNOG_DB builds it at, '' when it is not used,
     // and the database itself if it is there already
     tuple val(eggnog_db_path), path(eggnog_db, stageAs: 'eggnog-db/*')
+    // The reference files the run reads inside the container, each with the
+    // param that gives it; those on the host are staged into the tasks that
+    // read them (see main.nf)
+    val references
 
     output:
     path 'validation.log'
@@ -63,6 +69,7 @@ process VALIDATE_INPUTS {
             options << '--eggnog-db-staged ' + quoted.call(eggnog_db)
         }
     }
+    references.each { param, given -> options << '--reference ' + quoted.call(param) + ' ' + quoted.call(given) }
     if (params.strict_validation) {
         options << '--strict'
     }

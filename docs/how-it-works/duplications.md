@@ -39,7 +39,8 @@ ending in `2` the second. For each:
 - **`Genome`, `Community`**: the sample, and the community's number in it.
 - **`Size`**: how many proteins it holds.
 - **`Elements`**: the eggNOG COG categories of its proteins, with how many
-  have each.
+  have each, the largest first. A protein eggNOG gave no category counts as
+  `-`, eggNOG's mark for none.
 - **`AvgDegree`**: links per protein, on average. In a community of n
   proteins it reaches n - 1 when every protein is linked to every other.
 - **`Density`**: the links it has as a share of the pairs it could have. 1
@@ -49,8 +50,6 @@ ending in `2` the second. For each:
   protein is linked to every other, 0 for a chain or a star.
 - **`AvgPathLength`**: how many links separate two of its proteins, on
   average, over its largest connected piece.
-- **`Modularity`**: computed with the whole community as a single group, which
-  makes it 0 every time. It does not tell communities apart.
 - **`Nodes`**: the proteins themselves.
 
 ## Reading them together

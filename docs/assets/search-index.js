@@ -820,7 +820,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Duplication metrics",
 "section": "The columns",
 "url": "how-it-works/duplications.html#the-columns",
-"text": "A row describes two communities: the columns ending in 1 are the first, those ending in 2 the second. For each: Genome, Community: the sample, and the community's number in it. Size: how many proteins it holds. Elements: the eggNOG COG categories of its proteins, with how many have each. AvgDegree: links per protein, on average. In a community of n proteins it reaches n - 1 when every protein is linked to every other. Density: the links it has as a share of the pairs it could have. 1 means every protein matches every other. AvgClustering: for each protein, how often two of its partners are lin"
+"text": "A row describes two communities: the columns ending in 1 are the first, those ending in 2 the second. For each: Genome, Community: the sample, and the community's number in it. Size: how many proteins it holds. Elements: the eggNOG COG categories of its proteins, with how many have each, the largest first. A protein eggNOG gave no category counts as -, eggNOG's mark for none. AvgDegree: links per protein, on average. In a community of n proteins it reaches n - 1 when every protein is linked to every other. Density: the links it has as a share of the pairs it could have. 1 means every protein m"
 },
 {
 "page": "Duplication metrics",

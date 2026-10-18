@@ -11,6 +11,9 @@ process BAKTA_ANNOTATOR {
     // The database when it is on the host, staged so that a container sees
     // it, or nothing: then params.bakta_db is a path inside the container
     path bakta_db, stageAs: 'bakta-db/*'
+    // Likewise the proteins to annotate with: --ref_annotation, or
+    // --bakta_proteins, whose default is inside the container
+    path proteins, stageAs: 'bakta-proteins/*'
 
     output:
     path(sampleId), emit: bakta_dir
@@ -22,7 +25,7 @@ process BAKTA_ANNOTATOR {
     // Use custom reference annotation for --proteins if provided;
     // otherwise fall back to the default H37Rv proteins.
     // Bakta accepts GBK, GFF3, EMBL, and FASTA as --proteins input.
-    def proteins_ref = params.ref_annotation ? params.ref_annotation : params.bakta_proteins
+    def proteins_ref = proteins ?: (params.ref_annotation ?: params.bakta_proteins)
     def db = bakta_db ?: params.bakta_db
     """
     echo "▸ [BAKTA] Annotating ${sampleId}..." >&2

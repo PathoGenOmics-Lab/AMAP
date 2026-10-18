@@ -30,6 +30,7 @@ from classify.plotting import generate_overlap_plot
 from classify.ids import format_cluster_id
 from classify.synteny import drop_paralog_placements
 from classify.exact import place_exact_matches
+from classify.pieces import add_contig_end_pieces
 
 __author__ = 'Paula Ruiz-Rodriguez'
 __credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
@@ -88,6 +89,8 @@ def main():
     parser.add_argument('-g', '--genome', help="Genome FASTA. With --ref-proteome, the proteins "
                                                "miniprot did not place exactly are looked for in it.")
     parser.add_argument('-r', '--ref-proteome', help="Reference proteome the miniprot PAF was made from.")
+    parser.add_argument('--pieces', help="Miniprot PAF of what contig ends cut off the placements "
+                                         "in the first one (contig_end_pieces.py).")
     parser.add_argument('--sample', help="The sample's ID in the sample sheet, for the summary. "
                                          "Default: the name of the Bakta table.")
     parser.add_argument('--lineage', help="The lineage typing called the sample, for the summary. "
@@ -100,9 +103,14 @@ def main():
     bakta_df = read_bakta(args.bakta)
     miniprot_df = read_miniprot(args.miniprot, ref_coords=True)
     # miniprot cannot seed an alignment for the smallest proteins, or puts them
-    # on a near-identical paralog; place the ones the genome encodes exactly.
+    # on a near-identical paralog; place the ones the genome encodes exactly,
+    # or for the shortest, with a few substitutions.
     if args.genome and args.ref_proteome:
         miniprot_df = place_exact_matches(miniprot_df, args.genome, args.ref_proteome)
+    # A gene a contig end cut is placed by its larger piece alone; the others
+    # come from a second pass over what that placement lacks.
+    if args.pieces:
+        miniprot_df = add_contig_end_pieces(miniprot_df, args.pieces)
     # A protein with a paralog is placed at both loci; keep only the placements
     # that do not land on a locus another protein syntenically owns.
     miniprot_df = drop_paralog_placements(miniprot_df)

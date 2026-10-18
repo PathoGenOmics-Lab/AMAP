@@ -9,9 +9,11 @@ Validates:
 3. Assembly metrics (total size, number of contigs, N50)
 4. Potential contamination flags (abnormal size, extreme GC)
 5. Database paths (Bakta DB, eggNOG DB)
+6. Reference files the tasks read inside the container
 
 Usage:
-    validate_inputs.py --tsv samples.tsv [--genomes staged.tsv] [--bakta-db /path] [--eggnog-db /path] [--strict]
+    validate_inputs.py --tsv samples.tsv [--genomes staged.tsv] [--bakta-db /path] [--eggnog-db /path]
+                       [--reference PARAM /path ...] [--strict]
 
 The sample sheet says where each genome is on the host, absolute or relative
 to where Nextflow was launched. A container sees only the folders Nextflow
@@ -251,6 +253,34 @@ def validate_eggnog_db(path, shown_as=None):
             f"have it built again"], [], None
 
 
+# The reference files a run goes on without, and what it does without them:
+# GET_OUTPUTS warns and leaves the Mycobrowser categories out.
+OPTIONAL_REFERENCES = {
+    'mycobrowser_ref': 'the master table will have no Mycobrowser categories',
+}
+
+
+def validate_reference(path, param):
+    """Check a reference file a task reads at this path, which the pipeline
+    parameter `param` gives. Returns (errors, warnings): a problem with one
+    the run cannot do without is an error, with any other a warning.
+
+    The pipeline passes only the ones that are not on the host, so that the
+    tasks read them inside the container; one on the host is staged into the
+    tasks that read it."""
+    if not os.path.exists(path):
+        problem = f"--{param}: {path} not found, neither on the host nor inside the container"
+    elif not os.path.isfile(path):
+        problem = f"--{param}: {path} is not a file"
+    elif os.path.getsize(path) == 0:
+        problem = f"--{param}: {path} is empty"
+    else:
+        return [], []
+    if param in OPTIONAL_REFERENCES:
+        return [], [f"{problem}; {OPTIONAL_REFERENCES[param]}"]
+    return [problem], []
+
+
 def validate_tsv(tsv_path):
     """Validate the input TSV file format."""
     errors = []
@@ -319,6 +349,11 @@ def main():
     parser.add_argument("--eggnog-db-staged", default=None,
                         help="Where to read the eggNOG database instead, when the "
                              "pipeline staged it; messages keep naming --eggnog-db.")
+    parser.add_argument("--reference", nargs=2, action="append", default=[],
+                        metavar=("PARAM", "PATH"),
+                        help="A reference file read at PATH, which the pipeline "
+                             "parameter PARAM gives, named without its dashes; "
+                             "once for each.")
     parser.add_argument("--strict", action="store_true",
                         help="Treat warnings as errors (fail on any issue).")
     parser.add_argument("--quiet", action="store_true",
@@ -365,7 +400,20 @@ def main():
         for e in db_err:
             print(f"    ✗ {e}")
 
-    # 3. Validate each FASTA
+    # 3. Reference files read inside the container
+    if args.reference:
+        print(f"\n--- Reference Files ---")
+    for param, path in args.reference:
+        ref_err, ref_warn = validate_reference(path, param)
+        all_errors.extend(ref_err)
+        all_warnings.extend(ref_warn)
+        print(f"  {'✗' if ref_err else '⚠' if ref_warn else '✓'} --{param}: {path}")
+        for w in ref_warn:
+            print(f"    ⚠ {w}")
+        for e in ref_err:
+            print(f"    ✗ {e}")
+
+    # 4. Validate each FASTA
     print(f"\n--- FASTA Validation ({n_samples} samples) ---")
     
     n_ok = 0
@@ -394,7 +442,7 @@ def main():
         else:
             n_ok += 1
 
-    # 4. Summary
+    # 5. Summary
     print(f"\n{'=' * 60}")
     print(f"Results: {n_ok} OK, {n_warn} warnings, {n_fail} failed")
     print(f"Total: {len(all_errors)} error(s), {len(all_warnings)} warning(s)")

@@ -11,6 +11,11 @@ process PATHOTYPR {
     // new name, and a sample sheet that points sample G26689 at L4_G26689.fasta
     // would otherwise have it written over the input it was read from.
     tuple val(sampleId), path(fasta, stageAs: 'input/*')
+    // The lineage markers and the genome they are defined on, when they are on
+    // the host, staged so that a container sees them, or nothing: then the
+    // params are paths inside the container, where the defaults live
+    path pathotyper_snps, stageAs: 'pathotyper-snps/*'
+    path pathotyper_ref, stageAs: 'pathotyper-ref/*'
 
     output:
     tuple env('SAMPLE_NAME'), path("*.fasta"), path("*_summary.tsv"), emit: typed_fasta
@@ -20,6 +25,8 @@ process PATHOTYPR {
     tuple env('SAMPLE_NAME'), val(sampleId), env('LINEAGE'), emit: names
 
     script:
+    def markers = pathotyper_snps ?: params.pathotyper_snps
+    def markers_ref = pathotyper_ref ?: params.pathotyper_ref
     """
     #!/bin/bash
     # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
@@ -33,8 +40,8 @@ process PATHOTYPR {
     # bin/classify package, which this task never runs.
     pathotypr 'classify' \\
         -i ${fasta} \\
-        -m "${params.pathotyper_snps}" \\
-        -r "${params.pathotyper_ref}" \\
+        -m "${markers}" \\
+        -r "${markers_ref}" \\
         --output-prefix "${sampleId}" || true
 
     # 2. Ensure summary file exists (even if empty): Nextflow output glob requires it.

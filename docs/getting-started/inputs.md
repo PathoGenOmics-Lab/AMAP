@@ -61,6 +61,7 @@ Results are written to `results/pipeline_info/validation.log`.
 | FASTA path | file does not exist or cannot be parsed |
 | Bakta database | not found, or no `version.json` or `bakta.db` in it |
 | eggNOG database | `eggnog_db.ok` in it while the database is incomplete, since Nextflow then never builds it again |
+| Reference files | `--ref_annotation`, `--ref_genome` or a [reference argument](../user-guide/parameters.md#reference-and-database-arguments) that the run reads but that is neither on the host nor inside the container |
 
 ### What only warns
 
@@ -73,6 +74,7 @@ Results are written to `results/pipeline_info/validation.log`.
 | Short contigs | any contig under 200 bp in a multi-contig assembly |
 | Non-standard characters | anything outside `ATGCNRYSWKMBDHV` |
 | eggNOG database | a `bacteria.dmnd` under 100 MB, which `EGGNOG_DB` takes for a truncated download and builds again |
+| Mycobrowser table | `--mycobrowser_ref` neither on the host nor inside the container, so the master table goes without Mycobrowser categories |
 
 Warnings do not stop a run. Add `--strict_validation` to have them stop it too.
 

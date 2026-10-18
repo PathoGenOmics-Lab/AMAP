@@ -138,7 +138,13 @@ def _position_map(ref_seq, target_fasta, minimap2, threads):
 def truth_liftover(args):
     """A gene's coordinates in the target are where its reference coordinates
     land in the alignment, and it counts as truth only if its sequence there is
-    identical, same length included."""
+    identical, same length included.
+
+    A gene that is not identical is 'changed', unless the stretch it lands on
+    is under half its length: then most of it is gone ('deleted'; PPE50,
+    Rv3135, lands on 87 of its 399 bp in CDC1551), and there is nothing to
+    annotate. 'aligned' is how many of the gene's bases the alignment carries
+    across: its size in the target, whatever got inserted into it."""
     fmt = "genbank" if args.reference.endswith((".gb", ".gbk", ".gbff")) else "fasta"
     ref = _first_sequence(args.reference, fmt)
     target = _first_sequence(args.fasta)
@@ -155,9 +161,11 @@ def truth_liftover(args):
             status = "unmapped"
         else:
             s, e = s + 1, e + 1
-            same = (e - s) == (g["end"] - g["start"]) and target[s - 1:e] == ref[g["start"] - 1:g["end"]]
-            status = "ok" if same else "changed"
-            g = dict(g, start=s, end=e)
+            length = g["end"] - g["start"] + 1
+            same = e - s + 1 == length and target[s - 1:e] == ref[g["start"] - 1:g["end"]]
+            status = "ok" if same else "deleted" if 0 < e - s + 1 < 0.5 * length else "changed"
+            aligned = sum(p >= 0 for p in pos[g["start"] - 1:g["end"]])
+            g = dict(g, start=s, end=e, aligned=aligned)
         counts[status] += 1
         rows.append(dict(g, status=status))
     pd.DataFrame(rows).to_csv(args.out, sep="\t", index=False)
@@ -325,15 +333,25 @@ def _changed_found(changed, amap):
     """Genes whose sequence differs from the reference have no exact answer,
     but they should still be annotated where the alignment puts them and
     under their own name: a gene of the table on the same strand, covering at
-    least half of that stretch, with the name among its labels."""
+    least half of the gene there, with the name among its labels.
+
+    Half of the gene, not of the stretch the alignment puts it on: whatever is
+    inserted into a gene (an IS6110, a prophage, a second copy of a gene the
+    sample has twice) makes that stretch longer than the gene itself, and half
+    of it can be more than the whole gene. b1004 of K-12 lands on 63 kb of
+    Sakai with a prophage inside, 597 bp of them its own. The gene's size there
+    is how many of its bases the alignment carries across ('aligned'); a truth
+    table without that column measures the stretch."""
     found = pseudo = 0
     missed = []
     for t in changed.itertuples():
         length = t.end - t.start + 1
+        own = getattr(t, "aligned", None)
+        need = 0.5 * (min(length, own) if pd.notna(own) else length)
         o = amap[(amap.strand == t.strand) & (amap.start <= t.end) & (amap.end >= t.start)]
         for r in o.itertuples():
             cover = min(t.end, r.end) - max(t.start, r.start) + 1
-            if cover >= 0.5 * length and _base(t.name) in {_base(x.strip()) for x in r.rvs.split(",")}:
+            if cover >= need and _base(t.name) in {_base(x.strip()) for x in r.rvs.split(",")}:
                 found += 1
                 pseudo += r.pseudogene == "yes"
                 break

@@ -276,6 +276,7 @@ include { GET_DUPLICATIONS }    from './modules/local/get'
 include { GET_OUTPUTS }         from './modules/local/get'
 include { GET_ALLDUP }          from './modules/local/get'
 include { PANGENE }             from './modules/local/pangene'
+include { PANGENE_GENOME }      from './modules/local/pangene'
 include { REPORT_INPUTS }       from './modules/local/freport'
 include { FINAL_REPORT }        from './modules/local/freport'
 include { PREPARE_REFERENCE; BUNDLED_REFERENCE } from './modules/local/reference'
@@ -353,6 +354,37 @@ def readSampleSheet() {
 }
 
 //
+// --- REFERENCE FILES ---
+//
+// A reference file a task reads by path, as the input that task gets: the file,
+// staged like any other input so that a container sees it, when it is on the
+// host; nothing otherwise, and the task reads the path it was given inside the
+// container, where the defaults live. Handed over as a path, a default would
+// make Nextflow mount the host's missing /reference over the container's own
+// (see BUNDLED_REFERENCE).
+def stagedIfOnHost(path) {
+    return (path && file(path).exists()) ? channel.value(file(path)) : channel.value([])
+}
+
+// The reference files this run reads, each with the param that gives it
+def referenceFiles() {
+    def files = params.ref_annotation
+        ? [['ref_annotation', params.ref_annotation], ['ref_genome', params.ref_genome]]
+        : [['bakta_proteins', params.bakta_proteins],
+           ['miniprot_ref_aa', params.miniprot_ref_aa],
+           ['miniprot_ref_h37rv', params.miniprot_ref_h37rv],
+           ['miniprot_ref_bad_bakta', params.miniprot_ref_bad_bakta]]
+    if (!params.skip_typing) {
+        files += [['pathotyper_snps', params.pathotyper_snps], ['pathotyper_ref', params.pathotyper_ref]]
+    }
+    // Read by GET_OUTPUTS, which runs only with functional annotation
+    if (!params.skip_functional_annotation && !params.skip_mycobrowser) {
+        files += [['mycobrowser_ref', params.mycobrowser_ref]]
+    }
+    return files
+}
+
+//
 // --- WORKFLOW ---
 //
 workflow {
@@ -395,6 +427,17 @@ workflow {
     def eggnog_dir = (!params.skip_functional_annotation && params.eggnog_db) ? file(params.eggnog_db) : null
     eggnog_db_check_ch = channel.value(eggnog_dir ? tuple(eggnog_dir.toString(), eggnog_dir.exists() ? eggnog_dir : []) : tuple('', []))
 
+    // The reference files the tasks read, each staged into them when it is on
+    // the host (see stagedIfOnHost). Bakta's proteins are the custom
+    // reference's annotation when there is one.
+    bakta_proteins_ch  = stagedIfOnHost(params.ref_annotation ?: params.bakta_proteins)
+    pathotyper_snps_ch = stagedIfOnHost(params.pathotyper_snps)
+    pathotyper_ref_ch  = stagedIfOnHost(params.pathotyper_ref)
+    mycobrowser_ref_ch = stagedIfOnHost(params.mycobrowser_ref)
+    // and those not on the host, which the tasks read inside the container,
+    // for VALIDATE_INPUTS to check that they are there
+    refs_in_container_ch = channel.value(referenceFiles().findAll { _param, given -> !(given && file(given).exists()) })
+
     // 0. Input validation and reproducibility, before anything else. The test
     // profile has no sample sheet to validate, only the reference genome the
     // container ships, so validating params.tsv would fail on a file that was
@@ -405,7 +448,8 @@ workflow {
             Channel.value(file(params.tsv)),
             fasta_ch.toList().map { rows -> tuple(rows.collect { row -> row[0] }, rows.collect { row -> row[1] }) },
             bakta_db_ch,
-            eggnog_db_check_ch
+            eggnog_db_check_ch,
+            refs_in_container_ch
         )
     }
     SOFTWARE_VERSIONS()
@@ -435,7 +479,7 @@ workflow {
         // <lineage>_<sampleId>, and a sample ID can hold underscores of its
         // own, so neither can be read back out of the name.
         if (!params.skip_typing) {
-            PATHOTYPR(genomes_ch)
+            PATHOTYPR(genomes_ch, pathotyper_snps_ch, pathotyper_ref_ch)
             typed_ch = PATHOTYPR.out.typed_fasta
             names_ch = PATHOTYPR.out.names
         } else {
@@ -448,7 +492,7 @@ workflow {
         }
 
         // 3. Annotate genomes with Bakta
-        BAKTA_ANNOTATOR(typed_ch.combine(Channel.value(params.genus)).combine(Channel.value(params.species)), bakta_db_ch)
+        BAKTA_ANNOTATOR(typed_ch.combine(Channel.value(params.genus)).combine(Channel.value(params.species)), bakta_db_ch, bakta_proteins_ch)
 
         // 4. Prepare reference proteome (custom or default H37Rv)
         if (params.ref_annotation && params.ref_genome) {
@@ -463,14 +507,19 @@ workflow {
             bad_bakta_ch        = PREPARE_REFERENCE.out.bad_bakta
         } else {
             // Files given on the host are staged as usual. The defaults live inside
-            // the container, and BUNDLED_REFERENCE copies them out (see there).
+            // the container, and BUNDLED_REFERENCE copies them out, together with
+            // any of the three given on the host (see there).
             def refs = [params.miniprot_ref_aa, params.miniprot_ref_h37rv, params.miniprot_ref_bad_bakta]
             if (refs.every { file(it).exists() }) {
                 ref_proteome_ch     = Channel.value(file(params.miniprot_ref_aa))
                 ref_genome_fasta_ch = Channel.value(file(params.miniprot_ref_h37rv))
                 bad_bakta_ch        = Channel.value(file(params.miniprot_ref_bad_bakta))
             } else {
-                BUNDLED_REFERENCE()
+                BUNDLED_REFERENCE(
+                    stagedIfOnHost(params.miniprot_ref_aa),
+                    stagedIfOnHost(params.miniprot_ref_h37rv),
+                    stagedIfOnHost(params.miniprot_ref_bad_bakta)
+                )
                 ref_proteome_ch     = BUNDLED_REFERENCE.out.ref_proteome.first()
                 ref_genome_fasta_ch = BUNDLED_REFERENCE.out.ref_genome_fasta.first()
                 bad_bakta_ch        = BUNDLED_REFERENCE.out.bad_bakta.first()
@@ -512,22 +561,28 @@ workflow {
             ch_for_downstream = FIX_CDS.out.for_downstream.join(eggnog_results_ch)
 
             // 8. Generate final output files (GFF, GBK, Master Table)
-            GET_OUTPUTS(ch_for_downstream.join(names_ch.map { name, _sample, lineage -> tuple(name, lineage) }))
+            GET_OUTPUTS(ch_for_downstream.join(names_ch.map { name, _sample, lineage -> tuple(name, lineage) }), mycobrowser_ref_ch)
 
             // 9. Find and analyze gene duplications
             GET_DUPLICATIONS(ch_for_downstream)
         
             // 10. Runs pangenome for the genes of each genome
-            // Collect typed FASTA files from PATHOTYPR step (or empty channel if skipped)
+            // Each sample's proteins are aligned onto every other sample's
+            // genome, which PANGENE tells apart by file name. The genomes
+            // PATHOTYPR renamed have names of their own; without typing, each
+            // sample's genome from the sheet is copied to <sampleId>.fasta, and
+            // that copy is also the one PANGENE leaves out as the sample's own.
             if (!params.skip_typing) {
                 ref_fastas_ch = PATHOTYPR.out.typed_fasta.map { it[1] }.collect()
+                pangene_ch = ch_for_downstream
             } else {
-                // Use a collected empty list instead of Channel.empty() so that
-                // PANGENE still executes (with 0 reference FASTAs → creates
-                // placeholder outputs). Channel.empty() prevents process execution entirely.
-                ref_fastas_ch = Channel.value([])
+                PANGENE_GENOME(genomes_ch)
+                ref_fastas_ch = PANGENE_GENOME.out.map { _sampleId, genome -> genome }.collect()
+                pangene_ch = ch_for_downstream.join(PANGENE_GENOME.out).map { sampleId, amap_tsv, amap_faa, amap_fna, bakta_tsv, _fasta, emapper, genome ->
+                    tuple(sampleId, amap_tsv, amap_faa, amap_fna, bakta_tsv, genome, emapper)
+                }
             }
-            PANGENE(ch_for_downstream, ref_fastas_ch)
+            PANGENE(pangene_ch, ref_fastas_ch)
 
             // 11. Count annotations per category
             GET_COUNT(GET_OUTPUTS.out.master_table.join(names_ch))

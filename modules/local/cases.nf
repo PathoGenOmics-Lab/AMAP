@@ -14,7 +14,7 @@ process TYPE_CASES {
     input:
     // sample and lineage: the sample's ID in the sheet and what typing called
     // it (Untyped under --skip_typing), for the summary
-    tuple val(sampleId), path(miniprot_paf), path(badbakta_paf), path(h37rv_paf), path(fasta), path(bakta_tsv), path(bakta_faa), val(sample), val(lineage)
+    tuple val(sampleId), path(miniprot_paf), path(badbakta_paf), path(h37rv_paf), path(pieces_paf), path(fasta), path(bakta_tsv), path(bakta_faa), val(sample), val(lineage)
     path ref_proteome      // the proteome miniprot aligned, to place exactly what it could not
 
     output:
@@ -35,6 +35,7 @@ process TYPE_CASES {
         -c ${h37rv_paf} \\
         --genome ${fasta} \\
         --ref-proteome ${ref_proteome} \\
+        --pieces ${pieces_paf} \\
         --sample "${sample}" \\
         --lineage "${lineage}" \\
     || {

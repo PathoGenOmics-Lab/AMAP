@@ -10,8 +10,9 @@
 #
 # Bakta and miniprot run once, with the arguments BAKTA_ANNOTATOR and MINIPROT
 # use, and are reused afterwards. After that a rerun only exercises the
-# algorithm (TYPE_CASES and FIX_CDS) and takes seconds, which is what makes it
-# usable while working on bin/classify or bin/check_cds.py.
+# algorithm (the last step of MINIPROT, TYPE_CASES and FIX_CDS) and takes
+# seconds, which is what makes it usable while working on bin/classify or
+# bin/check_cds.py.
 set -euo pipefail
 
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
@@ -60,9 +61,15 @@ IN=$WORK/inputs
 rm -rf "$WORK/run"
 mkdir -p "$WORK/run"
 cd "$WORK/run"
+# MINIPROT's pass over what contig ends cut off runs AMAP code, so it is never reused.
+python3 "$REPO/bin/contig_end_pieces.py" "$IN/$SAMPLE.paf" "$REF/aa_H37Rv.translated.fas" \
+    > "$SAMPLE-pieces.faa" 2> pieces.log
+miniprot --outs=0.95 -L 10 -n 2 -Iut4 -S "$IN/$SAMPLE.fasta" "$SAMPLE-pieces.faa" \
+    > "$SAMPLE-pieces.paf" 2>> pieces.log
 python3 "$REPO/bin/classify_cases.py" -b "$IN/$SAMPLE/$SAMPLE.tsv" -p "$IN/$SAMPLE.paf" \
     -bb "$IN/$SAMPLE-badbakta.paf" -c "$IN/$SAMPLE-ref.paf" \
-    --genome "$IN/$SAMPLE.fasta" --ref-proteome "$REF/aa_H37Rv.translated.fas" > classify.log 2>&1
+    --genome "$IN/$SAMPLE.fasta" --ref-proteome "$REF/aa_H37Rv.translated.fas" \
+    --pieces "$SAMPLE-pieces.paf" > classify.log 2>&1
 python3 "$REPO/bin/check_cds.py" "$IN/$SAMPLE.fasta" "${SAMPLE}_corrected.tsv" \
     --ref-proteome "$REF/aa_H37Rv.translated.fas" > check.log 2>&1
 python3 "$REPO/bin/deduplicate_rvs.py" "$SAMPLE.AMAP.tsv" --faa "$SAMPLE.AMAP.faa" \

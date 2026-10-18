@@ -148,7 +148,8 @@ class TestWriteFasta:
 def _module():
     """PATHOTYPR's script block as Nextflow strips it, and where its genome is staged."""
     text = MODULE.read_text()
-    script = re.search(r'^    script:\n    """\n(.*?)\n    """\n', text, re.S | re.M)
+    # the Groovy lines before the string (the fallbacks for staged files) are not part of it
+    script = re.search(r'^    script:\n(?:    (?!""")[^\n]*\n)*?    """\n(.*?)\n    """\n', text, re.S | re.M)
     stage = re.search(r"path\(fasta, stageAs: '([^']+)'\)", text)
     return textwrap.dedent(script.group(1)) + '\n', stage.group(1) if stage else '*'
 
@@ -219,8 +220,8 @@ def _run_module(tmp_path, sample, genome_name, genome, summary_text=None):
     rendered = _render(script, {
         'sampleId': sample,
         'fasta': staged.relative_to(work).as_posix(),
-        'params.pathotyper_snps': 'snps_lineages.tsv',
-        'params.pathotyper_ref': 'MTB_ancestor_reference.fasta',
+        'markers': 'snps_lineages.tsv',
+        'markers_ref': 'MTB_ancestor_reference.fasta',
         'projectDir': str(ROOT),
     })
     # Nextflow reads env() outputs after the script, as this does

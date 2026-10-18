@@ -103,7 +103,9 @@ Two kinds of gene carry marks, written the way NCBI writes them:
   `/translation`.
 - **Genes a contig end cut short**, in a draft assembly, have `partial=true`,
   with `start_range=.,START` or `end_range=END,.` on the open end, and `<` or
-  `>` on that end of the GenBank location. They are not pseudogenes.
+  `>` on that end of the GenBank location. They are not pseudogenes. Each
+  piece of a cut gene is there under the gene's name, the first in the
+  assembly with the gene's identifier and the others with `_2`, `_3`.
 
 The same three facts, `pseudogene`, `partial` (`5'`, `3'` or both) and `note`,
 are the last columns of the master table and of `*-AMAP.tsv`.

@@ -289,7 +289,8 @@
       const st = pred + +S[row];
       const len = +L[row] + (r >= 0 ? ref.end[r] - ref.start[r] + 1 : 0);
       start[row] = st;
-      end[row] = st + len - 1;
+      // A gene across the origin of a circular sequence: its end written out
+      end[row] = enc.w && key in enc.w ? +enc.w[key] : st + len - 1;
       ri[row] = r;
       const bit = +T[row];
       plus[row] = r >= 0 ? ((refPlus[r] !== reverse) === (bit === 0) ? 1 : 0) : bit === 1 ? 1 : 0;
@@ -340,13 +341,17 @@
     const g = genesOf(si);
     const key = String(row);
     const note = key in g.enc.p ? D.notes[g.enc.p[key]] : '';
+    const contigLen = (g.contigLen || [])[g.contig[row]];
+    const across = g.start[row] > g.end[row];
     return {
       id: g.ids[row],
       contig: g.contigs[g.contig[row]],
       start: g.start[row],
       end: g.end[row],
       strand: g.plus[row] ? '+' : '-',
-      length: g.end[row] - g.start[row] + 1,
+      // Across the origin, from its start round to its end
+      length: across ? (contigLen ? contigLen - g.start[row] + 1 + g.end[row] : null) : g.end[row] - g.start[row] + 1,
+      across,
       rvs: rvsOf(g, row),
       pseudo: key in g.enc.p,
       note,
@@ -1494,9 +1499,9 @@
           { key: 'start', label: 'Start', num: true, value: (r) => (r.gene ? r.gene.start : null) },
           { key: 'end', label: 'End', num: true, value: (r) => (r.gene ? r.gene.end : null) },
           { key: 'strand', label: 'Strand', value: (r) => (r.gene ? r.gene.strand : '') },
-          { key: 'aa', label: 'Length', num: true, value: (r) => (r.gene ? r.gene.length : null), render: (r) => (r.gene ? fmt(r.gene.length) + ' bp' : '') },
-          { key: 'delta', label: 'vs reference', num: true, value: (r) => (r.gene && refLen ? r.gene.length - refLen : null), render: (r) => (r.gene && refLen ? (r.gene.length - refLen > 0 ? '+' : '') + fmt(r.gene.length - refLen) + ' bp' : '') },
-          { key: 'note', label: 'Note', wrap: true, value: (r) => (r.gene ? [r.gene.note, r.gene.partial ? 'cut at its ' + r.gene.partial.replace('\'', '') + '\' end by a contig end' : '', r.gene.rvs.length > 1 ? 'also names ' + r.gene.rvs.filter((x) => x !== REF.names[gi]).join(', ') : ''].filter(Boolean).join('; ') : (r.letter === 'M' ? 'no gene names it' : '')) },
+          { key: 'aa', label: 'Length', num: true, value: (r) => (r.gene ? r.gene.length : null), render: (r) => (r.gene && r.gene.length != null ? fmt(r.gene.length) + ' bp' : '') },
+          { key: 'delta', label: 'vs reference', num: true, value: (r) => (r.gene && refLen && r.gene.length != null ? r.gene.length - refLen : null), render: (r) => (r.gene && refLen && r.gene.length != null ? (r.gene.length - refLen > 0 ? '+' : '') + fmt(r.gene.length - refLen) + ' bp' : '') },
+          { key: 'note', label: 'Note', wrap: true, value: (r) => (r.gene ? [r.gene.note, r.gene.partial ? 'cut at its ' + r.gene.partial.replace('\'', '') + '\' end by a contig end' : '', r.gene.across ? 'runs across the origin of its circular sequence' : '', r.gene.rvs.length > 1 ? 'also names ' + r.gene.rvs.filter((x) => x !== REF.names[gi]).join(', ') : ''].filter(Boolean).join('; ') : (r.letter === 'M' ? 'no gene names it' : '')) },
           { key: 'origin', label: 'How AMAP got it', value: (r) => (r.gene ? ORIGIN_LABEL[r.gene.origin] || '' : '') },
         ],
         rows, unit: 'row', csv: 'amap_gene_' + REF.names[gi] + '.csv', pageSize: 50, sort: 'lineage',

@@ -160,7 +160,9 @@ def read_proteome(path):
                 if m:
                     name, start, end = m.group(1), int(m.group(2)), int(m.group(3))
                     if start > end:
-                        start, end = end, start
+                        # Across the origin of a circular reference: no one
+                        # place on a straight axis
+                        start = end = None
                 else:
                     name, start, end = header, None, None
                 length = 0
@@ -183,11 +185,13 @@ def read_amap_table(path):
         if start is None or end is None:
             continue
         rvs = [x.strip() for x in r.get('rvs', '').split(',') if x.strip()]
+        # A gene across the origin of a circular sequence keeps its start
+        # after its end, as AMAP and Bakta write it (see classify/circular.py)
         genes.append({
             'id': r.get('id', ''),
             'strand': '-' if r.get('strand') == '-' else '+',
-            'start': min(start, end),
-            'end': max(start, end),
+            'start': start,
+            'end': end,
             'rvs': rvs,
             'pseudo': r.get('pseudogene', '').lower() in ('yes', 'true', '1'),
             'contig': r.get('contig', ''),
@@ -419,17 +423,26 @@ def gene_status(hits, ref_len):
     own = [h for h in hits if len(h['rvs']) == 1]
     if not own:
         return SHARED, str(len(hits)), hits[0]
-    best = sorted(own, key=lambda h: (h['pseudo'], -(h['end'] - h['start'])))[0]
+    best = sorted(own, key=lambda h: (h['pseudo'], -(gene_length(h) or 0)))[0]
     if best['pseudo']:
         return PSEUDO, '', best
     if best['partial']:
         return PARTIAL, best['partial'].replace("'", ''), best
     if len(own) > 1:
         return COPIES, str(len(own)), best
-    length = best['end'] - best['start'] + 1
-    if ref_len and length != ref_len:
+    length = gene_length(best)
+    if ref_len and length and length != ref_len:
         return LENGTH, str(length - ref_len), best
     return '', '', best
+
+
+def gene_length(g):
+    """Bases of a gene, across the origin of its circular sequence too, which
+    needs the sequence's length (None when it is not known)."""
+    if g['start'] <= g['end']:
+        return g['end'] - g['start'] + 1
+    n = g.get('contig_length')
+    return n - g['start'] + 1 + g['end'] if n else None
 
 
 class Strings:
@@ -518,7 +531,7 @@ def encode_genes(name, genes, contigs, ref, ref_strand, origins, notes, products
     """
     cidx = {c: i for i, c in enumerate(contigs)}
     col_c, col_r, col_s, col_l, col_t, col_b = [], [], [], [], [], []
-    extra, ids, pseudo, partial, prod = {}, {}, {}, {}, {}
+    extra, ids, pseudo, partial, prod, wrap = {}, {}, {}, {}, {}, {}
     last = {}            # contig -> (ref index, start) of its last single-reference gene
     prev_start = {}      # contig -> start of its last gene
     # A Bakta call's number follows the last one's, one further on for each
@@ -536,6 +549,11 @@ def encode_genes(name, genes, contigs, ref, ref_strand, origins, notes, products
         if len(g['rvs']) > 1 or (g['rvs'] and not single):
             extra[key] = [ref['index'].get(r, r) for r in g['rvs']]
         length = g['end'] - g['start'] + 1
+        if g['start'] > g['end']:
+            # Across the origin: its end is written out, its length taken as
+            # the reference's
+            wrap[key] = g['end']
+            length = (ref['end'][ri] - ref['start'][ri] + 1) if ri >= 0 else 0
         reverse = False
         if ri >= 0 and c in last:
             pr, ps = last[c]
@@ -583,7 +601,7 @@ def encode_genes(name, genes, contigs, ref, ref_strand, origins, notes, products
     return {
         'n': len(genes), 'c': rle(col_c), 'r': rle(col_r), 's': rle(col_s),
         'l': rle(col_l), 't': rle(col_t), 'o': rle(origins), 'b': rle(col_b),
-        'x': extra, 'id': ids, 'p': pseudo, 'q': partial, 'pr': prod,
+        'x': extra, 'id': ids, 'p': pseudo, 'q': partial, 'pr': prod, 'w': wrap,
     }
 
 
@@ -631,7 +649,8 @@ def decode_genes(name, enc, ref, ref_strand, contigs):
             gid = f'{name}_{rvs[0]}'
         if origin == 'R':
             replaced += 1
-        genes.append({'id': gid, 'contig': contigs[c], 'start': start, 'end': start + length - 1,
+        end = enc['w'][key] if key in enc.get('w', {}) else start + length - 1
+        genes.append({'id': gid, 'contig': contigs[c], 'start': start, 'end': end,
                       'strand': '+' if plus else '-', 'rvs': rvs, 'origin': origin,
                       'pseudo': key in enc['p'], 'partial': enc['q'].get(key, '')})
         if ri >= 0:
@@ -901,6 +920,9 @@ def build(args):
                 contig_list = read_gff_regions(bakta_gff[name])
         contigs = [c for c, _ in contig_list] or list(dict.fromkeys(g['contig'] for g in genes))
         contig_len = [l for _, l in contig_list]
+        lengths = dict(contig_list)
+        for g in genes:
+            g['contig_length'] = lengths.get(g['contig'])
 
         # Cases
         cases = {c: read_case_table(case_files[c][name]) for c in '1234' if name in case_files[c]}

@@ -509,6 +509,73 @@ class TestFunctionalInputs:
         assert data['communities'] == [{'Community': '1', 'Genomes': '2', 'Nodes': 'L4_H37Rv_00001,A4_AF2122_00002'}]
 
 
+class TestAcrossTheOrigin:
+    """A gene across the origin of a circular sequence keeps its start after
+    its end in AMAP's tables, as Bakta writes it: stcE on the 92,721 bp
+    plasmid pO157 of E. coli Sakai is 92563 to 2502."""
+
+    @staticmethod
+    def _inputs(tmp_path, stce_ref_end=2661, with_gff=True):
+        amap = tmp_path / 'amap'
+        amap.mkdir()
+        (amap / 'Sakai.AMAP.tsv').write_text(
+            'id\tstrand\tstart\tend\trvs\tpseudogene\tcontig\tpartial\tnote\n'
+            'Sakai_00001\t+\t92563\t2502\tstcE\tno\tpO157\t\t\n'
+            'Sakai_00002\t+\t3000\t3299\tgeneB\tno\tpO157\t\t\n')
+        ref = tmp_path / 'ref.faa'
+        ref.write_text(f'>stcE_1-{stce_ref_end}\nMA\n>geneB_3001-3300\nMA\n')
+        argv = ['--amap', str(amap), '--ref-proteome', str(ref), '--out', str(tmp_path / 'r.html')]
+        if with_gff:
+            gff = tmp_path / 'bakta' / 'Sakai'
+            gff.mkdir(parents=True)
+            (gff / 'Sakai.gff3').write_text('##gff-version 3\n##sequence-region pO157 1 92721\n')
+            argv += ['--bakta', str(tmp_path / 'bakta')]
+        return argv
+
+    def _run(self, argv, tmp_path):
+        ar.main(argv)
+        return ar.load_embedded((tmp_path / 'r.html').read_text())
+
+    def test_its_coordinates_come_back_as_written(self, tmp_path):
+        data = self._run(self._inputs(tmp_path), tmp_path)
+        enc = data['tables']['Sakai']
+        genes = ar.decode_genes('Sakai', enc, _ref(data), [c == '+' for c in data['ref']['strand']], enc['cn'])
+        assert [(g['id'], g['start'], g['end']) for g in genes] == [('Sakai_00001', 92563, 2502), ('Sakai_00002', 3000, 3299)]
+
+    def test_its_length_runs_round_the_origin(self, tmp_path):
+        # 92563..92721 and 1..2502: 2661 bases, the reference's length
+        data = self._run(self._inputs(tmp_path), tmp_path)
+        assert _states(data, 'Sakai') == {}
+
+    def test_a_length_change_is_measured_round_the_origin(self, tmp_path):
+        data = self._run(self._inputs(tmp_path, stce_ref_end=2664), tmp_path)
+        assert _states(data, 'Sakai') == {'stcE': ('L', '-3')}
+
+    def test_without_the_sequence_length_it_is_not_measured(self, tmp_path):
+        data = self._run(self._inputs(tmp_path, stce_ref_end=2664, with_gff=False), tmp_path)
+        assert _states(data, 'Sakai') == {}
+
+    def test_a_reference_gene_across_its_origin_has_no_place(self, tmp_path):
+        faa = tmp_path / 'ref.faa'
+        faa.write_text('>dnaA_4411000-1524\nMA\n')
+        genes, _ = ar.read_proteome(faa)
+        assert (genes[0]['start'], genes[0]['end']) == (None, None)
+
+    @pytest.mark.skipif(not shutil.which('node'), reason='needs node')
+    def test_the_page_decodes_it_too(self, tmp_path):
+        data = self._run(self._inputs(tmp_path), tmp_path)
+        inp = tmp_path / 'in.json'
+        inp.write_text(json.dumps({'enc': data['tables']['Sakai'], 'ref': _ref(data),
+                                   'plus': [c == '+' for c in data['ref']['strand']]}))
+        script = ("const m = require(process.argv[1]);"
+                  "const d = JSON.parse(require('fs').readFileSync(process.argv[2], 'utf8'));"
+                  "const g = m.decodeGenes('Sakai', d.enc, d.ref, d.plus);"
+                  "process.stdout.write(JSON.stringify([Array.from(g.start), Array.from(g.end)]));")
+        out = subprocess.run(['node', '-e', script, str(REPORT / 'amap_report.js'), str(inp)],
+                             capture_output=True, text=True, check=True).stdout
+        assert json.loads(out) == [[92563, 3000], [2502, 3299]]
+
+
 class TestReference:
     def test_names_with_underscores_and_no_coordinates(self, tmp_path):
         faa = tmp_path / 'ref.faa'

@@ -93,8 +93,8 @@ directly comparable with 1.0.1.
 - **`tests/test_pangene_genomes.py`** runs PANGENE_GENOME and PANGENE's scripts as Nextflow renders them, with stand-ins for miniprot and pangene, and fails unless each sample is aligned onto every other sample's genome and never onto its own, typed or not
 - **`tests/test_report_tables.py`** merges two Rtabs as PANGENE writes them and checks that the report reads every table a `#` can reach without a comment character; where R is installed, as in the container, it also runs the report's pangenome code on the merged matrix
 - **`tests/test_cog_counts.py`** counts COG categories as `count_annot.py` does, for genes in none, in two and in lowercase, then runs the steps after the correction as `tests/test_sample_ids.py` chains them, with eggNOG giving some genes no category and then no gene one, and reads what the report's own overview and per-COG figures plot where R is installed, each category in a figure of its own
-- **`tests/test_amap_report.py`** writes the report from four genomes of a real run cut to two stretches of the reference (`tests/data/report/`, rebuilt by its `make_fixture.py`), where M. bovis lacks RD4 and a contig end cuts dnaE2, and checks that every gene, and every Bakta call AMAP did not keep, comes back out of the page as it went in, with Python and, where node is installed, with the page's own JavaScript, along with the states, the flags, the correction's steps and what the process hands the script
-- **559 tests**, up from 92
+- **`tests/test_amap_report.py`** writes the report from four genomes of a real run cut to two stretches of the reference (`tests/data/report/`, rebuilt by its `make_fixture.py`), where M. bovis lacks RD4 and a contig end cuts dnaE2, plus a gene across the origin of a circular plasmid, and checks that every gene, and every Bakta call AMAP did not keep, comes back out of the page as it went in, with Python and, where node is installed, with the page's own JavaScript, along with the states, the flags, the correction's steps and what the process hands the script
+- **565 tests**, up from 92
 
 ## [1.0.1] - 2026-07-25
 

@@ -388,7 +388,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Outputs",
 "section": "*-AMAP.qc.tsv",
 "url": "user-guide/outputs.html#-amapqctsv",
-"text": "One row per sample: genome size, contig count, N50, GC%, total CDS, pseudogene count, hypothetical protein percentage, mean and median gene length, coding density, and the eggNOG annotation rate. Useful for spotting the sample that went wrong."
+"text": "One row per sample: genome size, contig count, N50, GC%, total CDS, how many of them AMAP calls pseudogenes (those with pseudo=true in the GFF3), hypothetical protein percentage, mean and median gene length, coding density, and the eggNOG annotation rate. Useful for spotting the sample that went wrong."
 },
 {
 "page": "Outputs",

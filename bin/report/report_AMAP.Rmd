@@ -371,7 +371,8 @@ data <- data %>% mutate(V4 = factor(V4)) %>% droplevels()
 has_rvmissing <- file.exists(params$rvmissing_file) && file.info(params$rvmissing_file)$size > 0
 if (has_rvmissing) {
   rvmissing_raw <- tryCatch(
-    read.table(params$rvmissing_file, sep="\t", header=F, fill=T, stringsAsFactors=F, quote=""),
+    # No comment character: Prot_Id holds the reference annotation's gene IDs
+    read.table(params$rvmissing_file, sep="\t", header=F, fill=T, stringsAsFactors=F, quote="", comment.char=""),
     error = function(e) NULL)
   if (!is.null(rvmissing_raw) && ncol(rvmissing_raw) >= 5) {
     # Columns: Prot_Id, Prot_len, Strand, Start, End, Match_Nt, Num_nt, Sample
@@ -411,10 +412,13 @@ if (has_mastertable) {
 }
 
 # Pangene Rtab
+# pangene names each genome <name>#0. With read.table's default comment
+# character the header stopped at the first "#": one genome column was lost
+# and the gene names became row names. check.names keeps the names as written.
 has_pangene <- file.exists(params$pangene_file) && file.info(params$pangene_file)$size > 0
 if (has_pangene) {
   pangene_raw <- tryCatch(
-    read.table(params$pangene_file, sep="\t", header=T, fill=T, stringsAsFactors=F, quote=""),
+    read.table(params$pangene_file, sep="\t", header=T, fill=T, stringsAsFactors=F, quote="", comment.char="", check.names=F),
     error = function(e) NULL)
   if (is.null(pangene_raw) || ncol(pangene_raw) < 2) has_pangene <- FALSE
 }
@@ -423,7 +427,8 @@ if (has_pangene) {
 has_dups <- file.exists(params$dup_file) && file.info(params$dup_file)$size > 0
 if (has_dups) {
   dup_data <- tryCatch(
-    read.table(params$dup_file, sep="\t", header=T, fill=T, stringsAsFactors=F, quote=""),
+    # No comment character: Nodes1/Nodes2 list gene IDs from the reference annotation
+    read.table(params$dup_file, sep="\t", header=T, fill=T, stringsAsFactors=F, quote="", comment.char=""),
     error = function(e) NULL)
   if (is.null(dup_data)) has_dups <- FALSE
 }

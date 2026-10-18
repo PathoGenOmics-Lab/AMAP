@@ -29,6 +29,14 @@ preceded by a start codon and followed by a stop, and each exact copy found
 where Miniprot did not already place the protein becomes a complete placement.
 Proteins shorter than 8 residues are not searched.
 
+A protein of up to **50** residues with no exact copy is looked for again,
+allowing substitutions in at most **a fifth** of its residues after the first,
+which varies with the start codon; a stop codon in place of a residue counts as
+one, and the gene is then flagged as a pseudogene in step 7. *E. coli* O157:H7
+Sakai carries ten of K-12's micro-proteins with one to four residues changed,
+and none was annotated. A copy with an insertion or a deletion is not found
+this way.
+
 ### Paralog placements
 
 Miniprot places a reference protein everywhere it scores within 5% of its best,
@@ -266,6 +274,8 @@ sets of coordinates overlap, which one survives into the curated annotation.
 | Proteins placed once, each side, for the local offset | paralog placements | 5 |
 | Cover to claim another protein's placement | paralog placements | 50% |
 | Shortest protein looked for exactly | small proteins | 8 residues |
+| Longest protein looked for with substitutions | small proteins | 50 residues |
+| Residues after the first that may differ | small proteins | 20% |
 | Cover for a gene to account for a placement | rescuing missing genes | 50% |
 | Share of its protein an alignment spans to name a longer call | rescuing missing genes | 50% |
 | Length of a further copy, next to the first | final deduplication | 90% |

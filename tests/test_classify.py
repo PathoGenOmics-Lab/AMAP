@@ -1910,6 +1910,93 @@ class TestExactPlacements:
             ['gU', '+', u, u + 26, 27, 27, 'chr', True, 5000.0, 5026.0]]
 
 
+class TestNearPlacements:
+    """E. coli O157:H7 Sakai carries ten of K-12's micro-proteins with one to
+    four residues changed. miniprot places none of them where they are and
+    the exact search cannot, so none was annotated."""
+
+    FILL = "GCA" * 10
+
+    @staticmethod
+    def _revcomp(s):
+        return s[::-1].translate(str.maketrans("ACGT", "TGCA"))
+
+    @staticmethod
+    def _orf(protein, start="ATG"):
+        codon = {'M': 'ATG', 'K': 'AAA', 'L': 'CTG', 'V': 'GTT', 'W': 'TGG', 'F': 'TTT',
+                 'Y': 'TAT', 'H': 'CAT', 'R': 'CGT', 'E': 'GAA', 'S': 'TCT', '*': 'TAA'}
+        return start + "".join(codon[a] for a in protein[1:])
+
+    def _frames(self, d, genome):
+        from classify.exact import _six_frames
+        path = os.path.join(d, 'g.fasta')
+        with open(path, 'w') as f:
+            f.write(">chr\n" + genome + "\n")
+        return _six_frames(path)
+
+    def test_a_copy_with_a_few_substitutions_is_found(self):
+        """b4793, 23 residues, differs in four (83%); b4513 opens with GTG."""
+        from classify.exact import find_near
+        ref = 'MKLVWFYHRESKLVWFYHRESKL*'                     # 23 residues
+        got = 'MKLVWFYHREEKLVWFYHRESKF*'                     # two changed
+        genome = self.FILL + self._orf(got, 'GTG') + self.FILL + self._revcomp(self._orf(got)) + self.FILL
+        with tempfile.TemporaryDirectory() as d:
+            hits = list(find_near(ref, self._frames(d, genome)))
+        n = len(self._orf(got))
+        assert hits == [('chr', 31, 30 + n, '+', 2), ('chr', 61 + n, 60 + 2 * n, '-', 2)]
+
+    def test_too_many_differences_and_missing_ends_are_not(self):
+        """A fifth of the residues after the first may differ, no more; and a
+        copy still needs its start codon and its stop."""
+        from classify.exact import find_near
+        ref = 'MKLVWFYHRESKLVWFYHRESKL*'
+        five = 'MKLVWYYHREEKHVWFYHRFSKF*'                    # five of 22 changed
+        no_start = self._orf('MKLVWFYHREEKLVWFYHRESKF*', 'GCT')
+        no_stop = self._orf('MKLVWFYHREEKLVWFYHRESKF*')[:-3] + 'TGG'
+        with tempfile.TemporaryDirectory() as d:
+            for orf in (self._orf(five), no_start, no_stop):
+                assert list(find_near(ref, self._frames(d, self.FILL + orf + self.FILL))) == []
+
+    def test_a_stop_in_place_of_a_residue_is_a_difference(self):
+        """b1229 in Sakai: Q6 became a stop. The copy is found, and
+        check_cds.py makes it a pseudogene for its internal stop."""
+        from classify.exact import find_near
+        ref = 'MKLVWFYHRESKLVWFYHRESKL*'
+        with tempfile.TemporaryDirectory() as d:
+            hits = list(find_near(ref, self._frames(d, self.FILL + self._orf('MKLVW*YHRESKLVWFYHRESKL*') + self.FILL)))
+        assert [h[4] for h in hits] == [1]
+
+    def test_only_short_proteins_with_no_exact_copy_are_searched_this_way(self):
+        """gN has an exact copy, so its near one is not looked for; gL, 51
+        residues, is long enough for miniprot. gS is placed with its two
+        substitutions counted against it."""
+        from classify.exact import place_exact_matches
+        p_s = 'MKLVWFYHRESKLVWFYHRESKL*'
+        p_n = 'MRRRRRRRRRRRRRKKKK*'
+        p_l = 'M' + 'KLVWFYHRES' * 5 + '*'
+        orf_s = self._orf('MKLVWFYHREEKLVWFYHRESKF*')
+        orf_n, orf_n2 = self._orf(p_n), self._orf('MRRRRRRRRRRRRRKKKF*')
+        orf_l = self._orf('M' + 'KLVWFYHRES' * 4 + 'KLVWFYHREE' + '*')
+        genome = self.FILL.join(['', orf_s, orf_n, orf_n2, orf_l, ''])
+        s, n = genome.index(orf_s) + 1, genome.index(orf_n) + 1
+        cols = ['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt',
+                'Contig', 'Complete', 'Ref Start', 'Ref End']
+        mp = pd.DataFrame([[g, 0, '*', 1, 0, 0, 0, '*', False, 1.0, 2.0] for g in ('gS', 'gN', 'gL')],
+                          columns=cols)
+        with tempfile.TemporaryDirectory() as d:
+            genome_path = os.path.join(d, 'g.fasta')
+            with open(genome_path, 'w') as f:
+                f.write(">chr\n" + genome + "\n")
+            proteome = os.path.join(d, 'p.faa')
+            with open(proteome, 'w') as f:
+                f.write(f">gS_1-2\n{p_s}\n>gN_1-2\n{p_n}\n>gL_1-2\n{p_l}\n")
+            out = place_exact_matches(mp, genome_path, proteome)
+        placed = out[out['Contig'] != '*']
+        assert placed[['Prot Id', 'Start', 'End', 'Match Nt', 'Num nt']].values.tolist() == [
+            ['gS', s, s + 71, 66, 72], ['gN', n, n + 56, 57, 57]]
+        assert list(out.loc[out['Contig'] == '*', 'Prot Id']) == ['gL']
+
+
 # =============================================================================
 # CONTIGS
 # =============================================================================

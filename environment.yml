@@ -15,7 +15,7 @@ dependencies:
   - bakta=1.12.0
   - miniprot=0.18
   - diamond=2.1.24
-  - eggnog-mapper=2.1.12
+  - eggnog-mapper=2.1.13
   - pangene=1.1
   - pathotypr=1.0.0
   # Runtime

@@ -143,64 +143,37 @@ def main():
         "master_table_file",
         help="Path to the input master annotation TSV file (e.g., *-AMAPmastertable.tsv)."
     )
+    parser.add_argument(
+        "--sample",
+        help="The sample's ID in the sample sheet, for the genome column "
+             "(default: the name of the master table)."
+    )
+    parser.add_argument(
+        "--lineage",
+        help="The lineage typing called the sample (default: Untyped)."
+    )
     args = parser.parse_args()
-    
+
     input_path = Path(args.master_table_file)
     base_name = input_path.name.replace("-AMAPmastertable.tsv", "")
 
     # Read and preprocess the data
     df = pd.read_csv(input_path, sep='\t', low_memory=False)
     df.replace("-", np.nan, inplace=True)
-    
-    # --- START: ID PROCESSING LOGIC ---
-    # Use the first column as the source for IDs
-    id_source = df.iloc[:, 0].astype(str)
 
     # A gene is a "sample" gene if the 'rvs' column IS empty (NaN).
     # A gene is a "reference" gene if the 'rvs' column is NOT empty.
     is_sample_gene = df['rvs'].isna()
-    is_ref_gene = ~is_sample_gene
 
-    # Determine the primary lineage and genome ID from the sample genes.
-    # ID format: "LINEAGE_GENOME_GENEID" (e.g., "L8_G26689_00042")
-    # For non-typed samples (skip_typing), format may be just "GENOME_GENEID"
-    # (e.g., "G26689_00042") with no lineage prefix.
-    sample_ids = id_source[is_sample_gene]
-    if not sample_ids.empty:
-        first_sample_id_parts = sample_ids.iloc[0].split('_')
-        if len(first_sample_id_parts) >= 3:
-            # Standard format: LINEAGE_GENOME_GENEID
-            sample_lineage = first_sample_id_parts[0]
-            sample_genome_id = first_sample_id_parts[1]
-        elif len(first_sample_id_parts) == 2:
-            # No lineage prefix (skip_typing): GENOME_GENEID
-            sample_lineage = 'Untyped'
-            sample_genome_id = first_sample_id_parts[0]
-        else:
-            sample_lineage = 'Unknown'
-            sample_genome_id = first_sample_id_parts[0] if first_sample_id_parts else 'Unknown'
-    else:
-        # All genes are reference genes — extract from the first reference ID
-        ref_ids = id_source[is_ref_gene]
-        if not ref_ids.empty:
-            ref_parts = ref_ids.iloc[0].split('_')
-            sample_lineage = ref_parts[0] if len(ref_parts) >= 2 else 'Unknown'
-            sample_genome_id = ref_parts[1] if len(ref_parts) >= 2 else ref_parts[0]
-        else:
-            sample_lineage = 'Unknown'
-            sample_genome_id = 'Unknown'
-
-    # Assign 'lineage' column
-    # All genes in one file belong to the same sample → same lineage
-    df['lineage'] = sample_lineage
-
-    # Assign 'genome' column
-    # For reference genes, prepend the sample's genome ID.
-    # For sample genes, use everything after the first underscore.
-    # All genes in one master table belong to the same sample.
-    # Use the consistent sample_genome_id for ALL genes.
-    df['genome'] = sample_genome_id
-    # --- END: ID PROCESSING LOGIC ---
+    # Every gene in a master table is the same sample's, and the pipeline says
+    # which sample that is and its lineage. They used to be read out of the
+    # gene IDs, <name>_<gene>, but the name is <lineage>_<sampleId> after
+    # lineage typing and the sample ID alone without it, and a sample ID can
+    # hold underscores of its own: L4_H37Rv_test counted as genome H37Rv,
+    # samples Beijing_1 and Beijing_2 as one, and H37Rv_test under
+    # --skip_typing as lineage H37Rv.
+    df['lineage'] = args.lineage or 'Untyped'
+    df['genome'] = args.sample or base_name
 
     # Process COG categories (always available from eggNOG)
     cog_summary = process_cog_categories(df)

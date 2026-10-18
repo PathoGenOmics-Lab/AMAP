@@ -777,8 +777,8 @@
     },
     PANGENE: {
       name: "Pangenome", proc: "PANGENE", x: 930, y: 320, label: "below", lineOnly: "pan",
-      text: "Each sample's corrected proteins aligned onto every other genome as PATHOTYPR wrote it, then a pangene graph and a presence/absence matrix.",
-      reads: "the corrected proteins, and the genomes PATHOTYPR renamed", writes: "PANGENE/{sample}/", flags: "with --skip_typing there are no renamed genomes, and it writes empty files", doc: "how-it-works/workflow.html#9-pangenome", exit: "PANGENE/", exitSide: "right", functional: true, needsTyping: true
+      text: "Each sample's corrected proteins aligned with miniprot onto every other sample's genome, then a pangene graph and a presence/absence matrix.",
+      reads: "the corrected proteins, and every genome: as PATHOTYPR renamed it, or with --skip_typing as the sample sheet gives it, under its sample ID", writes: "PANGENE/{sample}/", flags: "", doc: "how-it-works/workflow.html#9-pangenome", exit: "PANGENE/", exitSide: "right", functional: true
     },
     FINAL_REPORT: {
       name: "Report", proc: "FINAL_REPORT", x: 1050, y: 170, kind: "hub-end", label: "above",
@@ -805,7 +805,7 @@
     { key: "db", d: "M735,60 V160" },
     { key: "dup", d: "M735,179 H800 Q820,179 826,200 L836,230 Q842,250 862,250 H1000 Q1020,250 1028,230 L1040,195 Q1046,179 1050,179" },
     { key: "pan", d: "M735,188 H790 Q805,188 809,210 L815,295 Q818,320 840,320 H1010 Q1034,320 1040,295 L1048,195 Q1050,188 1050,181" },
-    { key: "pan-feed", d: "M250,178 V330 Q250,350 270,350 H790 Q812,350 812,330", feed: true }
+    { key: "pan-feed", d: "M250,178 V330 Q250,350 270,350 H790 Q812,350 812,330", dUntyped: "M70,178 Q70,187 58,187 H24 Q14,187 14,197 V330 Q14,350 34,350 H790 Q812,350 812,330", feed: true }
   ];
 
   function metroSvg(state) {
@@ -814,8 +814,11 @@
     LINES.forEach(function (l) {
       var off = lineOff(l.key, state);
       if (l.feed) {
-        out.push('<path class="ml ml-pan' + (off ? " off" : "") + '" d="' + l.d + '" style="stroke-width:3;stroke-dasharray:2 6"/>');
-        out.push('<text class="exit' + (off ? " off" : "") + '" x="270" y="343">the renamed genomes, from Lineage</text>');
+        // Every genome, for the pangenome: renamed by Lineage, or from the
+        // sample sheet when typing is off (PANGENE_GENOME names them).
+        var untyped = state.skipTyping;
+        out.push('<path class="ml ml-pan' + (off ? " off" : "") + '" d="' + (untyped ? l.dUntyped : l.d) + '" style="stroke-width:3;stroke-dasharray:2 6"/>');
+        out.push('<text class="exit' + (off ? " off" : "") + '" x="' + (untyped ? 34 : 270) + '" y="343">' + (untyped ? "the genomes of the sample sheet, under their sample IDs" : "the renamed genomes, from Lineage") + "</text>");
         return;
       }
       out.push('<path class="ml ml-' + l.key + (off ? " off" : "") + '" d="' + l.d + '"/>');
@@ -885,7 +888,6 @@
     if (key === "main") return false;
     if (key === "ref") return false;
     if (state.skipFunctional && (key === "db" || key === "dup" || key === "pan" || key === "pan-feed")) return true;
-    if (state.skipTyping && key === "pan-feed") return true;
     return false;
   }
 
@@ -915,7 +917,7 @@
       if (writesEl) {
         writesEl.innerHTML = "This run writes " + writes(state).map(function (d) {
           return "<code>" + d + "</code>";
-        }).join(" ") + (state.skipTyping && !state.skipFunctional ? ". <code>PANGENE/</code> holds empty files: the pangenome needs the renamed genomes." : ".");
+        }).join(" ") + ".";
       }
       describe();
     }
@@ -931,7 +933,7 @@
       var text = state.custom && s.textCustom ? s.textCustom : s.text;
       var status = "";
       if (stationOff(key, state)) status = '<p class="note">Not run with the switches above.</p>';
-      if (key === "PANGENE" && state.skipTyping && !state.skipFunctional) status = '<p class="note">With <code>--skip_typing</code> it runs, but has no genomes to align against and writes empty files.</p>';
+      if (key === "PANGENE" && state.skipTyping && !state.skipFunctional) status = '<p class="note">With <code>--skip_typing</code> it aligns onto the genomes of the sample sheet, each under its sample ID.</p>';
       info.innerHTML =
         "<div><h3>" + esc(s.name) + "<code>" + esc(proc) + "</code></h3><p>" + esc(text) + "</p>" + status +
         (s.doc ? '<p class="note"><a href="' + s.doc + '">More on this step</a></p>' : "") + "</div>" +

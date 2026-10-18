@@ -19,6 +19,8 @@ process PREPARE_REFERENCE {
     input:
     path ref_annotation
     path ref_genome
+    // The Bakta database when it is on the host, or nothing (see BAKTA_ANNOTATOR)
+    path bakta_db, stageAs: 'bakta-db/*'
 
     output:
     path "custom_ref_ref_proteins.faa", emit: ref_proteome
@@ -26,6 +28,7 @@ process PREPARE_REFERENCE {
     path "custom_ref_bad_bakta.faa", emit: bad_bakta
 
     script:
+    def db = bakta_db ?: params.bakta_db
     """
     # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     set -euo pipefail
@@ -39,7 +42,7 @@ process PREPARE_REFERENCE {
     # 2. Annotate the same reference genome with Bakta
     #    (to find what Bakta invents on a known genome)
     bakta \
-        --db "${params.bakta_db}" \
+        --db "${db}" \
         --skip-trna \
         --threads ${task.cpus} \
         --genus "${params.genus}" \
@@ -73,9 +76,20 @@ process PREPARE_REFERENCE {
  * path, which is why this only ever showed with Docker. Copying the files out
  * from inside the container gives the rest of the pipeline ordinary files to
  * stage, the same way TEST_GENOME does for the genome.
+ *
+ * Any of the three given on the host instead comes in staged, each in a
+ * directory of its own, and is copied the same way, so that one can be your
+ * own while the others stay the defaults.
  */
 process BUNDLED_REFERENCE {
     tag 'h37rv'
+
+    input:
+    // Each file when it is on the host, or nothing: then its param is a path
+    // inside the container
+    path miniprot_ref_aa, stageAs: 'miniprot-ref-aa/*'
+    path miniprot_ref_h37rv, stageAs: 'miniprot-ref-h37rv/*'
+    path miniprot_ref_bad_bakta, stageAs: 'miniprot-ref-bad-bakta/*'
 
     output:
     path "ref_proteome.faa", emit: ref_proteome
@@ -83,6 +97,9 @@ process BUNDLED_REFERENCE {
     path "bad_bakta.faa", emit: bad_bakta
 
     script:
+    def ref_aa = miniprot_ref_aa ?: params.miniprot_ref_aa
+    def ref_h37rv = miniprot_ref_h37rv ?: params.miniprot_ref_h37rv
+    def ref_bad_bakta = miniprot_ref_bad_bakta ?: params.miniprot_ref_bad_bakta
     """
     copy() {
         if [ ! -s "\$1" ]; then
@@ -93,8 +110,8 @@ process BUNDLED_REFERENCE {
         fi
         cp "\$1" "\$2"
     }
-    copy "${params.miniprot_ref_aa}" ref_proteome.faa
-    copy "${params.miniprot_ref_h37rv}" ref_genome.fasta
-    copy "${params.miniprot_ref_bad_bakta}" bad_bakta.faa
+    copy "${ref_aa}" ref_proteome.faa
+    copy "${ref_h37rv}" ref_genome.fasta
+    copy "${ref_bad_bakta}" bad_bakta.faa
     """
 }

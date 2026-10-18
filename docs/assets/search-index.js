@@ -70,7 +70,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Tutorial",
 "section": "The files you will actually use",
 "url": "getting-started/tutorial.html#the-files-you-will-actually-use",
-"text": "Corrected annotation results/AMAP/CDC1551/CDC1551-AMAP.gff3 Same, GenBank results/AMAP/CDC1551/CDC1551-AMAP.gbk Proteins for downstream tools results/AMAP/CDC1551/CDC1551-AMAP.clean.faa Everything known per gene results/AMAP/CDC1551/CDC1551-AMAPmastertable.tsv Tool versions for your methods results/pipeline_info/software_versions.yml Two protein files, and they differ on purpose *-AMAP.faa has one entry per annotated gene, pseudogenes included, so it matches the GFF3 gene for gene. *-AMAP.clean.faa drops pseudogenes and anything with an internal stop codon, which is what orthology, phylogenomi"
+"text": "Lineage typing puts the lineage in front of the sample ID, so CDC1551 comes out as L4_CDC1551: Corrected annotation results/AMAP/L4_CDC1551/L4_CDC1551-AMAP.gff3 Same, GenBank results/AMAP/L4_CDC1551/L4_CDC1551-AMAP.gbk Proteins for downstream tools results/AMAP/L4_CDC1551/L4_CDC1551-AMAP.clean.faa Everything known per gene results/AMAP/L4_CDC1551/L4_CDC1551-AMAPmastertable.tsv Tool versions for your methods results/pipeline_info/software_versions.yml Two protein files, and they differ on purpose *-AMAP.faa has one entry per annotated gene, pseudogenes included, so it matches the GFF3 gene for "
 },
 {
 "page": "Tutorial",
@@ -196,7 +196,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Preparing inputs",
 "section": "The sample sheet",
 "url": "getting-started/inputs.html#the-sample-sheet",
-"text": "A tab-separated file with a header row and exactly two columns: sampleId\tfasta G26689\t/data/genomes/G26689.fasta G26690\t/data/genomes/G26690.fasta L4_G12345\t./assemblies/L4_G12345.fa sampleId: The name carried through every output directory and file. Must be unique. fasta: Path to the assembled genome. Absolute, or relative to the directory you launch Nextflow from. The separator has to be an actual tab. Spaces will not do, and this is the most common reason a sample sheet is rejected. Avoid dots in sample IDs Several scripts derive the sample name by cutting at the first dot, so G26689.1 beco"
+"text": "A tab-separated file with a header row and exactly two columns: sampleId\tfasta G26689\t/data/genomes/G26689.fasta G26690\t/data/genomes/G26690.fasta L4_G12345\t./assemblies/L4_G12345.fa sampleId: The name carried through every output directory and file. Must be unique. Lineage typing puts the lineage in front, so G26689 comes out as L4_G26689. fasta: Path to the assembled genome. Absolute, or relative to the directory you launch Nextflow from. The separator has to be an actual tab. Spaces will not do, and this is the most common reason a sample sheet is rejected. Avoid dots in sample IDs Several "
 },
 {
 "page": "Preparing inputs",
@@ -208,13 +208,13 @@ window.AMAP_DOCS_INDEX = [
 "page": "Preparing inputs",
 "section": "What fails the run",
 "url": "getting-started/inputs.html#what-fails-the-run",
-"text": "Genome size below 100 kb, or above 20 Mb N content above 10% GC content below 20% or above 80% Empty sequences any record with no bases Duplicate contig headers any repeated identifier Sample sheet missing sampleId or fasta column, no data rows, duplicate or empty sample IDs FASTA path file does not exist or cannot be parsed"
+"text": "Genome size below 100 kb, or above 20 Mb N content above 10% GC content below 20% or above 80% Empty sequences any record with no bases Duplicate contig headers any repeated identifier Sample sheet missing sampleId or fasta column, no data rows, duplicate or empty sample IDs FASTA path file does not exist or cannot be parsed Bakta database not found, or no version.json or bakta.db in it eggNOG database eggnog_db.ok in it while the database is incomplete, since Nextflow then never builds it again Reference files --ref_annotation, --ref_genome or a reference argument that the run reads but that "
 },
 {
 "page": "Preparing inputs",
 "section": "What only warns",
 "url": "getting-started/inputs.html#what-only-warns",
-"text": "Genome size below 500 kb, or above 10 Mb N content above 1% GC content below 25% or above 75% Assembly fragmentation more than 100 contigs, and again above 500 Short contigs any contig under 200 bp in a multi-contig assembly Non-standard characters anything outside ATGCNRYSWKMBDHV Warnings do not stop a run. Add --strict to the validation step if you want them treated as failures. The thresholds are deliberately wide, since AMAP is not restricted to tuberculosis. A 4.4 Mb MTBC genome at 65% GC sits comfortably inside them, and so does most of the bacterial world."
+"text": "Genome size below 500 kb, or above 10 Mb N content above 1% GC content below 25% or above 75% Assembly fragmentation more than 100 contigs, and again above 500 Short contigs any contig under 200 bp in a multi-contig assembly Non-standard characters anything outside ATGCNRYSWKMBDHV eggNOG database a bacteria.dmnd under 100 MB, which EGGNOG_DB takes for a truncated download and builds again Mycobrowser table --mycobrowser_ref neither on the host nor inside the container, so the master table goes without Mycobrowser categories Warnings do not stop a run. Add --strict_validation to have them stop "
 },
 {
 "page": "Preparing inputs",
@@ -268,7 +268,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Parameters",
 "section": "Validation and information",
 "url": "user-guide/parameters.html#validation-and-information",
-"text": "--validate_only Run input validation and stop. boolean false --help Print the help text and exit. boolean false --version Print pipeline and Nextflow versions and exit. boolean false"
+"text": "--validate_only Run input validation and stop. boolean false --strict_validation Stop on validation warnings too, not only on errors. boolean false --help Print the help text and exit. boolean false --version Print pipeline and Nextflow versions and exit. boolean false"
 },
 {
 "page": "Parameters",
@@ -280,7 +280,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Parameters",
 "section": "Reference and database arguments",
 "url": "user-guide/parameters.html#reference-and-database-arguments",
-"text": "You almost certainly do not need these Every file below ships inside the Docker and Singularity images, under /reference/. Running with -profile docker or -profile singularity picks them up automatically. They exist for running without a container, for swapping in updated reference files, or for adapting the pipeline by hand. --bakta_db Bakta database directory. /data/bakta_db/db-light --eggnog_db Pre-formatted eggNOG database directory. eggnog_db --pathotyper_snps Lineage marker SNPs for pathotypr. /reference/snps_lineages.tsv --pathotyper_ref Reference FASTA for pathotypr. /reference/MTB_anc"
+"text": "You almost certainly do not need these Every file below ships inside the Docker and Singularity images, under /reference/. Running with -profile docker or -profile singularity picks them up automatically. They exist for running without a container, for swapping in updated reference files, or for adapting the pipeline by hand. --bakta_db Bakta database directory, inside the container or on the host. /data/bakta_db/db-light --eggnog_db Pre-formatted eggNOG database directory. eggnog_db --pathotyper_snps Lineage marker SNPs for pathotypr. /reference/snps_lineages.tsv --pathotyper_ref Reference FA"
 },
 {
 "page": "Parameters",
@@ -346,7 +346,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Outputs",
 "section": "",
 "url": "user-guide/outputs.html",
-"text": "Everything lands under --outdir, results/ by default, in one subdirectory per pipeline stage."
+"text": "Everything lands under --outdir, results/ by default, in one subdirectory per pipeline stage. {sampleId} below is the sample's name as lineage typing leaves it, L4_G26689 for sample G26689, or the sample ID alone under --skip_typing."
 },
 {
 "page": "Outputs",
@@ -394,7 +394,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Outputs",
 "section": "CDS_CASES/",
 "url": "user-guide/outputs.html#cds_cases",
-"text": "The audit trail for the correction. Each case table lists the genes that fell into it, so you can see exactly what was changed and why. The correction algorithm explains the cases; *-summary.tsv aggregates the counts across samples and feeds the report."
+"text": "The audit trail for the correction. Each case table lists the genes that fell into it, so you can see exactly what was changed and why. The correction algorithm explains the cases; *-summary.tsv aggregates the counts across samples and feeds the report. Its last three columns say which sample the counts are for: Sequence is the name its files carry (L4_G26689), Lineage what typing called it (Untyped under --skip_typing) and Sample its ID in the sample sheet (G26689)."
 },
 {
 "page": "Outputs",
@@ -520,7 +520,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Custom reference",
 "section": "What stays the same",
 "url": "user-guide/custom-reference.html#what-stays-the-same",
-"text": "Everything else. Case classification, conflict resolution, missing-gene rescue, the stop codon check, eggNOG functional annotation, duplication analysis, the pangenome and the report all work identically. The report simply omits the lineage and Mycobrowser sections."
+"text": "Everything else. Case classification, conflict resolution, missing-gene rescue, the stop codon check, eggNOG functional annotation, duplication analysis, the pangenome and the report all work identically. The report simply omits the lineage and Mycobrowser sections, and the pangenome calls each genome by its sample ID where a typed run would use its lineage name."
 },
 {
 "page": "Custom reference",
@@ -592,7 +592,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The workflow",
 "section": "2. Lineage typing",
 "url": "how-it-works/workflow.html#2-lineage-typing",
-"text": "pathotypr assigns each genome to an MTBC lineage using phylogenetic marker SNPs, and the genomes are renamed accordingly (L4_G26689). That prefix carries through every downstream file and is what lets the report group results by lineage. MTBC-specific. Turn it off with --skip_typing for anything else, and sample IDs stay as you wrote them."
+"text": "pathotypr assigns each genome to an MTBC lineage using phylogenetic marker SNPs, and the genomes are renamed after their sample ID with the lineage in front (L4_G26689 for sample G26689). That prefix carries through every downstream file and is what lets the report group results by lineage. pathotypr types each contig of a draft on its own, and the lineage of the draft is the one the markers of all its contigs add up to. A genome of one sequence has that sequence renamed after the sample; the contigs of a draft keep their names. A genome with no lineage markers at all is named NA_G26689. MTBC-"
 },
 {
 "page": "The workflow",
@@ -634,7 +634,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The workflow",
 "section": "9. Pangenome",
 "url": "how-it-works/workflow.html#9-pangenome",
-"text": "pangene builds a pangenome graph from the corrected annotations and produces a gene presence/absence matrix, which the report turns into core, softcore, shell and cloud classifications, a frequency spectrum and presence/absence heatmaps."
+"text": "pangene builds a pangenome graph from the corrected annotations and produces a gene presence/absence matrix, which the report turns into core, softcore, shell and cloud classifications, a frequency spectrum and presence/absence heatmaps. Each sample's corrected proteins are aligned with miniprot onto every other sample's genome: the ones PATHOTYPR renamed or, with --skip_typing, the genomes of the sample sheet, each under its sample ID."
 },
 {
 "page": "The workflow",
@@ -910,7 +910,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Troubleshooting",
 "section": "The eggNOG database",
 "url": "deployment/troubleshooting.html#the-eggnog-database",
-"text": "It downloads every run. --eggnog_db is pointing somewhere per-run. Give it persistent shared storage. It rebuilds itself unexpectedly. A bacteria.dmnd under 100 MB is treated as a truncated download and rebuilt. Usually means an earlier download was interrupted."
+"text": "It downloads every run. --eggnog_db is pointing somewhere per-run. Give it persistent shared storage. It rebuilds itself unexpectedly. A bacteria.dmnd under 100 MB is treated as a truncated download and rebuilt. Usually means an earlier download was interrupted. \"has eggnog_db.ok, so EGGNOG_DB will not run again\". eggnog_db.ok tells Nextflow the database is built, so it never runs EGGNOG_DB again, but what it needs is not all there. Delete the files the message names and the next run builds it again."
 },
 {
 "page": "Troubleshooting",

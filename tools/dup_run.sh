@@ -32,10 +32,16 @@ for faa in "$@"; do
         rm "duplications_$sampleId.raw"
         python3 "$bin/get_duplications.py" "duplications_$sampleId"
         python3 "$bin/dup_ex_multifasta.py" "duplications_${sampleId}_groups.tsv" "$sampleId.AMAP.faa.renamed"
+        mv "$sampleId.AMAP.faa.renamed.dup" "$sampleId.dup"
     )
 done
 cd "$work/all"
 cat ../*.dup > all_fastas.fa
+# Which genome each sequence comes from: the sample its file is named after.
+for f in ../*.dup; do
+    genome=$(basename "$f" .dup)
+    awk -v genome="$genome" '/^>/ { print substr($1, 2) "\t" genome }' "$f"
+done > genomes.tsv
 diamond makedb --in all_fastas.fa --db all_fastas_db --threads 6
 diamond blastp \
     --db all_fastas_db \
@@ -52,4 +58,4 @@ diamond blastp \
 grep '^#' all_vs_all.raw > all_vs_all.diamond || true
 grep -v '^#' all_vs_all.raw | sort -k1,1 -k2,2 -k12,12gr >> all_vs_all.diamond
 rm all_vs_all.raw
-python3 "$bin/network_genomes.py" all_vs_all.diamond
+python3 "$bin/network_genomes.py" all_vs_all.diamond --genomes genomes.tsv

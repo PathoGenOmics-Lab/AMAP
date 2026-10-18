@@ -81,7 +81,8 @@ them for naming and reference selection.
 Everything else. Case classification, conflict resolution, missing-gene rescue,
 the stop codon check, eggNOG functional annotation, duplication analysis, the
 pangenome and the report all work identically. The report simply omits the
-lineage and Mycobrowser sections.
+lineage and Mycobrowser sections, and the pangenome calls each genome by its
+sample ID where a typed run would use its lineage name.
 
 ## What to expect from a real run
 

@@ -573,7 +573,8 @@ def check_duplications() -> list[str]:
         write_hits(hits, com["names"], com["rows"])
         with contextlib.redirect_stdout(io.StringIO()):
             df = network_genomes.load_and_filter_blast_results(hits)
-    networks = network_genomes.build_intra_genome_networks(df, network_genomes.get_genome_ids(df))
+    genome_of = dict(zip(com["names"], com["genomes"]))
+    networks = network_genomes.build_intra_genome_networks(df, network_genomes.get_genome_ids(df, genome_of), genome_of)
     labelled = network_genomes.detect_and_label_communities(networks)
     homologous = network_genomes.find_homologous_communities(labelled, df)
     for side in com["sides"]:
@@ -839,7 +840,8 @@ def check_metro() -> list[str]:
     for group in defined:
         names |= {n.strip() for n in group.split(";")}
     names |= set(re.findall(r"^process ([A-Z_]+)", main, re.M))
-    helpers = {"SOFTWARE_VERSIONS", "DUMP_PARAMS", "TEST_GENOME", "CREATE_EMPTY_FILE", "REPORT_INPUTS"}
+    # Steps that only move files for another: no station of their own.
+    helpers = {"SOFTWARE_VERSIONS", "DUMP_PARAMS", "TEST_GENOME", "CREATE_EMPTY_FILE", "REPORT_INPUTS", "PANGENE_GENOME"}
     called = []
     for name in re.findall(r"\b([A-Z][A-Z_]+)\(", workflow):
         if name not in names or name in helpers:

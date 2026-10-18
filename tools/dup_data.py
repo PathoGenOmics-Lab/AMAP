@@ -54,9 +54,10 @@ HEADER = """/* The duplication family and the homologous communities the duplica
    self search that touches a member ([query, subject, identical residues,
    query length, subject length], indices into "names"); "communities" is the
    pair of homologous communities that holds it, with every hit within each
-   genome and the hits between the two. tools/check_site.py runs them through
-   bin/get_duplications.py and bin/network_genomes.py and fails if anything
-   comes out different. Written by tools/dup_data.py.
+   genome, the hits between the two and the genome of each sequence.
+   tools/check_site.py runs them through bin/get_duplications.py and
+   bin/network_genomes.py and fails if anything comes out different. Written
+   by tools/dup_data.py.
 
    Everything after the "=" is JSON. */
 window.AMAP_DUP_DATA = """
@@ -232,7 +233,10 @@ def communities(work: Path, genome: str, protein: str, ref: dict, bakta: dict, p
                 ("avg_path_length", "AvgPathLength"), ("modularity", "Modularity"))},
         })
     genomes = {s["genome"] for s in sides}
-    gid = lambda n: "_".join(n.split("_")[:2])
+    # Which genome each sequence comes from, as GET_ALLDUP writes it from the
+    # file each sample's sequences came in.
+    genome_of = network_genomes.read_genomes(work / "all" / "genomes.tsv")
+    gid = lambda n: genome_of[n]
     # Every hit within a genome, in the file's order (the networks are built
     # in that order, and Louvain's result depends on it), and the hits between
     # the two communities drawn.
@@ -276,7 +280,7 @@ def communities(work: Path, genome: str, protein: str, ref: dict, bakta: dict, p
             entry["x"], entry["y"] = pos[anchor]
             entry["twin"] = short(anchor, first["genome"])
             side["nodes"].append(entry)
-    return {"sides": sides, "cross": cross, "names": names, "rows": rows}
+    return {"sides": sides, "cross": cross, "names": names, "genomes": [genome_of[n] for n in names], "rows": rows}
 
 
 def main() -> int:

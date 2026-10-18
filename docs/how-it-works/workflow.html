@@ -95,7 +95,8 @@
 <p>Checks whether the eggNOG database exists at <code>--eggnog_db</code> and builds it if not. A <code>bacteria.dmnd</code> under 100 MB is treated as a truncated download and rebuilt.</p>
 <p>The database is large, so point <code>--eggnog_db</code> at persistent shared storage on a cluster. Skipped entirely under <code>--skip_functional_annotation</code>.</p>
 <h2 id="2-lineage-typing">2. Lineage typing<a class="anchor" href="#2-lineage-typing" aria-label="Link to this section">#</a></h2>
-<p><a href="https://github.com/PathoGenOmics-Lab/pathotypr">pathotypr</a> assigns each genome to an MTBC lineage using phylogenetic marker SNPs, and the genomes are renamed accordingly (<code>L4_G26689</code>). That prefix carries through every downstream file and is what lets the report group results by lineage.</p>
+<p><a href="https://github.com/PathoGenOmics-Lab/pathotypr">pathotypr</a> assigns each genome to an MTBC lineage using phylogenetic marker SNPs, and the genomes are renamed after their sample ID with the lineage in front (<code>L4_G26689</code> for sample <code>G26689</code>). That prefix carries through every downstream file and is what lets the report group results by lineage.</p>
+<p>pathotypr types each contig of a draft on its own, and the lineage of the draft is the one the markers of all its contigs add up to. A genome of one sequence has that sequence renamed after the sample; the contigs of a draft keep their names. A genome with no lineage markers at all is named <code>NA_G26689</code>.</p>
 <p>MTBC-specific. Turn it off with <code>--skip_typing</code> for anything else, and sample IDs stay as you wrote them.</p>
 <h2 id="3-annotation-with-bakta">3. Annotation with Bakta<a class="anchor" href="#3-annotation-with-bakta" aria-label="Link to this section">#</a></h2>
 <p><a href="https://github.com/oschwengers/bakta">Bakta</a> produces the baseline annotation: CDS, tRNA, rRNA and other features. This is the annotation AMAP will correct, and it is published unmodified under <code>BAKTA/</code> so you can compare.</p>
@@ -119,6 +120,7 @@
 <p><a href="duplications.html">Duplication metrics</a> explains the numbers.</p>
 <h2 id="9-pangenome">9. Pangenome<a class="anchor" href="#9-pangenome" aria-label="Link to this section">#</a></h2>
 <p><a href="https://github.com/lh3/pangene">pangene</a> builds a pangenome graph from the corrected annotations and produces a gene presence/absence matrix, which the report turns into core, softcore, shell and cloud classifications, a frequency spectrum and presence/absence heatmaps.</p>
+<p>Each sample's corrected proteins are aligned with miniprot onto every other sample's genome: the ones PATHOTYPR renamed or, with <code>--skip_typing</code>, the genomes of the sample sheet, each under its sample ID.</p>
 <h2 id="10-report">10. Report<a class="anchor" href="#10-report" aria-label="Link to this section">#</a></h2>
 <p>A single self-contained HTML file built from every output above. Sample quality, missing reference genes by lineage, PE/PPE families, KEGG pathways, duplication communities and topology, the pangenome, COG and Mycobrowser distributions, case statistics with the associated tests, and a searchable table of every gene.</p>
 <p>Alongside it, <code>pipeline_info/</code> collects the Nextflow execution report, timeline, DAG and trace, plus <code>software_versions.yml</code> and <code>params.yml</code> for your methods section.</p>

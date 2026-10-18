@@ -288,12 +288,15 @@ number well outside that is worth investigating before trusting the rest.
 
 ### The files you will actually use
 
+Lineage typing puts the lineage in front of the sample ID, so CDC1551 comes
+out as `L4_CDC1551`:
+
 | What | Where |
 | :--- | :--- |
-| Corrected annotation | `results/AMAP/CDC1551/CDC1551-AMAP.gff3` |
-| Same, GenBank | `results/AMAP/CDC1551/CDC1551-AMAP.gbk` |
-| Proteins for downstream tools | `results/AMAP/CDC1551/CDC1551-AMAP.clean.faa` |
-| Everything known per gene | `results/AMAP/CDC1551/CDC1551-AMAPmastertable.tsv` |
+| Corrected annotation | `results/AMAP/L4_CDC1551/L4_CDC1551-AMAP.gff3` |
+| Same, GenBank | `results/AMAP/L4_CDC1551/L4_CDC1551-AMAP.gbk` |
+| Proteins for downstream tools | `results/AMAP/L4_CDC1551/L4_CDC1551-AMAP.clean.faa` |
+| Everything known per gene | `results/AMAP/L4_CDC1551/L4_CDC1551-AMAPmastertable.tsv` |
 | Tool versions for your methods | `results/pipeline_info/software_versions.yml` |
 
 > [!NOTE]

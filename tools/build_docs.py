@@ -231,8 +231,7 @@ def results_map() -> str:
         ("main", "AMAP/", "FIX_CDS, then GET_OUTPUTS and GET_COUNT",
          "with <code>--skip_functional_annotation</code> only FIX_CDS's <code>*.AMAP.tsv</code>, <code>.faa</code> and <code>.fna</code> are left"),
         ("dup", "DUPLICATIONS/", "GET_DUPLICATIONS, GET_ALLDUP", "with <code>--skip_functional_annotation</code>"),
-        ("pan", "PANGENE/", "PANGENE",
-         "with <code>--skip_functional_annotation</code>; with <code>--skip_typing</code> its files are empty"),
+        ("pan", "PANGENE/", "PANGENE", "with <code>--skip_functional_annotation</code>"),
         ("main", "final_report.html", "FINAL_REPORT", "with <code>--skip_functional_annotation</code>"),
         ("none", "pipeline_info/", "VALIDATE_INPUTS, SOFTWARE_VERSIONS, DUMP_PARAMS and Nextflow itself", ""),
     ]

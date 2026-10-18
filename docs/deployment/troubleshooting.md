@@ -36,6 +36,10 @@ resources or logic.
   works on both Linux and macOS.
 - **"FASTA file not found"**: A path in the sample sheet does not resolve. Absolute paths avoid the
   ambiguity.
+- **"not found, neither on the host nor inside the container"**: A reference file the run reads is in neither place: a typo in its path, or
+  one of the defaults, which ship in the container, on a run without one. Give
+  the path to your own copy with its
+  [reference argument](../user-guide/parameters.md#reference-and-database-arguments).
 - **Validation failures**: `results/pipeline_info/validation.log` says which check failed and for which
   sample. Thresholds are in [preparing inputs](../getting-started/inputs.md).
 
@@ -116,6 +120,11 @@ persistent shared storage.
 **It rebuilds itself unexpectedly.** A `bacteria.dmnd` under 100 MB is treated as
 a truncated download and rebuilt. Usually means an earlier download was
 interrupted.
+
+**"has eggnog_db.ok, so EGGNOG_DB will not run again".** `eggnog_db.ok` tells
+Nextflow the database is built, so it never runs `EGGNOG_DB` again, but what it
+needs is not all there. Delete the files the message names and the next run
+builds it again.
 
 ## Results that look wrong
 

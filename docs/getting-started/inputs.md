@@ -17,6 +17,8 @@ L4_G12345	./assemblies/L4_G12345.fa
 <!-- figure: sample-sheet -->
 
 - **`sampleId`**: The name carried through every output directory and file. Must be unique.
+  Lineage typing puts the lineage in front, so `G26689` comes out as
+  `L4_G26689`.
 - **`fasta`**: Path to the assembled genome. Absolute, or relative to the directory you
   launch Nextflow from.
 
@@ -55,6 +57,9 @@ Results are written to `results/pipeline_info/validation.log`.
 | Duplicate contig headers | any repeated identifier |
 | Sample sheet | missing `sampleId` or `fasta` column, no data rows, duplicate or empty sample IDs |
 | FASTA path | file does not exist or cannot be parsed |
+| Bakta database | not found, or no `version.json` or `bakta.db` in it |
+| eggNOG database | `eggnog_db.ok` in it while the database is incomplete, since Nextflow then never builds it again |
+| Reference files | `--ref_annotation`, `--ref_genome` or a [reference argument](../user-guide/parameters.md#reference-and-database-arguments) that the run reads but that is neither on the host nor inside the container |
 
 ### What only warns
 
@@ -66,9 +71,13 @@ Results are written to `results/pipeline_info/validation.log`.
 | Assembly fragmentation | more than 100 contigs, and again above 500 |
 | Short contigs | any contig under 200 bp in a multi-contig assembly |
 | Non-standard characters | anything outside `ATGCNRYSWKMBDHV` |
+| eggNOG database | a `bacteria.dmnd` under 100 MB, which `EGGNOG_DB` takes for a truncated download and builds again |
+| Mycobrowser table | `--mycobrowser_ref` neither on the host nor inside the container, so the master table goes without Mycobrowser categories |
 
-Warnings do not stop a run. Add `--strict` to the validation step if you want
-them treated as failures.
+Warnings do not stop a run. Add `--strict_validation` to have them stop it too.
+
+An eggNOG database that does not exist yet is neither: the first run that
+annotates builds it at `--eggnog_db`.
 
 The thresholds are deliberately wide, since AMAP is not restricted to
 tuberculosis. A 4.4 Mb MTBC genome at 65% GC sits comfortably inside them, and

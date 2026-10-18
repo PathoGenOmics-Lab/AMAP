@@ -25,6 +25,7 @@ params.tsv = 'samples.tsv'
 params.outdir = 'results'
 params.eggnog_db = 'eggnog_db'
 params.help = false
+params.version = false
 params.validate_only = false
 params.skip_typing = false
 params.skip_functional_annotation = false
@@ -105,7 +106,7 @@ def helpMessage() {
     --max_time                  Maximum time per process. (Default: ${params.max_time})
     --scratch                   Use node-local scratch for I/O-heavy processes. (Default: ${params.scratch})
     --help                      Display this help message.
-    --version                   Print pipeline version and exit.
+    --version                   Print pipeline and Nextflow versions and exit.
 
     Organism-Agnostic Mode:
     --ref_annotation            Path to a trusted reference annotation (GFF3 or GenBank).
@@ -357,6 +358,13 @@ workflow {
     if (params.help) {
         log.info logo()
         log.info helpMessage()
+        exit 0
+    }
+    if (params.version) {
+        // println rather than log.info, which Nextflow 26 prints with no line
+        // break between messages and `nextflow -q` does not print at all.
+        println "Pipeline    : ${workflow.manifest.name} v${workflow.manifest.version}"
+        println "Nextflow    : ${nextflow.version}"
         exit 0
     }
     log.info logo()

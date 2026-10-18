@@ -40,6 +40,7 @@ directly comparable with 1.0.1.
 - **Tasks leave the pipeline untouched**: the first time a copy of AMAP ran, Python cached the bytecode of AMAP's own modules inside it, in `bin/classify/__pycache__`, and with `pathotypr classify` naming that directory in PATHOTYPR's script, the first `-resume` re-ran PATHOTYPR, Bakta and everything after them. Tasks now run with `PYTHONDONTWRITEBYTECODE=1`
 - **Samples with no Bakta call outside cases 2 and 3**: when every Bakta call had an alignment at exactly its coordinates, which a small input can do, TYPE_CASES stopped with a KeyError, because the empty column of overlaps was read as a list of column names. Case 1 and case 4 now come out empty and the rest is classified as usual. An empty miniprot table stopped it the same way
 - **Samples Bakta calls no CDS on**: with no contig names from Bakta to compare, the contig check took them for different names and stopped the run, and a Bakta table with nothing but its header did not read. The genes miniprot places now come out as missing from Bakta, like any gene it did not call
+- **`--version`**: `--help` and the parameter docs have listed it since 1.0.0, but nothing read it, so `nextflow run PathoGenOmics-Lab/AMAP --version` started a run. It now prints the pipeline and Nextflow versions and exits before any task
 
 ### 🧹 Code
 - **`reconcile_coordinates` is gone**: it read reference coordinates from protein identifiers that have not carried them since March 2026, so it changed nothing. The paralog check does its job with the sample's own offsets

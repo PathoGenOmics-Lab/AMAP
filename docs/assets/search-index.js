@@ -454,7 +454,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The report",
 "section": "Functional annotation",
 "url": "user-guide/report.html#functional-annotation",
-"text": "COG categories from eggNOG, Mycobrowser functional categories for MTBC, and a comparison against the reference distribution. Each has its own per-category breakdown in counts and percentages, with the statistical tests alongside. PE/PPE gene families get their own section, since they are both the hardest part of an MTBC genome to annotate and usually the most interesting. The pseudogenes of each lineage close it."
+"text": "COG categories from eggNOG, Mycobrowser functional categories for MTBC, and a comparison against the reference distribution. Each has its own per-category breakdown in counts and percentages, with the statistical tests alongside. PE/PPE gene families get their own section, since they are both the hardest part of an MTBC genome to annotate and usually the most interesting. The pseudogenes close it: how many AMAP called in each sample, lineage by lineage, a sample with none at 0, the same genes the QC table counts and the GFF3 marks pseudo=true. The master table's note column says why each is a "
 },
 {
 "page": "The report",

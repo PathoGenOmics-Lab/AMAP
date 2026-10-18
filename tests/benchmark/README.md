@@ -68,8 +68,12 @@ None of it comes from AMAP.
 - **The other genomes**: those genes are carried across by a whole-genome
   alignment (minimap2, preset `asm5`, primary forward alignments). A gene counts
   only where its sequence is identical in both genomes, length included; the
-  rest are marked `changed` or `unmapped` and are not scored. CP110619 also gets
-  the ten curated H37Rv entries written in its own coordinates.
+  rest are marked `changed`, `deleted` when the stretch they land on is under
+  half their length, or `unmapped` when an end does not land at all, and are
+  not scored as exact. CP110619 also gets the ten curated H37Rv entries written
+  in its own coordinates. Each gene carried across also records how many of its
+  bases the alignment pairs, `aligned`: its size in the target, whatever is
+  inserted into it. Truth tables made before that column are made again.
 - **The draft**: the CDC1551 truth in contig coordinates. Genes that span a cut
   are left out.
 
@@ -87,9 +91,15 @@ For each genome:
 - **not exact**: nothing at exactly that place
 - **changed genes found with their name**: genes whose sequence differs from
   the reference have no exact answer, but a gene should still sit where the
-  alignment puts them, on their strand, covering at least half of that stretch
-  and labelled with their name; how many of those AMAP flags as pseudogenes is
-  given too
+  alignment puts them, on their strand, covering at least half of the gene
+  there and labelled with their name; how many of those AMAP flags as
+  pseudogenes is given too. Half of the gene's `aligned` bases, not of the
+  stretch: whatever is inserted into a gene, an IS6110, a prophage or a second
+  copy of a gene the sample has twice, makes the stretch longer than the gene,
+  and half of it can be more than the whole gene. K-12's b1004 lands on 63 kb
+  of Sakai, a prophage inside, 597 bp of them its own. Genes marked `deleted`
+  are not counted: most of them is gone (PPE50 lands on 87 of its 399 bp in
+  CDC1551), and there is nothing to annotate
 - **ORFs twice**: pairs of genes on one ORF (same contig and strand, the same
   reading frame, overlapping by at least half of the shorter). The references
   have none, except K-12, which nests eleven pairs of real genes this way.
@@ -109,17 +119,39 @@ other, and whether a gene of the other run sits on the same reading frame there
 
 ## Expected results
 
-With the changes up to `contig-end-pieces` (October 2026):
+With the changes up to `changed-genes` and `contig-end-pieces` (October 2026):
 
 | Genome | exact | changed genes found | genes in the table | ORFs twice |
 | :--- | ---: | ---: | ---: | ---: |
 | H37Rv against itself | 4026 / 4026 | | 4031 | 0 |
-| H37Rv CP110619 | 3986 / 3986 | 49 / 50 | 4036 | 0 |
-| CDC1551 | 3097 / 3097 | 854 / 863 | 4014 | 2 |
-| M. bovis | 2391 / 2391 | 1506 / 1515 | 3947 | 3 |
+| H37Rv CP110619 | 3986 / 3986 | 50 / 50 | 4036 | 0 |
+| CDC1551 | 3097 / 3097 | 860 / 862 | 4014 | 2 |
+| M. bovis | 2391 / 2391 | 1515 / 1515 | 3947 | 3 |
 | CDC1551, 40 contigs | 3072 / 3072 | | 4050 | 2 |
 | E. coli K-12 against itself | 4286 / 4286 | | 4313 | 2 |
-| E. coli Sakai | 220 / 220 | 3337 / 3367 | 5322 | 11 |
+| E. coli Sakai | 220 / 220 | 3363 / 3367 | 5334 | 11 |
+
+CDC1551 has one gene `deleted`, PPE50 (Rv3135). The six changed genes not
+found:
+
+- **CDC1551 Rv3018c** (PPE46): an IS6110 splits it into a 5' piece of 306
+  residues, identical to H37Rv's, and a 3' piece of 130, and neither is
+  annotated under its name. miniprot reports only the placements within 5% of
+  a protein's best, and the best of Rv3018c is a full-length paralog, 81%
+  identical; the 5' piece shows at `--outs=0.5`.
+- **CDC1551 Rv3467**: in CDC1551 the phiRv1 prophage sits in this REP13E12
+  copy, not in the one it occupies in H37Rv. The alignment puts Rv3467 on the
+  genes at the prophage's left end, 99% identical to Rv3466 and Rv1587c and
+  named so, and the copy left whole at H37Rv's phiRv1 site carries Rv3467 among
+  its names.
+- **Sakai b4518**: the copy at its locus lost one of the protein's two
+  22-residue repeats. miniprot does not place it and the search for small
+  proteins only allows substitutions; the name goes to a copy elsewhere, 79%
+  identical.
+- **Sakai b4726, b4671 and b4791**: micro-proteins whose Sakai copy no longer
+  encodes them: a stop two codons early after one more change (b4726), a
+  frameshift at residue 19 of 33 (b4671), a start codon turned into ATA
+  (b4791).
 
 Of the 50 pieces of the 25 genes the draft's cuts run through, 47 are
 annotated under the gene's name and marked partial at the cut end. miniprot

@@ -29,6 +29,14 @@ preceded by a start codon and followed by a stop, and each exact copy found
 where Miniprot did not already place the protein becomes a complete placement.
 Proteins shorter than 8 residues are not searched.
 
+A protein of up to **50** residues with no exact copy is looked for again,
+allowing substitutions in at most **a fifth** of its residues after the first,
+which varies with the start codon; a stop codon in place of a residue counts as
+one, and the gene is then flagged as a pseudogene in step 7. *E. coli* O157:H7
+Sakai carries ten of K-12's micro-proteins with one to four residues changed,
+and none was annotated. A copy with an insertion or a deletion is not found
+this way.
+
 ### Pieces of cut genes
 
 A draft assembly cuts the genes its contig breaks run through. Miniprot reports
@@ -57,8 +65,11 @@ The reference proteome carries each protein's coordinates in its header
 upstream shifts every position after it. So each placement's reference position
 is predicted from the nearest proteins placed only once, which follow the
 sample's local offset from the reference, and the placement closest to where the
-protein belongs is its **syntenic** one. A placement is then dropped when all of
-these hold:
+protein belongs is its **syntenic** one. A locus that several proteins are
+placed at, exactly, predicts nothing: it is a repeat the reference has in
+several copies and the sample in one, like the single IS6110 of *M. bovis*, and
+the reference positions of its proteins are spread over the whole genome. A
+placement is then dropped when all of these hold:
 
 - another protein's syntenic placement covers at least **50%** of it, on the
   same strand and in the **same reading frame**
@@ -135,8 +146,9 @@ down to its stop codon, has not fragmented: a longer call in its frame ends at
 the same stop and only starts further upstream (plcD, Rv1755c, 843 bp in H37Rv
 and 1545 bp in Bakta's call on CDC1551). A call in another frame is another
 gene, and keeps its chance to win on length; the alignment then comes back in
-step 5. If the Bakta CDS overlaps more than one alignment, the reference wins
-regardless.
+step 5. A call that wins in the alignment's frame is the protein's gene, longer
+than in the reference, and takes its name in step 5. If the Bakta CDS overlaps
+more than one alignment, the reference wins regardless.
 
 ### Multiple overlaps
 
@@ -176,6 +188,17 @@ frames (Rv0724A and Rv0725c); another reference gene in the same frame does not
 count either, since some are nested (*E. coli* hokC inside mokC). Placements on
 other genes' loci have already been dropped in step 0, so what is left to rescue
 sits where the gene belongs or at a locus nobody claims.
+
+A gene that stands for no reference protein accounts for any placement in its
+frame: the Bakta call that won its locus in step 3 over a shorter alignment.
+When no gene carries the protein's name, that call takes it, as long as the
+alignment spans at least **half** of the protein. Otherwise the gene came out
+with no name and the protein was missing from the table. In *M. bovis*, H37Rv's
+mmpL6 (Rv1557) is the 3' end of a 2904 bp gene that the TbD1 deletion cut short
+in H37Rv; CDC1551 and *M. bovis* carry a 4821 bp DNA methyltransferase gene
+whose first 506 residues are H37Rv's Rv2024c. A remnant names nothing: the
+RD12 deletion of *M. bovis* leaves the last 67 of cyp141's (Rv3121) 400
+residues at the end of a 321-codon gene that is not cyp141.
 
 The pieces of a cut gene are parts of its protein, not copies of it, so each is
 missing on its own, and one in place does not keep another out. In the CDC1551
@@ -279,9 +302,12 @@ sets of coordinates overlap, which one survives into the curated annotation.
 | Proteins placed once, each side, for the local offset | paralog placements | 5 |
 | Cover to claim another protein's placement | paralog placements | 50% |
 | Shortest protein looked for exactly | small proteins | 8 residues |
+| Longest protein looked for with substitutions | small proteins | 50 residues |
+| Residues after the first that may differ | small proteins | 20% |
 | Distance from a contig's edge for a placement, or a piece, to be cut there | pieces of cut genes | 30 bp |
 | Shortest part of a protein looked for at the other contig ends | pieces of cut genes | 8 residues |
 | Cover for a gene to account for a placement | rescuing missing genes | 50% |
+| Share of its protein an alignment spans to name a longer call | rescuing missing genes | 50% |
 | Length of a further copy, next to the first | final deduplication | 90% |
 | Cover by another reference gene that rules a copy out | final deduplication | 50% |
 | Length of a gene's pieces together, next to the reference gene | final deduplication | 110% |

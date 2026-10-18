@@ -59,6 +59,7 @@ resubmitted with more, up to the ceiling.
 | Parameter | Description | Type | Default |
 | :--- | :--- | :--- | :--- |
 | `--validate_only` | Run input validation and stop. | `boolean` | `false` |
+| `--strict_validation` | Stop on validation warnings too, not only on errors. | `boolean` | `false` |
 | `--help` | Print the help text and exit. | `boolean` | `false` |
 | `--version` | Print pipeline and Nextflow versions and exit. | `boolean` | `false` |
 
@@ -87,7 +88,7 @@ They must be given together; setting only one is an error. See
 
 | Parameter | Description | Default inside the container |
 | :--- | :--- | :--- |
-| `--bakta_db` | Bakta database directory. | `/data/bakta_db/db-light` |
+| `--bakta_db` | Bakta database directory, inside the container or on the host. | `/data/bakta_db/db-light` |
 | `--eggnog_db` | Pre-formatted eggNOG database directory. | `eggnog_db` |
 | `--pathotyper_snps` | Lineage marker SNPs for pathotypr. | `/reference/snps_lineages.tsv` |
 | `--pathotyper_ref` | Reference FASTA for pathotypr. | `/reference/MTB_ancestor_reference.fasta` |
@@ -96,6 +97,9 @@ They must be given together; setting only one is an error. See
 | `--miniprot_ref_h37rv` | Reference genome FASTA. | `/reference/new_refH37Rv.fasta` |
 | `--bakta_proteins` | Reference proteins GenBank file for Bakta. | `/reference/sequence.gb` |
 | `--mycobrowser_ref` | Mycobrowser functional categories table. | `/reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt` |
+
+A Bakta database on the host, the full one for instance, is mounted into the
+tasks that use it, so it works with the container profiles too.
 
 The eggNOG database is the one exception: it is not bundled, because of its
 size. AMAP downloads and builds it on the first run and caches it at

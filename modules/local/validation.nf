@@ -8,7 +8,9 @@
  * container sees only what Nextflow mounts for it, which is the folders of a
  * task's inputs, and a relative path in the sheet is relative to where
  * Nextflow was launched, not to the task. So each genome is read where
- * Nextflow staged it, and the sheet's paths only name them in messages.
+ * Nextflow staged it, and the sheet's paths only name them in messages. The
+ * same goes for a database on the host; one that lives in the container, as
+ * the Bakta default does, is checked there.
  *
  * Exit codes:
  *   0 = passed (warnings are non-fatal)
@@ -31,19 +33,39 @@ process VALIDATE_INPUTS {
     // Each in a numbered directory of its own: two genomes in different
     // folders may have the same file name.
     tuple val(sample_ids), path(genomes, stageAs: 'genomes/*/*')
+    // The Bakta database when it is on the host, or nothing (see main.nf)
+    path bakta_db, stageAs: 'bakta-db/*'
+    // eggNOG's by the path EGGNOG_DB builds it at, '' when it is not used,
+    // and the database itself if it is there already
+    tuple val(eggnog_db_path), path(eggnog_db, stageAs: 'eggnog-db/*')
 
     output:
     path 'validation.log'
 
     script:
-    def bakta_arg = params.bakta_db ? "--bakta-db '${params.bakta_db}'" : ""
-    def eggnog_arg = (!params.skip_functional_annotation && params.eggnog_db) ? "--eggnog-db '${params.eggnog_db}'" : ""
     // Nextflow hands over one genome as a path, and several as a list
     def staged = genomes instanceof List ? genomes : [genomes]
     // Each sample ID and where its genome is staged, in single quotes so that
     // the shell passes them on as they are
     def quoted = { v -> "'" + v.toString().replace("'", "'\\''") + "'" }
     def genome_rows = [sample_ids, staged].transpose().collect { id, g -> quoted.call(id) + ' ' + quoted.call(g) }.join(' ')
+    // Each database by its path, and where it is staged if it was
+    def options = []
+    if (params.bakta_db) {
+        options << '--bakta-db ' + quoted.call(params.bakta_db)
+        if (bakta_db) {
+            options << '--bakta-db-staged ' + quoted.call(bakta_db)
+        }
+    }
+    if (eggnog_db_path) {
+        options << '--eggnog-db ' + quoted.call(eggnog_db_path)
+        if (eggnog_db) {
+            options << '--eggnog-db-staged ' + quoted.call(eggnog_db)
+        }
+    }
+    if (params.strict_validation) {
+        options << '--strict'
+    }
     // The table goes in on standard input. Written to a file, it could share
     // the sample sheet's name and go through the link the sheet is staged as,
     // over the sheet itself. printf is a shell builtin, so no limit on the
@@ -54,8 +76,7 @@ process VALIDATE_INPUTS {
         | python3 ${projectDir}/bin/validate_inputs.py \\
             --tsv ${tsv_file} \\
             --genomes - \\
-            ${bakta_arg} \\
-            ${eggnog_arg} \\
+            ${options.join(' ')} \\
             2>&1 | tee validation.log
     """
 }

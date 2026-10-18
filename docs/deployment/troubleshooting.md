@@ -128,6 +128,11 @@ persistent shared storage.
 a truncated download and rebuilt. Usually means an earlier download was
 interrupted.
 
+**"has eggnog_db.ok, so EGGNOG_DB will not run again".** `eggnog_db.ok` tells
+Nextflow the database is built, so it never runs `EGGNOG_DB` again, but what it
+needs is not all there. Delete the files the message names and the next run
+builds it again.
+
 ## Results that look wrong
 
 **Far fewer genes than expected.** Check the assembly. A fragmented assembly

@@ -24,8 +24,12 @@ the report group results by lineage.
 
 pathotypr types each contig of a draft on its own, and the lineage of the draft
 is the one the markers of all its contigs add up to. A genome of one sequence
-has that sequence renamed after the sample; the contigs of a draft keep their
-names. A genome with no lineage markers at all is named `NA_G26689`.
+has that sequence renamed after the sample and keeps the description that
+follows the name in its header, so Bakta still reads a closed genome as
+complete and circular when the description says so (NCBI's "complete genome"
+and "complete sequence", Unicycler's `circular=true`); the contigs of a draft
+keep their names. A genome with no lineage markers at all is named
+`NA_G26689`.
 
 MTBC-specific. Turn it off with `--skip_typing` for anything else, and sample
 IDs stay as you wrote them.

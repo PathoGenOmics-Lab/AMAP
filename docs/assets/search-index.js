@@ -388,7 +388,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Outputs",
 "section": "*-AMAP.qc.tsv",
 "url": "user-guide/outputs.html#-amapqctsv",
-"text": "One row per sample: genome size, contig count, N50, GC%, total CDS, pseudogene count, hypothetical protein percentage, mean and median gene length, coding density, and the eggNOG annotation rate. Useful for spotting the sample that went wrong."
+"text": "One row per sample: genome size, contig count, N50, GC%, total CDS, how many of them AMAP calls pseudogenes (those with pseudo=true in the GFF3), hypothetical protein percentage, mean and median gene length, coding density, and the eggNOG annotation rate. Useful for spotting the sample that went wrong."
 },
 {
 "page": "Outputs",
@@ -556,7 +556,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Custom reference",
 "section": "What AMAP does with it",
 "url": "user-guide/custom-reference.html#what-amap-does-with-it",
-"text": "PREPARE_REFERENCE runs once, before any sample is processed, and does three things. 1. Extracts the reference proteome. Every CDS becomes a protein, headed GENE_ID_START-END. Those embedded coordinates are not decoration: the paralog step reads them back to predict where each protein belongs in the sample, which tells its own locus from a paralog's, so the header format matters. From GenBank the existing /translation qualifier is used when present, otherwise the sequence is extracted and translated. From GFF3 the lines of each CDS are joined first, as GenBank's join() is, and translated with t"
+"text": "PREPARE_REFERENCE runs once, before any sample is processed, and does three things. 1. Extracts the reference proteome. Every CDS becomes a protein, headed GENE_ID_START-END contig=SEQUENCE, SEQUENCE being the name --ref_genome gives the sequence the gene is on. Those embedded coordinates are not decoration: the paralog step reads them back to predict where each protein belongs in the sample, which tells its own locus from a paralog's, so the header format matters. A CDS across the origin of a circular sequence ends past the sequence's last base, the way GFF3 writes it: tagA on plasmid pO157 ("
 },
 {
 "page": "Custom reference",
@@ -640,7 +640,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The workflow",
 "section": "2. Lineage typing",
 "url": "how-it-works/workflow.html#2-lineage-typing",
-"text": "pathotypr assigns each genome to an MTBC lineage using phylogenetic marker SNPs, and the genomes are renamed after their sample ID with the lineage in front (L4_G26689 for sample G26689). That prefix carries through every downstream file and is what lets the report group results by lineage. pathotypr types each contig of a draft on its own, and the lineage of the draft is the one the markers of all its contigs add up to. A genome of one sequence has that sequence renamed after the sample; the contigs of a draft keep their names. A genome with no lineage markers at all is named NA_G26689. MTBC-"
+"text": "pathotypr assigns each genome to an MTBC lineage using phylogenetic marker SNPs, and the genomes are renamed after their sample ID with the lineage in front (L4_G26689 for sample G26689). That prefix carries through every downstream file and is what lets the report group results by lineage. pathotypr types each contig of a draft on its own, and the lineage of the draft is the one the markers of all its contigs add up to. A genome of one sequence has that sequence renamed after the sample and keeps the description that follows the name in its header, so Bakta still reads a closed genome as comp"
 },
 {
 "page": "The workflow",
@@ -820,7 +820,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Duplication metrics",
 "section": "The columns",
 "url": "how-it-works/duplications.html#the-columns",
-"text": "A row describes two communities: the columns ending in 1 are the first, those ending in 2 the second. For each: Genome, Community: the sample, and the community's number in it. Size: how many proteins it holds. Elements: the eggNOG COG categories of its proteins, with how many have each, the largest first. A protein eggNOG gave no category counts as -, eggNOG's mark for none. AvgDegree: links per protein, on average. In a community of n proteins it reaches n - 1 when every protein is linked to every other. Density: the links it has as a share of the pairs it could have. 1 means every protein m"
+"text": "A row describes two communities: the columns ending in 1 are the first, those ending in 2 the second. The first is the one whose sample comes first by name, or the one with the lower number when both are in the same sample, and the rows come in that order too, so a rerun writes the same file. For each: Genome, Community: the sample, and the community's number in it. Size: how many proteins it holds. Elements: the eggNOG COG categories of its proteins, with how many have each, the largest first. A protein eggNOG gave no category counts as -, eggNOG's mark for none. AvgDegree: links per protein,"
 },
 {
 "page": "Duplication metrics",

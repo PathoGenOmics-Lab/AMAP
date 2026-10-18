@@ -261,7 +261,16 @@ datos_cog$Functional_Category[datos_cog$Functional_Category == "" | datos_cog$Fu
 datos_cog$sequences <- paste(datos_cog$Lineages, datos_cog$genome, sep="_")
 # Use the real Count values from count_annot.py, not row-counts
 datos_cog$Count <- as.integer(datos_cog$Count)
+# count_annot.py writes a row for each category a sample has genes in, so a
+# sample with none in a category was missing from that category's figures,
+# their Dunn tests and the statistics, where it should count 0. Every sample
+# now has a row for each category some sample of the run has, 0 where it has
+# no gene; a category no sample has stays without rows. Completed on the
+# categories as text: over the factor of datos_cog1, every sample would count
+# 0 in all 27.
 datos_cog <- datos_cog %>%
+  complete(nesting(Lineages, genome, sequences), Functional_Category,
+           fill = list(Count = 0L)) %>%
   group_by(sequences) %>%
   mutate(Percentage = Count / sum(Count)) %>%
   ungroup()
@@ -307,7 +316,10 @@ datos_myco$Functional_Category[datos_myco$Functional_Category == "" | datos_myco
 datos_myco$sequences <- paste(datos_myco$Lineages, datos_myco$genome, sep="_")
 # Use the real Count values from count_annot.py, not row-counts
 datos_myco$Count <- as.integer(datos_myco$Count)
+# A sample with no gene in a category counts 0 in it, as in the COG table
 datos_myco <- datos_myco %>%
+  complete(nesting(Lineages, genome, sequences), Functional_Category,
+           fill = list(Count = 0L)) %>%
   group_by(sequences) %>%
   mutate(Percentage = Count / sum(Count)) %>%
   ungroup()
@@ -318,6 +330,8 @@ datos_myco$Percentage <- as.numeric(datos_myco$Percentage)
 # for MTBC the reference distribution happens to be H37Rv; for other
 # organisms it uses the observed median counts per category.
 if (nrow(datos_myco) > 0) {
+  # Over every sample, those with no gene in the category at 0: when more
+  # than half of them have none the median is 0, and the ratios to it NA
   ref_summary <- datos_myco %>%
     group_by(Functional_Category) %>%
     summarise(count = round(median(Count, na.rm = TRUE)),

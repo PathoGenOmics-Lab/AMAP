@@ -679,11 +679,11 @@ class TestGff3Proteome:
             with open(out) as f:
                 got = dict(zip(*[iter(l.strip().lstrip(">") for l in f)] * 2))
         assert got == {
-            f"gA_{pos['a1'][0]}-{pos['a2'][1]}": "M" + "A" * 10,
-            f"gB_{pos['b'][0]}-{pos['b'][1]}": "M" + "K" * 7 + "*",
-            f"gC_{pos['c'][0]}-{pos['c'][1]}": "M" + "A" * 9 + "*",
-            f"gD_{pos['d'][0]}-{pos['d'][1]}": "MAAAAUAAAA*",
-            f"gE_{pos['e_lo'][0]}-{pos['e_hi'][1]}": "M" + "P" * 8,
+            f"gA_{pos['a1'][0]}-{pos['a2'][1]} contig=chr1": "M" + "A" * 10,
+            f"gB_{pos['b'][0]}-{pos['b'][1]} contig=chr1": "M" + "K" * 7 + "*",
+            f"gC_{pos['c'][0]}-{pos['c'][1]} contig=chr1": "M" + "A" * 9 + "*",
+            f"gD_{pos['d'][0]}-{pos['d'][1]} contig=chr1": "MAAAAUAAAA*",
+            f"gE_{pos['e_lo'][0]}-{pos['e_hi'][1]} contig=chr1": "M" + "P" * 8,
         }
 
 

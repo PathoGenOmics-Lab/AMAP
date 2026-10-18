@@ -138,7 +138,10 @@ The audit trail for the correction. Each case table lists the genes that fell
 into it, so you can see exactly what was changed and why. The
 [correction algorithm](../how-it-works/correction-algorithm.md) explains the
 cases; `*-summary.tsv` aggregates the counts across samples and feeds the
-report.
+report. Its last three columns say which sample the counts are for: `Sequence`
+is the name its files carry (`L4_G26689`), `Lineage` what typing called it
+(`Untyped` under `--skip_typing`) and `Sample` its ID in the sample sheet
+(`G26689`).
 
 #### What a healthy summary looks like
 

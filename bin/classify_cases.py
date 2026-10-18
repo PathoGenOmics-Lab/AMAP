@@ -88,6 +88,10 @@ def main():
     parser.add_argument('-g', '--genome', help="Genome FASTA. With --ref-proteome, the proteins "
                                                "miniprot did not place exactly are looked for in it.")
     parser.add_argument('-r', '--ref-proteome', help="Reference proteome the miniprot PAF was made from.")
+    parser.add_argument('--sample', help="The sample's ID in the sample sheet, for the summary. "
+                                         "Default: the name of the Bakta table.")
+    parser.add_argument('--lineage', help="The lineage typing called the sample, for the summary. "
+                                          "Default: Untyped.")
     args = parser.parse_args()
 
     base_name = os.path.basename(args.bakta).split('.')[0]
@@ -115,7 +119,8 @@ def main():
     write_summary(base_name,
                   [case2, case3, case4, case1, rv_missing, bakta_df, case1_remove, case1_keep],
                   ["case2", "case3", "case4", "case1_initial", "rv_missing",
-                   "total_cds", "case1_removed", "case1_kept"])
+                   "total_cds", "case1_removed", "case1_kept"],
+                  sample=args.sample, lineage=args.lineage)
 
     # --- 4. Build overlap groups ---
     mp_case4_overlaps = build_overlap_tree(miniprot_df, case4, 'Prot Id', 'Locus Tag')

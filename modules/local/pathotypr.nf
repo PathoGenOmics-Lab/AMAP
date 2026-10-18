@@ -14,6 +14,10 @@ process PATHOTYPR {
 
     output:
     tuple env('SAMPLE_NAME'), path("*.fasta"), path("*_summary.tsv"), emit: typed_fasta
+    // The name, the sample ID and the lineage, for the steps that write the
+    // last two down: a sample ID can hold underscores, so they cannot be read
+    // back out of the name.
+    tuple env('SAMPLE_NAME'), val(sampleId), env('LINEAGE'), emit: names
 
     script:
     """
@@ -44,5 +48,7 @@ process PATHOTYPR {
     # after whichever of its contigs was listed first.
     SAMPLE_NAME=\$(python3 ${projectDir}/bin/name_by_lineage.py "${sampleId}" "${sampleId}_summary.tsv" "${fasta}") || exit 1
     export SAMPLE_NAME
+    # The lineage the name starts with: what is left of it without _<sampleId>.
+    export LINEAGE="\${SAMPLE_NAME%"_${sampleId}"}"
     """
 }

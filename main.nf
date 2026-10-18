@@ -401,16 +401,22 @@ workflow {
         // 1b. Where the genomes come from: the sample sheet, or the container.
         genomes_ch = params.test_data ? TEST_GENOME() : fasta_ch
 
-        // 2. Perform MTB lineage typing or skip it
+        // 2. Perform MTB lineage typing or skip it. names_ch says, for every
+        // genome, the name its files carry, its sample ID and its lineage, for
+        // the steps that write the last two down: typing names a genome
+        // <lineage>_<sampleId>, and a sample ID can hold underscores of its
+        // own, so neither can be read back out of the name.
         if (!params.skip_typing) {
             PATHOTYPR(genomes_ch)
             typed_ch = PATHOTYPR.out.typed_fasta
+            names_ch = PATHOTYPR.out.names
         } else {
             // If skipping typing, create a placeholder file for caching.
             CREATE_EMPTY_FILE()
             typed_ch = genomes_ch.combine(CREATE_EMPTY_FILE.out).map { sampleId, fasta, empty_file ->
                 tuple(sampleId, fasta, empty_file)
             }
+            names_ch = genomes_ch.map { sampleId, _fasta -> tuple(sampleId, sampleId, 'Untyped') }
         }
 
         // 3. Annotate genomes with Bakta
@@ -446,7 +452,7 @@ workflow {
         MINIPROT(BAKTA_ANNOTATOR.out.for_miniprot, ref_proteome_ch, ref_genome_fasta_ch, bad_bakta_ch)
 
         // 6. Classify CDS cases based on alignments
-        TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases), ref_proteome_ch)
+        TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases).join(names_ch), ref_proteome_ch)
 
         // 7. Correct CDS based on classified cases
         FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix), ref_proteome_ch)
@@ -480,7 +486,7 @@ workflow {
             ch_for_downstream = FIX_CDS.out.for_downstream.join(eggnog_results_ch)
 
             // 8. Generate final output files (GFF, GBK, Master Table)
-            GET_OUTPUTS(ch_for_downstream)
+            GET_OUTPUTS(ch_for_downstream.join(names_ch.map { name, _sample, lineage -> tuple(name, lineage) }))
 
             // 9. Find and analyze gene duplications
             GET_DUPLICATIONS(ch_for_downstream)
@@ -498,7 +504,7 @@ workflow {
             PANGENE(ch_for_downstream, ref_fastas_ch)
 
             // 11. Count annotations per category
-            GET_COUNT(GET_OUTPUTS.out.master_table)
+            GET_COUNT(GET_OUTPUTS.out.master_table.join(names_ch))
 
             // 12. Generate final reports
             // Collect summaries from different processes

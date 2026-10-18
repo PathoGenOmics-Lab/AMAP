@@ -1,7 +1,3 @@
----
-title: HPC deployment
----
-
 # Running on a cluster
 
 Past a couple of dozen genomes, a scheduler is worth the setup. Combine a

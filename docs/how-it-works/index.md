@@ -1,7 +1,3 @@
----
-title: How it works
----
-
 # How it works
 
 AMAP does not annotate genomes from scratch. It takes an annotation that already

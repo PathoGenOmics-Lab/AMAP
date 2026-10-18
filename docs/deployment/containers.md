@@ -1,7 +1,3 @@
----
-title: Containers
----
-
 # Containers
 
 Every tool AMAP calls lives in one image, `paururo/amap`, published on
@@ -88,12 +84,13 @@ looking any different.
 Publishing is automated: the `Docker image` GitHub Actions workflow builds,
 smoke tests and pushes on a `v*` tag or on demand.
 
-!!! warning "Reference downloads can expire"
-
-    Several reference files are fetched from Google Drive during the build. Those
-    links have expired before. If a build fails on a `wget` in the data stage,
-    that is why, and the URL needs replacing. The Zenodo-hosted files
-    (`MTB_ancestor_reference.fasta`, the pathotypr markers) are not affected.
+> [!WARNING]
+> **Reference downloads can expire**
+>
+> Several reference files are fetched from Google Drive during the build. Those
+> links have expired before. If a build fails on a `wget` in the data stage,
+> that is why, and the URL needs replacing. The Zenodo-hosted files
+> (`MTB_ancestor_reference.fasta`, the pathotypr markers) are not affected.
 
 ## Singularity on a cluster
 

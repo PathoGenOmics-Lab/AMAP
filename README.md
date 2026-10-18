@@ -34,12 +34,12 @@ which coordinates win a conflict, and the thresholds behind those decisions).
 
 | | |
 | :--- | :--- |
-| [Quickstart](https://pathogenomics-lab.github.io/AMAP/getting-started/quickstart/) | From an installed Nextflow to an open report |
-| [Parameters](https://pathogenomics-lab.github.io/AMAP/user-guide/parameters/) | Every flag and its default |
-| [Outputs](https://pathogenomics-lab.github.io/AMAP/user-guide/outputs/) | What every file is |
-| [How it works](https://pathogenomics-lab.github.io/AMAP/how-it-works/) | The workflow and the correction algorithm |
-| [Custom reference](https://pathogenomics-lab.github.io/AMAP/user-guide/custom-reference/) | Annotating non-MTBC organisms |
-| [Troubleshooting](https://pathogenomics-lab.github.io/AMAP/deployment/troubleshooting/) | When a run fails |
+| [Quickstart](https://pathogenomics-lab.github.io/AMAP/getting-started/quickstart.html) | From an installed Nextflow to an open report |
+| [Parameters](https://pathogenomics-lab.github.io/AMAP/user-guide/parameters.html) | Every flag and its default |
+| [Outputs](https://pathogenomics-lab.github.io/AMAP/user-guide/outputs.html) | What every file is |
+| [How it works](https://pathogenomics-lab.github.io/AMAP/how-it-works.html) | The workflow and the correction algorithm |
+| [Custom reference](https://pathogenomics-lab.github.io/AMAP/user-guide/custom-reference.html) | Annotating non-MTBC organisms |
+| [Troubleshooting](https://pathogenomics-lab.github.io/AMAP/deployment/troubleshooting.html) | When a run fails |
 
 ## What can AMAP do?
 
@@ -63,7 +63,7 @@ The main steps:
 9. **Pangenome analysis** ([pangene](https://github.com/lh3/pangene)): gene content compared across the whole set.
 10. **Report**: a single self-contained HTML file covering all of the above.
 
-The [how it works](https://pathogenomics-lab.github.io/AMAP/how-it-works/)
+The [how it works](https://pathogenomics-lab.github.io/AMAP/how-it-works.html)
 section documents each step and the correction algorithm in detail.
 
 ![AMAP pipeline map](.github/metroAMAP_trayectos_css_clean_anim.svg)
@@ -115,7 +115,7 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
 `--validate_only` checks every FASTA and database path without running anything,
 which is worth doing before a long run.
 
-See [running AMAP](https://pathogenomics-lab.github.io/AMAP/user-guide/running/)
+See [running AMAP](https://pathogenomics-lab.github.io/AMAP/user-guide/running.html)
 for the full set of profiles and options.
 
 ## Results
@@ -132,7 +132,7 @@ first:
 Alongside them, `results/pipeline_info/` holds `software_versions.yml` and
 `params.yml`, which are what belongs in a methods section. Every directory is
 documented under
-[outputs](https://pathogenomics-lab.github.io/AMAP/user-guide/outputs/).
+[outputs](https://pathogenomics-lab.github.io/AMAP/user-guide/outputs.html).
 
 ## Development
 
@@ -143,15 +143,16 @@ pip install -r requirements-test.txt
 python -m pytest tests/ -v
 ```
 
-To preview the documentation locally:
+The website is plain HTML in `docs/`. After editing a page's markdown, rebuild
+the pages and check them against the pipeline:
 
 ```bash
-pip install -r requirements-docs.txt
-mkdocs serve
+python3 tools/build_docs.py
+python3 tools/check_site.py
 ```
 
 See
-[contributing](https://pathogenomics-lab.github.io/AMAP/about/contributing/).
+[contributing](https://pathogenomics-lab.github.io/AMAP/about/contributing.html).
 
 ## Citation
 

@@ -1,7 +1,3 @@
----
-title: Custom reference
----
-
 # Using your own reference
 
 AMAP corrects an annotation by refereeing it against a trusted one. For MTBC
@@ -27,18 +23,17 @@ A **closed, well-curated genome of a close relative**, ideally the type strain
 or a reference assembly from RefSeq. The correction assumes the reference genes
 are right, so its quality is the ceiling on your result.
 
-`--ref_annotation`
-: GFF3 (`.gff`, `.gff3`) or GenBank (`.gbk`, `.gb`, `.genbank`, `.gbff`).
+- **`--ref_annotation`**: GFF3 (`.gff`, `.gff3`) or GenBank (`.gbk`, `.gb`, `.genbank`, `.gbff`).
   Detected from the extension, with GenBank tried first for anything else.
-
-`--ref_genome`
-: FASTA of the same genome. It must be the same assembly the annotation
+- **`--ref_genome`**: FASTA of the same genome. It must be the same assembly the annotation
   describes, since coordinates are taken at face value.
 
 ## What AMAP does with it
 
 `PREPARE_REFERENCE` runs once, before any sample is processed, and does three
 things.
+
+<!-- figure: prepare-reference -->
 
 **1. Extracts the reference proteome.** Every CDS becomes a protein, headed
 `GENE_ID_START-END`. Those embedded coordinates are not decoration: the
@@ -71,13 +66,10 @@ rather than merely run.
 
 ## What you must turn off
 
-`--skip_typing`
-: pathotypr assigns MTBC lineages from tuberculosis-specific marker SNPs.
+- **`--skip_typing`**: pathotypr assigns MTBC lineages from tuberculosis-specific marker SNPs.
   Meaningless elsewhere, and it will fail. AMAP warns when `--genus` is not
   Mycobacterium and this is not set.
-
-`--skip_mycobrowser`
-: Mycobrowser functional categories are an MTBC resource. Auto-enabled when
+- **`--skip_mycobrowser`**: Mycobrowser functional categories are an MTBC resource. Auto-enabled when
   `--ref_annotation` is set and `--genus` is not Mycobacterium, but setting it
   explicitly is clearer.
 
@@ -136,26 +128,29 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
 
 ## Things that trip people up
 
-!!! warning "The annotation and the genome must match"
+> [!WARNING]
+> **The annotation and the genome must match**
+>
+> Coordinates from the annotation are used directly against the FASTA. An
+> annotation from a different assembly of the same organism produces
+> nonsense: extracted proteins will not translate, and the reference proteome
+> will be mostly empty. `PREPARE_REFERENCE` prints the count of extracted
+> proteins, so check it looks like a genome's worth.
 
-    Coordinates from the annotation are used directly against the FASTA. An
-    annotation from a different assembly of the same organism produces
-    nonsense: extracted proteins will not translate, and the reference proteome
-    will be mostly empty. `PREPARE_REFERENCE` prints the count of extracted
-    proteins, so check it looks like a genome's worth.
+> [!WARNING]
+> **Reference genes need identifiers**
+>
+> A GFF3 whose CDS features carry no `locus_tag`, `ID`, `gene` or `Name` is
+> skipped entirely, and the run fails with "No proteins extracted". This
+> happens with minimal GFF3 exports from some annotation tools.
 
-!!! warning "Reference genes need identifiers"
-
-    A GFF3 whose CDS features carry no `locus_tag`, `ID`, `gene` or `Name` is
-    skipped entirely, and the run fails with "No proteins extracted". This
-    happens with minimal GFF3 exports from some annotation tools.
-
-!!! note "Distance to the reference"
-
-    The correction expects your samples to be the same species as the
-    reference. The further away they are, the more genes fall into case 1
-    (nothing in the reference to compare against) and the less AMAP has to say.
-    It is a correction tool, not an ortholog finder.
+> [!NOTE]
+> **Distance to the reference**
+>
+> The correction expects your samples to be the same species as the
+> reference. The further away they are, the more genes fall into case 1
+> (nothing in the reference to compare against) and the less AMAP has to say.
+> It is a correction tool, not an ortholog finder.
 
 ## Next steps
 

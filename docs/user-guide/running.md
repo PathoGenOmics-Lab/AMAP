@@ -1,7 +1,3 @@
----
-title: Running AMAP
----
-
 # Running AMAP
 
 Nextflow runs the pipeline straight from GitHub, so there is nothing to clone
@@ -79,12 +75,13 @@ nextflow run PathoGenOmics-Lab/AMAP \
 [Deployment on HPC](../deployment/hpc.md) goes into the details that actually
 bite: shared filesystems, scratch, and where the eggNOG database should live.
 
-!!! tip "Large datasets"
-
-    Past a hundred genomes, use a scheduler. The eggNOG step in particular runs
-    once over all samples at a time rather than once per sample, precisely so a
-    shared filesystem is not hammered by hundreds of jobs reading the same
-    Diamond database.
+> [!TIP]
+> **Large datasets**
+>
+> Past a hundred genomes, use a scheduler. The eggNOG step in particular runs
+> once over all samples at a time rather than once per sample, precisely so a
+> shared filesystem is not hammered by hundreds of jobs reading the same
+> Diamond database.
 
 ## Non-MTBC organisms
 

@@ -1,7 +1,3 @@
----
-title: Troubleshooting
----
-
 # Troubleshooting
 
 ## Reading a failure
@@ -26,28 +22,19 @@ resources or logic.
 
 ## Before the pipeline starts
 
-**"Unexpected input: '('" in `nextflow.config`**
-: Nextflow 25.10 and later read pipelines with a stricter parser, which older
+- **"Unexpected input: '('" in `nextflow.config`**: Nextflow 25.10 and later read pipelines with a stricter parser, which older
   copies of AMAP do not pass. Nextflow keeps the copy it downloaded first, so
   fetch the current one with `nextflow pull PathoGenOmics-Lab/AMAP` and run
   again. To run an older AMAP release as it is, `export NXF_SYNTAX_PARSER=v1`
   first.
-
-**"Input TSV file not found"**
-: The path in `--tsv` is wrong, or relative to somewhere other than where you
+- **"Input TSV file not found"**: The path in `--tsv` is wrong, or relative to somewhere other than where you
   launched Nextflow.
-
-**"Invalid TSV format"**
-: The header must be exactly `sampleId` and `fasta`, separated by a real tab.
+- **"Invalid TSV format"**: The header must be exactly `sampleId` and `fasta`, separated by a real tab.
   Spaces are the usual culprit. `cat -t samples.tsv` shows tabs as `^I`, and
   works on both Linux and macOS.
-
-**"FASTA file not found"**
-: A path in the sample sheet does not resolve. Absolute paths avoid the
+- **"FASTA file not found"**: A path in the sample sheet does not resolve. Absolute paths avoid the
   ambiguity.
-
-**Validation failures**
-: `results/pipeline_info/validation.log` says which check failed and for which
+- **Validation failures**: `results/pipeline_info/validation.log` says which check failed and for which
   sample. Thresholds are in [preparing inputs](../getting-started/inputs.md).
 
 ## Container problems

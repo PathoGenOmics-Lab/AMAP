@@ -1,7 +1,3 @@
----
-title: Outputs
----
-
 # Outputs
 
 Everything lands under `--outdir`, `results/` by default, in one subdirectory
@@ -18,6 +14,8 @@ per pipeline stage.
 | Tool versions for your methods section | `results/pipeline_info/software_versions.yml` |
 
 ## The full tree
+
+<!-- figure: results-map -->
 
 ```text
 results/
@@ -106,6 +104,8 @@ Two kinds of gene carry marks, written the way NCBI writes them:
 The same three facts, `pseudogene`, `partial` (`5'`, `3'` or both) and `note`,
 are the last columns of the master table and of `*-AMAP.tsv`.
 
+<!-- figure: excerpt -->
+
 ### `*-AMAP.faa` versus `*-AMAP.clean.faa`
 
 `*-AMAP.faa` mirrors the annotation exactly, pseudogenes included, so gene
@@ -153,6 +153,8 @@ Sakai against K-12 MG1655, using a custom reference.
 | rv_missing, rescued | 97 | 102 |
 | total_cds before correction | 4077 | 5367 |
 
+<!-- figure: case-table -->
+
 The one number that differs by two orders of magnitude is case 1, and that is
 biology: CDC1551 is the same species as the reference so almost nothing is
 genuinely new, while O157:H7 carries prophages and the LEE island that K-12
@@ -175,19 +177,14 @@ searchable master-table explorer.
 
 ## Effect of the skip options
 
-`--skip_typing`
-: No `PATHOTYPR/` directory. Samples keep their original IDs instead of being
+- **`--skip_typing`**: No `PATHOTYPR/` directory. Samples keep their original IDs instead of being
   renamed by lineage.
-
-`--skip_functional_annotation`
-: The run stops after correction. No `DUPLICATIONS/`, `PANGENE/` or
+- **`--skip_functional_annotation`**: The run stops after correction. No `DUPLICATIONS/`, `PANGENE/` or
   `final_report.html`, and `AMAP/` holds only the corrected table and sequences,
   `*.AMAP.tsv`, `*.AMAP.faa` and `*.AMAP.fna`, without the GFF3, the GenBank or
   the master table. You still get `BAKTA/` and `CDS_CASES/`, including
   `*_corrected.tsv` with the corrected coordinates.
-
-`--skip_mycobrowser`
-: `*-AMAP.MycoBrowser.tsv` is written empty and the Mycobrowser sections drop
+- **`--skip_mycobrowser`**: `*-AMAP.MycoBrowser.tsv` is written empty and the Mycobrowser sections drop
   out of the report. Everything else is unaffected.
 
 ## Next steps

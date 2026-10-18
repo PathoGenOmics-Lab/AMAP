@@ -43,6 +43,8 @@ directly comparable with 1.0.1.
 - **`reconcile_coordinates` is gone**: it read reference coordinates from protein identifiers that have not carried them since March 2026, so it changed nothing. The paralog check does its job with the sample's own offsets
 
 ### 📚 Documentation
+- **A website in plain HTML, drawn with real genes**: MkDocs is gone. The front page starts a newcomer in three steps and builds the command for their machine, the pipeline is a metro map whose stations are `main.nf`'s processes, and the four cases, the missing genes and the harder cases (paralogs, small proteins, contig ends, frameshifts, copies) are drawn on genes of CDC1551, M. bovis and E. coli from the benchmark. The tutorial and user guide stay markdown, readable on GitHub, and `tools/build_docs.py` turns them into pages of the same site, dark by default
+- **The site is checked against the code**: `tools/check_site.py` runs every drawn window through `bin/`, compares the thresholds on the pages with the constants in the code, the metro map with `main.nf` and every option with the pipeline's parameters, so a change that makes the site wrong fails the docs workflow. `tools/figure_data.py` redraws the windows from a benchmark run
 - **What the docs said that the pipeline does not do**: with `--skip_functional_annotation` a run still writes `AMAP/`, with the corrected table and sequences, where the outputs page said it did not; no step writes `PATHOTYPR/renamed_fastas.tsv`; and the 19-residue toxin the algorithm page names is IbsC (b4665), not an ldr toxin
 
 ### 🧪 Testing
@@ -93,12 +95,12 @@ than by reading it. Several changed what the pipeline outputs, so results from
 - **`requirements-test.txt`**: one dependency list for CI, the docs and a local checkout. `environment.yml` was missing the Python `plotly`, so a conda environment built from it could not start `classify_cases.py`
 - **92 tests**, up from 58
 
-## [1.0.0] — 2026-04-01
+## [1.0.0] - 2026-04-01
 
 ### 🔬 Correctness
-- **Strand-aware gene dictionary**: `combined_dict` keys changed from `(Start, End)` to `(Start, End, Strand)` — genes on opposite strands at the same coordinates no longer collide silently
+- **Strand-aware gene dictionary**: `combined_dict` keys changed from `(Start, End)` to `(Start, End, Strand)`: genes on opposite strands at the same coordinates no longer collide silently
 - **Consistent 1-based lengths**: all length calculations now use `End - Start + 1` (15 sites fixed)
-- **Robust ID cleaning**: regex `_\d+-\d+$` replaces brittle 4-part underscore rule — PE_PGRS genes now handled correctly
+- **Robust ID cleaning**: regex `_\d+-\d+$` replaces brittle 4-part underscore rule, so PE_PGRS genes are handled correctly
 - **Exact gene name matching**: prevents false matches (Rv3508 ≠ Rv3508c, Rv1 ≠ Rv10)
 - **IntervalTree half-open intervals**: all 9 operations corrected from `[Start:End]` to `[Start:End+1]`
 - **Cross-strand gene preservation**: merge operations now include Strand to prevent loss
@@ -106,7 +108,7 @@ than by reading it. Several changed what the pipeline outputs, so results from
 - **Pseudogene propagation**: Is_Pseudogene column now reaches master table and report
 
 ### 🛡️ Robustness
-- **Pre-flight validation**: new `VALIDATE_INPUTS` process checks FASTA format, N-content, GC%, genome size, duplicate headers, database paths — runs before any computation
+- **Pre-flight validation**: new `VALIDATE_INPUTS` process checks FASTA format, N-content, GC%, genome size, duplicate headers and database paths, before any computation
 - **`--validate_only` mode**: check all inputs without executing the pipeline
 - **eggNOG DB integrity**: `bacteria.dmnd` <100 MB detected as corrupted → automatic rebuild
 - **Bakta DB pre-check**: actionable error message with download command
@@ -175,7 +177,7 @@ than by reading it. Several changed what the pipeline outputs, so results from
 - 20 critical (🔴) + 65 improvements (🟡)
 - See commit history on `fix` branch for full details
 
-## [0.1.0] — 2025
+## [0.1.0] - 2025
 
 - Initial release
 - MTBC-focused annotation pipeline

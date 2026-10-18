@@ -1,7 +1,3 @@
----
-title: Installation
----
-
 # Installation
 
 AMAP needs two things on your machine: **Nextflow**, which runs the pipeline,
@@ -33,22 +29,22 @@ manifest.
 
 Pick whichever your machine allows.
 
-=== "Docker"
+**Docker**
 
-    Best on a laptop or workstation where you have root. Follow the
-    [Docker installation guide](https://docs.docker.com/engine/install/) for
-    your platform.
+Best on a laptop or workstation where you have root. Follow the
+[Docker installation guide](https://docs.docker.com/engine/install/) for
+your platform.
 
-=== "Singularity / Apptainer"
+**Singularity / Apptainer**
 
-    The usual choice on an HPC cluster, where Docker is normally not permitted.
-    Follow the
-    [Apptainer installation guide](https://apptainer.org/docs/user/latest/quick_start.html).
-    Many clusters already provide it as a module:
+The usual choice on an HPC cluster, where Docker is normally not permitted.
+Follow the
+[Apptainer installation guide](https://apptainer.org/docs/user/latest/quick_start.html).
+Many clusters already provide it as a module:
 
-    ```bash
-    module load singularity   # or: module load apptainer
-    ```
+```bash
+module load singularity   # or: module load apptainer
+```
 
 ## 3. Check the installation
 
@@ -71,17 +67,18 @@ The first run downloads the AMAP image, which is several gigabytes because it
 bundles the Bakta database and the H37Rv reference files. Expect that to take a
 while. Later runs reuse the cached image.
 
-!!! tip "Check inputs before a long run"
-
-    Once you have your own samples, `--validate_only` checks every FASTA and
-    database path without executing anything:
-
-    ```bash
-    nextflow run PathoGenOmics-Lab/AMAP -profile docker \
-        --tsv samples.tsv --validate_only
-    ```
-
-    See [inputs](inputs.md) for what it looks for.
+> [!TIP]
+> **Check inputs before a long run**
+>
+> Once you have your own samples, `--validate_only` checks every FASTA and
+> database path without executing anything:
+>
+> ```bash
+> nextflow run PathoGenOmics-Lab/AMAP -profile docker \
+>     --tsv samples.tsv --validate_only
+> ```
+>
+> See [inputs](inputs.md) for what it looks for.
 
 ## Running without a container
 

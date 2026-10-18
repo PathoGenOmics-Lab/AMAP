@@ -1,7 +1,3 @@
----
-title: Contributing
----
-
 # Contributing
 
 Bug reports, fixes and suggestions are all welcome. The full guidelines live in
@@ -117,25 +113,45 @@ the pipeline scripts without the image looking any different.
 
 ## Working on these docs
 
+The website is plain HTML in `docs/`, with nothing to build on the server:
+GitHub Pages serves the folder as it is, and it opens from a clone too. The long
+pages are the markdown files, which GitHub also renders, and
+`tools/build_docs.py` writes each one's `.html` next to it, with the site's
+header, page list, contents and search.
+
 ```bash
-pip install -r requirements-docs.txt
-mkdocs serve
+python3 tools/build_docs.py          # after editing any .md under docs/
+python3 tools/check_site.py          # what CI runs
+python3 -m http.server -d docs 8000  # then open http://localhost:8000
 ```
 
-That serves the site at `http://127.0.0.1:8000` and reloads as you edit. Pages
-live in `docs/` and the navigation is the `nav` block in `mkdocs.yml`. Every
-page has an edit link in its top right corner, which goes straight to the file
-on GitHub.
+The front page (`docs/index.html`) and the illustrated walk through the
+correction (`docs/how-it-works.html`) are written by hand. Their drawings come
+from `docs/assets/figures.js` and `how.js`, and every gene in them from the
+windows of real runs in `docs/assets/figure-data.js`. A line
+`<!-- figure: NAME -->` in a markdown page puts one of those drawings there, and
+GitHub shows nothing in its place.
 
-The site is built with `--strict`, so a broken internal link fails the build
-rather than shipping. Run `mkdocs build --strict` before opening a pull request.
+`check_site.py` fails when a page no longer matches its markdown, a link or an
+anchor is broken, a page uses an option the pipeline does not have, a threshold
+on a page differs from the code, the metro map's stations are out of the order
+`main.nf` runs them in, or a drawing shows something `bin/` would not do: it
+runs every window of `figure-data.js` through the classification,
+`check_cds.py` and `deduplicate_rvs.py`. When a change to the algorithm changes
+a drawn window, rerun the benchmark, write the windows again, and read the
+words of the drawing against what changed:
 
-Publishing is automatic: a push to `main` that touches `docs/`, `mkdocs.yml`,
-`CHANGELOG.md` or the workflow itself rebuilds and deploys to GitHub Pages.
+```bash
+python3 tools/figure_data.py benchmark_work final --reference /reference
+```
+
+The workflow in `.github/workflows/docs.yml` runs both checks on every pull
+request that touches the docs, `bin/`, `modules/` or `main.nf`.
 
 ## Style
 
-Keep to what is already there: short paragraphs, admonitions for the things that
-actually bite, and concrete numbers rather than "large" or "slow". Where a
-threshold appears in the docs it should match the constant in the code, so if
-you change one, change the other.
+Keep to what is already there: short paragraphs, GitHub's alerts (`> [!WARNING]`)
+for the things that actually bite, and concrete numbers rather than "large" or
+"slow". Where a threshold appears in the docs it should match the constant in
+the code, so if you change one, change the other; `check_site.py` holds the ones
+it knows to the code.

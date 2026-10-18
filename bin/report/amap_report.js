@@ -1662,8 +1662,8 @@
         { key: 'call', label: 'Bakta\'s call', value: (r) => r.contig + ':' + fmt(r.start) + '-' + fmt(r.end) + ' ' + r.strand },
         { key: 'by', label: 'AMAP\'s gene in its place', value: (r) => (r.row >= 0 ? g.ids[r.row] + ' (' + rvsOf(g, r.row).join(', ') + ')' : 'none') },
         { key: 'amap', label: 'AMAP\'s coordinates', value: (r) => (r.row >= 0 ? fmt(g.start[r.row]) + '-' + fmt(g.end[r.row]) : '') },
-        { key: 'ds', label: 'Start moved', num: true, value: (r) => (r.row >= 0 ? (g.plus[r.row] ? g.start[r.row] - r.start : r.end - g.end[r.row]) : null),
-          render: (r) => (r.row >= 0 ? signed(g.plus[r.row] ? g.start[r.row] - r.start : r.end - g.end[r.row]) : ''), title: 'How far upstream (+) or downstream (-) of Bakta\'s start codon AMAP starts the gene' },
+        { key: 'ds', label: 'AMAP\'s start', num: true, value: (r) => (r.row >= 0 ? (g.plus[r.row] ? g.start[r.row] - r.start : r.end - g.end[r.row]) : null),
+          render: (r) => (r.row >= 0 ? signed(g.plus[r.row] ? g.start[r.row] - r.start : r.end - g.end[r.row]) : ''), title: 'Where AMAP starts the gene, from Bakta\'s start codon along the gene: negative upstream (a longer gene), positive downstream (a shorter one)' },
       ];
       if (id.startsWith('bakta:')) {
         const c = id.split(':')[1];

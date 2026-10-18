@@ -786,6 +786,11 @@
       text: "One self-contained HTML file from everything above: quality, cases, missing genes, functions, duplications, pangenome.",
       reads: "every summary (REPORT_INPUTS gathers them)", writes: "final_report.html", flags: "", doc: "user-guide/report.html", exit: "final_report.html", exitSide: "below", functional: true
     },
+    AMAP_REPORT: {
+      name: "Interactive report", proc: "AMAP_REPORT", x: 1050, y: 100, kind: "hub-end", label: "above-end",
+      text: "One self-contained HTML file organised by question: how each genome annotated, a map of the reference genes in every genome, one gene in every genome, what the correction changed, the pseudogenes by lineage. It needs only the correction, so it is written with or without eggNOG, whose steps add their own sections.",
+      reads: "every genome's corrected genes, case tables and Bakta folder; the master tables, the pangenome and the communities when the run has them", writes: "amap_report.html", flags: "", doc: "user-guide/amap-report.html", exit: "amap_report.html", exitSide: "above"
+    },
     REFERENCE: {
       name: "Reference", proc: "BUNDLED_REFERENCE", procCustom: "PREPARE_REFERENCE", x: 395, y: 60, kind: "end", label: "left",
       text: "The H37Rv proteome and its false-positive set, bundled in the container.",
@@ -797,7 +802,8 @@
   // The order main.nf's workflow calls them in, for check_site.py.
   var METRO_ORDER = [
     "VALIDATE_INPUTS", "EGGNOG_DB", "PATHOTYPR", "BAKTA_ANNOTATOR", "REFERENCE", "MINIPROT", "TYPE_CASES", "FIX_CDS",
-    "ANNOT_EGGNOGMAP_BATCH", "GET_OUTPUTS", "GET_DUPLICATIONS", "PANGENE", "GET_COUNT", "GET_ALLDUP", "FINAL_REPORT"
+    "ANNOT_EGGNOGMAP_BATCH", "GET_OUTPUTS", "GET_DUPLICATIONS", "PANGENE", "GET_COUNT", "GET_ALLDUP", "FINAL_REPORT",
+    "AMAP_REPORT"
   ];
 
   var LINES = [
@@ -806,7 +812,11 @@
     { key: "db", d: "M735,60 V160" },
     { key: "dup", d: "M735,179 H800 Q820,179 826,200 L836,230 Q842,250 862,250 H1000 Q1020,250 1028,230 L1040,195 Q1046,179 1050,179" },
     { key: "pan", d: "M735,188 H790 Q805,188 809,210 L815,295 Q818,320 840,320 H1010 Q1034,320 1040,295 L1048,195 Q1050,188 1050,181" },
-    { key: "pan-feed", d: "M250,178 V330 Q250,350 270,350 H790 Q812,350 812,330", dUntyped: "M70,178 Q70,187 58,187 H24 Q14,187 14,197 V330 Q14,350 34,350 H790 Q812,350 812,330", feed: true }
+    { key: "pan-feed", d: "M250,178 V330 Q250,350 270,350 H790 Q812,350 812,330", dUntyped: "M70,178 Q70,187 58,187 H24 Q14,187 14,197 V330 Q14,350 34,350 H790 Q812,350 812,330", feed: true },
+    // The interactive report reads the correction's outputs directly, and the
+    // functional steps' when they run (the dashed stretch).
+    { key: "rep", d: "M625,152 V118 Q625,100 643,100 H1050" },
+    { key: "rep-feed", d: "M1050,158 V114", dash: true }
   ];
 
   function metroSvg(state) {
@@ -822,7 +832,7 @@
         out.push('<text class="exit' + (off ? " off" : "") + '" x="' + (untyped ? 34 : 270) + '" y="343">' + (untyped ? "the genomes of the sample sheet, under their sample IDs" : "the renamed genomes, from Lineage") + "</text>");
         return;
       }
-      out.push('<path class="ml ml-' + l.key + (off ? " off" : "") + '" d="' + l.d + '"/>');
+      out.push('<path class="ml ml-' + l.key + (off ? " off" : "") + '" d="' + l.d + '"' + (l.dash ? ' style="stroke-width:3;stroke-dasharray:2 6"' : "") + "/>");
       if (l.endTick) {
         out.push('<line class="ml ml-' + l.key + (off ? " off" : "") + '" x1="' + l.endTick[0] + '" x2="' + l.endTick[0] + '" y1="' + (l.endTick[1] - 6) + '" y2="' + (l.endTick[1] + 6) + '" style="stroke-width:4"/>');
       }
@@ -853,6 +863,12 @@
       var ny;
       var py;
       if (s.label === "above") {
+        ny = s.y - 34;
+        py = s.y - 21;
+      } else if (s.label === "above-end") {
+        // Above, ending at the station: at the map's right edge
+        lx = s.x + 12;
+        anchor = "end";
         ny = s.y - 34;
         py = s.y - 21;
       } else if (s.label === "below") {
@@ -888,7 +904,7 @@
   function lineOff(key, state) {
     if (key === "main") return false;
     if (key === "ref") return false;
-    if (state.skipFunctional && (key === "db" || key === "dup" || key === "pan" || key === "pan-feed")) return true;
+    if (state.skipFunctional && (key === "db" || key === "dup" || key === "pan" || key === "pan-feed" || key === "rep-feed")) return true;
     return false;
   }
 
@@ -904,7 +920,7 @@
     if (!state.skipTyping) dirs.push("PATHOTYPR/");
     dirs.push("BAKTA/", "CDS_CASES/", "AMAP/");
     if (!state.skipFunctional) dirs.push("DUPLICATIONS/", "PANGENE/", "final_report.html");
-    dirs.push("pipeline_info/");
+    dirs.push("amap_report.html", "pipeline_info/");
     return dirs;
   }
 

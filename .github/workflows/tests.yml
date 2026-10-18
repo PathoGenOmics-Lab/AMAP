@@ -55,7 +55,7 @@ jobs:
         run: |
           set -euo pipefail
           n=0
-          for f in bin/*.py bin/classify/*.py; do
+          for f in bin/*.py bin/classify/*.py bin/report/*.py; do
             python -m py_compile "$f"
             n=$((n + 1))
           done
@@ -71,6 +71,7 @@ jobs:
           names += ['classify.' + p.stem
                     for p in sorted(pathlib.Path('bin/classify').glob('*.py'))
                     if p.stem != '__init__']
+          names += ['report.' + p.stem for p in sorted(pathlib.Path('bin/report').glob('*.py'))]
           bad = []
           for n in names:
               try:

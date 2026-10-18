@@ -1,0 +1,4 @@
+Locus Tag	Start	End	Strand	Length_nt	Contig	Prot Id	Prot len	Match Nt	Num nt	Complete	Difference
+L4_CDC1551draft_03614	81589	86697	-	5109	contig_33	Rv1003720new	2095	4938	6360	True	-1251
+L4_CDC1551draft_03615	86988	91142	-	4155	contig_33	Rv3507	1382	4128	4173	True	-18
+L4_CDC1551draft_03644	122104	123285	-	1182	contig_33	Rv1361c	397	1134	1191	True	-9

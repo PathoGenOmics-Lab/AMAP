@@ -1,0 +1,38 @@
+  # AMAP Pipeline Parameters
+  # Run: Sun Oct 18 16:32:08 CEST 2026
+  # Nextflow: 26.10.2
+  # Pipeline: 1.0.1
+  # Command: nextflow run /data/AMAP -profile docker --tsv samples.tsv --outdir results --skip_functional_annotation --max_cpus 8 --max_memory 6.GB -c local.config
+  # Profile: docker
+  # Work dir: /data/run/work
+  # Launch dir: /data/run
+  params:
+    tsv: "samples.tsv"
+outdir: "results"
+skip_functional_annotation: "true"
+max_cpus: "8"
+max_memory: "6.GB"
+eggnog_db: "eggnog_db"
+max_time: "72.h"
+scratch: "false"
+trace_timestamp: "2026-10-18_16-32-05"
+help: "false"
+version: "false"
+validate_only: "false"
+strict_validation: "false"
+skip_typing: "false"
+genus: "Mycobacterium"
+species: "Mycobacterium tuberculosis"
+bakta_db: "/data/bakta_db/db-light"
+test_data: "false"
+ref_annotation: "null"
+ref_genome: "null"
+skip_mycobrowser: "false"
+pathotyper_snps: "/reference/snps_lineages.tsv"
+pathotyper_ref: "/reference/MTB_ancestor_reference.fasta"
+miniprot_ref_aa: "/reference/aa_H37Rv.translated.fas"
+miniprot_ref_bad_bakta: "/reference/bad.bakta.translated.fas"
+miniprot_ref_h37rv: "/reference/new_refH37Rv.fasta"
+bakta_proteins: "/reference/sequence.gb"
+mycobrowser_ref: "/reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt"
+  YAML

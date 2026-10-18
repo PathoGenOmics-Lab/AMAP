@@ -352,7 +352,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Outputs",
 "section": "Where to look first",
 "url": "user-guide/outputs.html#where-to-look-first",
-"text": "The whole analysis, interactive results/final_report.html Corrected annotation for a sample results/AMAP/{sampleId}/*-AMAP.gff3 Proteins for downstream tools results/AMAP/{sampleId}/*-AMAP.clean.faa Everything known about every gene results/AMAP/{sampleId}/*-AMAPmastertable.tsv Tool versions for your methods section results/pipeline_info/software_versions.yml"
+"text": "The whole analysis, interactive results/final_report.html Each genome and each gene, question by question results/amap_report.html Corrected annotation for a sample results/AMAP/{sampleId}/*-AMAP.gff3 Proteins for downstream tools results/AMAP/{sampleId}/*-AMAP.clean.faa Everything known about every gene results/AMAP/{sampleId}/*-AMAPmastertable.tsv Tool versions for your methods section results/pipeline_info/software_versions.yml"
 },
 {
 "page": "Outputs",
@@ -410,9 +410,15 @@ window.AMAP_DOCS_INDEX = [
 },
 {
 "page": "Outputs",
+"section": "amap_report.html",
+"url": "user-guide/outputs.html#amap_reporthtml",
+"text": "One self-contained file, organised by the questions a run raises: how each genome annotated, where genes are missing or broken on the reference, one gene in every genome, what the correction changed, the pseudogenes by lineage, what lies outside the reference, and the functional profile. Written with or without the functional annotation. The interactive report goes through it."
+},
+{
+"page": "Outputs",
 "section": "Effect of the skip options",
 "url": "user-guide/outputs.html#effect-of-the-skip-options",
-"text": "--skip_typing: No PATHOTYPR/ directory. Samples keep their original IDs instead of being renamed by lineage. --skip_functional_annotation: The run stops after correction. No DUPLICATIONS/, PANGENE/ or final_report.html, and AMAP/ holds only the corrected table and sequences, *.AMAP.tsv, *.AMAP.faa and *.AMAP.fna, without the GFF3, the GenBank or the master table. You still get BAKTA/ and CDS_CASES/, including *_corrected.tsv with the corrected coordinates. --skip_mycobrowser: *-AMAP.MycoBrowser.tsv is written empty and the Mycobrowser sections drop out of the report. Everything else is unaffec"
+"text": "--skip_typing: No PATHOTYPR/ directory. Samples keep their original IDs instead of being renamed by lineage. --skip_functional_annotation: The run stops after correction. No DUPLICATIONS/, PANGENE/ or final_report.html, and AMAP/ holds only the corrected table and sequences, *.AMAP.tsv, *.AMAP.faa and *.AMAP.fna, without the GFF3, the GenBank or the master table. You still get BAKTA/ and CDS_CASES/, including *_corrected.tsv with the corrected coordinates, and amap_report.html, without its eggNOG sections. --skip_mycobrowser: *-AMAP.MycoBrowser.tsv is written empty and the Mycobrowser sections"
 },
 {
 "page": "Outputs",
@@ -491,6 +497,48 @@ window.AMAP_DOCS_INDEX = [
 "section": "Rendering it yourself",
 "url": "user-guide/report.html#rendering-it-yourself",
 "text": "The report is bin/report/report_AMAP.Rmd, rendered by the FINAL_REPORT process. To iterate on it without running the pipeline: python3 bin/report/demo/make_demo.py demo_inputs  docker run --rm -v \"$PWD:/w\" -w /w paururo/amap:latest \\   Rscript -e 'rmarkdown::render(\"bin/report/report_AMAP.Rmd\",     output_file=\"/w/demo.html\",     params=list(version=\"v1.0.1\",                 cog_file=\"/w/demo_inputs/input_cog.txt\",          Keep it self-contained Nothing in the Rmd, header.html or styles.css may point at a remote URL. pandoc will fetch and inline a remote resource when the machine rendering ha"
+},
+{
+"page": "The interactive report",
+"section": "",
+"url": "user-guide/amap-report.html",
+"text": "Next to final_report.html, every run now writes results/amap_report.html: one file that answers, section by section, the questions a run raises. Did each genome annotate well? Where on the reference are genes missing or broken? What happened to one gene in every genome? What did the correction change? Every table filters, sorts and saves as CSV, every figure saves as SVG, and a click on a genome or a gene opens it. It is written with or without the functional annotation. It needs only what the correction leaves, so a run with --skip_functional_annotation, which gets no final_report.html, still"
+},
+{
+"page": "The interactive report",
+"section": "The sections",
+"url": "user-guide/amap-report.html#the-sections",
+"text": "1. Did each genome annotate well? One row per genome: lineage, genome size, contigs and N50, Bakta's calls and AMAP's genes, the share of the reference genes it has, and how many are missing, pseudogenes, partial, found more than once or outside the reference. A value far from those of comparable genomes is flagged (see How a value is flagged). A click on a genome opens it: its numbers, and its genes in each state, each list searchable and saved as CSV. 2. Where on the reference are genes missing or broken? Every reference gene at its place on the reference, one row per genome, the genomes gro"
+},
+{
+"page": "The interactive report",
+"section": "Gene states",
+"url": "user-guide/amap-report.html#gene-states",
+"text": "Each reference gene gets one state in each genome, from the genes that name it in the genome's final annotation, AMAP/<name>/<name>.AMAP.tsv. Intact A gene names it, and nothing below applies Missing No gene names it Pseudogene The best gene naming it is flagged as a pseudogene: an internal stop, a lost stop or a frame that runs on past the reference protein Partial The best gene naming it runs into a contig end and is cut there More copies More than one gene names it alone Length differs One intact copy, of another length than the reference gene Shared copy Only a gene that names several refe"
+},
+{
+"page": "The interactive report",
+"section": "How a value is flagged",
+"url": "user-guide/amap-report.html#how-a-value-is-flagged",
+"text": "Each genome is compared with its own lineage when that lineage has five genomes or more, and with every other genome otherwise. A value is flagged when it lies more than 3.5 robust standard deviations (1.4826 times the median absolute deviation) from their median, on the side that is bad: more missing genes, pseudogenes, partial genes, contigs or genes outside the reference, fewer reference genes found, a smaller N50, a genome size either way. Each also has to be further from the median than a minimum (five genes, five contigs, half a point of reference genes found, 1% of the genome size or 5%"
+},
+{
+"page": "The interactive report",
+"section": "What each section needs",
+"url": "user-guide/amap-report.html#what-each-section-needs",
+"text": "<name>.AMAP.tsv FIX_CDS No report The reference proteome the reference No report Case summaries and tables TYPE_CASES No lineages, no correction section Bakta's folder BAKTA_ANNOTATOR No genome sizes, contigs or products of Bakta's calls Mycobrowser table the reference, MTBC only Names and products from the genomes' own annotation; no categories or drug resistance Master tables GET_OUTPUTS, functional annotation No COG categories or KEGG pathways Pangenome matrix REPORT_INPUTS, functional annotation No pangenome Homologous communities GET_ALLDUP, functional annotation No communities params.yml"
+},
+{
+"page": "The interactive report",
+"section": "Size",
+"url": "user-guide/amap-report.html#size",
+"text": "The data of each genome is a few kilobytes: its genes are stored as how far each lies from where the previous gene and the reference predict it, which for a genome collinear with its reference is mostly nothing. Up to 100 genomes, the report also lists every Bakta call AMAP did not keep, with its coordinates; past that it only counts them, to keep the file small, and CDS_CASES/<name>/ has them for any run. 15 0.5 MB, measured 100 1.5 to 1.7 MB 300 1.9 to 2.1 MB 500 2.9 to 3.3 MB The sizes past fifteen are worked out from the fifteen MTBC genomes of eight lineages the report was measured on, th"
+},
+{
+"page": "The interactive report",
+"section": "Writing one by hand",
+"url": "user-guide/amap-report.html#writing-one-by-hand",
+"text": "bin/report/amap_report.py needs only Python 3.9 or later. Pointed at a results/ folder it reads the files where the pipeline publishes them: python3 bin/report/amap_report.py \\     --amap results/AMAP \\     --cases results/CDS_CASES \\     --bakta results/BAKTA \\     --master results/AMAP \\     --ref-proteome ref_proteome.faa \\     --mycobrowser Mycobacterium_tuberculosis_H37Rv_txt_v4.txt \\     --versions results/pipeline_info/software_ve The reference proteome is the one the run used: for H37Rv, the AMAP container has it at /reference/aa_H37Rv.translated.fas, and the Mycobrowser table at /refe"
 },
 {
 "page": "Custom reference",
@@ -641,6 +689,12 @@ window.AMAP_DOCS_INDEX = [
 "section": "10. Report",
 "url": "how-it-works/workflow.html#10-report",
 "text": "A single self-contained HTML file built from every output above. Sample quality, missing reference genes by lineage, PE/PPE families, KEGG pathways, duplication communities and topology, the pangenome, COG and Mycobrowser distributions, case statistics with the associated tests, and a searchable table of every gene. Alongside it, pipeline_info/ collects the Nextflow execution report, timeline, DAG and trace, plus software_versions.yml and params.yml for your methods section."
+},
+{
+"page": "The workflow",
+"section": "11. Interactive report",
+"url": "how-it-works/workflow.html#11-interactive-report",
+"text": "amap_report.html, one self-contained file organised by question: how each genome annotated, where reference genes are missing or broken, one gene in every genome, what the correction changed and the pseudogenes by lineage. It reads the correction's outputs directly, so it is written with or without the functional annotation, and the functional steps add their sections when they run. The interactive report goes through it."
 },
 {
 "page": "The workflow",
@@ -956,6 +1010,12 @@ window.AMAP_DOCS_INDEX = [
 },
 {
 "page": "Changelog",
+"section": "📊 Report",
+"url": "about/changelog.html#-report",
+"text": "A report organised by question, results/amap_report.html: next to final_report.html, a new process, AMAP_REPORT, writes one self-contained file from each genome's own outputs: a table of the genomes with the values far from comparable genomes flagged, a map of every reference gene in every genome where regions of difference show as blocks, a lookup of one gene in every genome, the correction from Bakta's calls to AMAP's genes with the genes behind each step, the pseudogenes by lineage, what lies outside the reference, and the functional profile, the categories that differ most between lineages"
+},
+{
+"page": "Changelog",
 "section": "🧹 Code",
 "url": "about/changelog.html#-code",
 "text": "reconcile_coordinates is gone: it read reference coordinates from protein identifiers that have not carried them since March 2026, so it changed nothing. The paralog check does its job with the sample's own offsets"
@@ -1005,7 +1065,7 @@ window.AMAP_DOCS_INDEX = [
 {
 "page": "Changelog",
 "section": "📊 Report",
-"url": "about/changelog.html#-report",
+"url": "about/changelog.html#-report-1",
 "text": "Layout: the stylesheet was losing to the one rmarkdown inlines afterwards, so the article sat underneath the table of contents and the left logo on top of the title Self-contained without a network at render time: jQuery came from a CDN and the second logo from GitHub. pandoc inlines those when the render machine has a network and leaves them dangling when it does not, so a report rendered on an isolated node arrived with a broken image Half the size: 8.2 MB to 4.4 MB, by shipping only the plotly traces actually used and quantising the figures The version in the report is the version that prod"
 },
 {

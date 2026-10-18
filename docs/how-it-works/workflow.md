@@ -133,6 +133,15 @@ Alongside it, `pipeline_info/` collects the Nextflow execution report, timeline,
 DAG and trace, plus `software_versions.yml` and `params.yml` for your methods
 section.
 
+## 11. Interactive report
+
+`amap_report.html`, one self-contained file organised by question: how each
+genome annotated, where reference genes are missing or broken, one gene in
+every genome, what the correction changed and the pseudogenes by lineage. It
+reads the correction's outputs directly, so it is written with or without the
+functional annotation, and the functional steps add their sections when they
+run. [The interactive report](../user-guide/amap-report.md) goes through it.
+
 ## Next steps
 
 - [The correction algorithm](correction-algorithm.md): the rules behind step 6

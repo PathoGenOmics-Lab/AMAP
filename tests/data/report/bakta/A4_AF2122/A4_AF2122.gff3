@@ -1,0 +1,9 @@
+##gff-version 3
+##feature-ontology https://github.com/The-Sequence-Ontology/SO-Ontologies/blob/v3.1/so.obo
+# organism Mycobacterium mycobacterium tuberculosis
+# Annotated with Bakta
+# Software: v1.12.0
+# Database: v6.0, light
+# DOI: 10.1099/mgen.0.000685
+# URL: github.com/oschwengers/bakta
+##sequence-region A4_AF2122 1 4349904

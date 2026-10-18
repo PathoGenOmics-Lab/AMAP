@@ -46,6 +46,7 @@ PAGES = [
     ("User guide", "user-guide/running.md", "Running AMAP", "Profiles, schedulers and larger runs."),
     ("User guide", "user-guide/outputs.md", "Outputs", "Every folder and file, and what a healthy run looks like."),
     ("User guide", "user-guide/report.md", "The report", "What each section of final_report.html shows."),
+    ("User guide", "user-guide/amap-report.md", "The interactive report", "amap_report.html, question by question, with or without eggNOG."),
     ("User guide", "user-guide/custom-reference.md", "Custom reference", "Any organism, against a trusted annotation of your own."),
     ("How it works", "how-it-works.html", "Step by step, illustrated", "One gene at a time, from Bakta's call to what AMAP keeps."),
     ("How it works", "how-it-works/index.md", "Overview", "What goes into a decision, and the five outcomes."),

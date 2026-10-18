@@ -1,0 +1,170 @@
+Locus	Name	Feature	Product	Functional_Category	Is_Pseudogene	Drug Resistance Mutations
+Rv3424c	Rv3424c	CDS	Hypothetical protein	conserved hypotheticals	No	
+Rv1507c	Rv1507c	CDS	Conserved protein	conserved hypotheticals	No	
+Rv1510	Rv1510	CDS	Conserved probable membrane protein	cell wall and cell processes	No	
+Rv1508A	Rv1508A	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv1509	Rv1509	CDS	Hypothetical protein	unknown	No	
+Rv1505c	Rv1505c	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv1506c	Rv1506c	CDS	Hypothetical protein	unknown	No	
+Rv1507A	Rv1507A	CDS	Hypothetical protein	unknown	No	
+Rv1498A	Rv1498A	CDS	Conserved protein	conserved hypotheticals	No	
+Rv1501	Rv1501	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv1502	Rv1502	CDS	Hypothetical protein	unknown	No	
+Rv1503c	Rv1503c	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv1504c	Rv1504c	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv1508c	Rv1508c	CDS	Probable membrane protein	cell wall and cell processes	No	
+Rv1513	Rv1513	CDS	Conserved protein	conserved hypotheticals	No	
+Rv1514c	Rv1514c	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv1515c	Rv1515c	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv1516c	Rv1516c	CDS	Probable sugar transferase	intermediary metabolism and respiration	No	
+Rv1517	Rv1517	CDS	Conserved hypothetical transmembrane protein	cell wall and cell processes	No	
+Rv1518	Rv1518	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv1519	Rv1519	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv1520	Rv1520	CDS	Probable sugar transferase	intermediary metabolism and respiration	No	
+Rv3445c	esxU	CDS	ESAT-6 like protein EsxU	cell wall and cell processes	No	
+Rv3446c	Rv3446c	CDS	Hypothetical alanine and valine rich protein	conserved hypotheticals	No	
+Rv3437	Rv3437	CDS	Possible conserved transmembrane protein	cell wall and cell processes	No	
+Rv3425	PPE57	CDS	PPE family protein PPE57	PE/PPE	No	
+Rv3395c	Rv3395c	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv3426	PPE58	CDS	PPE family protein PPE58	PE/PPE	No	
+Rv3395A	Rv3395A	CDS	Probable membrane protein	cell wall and cell processes	No	
+Rv3453	Rv3453	CDS	Possible conserved transmembrane protein	cell wall and cell processes	No	
+Rv3431c	Rv3431c	CDS	Possible transposase (fragment)	insertion seqs and phages	No	
+Rv3408	vapC47	CDS	Possible toxin VapC47. Contains PIN domain.	virulence, detoxification, adaptation	No	
+Rv3461c	rpmJ	CDS	50S ribosomal protein L36 RpmJ	information pathways	No	
+Rv3493c	Rv3493c	CDS	Conserved hypothetical Mce associated alanine and valine rich protein	conserved hypotheticals	No	
+Rv3481c	Rv3481c	CDS	Probable integral membrane protein	cell wall and cell processes	No	
+Rv3381c	Rv3381c	CDS	Probable transposase for insertion sequence element IS6110 (fragment)	insertion seqs and phages	No	
+Rv3477	PE31	CDS	PE family protein PE31	PE/PPE	No	
+Rv3387	Rv3387	CDS	Possible transposase	insertion seqs and phages	No	
+Rv3371	Rv3371	CDS	Possible triacylglycerol synthase (diacylglycerol acyltransferase)	lipid metabolism	No	
+Rv3422c	Rv3422c	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv3375	amiD	CDS	Probable amidase AmiD (acylamidase) (acylase)	intermediary metabolism and respiration	No	
+Rv3368c	Rv3368c	CDS	Possible oxidoreductase	intermediary metabolism and respiration	No	
+Rv3369	Rv3369	CDS	Conserved protein	conserved hypotheticals	No	
+Rv3383c	idsB	CDS	Possible polyprenyl synthetase IdsB (polyprenyl transferase) (polyprenyl diphosphate synthase)	lipid metabolism	No	
+Rv3374	echA18.1	CDS	Probable enoyl-CoA hydratase (fragment) EchA18.1 (enoyl hydrase) (unsaturated acyl-CoA hydratase) (crotonase)	lipid metabolism	No	
+Rv3389c	htdY	CDS	Probable 3-hydroxyacyl-thioester dehydratase HtdY	intermediary metabolism and respiration	No	
+Rv3403c	Rv3403c	CDS	Hypothetical protein	conserved hypotheticals	No	
+Rv3380c	Rv3380c	CDS	Probable transposase	insertion seqs and phages	No	
+Rv3378c	Rv3378c	CDS	Diterpene synthase	intermediary metabolism and respiration	No	
+Rv3384c	vapC46	CDS	Possible toxin VapC46. Contains PIN domain.	virulence, detoxification, adaptation	No	
+Rv3385c	vapB46	CDS	Possible antitoxin VapB46	virulence, detoxification, adaptation	No	
+Rv3386	Rv3386	CDS	Possible transposase	insertion seqs and phages	No	
+Rv3390	lpqD	CDS	Probable conserved lipoprotein LpqD	cell wall and cell processes	No	
+Rv3391	acrA1	CDS	Possible multi-functional enzyme with acyl-CoA-reductase activity AcrA1	lipid metabolism	No	
+Rv3404c	Rv3404c	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv3394c	Rv3394c	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv3414c	sigD	CDS	Probable alternative RNA polymerase sigma-D factor SigD	information pathways	No	
+Rv3434c	Rv3434c	CDS	Possible conserved transmembrane protein	cell wall and cell processes	No	
+Rv3398c	idsA1	CDS	Probable multifunctional geranylgeranyl pyrophosphate synthetase IdsA1 (GGPP synthetase) (ggppsase) (geranylgeranyl diphosphate synthase): dimethylallyltransferase (prenyltransferase) (geranyl-diphosphate synthase) + geranyltranstransferase (farnesyl-diphosphate synthase) (farnesyl-pyrophosphate synthetase) (farnesyl diphosphate synthetase) (FPP synthetase) + farnesyltranstransferase (geranylgeranyl-diphosphate synthase)	lipid metabolism	No	
+Rv3399	Rv3399	CDS	Possible S-adenosylmethionine-dependent methyltransferase	lipid metabolism	No	
+Rv3401	Rv3401	CDS	Conserved protein	intermediary metabolism and respiration	No	
+Rv3405c	Rv3405c	CDS	Possible transcriptional regulatory protein	regulatory proteins	No	
+Rv3406	Rv3406	CDS	Probable dioxygenase	intermediary metabolism and respiration	No	
+Rv3407	vapB47	CDS	Possible antitoxin VapB47	virulence, detoxification, adaptation	No	
+Rv3409c	choD	CDS	Cholesterol oxidase ChoD (cholesterol-O2 oxidoreductase)	lipid metabolism	No	
+Rv3427c	Rv3427c	CDS	Possible transposase	insertion seqs and phages	No	
+Rv3411c	guaB2	CDS	Probable inosine-5'-monophosphate dehydrogenase GuaB2 (imp dehydrogenase) (inosinic acid dehydrogenase) (inosinate dehydrogenase) (imp oxidoreductase) (inosine-5'-monophosphate oxidoreductase) (IMPDH) (IMPD)	intermediary metabolism and respiration	No	
+Rv3412	Rv3412	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv3413c	Rv3413c	CDS	Unknown alanine and proline rich protein	conserved hypotheticals	No	
+Rv3429	PPE59	CDS	PPE family protein PPE59	PE/PPE	No	
+Rv3463	Rv3463	CDS	Conserved protein	conserved hypotheticals	No	
+Rv3433c	Rv3433c	CDS	Conserved protein	conserved hypotheticals	No	
+Rv3418c	groES	CDS	10 kDa chaperonin GroES (protein CPN10) (protein GroES) (BCG-a heat shock protein) (10 kDa antigen)	virulence, detoxification, adaptation	No	
+Rv3423c	alr	CDS	Alanine racemase Alr	intermediary metabolism and respiration	No	
+Rv3420c	rimI	CDS	Ribosomal-protein-alanine acetyltransferase RimI (acetylating enzyme for N-terminal of ribosomal protein S18)	information pathways	No	
+Rv3421c	Rv3421c	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv3428c	Rv3428c	CDS	Possible transposase	insertion seqs and phages	No	
+Rv3430c	Rv3430c	CDS	Possible transposase	insertion seqs and phages	No	
+Rv3486	Rv3486	CDS	Conserved protein	conserved hypotheticals	No	
+Rv3435c	Rv3435c	CDS	Probable conserved transmembrane protein	cell wall and cell processes	No	
+Rv3438	Rv3438	CDS	Conserved protein	conserved hypotheticals	No	
+Rv3439c	Rv3439c	CDS	Conserved hypothetical alanine and proline rich protein	conserved hypotheticals	No	
+Rv3440c	Rv3440c	CDS	Hypothetical protein	conserved hypotheticals	No	
+Rv3442c	rpsI	CDS	30S ribosomal protein S9 RpsI	information pathways	No	
+Rv3444c	esxT	CDS	Putative ESAT-6 like protein EsxT	cell wall and cell processes	No	
+Rv3447c	eccC4	CDS	ESX conserved component EccC4. ESX-4 type VII secretion system protein. Probable membrane protein.	cell wall and cell processes	No	
+Rv3478	PPE60	CDS	PE family protein PPE60	PE/PPE	No	
+Rv3448	eccD4	CDS	ESX conserved component EccD4. ESX-4 type VII secretion system protein. Probable integral membrane protein.	cell wall and cell processes	No	
+Rv3449	mycP4	CDS	Probable membrane-anchored mycosin MycP4 (serine protease) (subtilisin-like protease) (subtilase-like) (mycosin-4)	intermediary metabolism and respiration	No	
+Rv3454	Rv3454	CDS	Probable conserved integral membrane protein	cell wall and cell processes	No	
+Rv3455c	truA	CDS	Probable tRNA pseudouridine synthase a TruA (pseudouridylate synthase I) (pseudouridine synthase I) (uracil hydrolyase)	information pathways	No	
+Rv3456c	rplQ	CDS	50S ribosomal protein L17 RplQ	information pathways	No	
+Rv3458c	rpsD	CDS	30S ribosomal protein S4 RpsD	information pathways	No	
+Rv3490	otsA	CDS	Alpha, alpha-trehalose-phosphate synthase [UDP-forming] OtsA (trehalose-6-phosphate synthase) (UDP-glucose-glucosephosphate glucosyltransferase) (trehalosephosphate-UDP glucosyltransferase) (trehalose-6-phosphate synthetase) (trehalose-phosphate synthase) (trehalose-phosphate synthetase) (transglucosylase) (trehalosephosphate-UDP glucosyl transferase)	virulence, detoxification, adaptation	No	
+Rv3465	rmlC	CDS	dTDP-4-dehydrorhamnose 3,5-epimerase RmlC (dTDP-4-keto-6-deoxyglucose 3,5-epimerase) (dTDP-L-rhamnose synthetase) (thymidine diphospho-4-keto-rhamnose 3,5-epimerase)	intermediary metabolism and respiration	No	
+Rv3466	Rv3466	CDS	Conserved hypothetical protein	insertion seqs and phages	No	
+Rv3467	Rv3467	CDS	Conserved hypothetical protein	insertion seqs and phages	No	
+Rv3468c	Rv3468c	CDS	Possible dTDP-glucose 4,6-dehydratase	intermediary metabolism and respiration	No	
+Rv3475	Rv3475	CDS	Possible transposase for insertion element IS6110 [second part]	insertion seqs and phages	No	
+Rv3470c	ilvB2	CDS	Probable acetolactate synthase (large subunit) IlvB2 (AHAS) (acetohydroxy-acid synthase large subunit) (ALS)	intermediary metabolism and respiration	No	
+Rv3471c	Rv3471c	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv3472	Rv3472	CDS	Conserved protein	conserved hypotheticals	No	
+Rv3482c	Rv3482c	CDS	Probable conserved membrane protein	cell wall and cell processes	No	
+Rv3474	Rv3474	CDS	Possible transposase for insertion element IS6110 (fragment)	insertion seqs and phages	No	
+Rv3479	Rv3479	CDS	Possible transmembrane protein	cell wall and cell processes	No	
+Rv3480c	Rv3480c	CDS	Possible triacylglycerol synthase (diacylglycerol acyltransferase)	lipid metabolism	No	
+Rv3484	cpsA	CDS	Possible conserved protein CpsA	conserved hypotheticals	No	
+Rv3485c	Rv3485c	CDS	Probable short-chain type dehydrogenase/reductase	intermediary metabolism and respiration	No	
+Rv3492c	Rv3492c	CDS	Conserved hypothetical Mce associated protein	conserved hypotheticals	No	
+Rv3488	Rv3488	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv3494c	mce4F	CDS	Mce-family protein Mce4F	virulence, detoxification, adaptation	No	
+Rv3495c	lprN	CDS	Possible Mce-family lipoprotein LprN (Mce-family lipoprotein Mce4E)	cell wall and cell processes	No	
+Rv3497c	mce4C	CDS	Mce-family protein Mce4C	virulence, detoxification, adaptation	No	
+Rv3498c	mce4B	CDS	Mce-family protein Mce4B	virulence, detoxification, adaptation	No	
+Rv3499c	mce4A	CDS	Mce-family protein Mce4A	virulence, detoxification, adaptation	No	
+Rv3500c	yrbE4B	CDS	Conserved integral membrane protein YrbE4B. Possible ABC transporter.	virulence, detoxification, adaptation	No	
+Rv3503c	fdxD	CDS	Probable ferredoxin FdxD	intermediary metabolism and respiration	No	
+Rv3504	fadE26	CDS	Probable acyl-CoA dehydrogenase FadE26	lipid metabolism	No	
+Rv3507	PE_PGRS53	CDS	PE-PGRS family protein PE_PGRS53	PE/PPE	No	
+Rv3511	PE_PGRS55	CDS	PE-PGRS family protein PE_PGRS55	PE/PPE	No	
+Rv3510c	Rv3510c	CDS	Conserved protein	conserved hypotheticals	No	
+Rv3451	cut3	CDS	Probable cutinase precursor Cut3	cell wall and cell processes	No	
+Rv3452	cut4	CDS	Probable cutinase precursor Cut4	cell wall and cell processes	No	
+Rv3489	Rv3489	CDS	Unknown protein	conserved hypotheticals	No	
+Rv3491	Rv3491	CDS	Unknown protein	conserved hypotheticals	No	
+Rv3459c	rpsK	CDS	30S ribosomal protein S11 RpsK	information pathways	No	
+Rv1499	Rv1499	CDS	Hypothetical protein	conserved hypotheticals	No	
+Rv1500	Rv1500	CDS	Probable glycosyltransferase	intermediary metabolism and respiration	No	
+Rv1511	gmdA	CDS	GDP-D-mannose dehydratase GmdA (GDP-mannose 4,6 dehydratase) (GMD)	intermediary metabolism and respiration	No	
+Rv1512	epiA	CDS	Probable nucleotide-sugar epimerase EpiA	intermediary metabolism and respiration	No	
+Rv3382c	lytB1	CDS	Probable LYTB-related protein LytB1	cell wall and cell processes	No	
+Rv3450c	eccB4	CDS	ESX conserved component EccB4. ESX-4 type VII secretion system protein. Probable membrane protein.	cell wall and cell processes	No	
+Rv3379c	dxs2	CDS	Probable 1-deoxy-D-xylulose 5-phosphate synthase Dxs2 (1-deoxyxylulose-5-phosphate synthase) (DXP synthase) (DXPS)	intermediary metabolism and respiration	No	
+Rv3370c	dnaE2	CDS	Probable DNA polymerase III (alpha chain) DnaE2 (DNA nucleotidyltransferase)	information pathways	No	
+Rv3372	otsB2	CDS	Trehalose 6-phosphate phosphatase OtsB2 (trehalose-phosphatase) (TPP)	virulence, detoxification, adaptation	No	
+Rv3373	echA18	CDS	Probable enoyl-CoA hydratase EchA18 (enoyl hydrase) (unsaturated acyl-CoA hydratase) (crotonase)	lipid metabolism	No	
+Rv3376	Rv3376	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv3377c	Rv3377c	CDS	Halimadienyl diphosphate synthase	intermediary metabolism and respiration	No	
+Rv3388	PE_PGRS52	CDS	PE-PGRS family protein PE_PGRS52	PE/PPE	No	
+Rv3392c	cmaA1	CDS	Cyclopropane-fatty-acyl-phospholipid synthase 1 CmaA1 (cyclopropane fatty acid synthase) (CFA synthase) (cyclopropane mycolic acid synthase 1)	lipid metabolism	No	
+Rv3393	iunH	CDS	Probable nucleoside hydrolase IunH (purine nucleosidase)	intermediary metabolism and respiration	No	
+Rv3396c	guaA	CDS	Probable GMP synthase [glutamine-hydrolyzing] GuaA (glutamine amidotransferase) (GMP synthetase)	intermediary metabolism and respiration	No	
+Rv3397c	phyA	CDS	Probable phytoene synthase PhyA	intermediary metabolism and respiration	No	
+Rv3400	Rv3400	CDS	Probable hydrolase	intermediary metabolism and respiration	No	
+Rv3402c	Rv3402c	CDS	Conserved hypothetical protein	cell wall and cell processes	No	
+Rv3410c	guaB3	CDS	Probable inosine-5'-monophosphate dehydrogenase GuaB3 (imp dehydrogenase) (inosinic acid dehydrogenase) (inosinate dehydrogenase) (imp oxidoreductase) (inosine-5'-monophosphate oxidoreductase) (IMPDH) (IMPD)	intermediary metabolism and respiration	No	
+Rv3415c	Rv3415c	CDS	Conserved hypothetical protein	conserved hypotheticals	No	
+Rv3416	whiB3	CDS	Transcriptional regulatory protein WhiB-like WhiB3. Contains [4FE-4S] cluster.	regulatory proteins	No	
+Rv3417c	groEL1	CDS	60 kDa chaperonin 1 GroEL1 (protein CPN60-1) (GroEL protein 1)	virulence, detoxification, adaptation	No	
+Rv3419c	gcp	CDS	Probable O-sialoglycoprotein endopeptidase Gcp (glycoprotease)	intermediary metabolism and respiration	No	
+Rv3432c	gadB	CDS	Probable glutamate decarboxylase GadB	intermediary metabolism and respiration	No	
+Rv3436c	glmS	CDS	Probable glucosamine--fructose-6-phosphate aminotransferase [isomerizing] GlmS (hexosephosphate aminotransferase) (D-fructose-6-phosphate amidotransferase) (GFAT) (L-glutamine-D-fructose-6-phosphate amidotransferase) (glucosamine-6-phosphate synthase)	intermediary metabolism and respiration	No	
+Rv3441c	mrsA	CDS	Probable phospho-sugar mutase / MrsA protein homolog	intermediary metabolism and respiration	No	
+Rv3443c	rplM	CDS	50S ribosomal protein L13 RplM	information pathways	No	
+Rv3457c	rpoA	CDS	Probable DNA-directed RNA polymerase (alpha chain) RpoA (transcriptase alpha chain) (RNA polymerase alpha subunit) (DNA-directed RNA nucleotidyltransferase)	information pathways	No	
+Rv3460c	rpsM	CDS	30S ribosomal protein S13 RpsM	information pathways	No	
+Rv3462c	infA	CDS	Probable translation initiation factor if-1 InfA	information pathways	No	
+Rv3464	rmlB	CDS	dTDP-glucose 4,6-dehydratase RmlB	intermediary metabolism and respiration	No	
+Rv3469c	mhpE	CDS	Probable 4-hydroxy-2-oxovalerate aldolase MhpE (HOA)	intermediary metabolism and respiration	No	
+Rv3473c	bpoA	CDS	Possible peroxidase BpoA (non-haem peroxidase)	virulence, detoxification, adaptation	No	
+Rv3476c	kgtP	CDS	Probable dicarboxylic acid transport integral membrane protein KgtP (dicarboxylate transporter)	cell wall and cell processes	No	
+Rv3487c	lipF	CDS	Probable esterase/lipase LipF	intermediary metabolism and respiration	No	
+Rv3483c	Rv3483c	CDS	Possible exported protein	cell wall and cell processes	No	
+Rv3496c	mce4D	CDS	Mce-family protein Mce4D	virulence, detoxification, adaptation	No	
+Rv3501c	yrbE4A	CDS	Conserved integral membrane protein YrbE4A. Possible ABC transporter.	virulence, detoxification, adaptation	No	
+Rv3502c	Rv3502c	CDS	Probable short-chain type dehydrogenase/reductase. Possible 17-beta-hydroxysteroid dehydrogenase.	intermediary metabolism and respiration	No	
+Rv3505	fadE27	CDS	Probable acyl-CoA dehydrogenase FadE27	lipid metabolism	No	
+Rv3506	fadD17	CDS	Fatty-acid-CoA synthetase FadD17 (fatty-acid-CoA synthase) (fatty-acid-CoA ligase)	lipid metabolism	No	
+Rv3509c	ilvX	CDS	Probable acetohydroxyacid synthase IlvX (acetolactate synthase)	intermediary metabolism and respiration	No	

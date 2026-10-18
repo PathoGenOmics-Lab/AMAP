@@ -1,0 +1,14 @@
+Tool	Version
+AMAP	1.0.1
+Nextflow	26.10.2
+Bakta	1.12.0
+Miniprot	0.18-r281
+Diamond	2.1.24
+eggNOG-mapper	N/A
+Pangene	1.1-r231
+Pathotypr	1.0.0
+Python	3.9.23
+pandas	2.3.1
+Biopython	1.85
+intervaltree	N/A
+R	4.4.3

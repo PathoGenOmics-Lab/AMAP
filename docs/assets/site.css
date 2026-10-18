@@ -1517,6 +1517,11 @@ kbd {
   stroke: var(--m-pan);
 }
 
+.metro .ml-rep,
+.metro .ml-rep-feed {
+  stroke: var(--m-main);
+}
+
 .metro .stn {
   cursor: pointer;
   transition: opacity 0.3s ease;

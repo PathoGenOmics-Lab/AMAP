@@ -1,0 +1,48 @@
+##gff-version 3
+##feature-ontology https://github.com/The-Sequence-Ontology/SO-Ontologies/blob/v3.1/so.obo
+# organism Mycobacterium mycobacterium tuberculosis
+# Annotated with Bakta
+# Software: v1.12.0
+# Database: v6.0, light
+# DOI: 10.1099/mgen.0.000685
+# URL: github.com/oschwengers/bakta
+##sequence-region L4_CDC1551d 1 41389
+##sequence-region contig_2 1 68462
+##sequence-region contig_3 1 149600
+##sequence-region contig_4 1 452700
+##sequence-region contig_5 1 17558
+##sequence-region contig_6 1 294826
+##sequence-region contig_7 1 125818
+##sequence-region contig_8 1 226917
+##sequence-region contig_9 1 4591
+##sequence-region contig_10 1 102146
+##sequence-region contig_11 1 17610
+##sequence-region contig_12 1 36218
+##sequence-region contig_13 1 21507
+##sequence-region contig_14 1 464200
+##sequence-region contig_15 1 102170
+##sequence-region contig_16 1 232227
+##sequence-region contig_17 1 231675
+##sequence-region contig_18 1 57345
+##sequence-region contig_19 1 50632
+##sequence-region contig_20 1 13720
+##sequence-region contig_21 1 5980
+##sequence-region contig_22 1 29712
+##sequence-region contig_23 1 24606
+##sequence-region contig_24 1 106589
+##sequence-region contig_25 1 86332
+##sequence-region contig_26 1 64802
+##sequence-region contig_27 1 156424
+##sequence-region contig_28 1 20299
+##sequence-region contig_29 1 128076
+##sequence-region contig_30 1 33803
+##sequence-region contig_31 1 310035
+##sequence-region contig_32 1 97263
+##sequence-region contig_33 1 236311
+##sequence-region contig_34 1 57792
+##sequence-region contig_35 1 88574
+##sequence-region contig_36 1 114504
+##sequence-region contig_37 1 35863
+##sequence-region contig_38 1 71937
+##sequence-region contig_39 1 16392
+##sequence-region contig_40 1 7232

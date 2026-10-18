@@ -30,6 +30,7 @@ from classify.plotting import generate_overlap_plot
 from classify.ids import format_cluster_id
 from classify.synteny import drop_paralog_placements
 from classify.exact import place_exact_matches
+from classify import circular
 
 __author__ = 'Paula Ruiz-Rodriguez'
 __credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
@@ -86,7 +87,9 @@ def main():
     parser.add_argument('-bb', '--badbakta', required=True, help="Miniprot 'bad bakta' PAF.")
     parser.add_argument('-c', '--cds', required=True, help="Reference CDS PAF for Miniprot.")
     parser.add_argument('-g', '--genome', help="Genome FASTA. With --ref-proteome, the proteins "
-                                               "miniprot did not place exactly are looked for in it.")
+                                               "miniprot did not place exactly are looked for in it. "
+                                               "Needed to measure a gene that runs across the "
+                                               "origin of a circular sequence.")
     parser.add_argument('-r', '--ref-proteome', help="Reference proteome the miniprot PAF was made from.")
     parser.add_argument('--sample', help="The sample's ID in the sample sheet, for the summary. "
                                          "Default: the name of the Bakta table.")
@@ -95,6 +98,8 @@ def main():
     args = parser.parse_args()
 
     base_name = os.path.basename(args.bakta).split('.')[0]
+    if args.genome:
+        circular.set_lengths(circular.read_lengths(args.genome))
 
     # --- 1. Read inputs ---
     bakta_df = read_bakta(args.bakta)

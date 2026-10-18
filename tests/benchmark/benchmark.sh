@@ -176,7 +176,7 @@ correct() {
         python3 "$REPO/bin/check_cds.py" "$dir/$s.fasta" "${s}_corrected.tsv" \
             --ref-proteome "$proteome" > check.log 2>&1
         python3 "$REPO/bin/deduplicate_rvs.py" "$s.AMAP.tsv" --faa "$s.AMAP.faa" --fna "$s.AMAP.fna" \
-            --bakta "$dir/$s/$s.tsv" --ref-proteome "$proteome" > dedup.log 2>&1
+            --bakta "$dir/$s/$s.tsv" --ref-proteome "$proteome" --genome "$dir/$s.fasta" > dedup.log 2>&1
     ) || { echo "ERROR: the algorithm failed on $label, see $out" >&2; exit 1; }
 }
 

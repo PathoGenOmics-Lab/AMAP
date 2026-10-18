@@ -75,6 +75,7 @@ process FIX_CDS {
         --faa *.AMAP.faa \\
         --fna *.AMAP.fna \\
         --bakta ${bakta_tsv} \\
-        --ref-proteome ${ref_proteome}
+        --ref-proteome ${ref_proteome} \\
+        --genome ${fasta}
     """
 }

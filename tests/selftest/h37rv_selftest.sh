@@ -67,7 +67,7 @@ python3 "$REPO/bin/check_cds.py" "$IN/$SAMPLE.fasta" "${SAMPLE}_corrected.tsv" \
     --ref-proteome "$REF/aa_H37Rv.translated.fas" > check.log 2>&1
 python3 "$REPO/bin/deduplicate_rvs.py" "$SAMPLE.AMAP.tsv" --faa "$SAMPLE.AMAP.faa" \
     --fna "$SAMPLE.AMAP.fna" --bakta "$IN/$SAMPLE/$SAMPLE.tsv" \
-    --ref-proteome "$REF/aa_H37Rv.translated.fas" > dedup.log 2>&1
+    --ref-proteome "$REF/aa_H37Rv.translated.fas" --genome "$IN/$SAMPLE.fasta" > dedup.log 2>&1
 
 echo "==> score against the GenBank record" >&2
 python3 "$REPO/tests/selftest/score_selftest.py" "$REF/sequence.gb" \

@@ -24,6 +24,10 @@ import re
 import sys
 from collections import defaultdict
 
+# Allow importing from bin/classify/ when run as a script, as classify_cases.py does.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from classify import circular
+
 # A further copy must be at least this long next to the first, so that pieces
 # of one gene do not pass for copies of it.
 MIN_COPY_LENGTH = 0.9
@@ -40,10 +44,11 @@ def parse_amap_tsv(path):
     return header, genes
 
 
-def overlap_fraction(s1, e1, s2, e2):
-    """Return fraction of gene1 overlapping gene2."""
-    ov = max(0, min(e1, e2) - max(s1, s2) + 1)
-    length = e1 - s1 + 1
+def overlap_fraction(s1, e1, s2, e2, contig=''):
+    """Return fraction of gene1 overlapping gene2. contig names the
+    sequence of a gene across its origin (start after end)."""
+    ov = circular.shared((s1, e1), (s2, e2), contig)
+    length = circular.length(s1, e1, contig)
     return ov / length if length > 0 else 0
 
 
@@ -103,7 +108,10 @@ def synteny_distance(genes, ref_positions):
     for i, g in enumerate(genes):
         rv = g.get('rvs', '').strip()
         if rv in ref_positions:
-            rows[i] = {'Prot Id': rv, 'Start': int(g['start']), 'End': int(g['end']),
+            # A gene across the origin by its first copy, which ends past the
+            # sequence's last base (see classify/circular.py)
+            start, end = circular.copies(int(g['start']), int(g['end']), g.get('contig', ''))[0]
+            rows[i] = {'Prot Id': rv, 'Start': start, 'End': end,
                        'Contig': g.get('contig', ''),
                        'Ref Start': ref_positions[rv][0], 'Ref End': ref_positions[rv][1]}
     if not rows:
@@ -113,25 +121,33 @@ def synteny_distance(genes, ref_positions):
     return distance.dropna().to_dict()
 
 
+def _span(g):
+    return int(g['start']), int(g['end'])
+
+
 def _length(g):
-    return int(g['end']) - int(g['start']) + 1
+    return circular.length(*_span(g), g.get('contig', ''))
 
 
 def _is_pseudo(g):
     return g.get('pseudogene', 'no') == 'yes'
 
 
+def _shared(a, b):
+    """Bases genes a and b have in common, 0 on different contigs."""
+    if a.get('contig', '') != b.get('contig', ''):
+        return 0
+    return circular.shared(_span(a), _span(b), a.get('contig', ''))
+
+
 def _overlap(a, b):
-    return (a.get('contig', '') == b.get('contig', '')
-            and int(a['start']) <= int(b['end']) and int(b['start']) <= int(a['end']))
+    return _shared(a, b) > 0
 
 
 def _covered(gene, others, share=0.5):
     """Whether any of others, on gene's strand, covers share of it."""
-    s, e = int(gene['start']), int(gene['end'])
     for o in others:
-        if (o['strand'] == gene['strand'] and _overlap(gene, o)
-                and min(e, int(o['end'])) - max(s, int(o['start'])) + 1 >= share * (e - s + 1)):
+        if o['strand'] == gene['strand'] and _shared(gene, o) >= share * _length(gene):
             return True
     return False
 
@@ -224,7 +240,7 @@ def deduplicate(genes, bakta_cds=frozenset(), distance=None, ref_residues=None):
     # Only genes on the same contig can overlap: every contig starts at 1.
     for ni, ns, ne, nc in no_rv:
         for _, rs, re_, rc in rv_assigned:
-            if nc == rc and overlap_fraction(ns, ne, rs, re_) > 0.9:
+            if nc == rc and overlap_fraction(ns, ne, rs, re_, nc) > 0.9:
                 remove.add(ni)
                 break
 
@@ -303,7 +319,11 @@ def main():
     parser.add_argument('--ref-proteome', help='Reference proteome with NAME_START-END headers, '
                                                'to break the remaining ties in favour of the copy '
                                                'where the protein belongs', default=None)
+    parser.add_argument('--genome', help='Genome FASTA, to measure a gene that runs across the '
+                                         'origin of a circular sequence', default=None)
     args = parser.parse_args()
+    if args.genome:
+        circular.set_lengths(circular.read_lengths(args.genome))
 
     header, genes = parse_amap_tsv(args.amap_tsv)
     bakta_cds = read_bakta_cds(args.bakta) if args.bakta else frozenset()

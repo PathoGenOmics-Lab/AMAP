@@ -287,7 +287,7 @@ def prepare_reference(numbers: dict[str, int]) -> str:
          f'{numbers["proteins"]:,} proteins'),
         ("2", "Annotate the reference with Bakta", "The same Bakta that will annotate your samples, on a genome whose answer is known.",
          f'{numbers["bakta"]:,} Bakta calls'),
-        ("3", "Keep what Bakta invents", "Every Bakta call that overlaps no curated gene: the calls it is prone to make on your samples too.",
+        ("3", "Keep what Bakta invents", "Every Bakta call that overlaps no curated gene of its own sequence: the calls it is prone to make on your samples too.",
          f'{numbers["false"]:,} false positives'),
     ]
     out = []

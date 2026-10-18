@@ -508,7 +508,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Custom reference",
 "section": "What AMAP does with it",
 "url": "user-guide/custom-reference.html#what-amap-does-with-it",
-"text": "PREPARE_REFERENCE runs once, before any sample is processed, and does three things. 1. Extracts the reference proteome. Every CDS becomes a protein, headed GENE_ID_START-END. Those embedded coordinates are not decoration: the paralog step reads them back to predict where each protein belongs in the sample, which tells its own locus from a paralog's, so the header format matters. From GenBank the existing /translation qualifier is used when present, otherwise the sequence is extracted and translated. From GFF3 the lines of each CDS are joined first, as GenBank's join() is, and translated with t"
+"text": "PREPARE_REFERENCE runs once, before any sample is processed, and does three things. 1. Extracts the reference proteome. Every CDS becomes a protein, headed GENE_ID_START-END contig=SEQUENCE, SEQUENCE being the name --ref_genome gives the sequence the gene is on. Those embedded coordinates are not decoration: the paralog step reads them back to predict where each protein belongs in the sample, which tells its own locus from a paralog's, so the header format matters. A CDS across the origin of a circular sequence ends past the sequence's last base, the way GFF3 writes it: tagA on plasmid pO157 ("
 },
 {
 "page": "Custom reference",

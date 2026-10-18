@@ -7,8 +7,11 @@ Produces:
   1. {prefix}_ref_proteins.faa  — all CDS translations (trusted reference proteome)
   2. {prefix}_ref_genome.fasta  — copy of the reference genome (for reverse alignment)
 
-Each protein header includes the gene coordinates for downstream reconciliation:
-  >GENE_ID_START-END
+Each protein header includes the gene coordinates for downstream reconciliation,
+and names the sequence of the genome FASTA the gene is on:
+  >GENE_ID_START-END contig=SEQUENCE
+A gene across the origin of a circular sequence ends past its last base, the
+way GFF3 writes it (see unroll).
 """
 
 import argparse
@@ -45,10 +48,88 @@ def append_stop_codon(translation, start, end):
     return translation
 
 
-def extract_from_genbank(gbk_path, output_faa):
+def unroll(segments, length):
+    """The segments of a feature, in the order it runs along the forward
+    strand, on its sequence unrolled past the origin.
+
+    A feature across the origin of a circular sequence runs on from its last
+    base to its first: tagA on plasmid pO157 (92721 bp) of E. coli O157:H7
+    Sakai is join(92527..92721,1..2502). Its header said 1-92721, the whole
+    plasmid, from the lowest and the highest base its pieces reach; read as a
+    span, that put the gene over every other gene of the plasmid, and 92721 bp
+    is not 3 x 899 residues, so the protein lost its stop. Every segment after the one where
+    the feature turns back is moved on by the sequence's length, the way GFF3
+    and Bakta write such a feature (end = stop + length): 92527..95223. Spans
+    and midpoints read off the header are then right, and a feature that does
+    not cross the origin keeps its coordinates. Each segment is (start, end,
+    anything else), 1-based.
+    """
+    out, shift = [], 0
+    for seg in segments:
+        start, end = seg[0] + shift, seg[1] + shift
+        if out and start < out[-1][0]:
+            shift += length
+            start, end = start + length, end + length
+        out.append((start, end) + tuple(seg[2:]))
+    return out
+
+
+def _bases(seq, start, end):
+    """Bases start..end (1-based) of a sequence, read on across its origin
+    for coordinates past its last base."""
+    n, out, pos = len(seq), [], start - 1
+    while pos < end:
+        i = pos % n
+        take = min(end - pos, n - i)
+        out.append(str(seq[i:i + take]))
+        pos += take
+    return "".join(out)
+
+
+def _read_genome(fasta_path):
+    return SeqIO.to_dict(SeqIO.parse(fasta_path, "fasta")) if fasta_path else {}
+
+
+def _genome_name(record, genome):
+    """The name the genome FASTA gives a GenBank record's sequence.
+
+    Bakta annotates the FASTA, and find_bakta_false_positives.py compares
+    each of its calls with the genes of the same sequence, so the proteins
+    name their sequence the way the FASTA does: by the record's
+    accession.version or LOCUS name when the FASTA has it, or else by the one
+    sequence of the FASTA identical to it (of the same length, for a record
+    without its sequence). None if there is no such sequence.
+    """
+    for name in (record.id, record.name):
+        if name in genome:
+            return name
+    try:
+        seq = str(record.seq).upper()
+    except Exception:      # a CON record without its sequence
+        seq = None
+    same = [name for name, r in genome.items()
+            if len(r) == len(record) and (seq is None or str(r.seq).upper() == seq)]
+    return same[0] if len(same) == 1 else None
+
+
+def _write(proteins, output_faa):
+    with open(output_faa, 'w') as f:
+        for header, seq, contig in proteins:
+            f.write(f">{header} contig={contig}\n{seq}\n")
+
+
+def extract_from_genbank(gbk_path, output_faa, fasta_path=None):
     """Extract CDS translations from a GenBank file."""
+    genome = _read_genome(fasta_path)
     proteins = []
     for record in SeqIO.parse(gbk_path, "genbank"):
+        contig = _genome_name(record, genome)
+        if contig is None:
+            if genome:
+                print(f"Warning: {record.id} of the annotation is not a sequence of the genome "
+                      f"FASTA, by name or by sequence; its proteins carry its own name", file=sys.stderr)
+            contig = record.id
+        length = len(genome[contig]) if contig in genome else len(record)
         for feat in record.features:
             if feat.type != "CDS":
                 continue
@@ -61,10 +142,15 @@ def extract_from_genbank(gbk_path, output_faa):
             if not gene_id:
                 continue
 
-            start = int(feat.location.start) + 1  # 0-based → 1-based
-            end = int(feat.location.end)
-            # feat.strand was removed in Biopython 1.85; read it off the location.
-            strand = "+" if feat.location.strand == 1 else "-"
+            # The parts of the location as the feature runs along the forward
+            # strand: Biopython lists those of complement(join(...)) from the
+            # 5' end, the highest first. (feat.strand was removed in Biopython
+            # 1.85; the strand is read off the location.)
+            parts = [(int(p.start) + 1, int(p.end)) for p in feat.location.parts]  # 0-based → 1-based
+            if feat.location.strand == -1:
+                parts.reverse()
+            segments = unroll(parts, length)
+            start, end = segments[0][0], max(e for _, e in segments)
 
             # Use pre-computed translation if available
             translation = feat.qualifiers.get("translation", [None])[0]
@@ -80,11 +166,9 @@ def extract_from_genbank(gbk_path, output_faa):
 
             if translation:
                 header = f"{gene_id}_{start}-{end}"
-                proteins.append((header, translation, strand))
+                proteins.append((header, translation, contig))
 
-    with open(output_faa, 'w') as f:
-        for header, seq, strand in proteins:
-            f.write(f">{header}\n{seq}\n")
+    _write(proteins, output_faa)
 
     print(f"Extracted {len(proteins)} proteins from GenBank → {output_faa}")
     return len(proteins)
@@ -126,7 +210,26 @@ def _gff3_cds(gff_path):
     return [cds[k] for k in order]
 
 
-def _exceptions(attrs, segments, strand, phase):
+def _gff3_order(segments, length):
+    """The lines of a GFF3 CDS in the order it runs along the forward strand.
+
+    GFF3 does not order them, and writes a CDS across the origin of a
+    circular sequence as one line that ends past it (end = stop + length), as
+    NCBI writes tagA of pO157: 92527..95223. A CDS cut in two there instead,
+    one line ending on the sequence's last base and another starting on its
+    first, starts after the widest gap between its lines, which is where the
+    rest of the sequence lies.
+    """
+    segments = sorted(segments)
+    if (len(segments) > 1 and segments[0][0] == 1
+            and any(seg[1] == length for seg in segments)):
+        gaps = [segments[i + 1][0] - segments[i][1] for i in range(len(segments) - 1)]
+        i = gaps.index(max(gaps)) + 1
+        segments = segments[i:] + segments[:i]
+    return segments
+
+
+def _exceptions(attrs, segments, strand, phase, length=0):
     """Residues the annotation reads differently from the code, by codon:
     transl_except=(pos:1547986..1547988,aa:Sec) is the selenocysteine of
     E. coli fdoG, read through a UGA that is otherwise a stop."""
@@ -136,6 +239,10 @@ def _exceptions(attrs, segments, strand, phase):
         lo, hi, aa = int(m.group(2)), int(m.group(3)), seq1(m.group(4))
         if not aa or aa == "X":
             continue
+        # Past the origin, the unrolled segments sit one sequence length on
+        pos = lo if strand != "-" else hi
+        if length and not any(s <= pos <= e for s, e, _ in segments):
+            lo, hi = lo + length, hi + length
         offset = 0
         for s, e, _ in (segments if strand != "-" else sorted(segments, key=lambda x: -x[1])):
             if s <= (lo if strand != "-" else hi) <= e:
@@ -155,8 +262,12 @@ def extract_from_gff3(gff_path, fasta_path, output_faa):
     lines of a CDS are now joined, as GenBank's join() is, and the protein
     translated from the whole, with the bacterial code, so that a GTG or TTG
     start reads as the methionine the GenBank /translation gives.
+
+    A CDS across the origin of a circular sequence ends past the sequence's
+    last base, and was read only up to it: tagA of pO157 came out as its first
+    65 residues of 898.
     """
-    genome = SeqIO.to_dict(SeqIO.parse(fasta_path, "fasta"))
+    genome = _read_genome(fasta_path)
 
     proteins = []
     for c in _gff3_cds(gff_path):
@@ -170,14 +281,15 @@ def extract_from_gff3(gff_path, fasta_path, output_faa):
         if not gene_id or c["seq_id"] not in genome:
             continue
 
-        segments = sorted(c["segments"])
-        seq = Seq("".join(str(genome[c["seq_id"]].seq[s - 1:e]) for s, e, _ in segments))
+        sequence = genome[c["seq_id"]].seq
+        segments = unroll(_gff3_order(c["segments"], len(sequence)), len(sequence))
+        seq = Seq("".join(_bases(sequence, s, e) for s, e, _ in segments))
         first = segments[-1] if c["strand"] == "-" else segments[0]
         if c["strand"] == "-":
             seq = seq.reverse_complement()
         seq = seq[first[2]:]
 
-        exceptions = _exceptions(attrs, segments, c["strand"], first[2])
+        exceptions = _exceptions(attrs, segments, c["strand"], first[2], len(sequence))
         try:
             if exceptions:
                 raise ValueError("translated codon by codon below")
@@ -197,11 +309,9 @@ def extract_from_gff3(gff_path, fasta_path, output_faa):
         translation = append_stop_codon(translation, start, end)
 
         if len(translation.rstrip('*')) >= MIN_RESIDUES:
-            proteins.append((f"{gene_id}_{start}-{end}", translation))
+            proteins.append((f"{gene_id}_{start}-{end}", translation, c["seq_id"]))
 
-    with open(output_faa, 'w') as f:
-        for header, seq in proteins:
-            f.write(f">{header}\n{seq}\n")
+    _write(proteins, output_faa)
 
     print(f"Extracted {len(proteins)} proteins from GFF3 → {output_faa}")
     return len(proteins)
@@ -232,13 +342,13 @@ def main():
     # Detect format
     suffix = ann_path.suffix.lower()
     if suffix in ('.gbk', '.gb', '.genbank', '.gbff'):
-        n = extract_from_genbank(ann_path, output_faa)
+        n = extract_from_genbank(ann_path, output_faa, genome_path)
     elif suffix in ('.gff', '.gff3'):
         n = extract_from_gff3(ann_path, genome_path, output_faa)
     else:
         # Try GenBank first, fall back to GFF3
         try:
-            n = extract_from_genbank(ann_path, output_faa)
+            n = extract_from_genbank(ann_path, output_faa, genome_path)
         except Exception:
             n = extract_from_gff3(ann_path, genome_path, output_faa)
 

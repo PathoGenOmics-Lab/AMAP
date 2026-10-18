@@ -13,7 +13,7 @@
 process PREPARE_REFERENCE {
     tag 'prepare_ref'
     // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
-    ext code: { files("${projectDir}/bin/{extract_ref_proteins.py,find_bakta_false_positives.py}") }
+    ext code: { files("${projectDir}/bin/{extract_ref_proteins.py,find_bakta_false_positives.py,classify/*.py}") }
     // Resources defined in nextflow.config (PREPARE_REFERENCE)
 
     input:
@@ -40,9 +40,13 @@ process PREPARE_REFERENCE {
         --prefix custom_ref
 
     # 2. Annotate the same reference genome with Bakta
-    #    (to find what Bakta invents on a known genome)
+    #    (to find what Bakta invents on a known genome). --keep-contig-headers:
+    #    its table names each sequence as the FASTA does, as the curated
+    #    proteins do, so that a call is compared with the genes of its own
+    #    sequence and not with genes at the same numbers on another
     bakta \
         --db "${db}" \
+        --keep-contig-headers \
         --skip-trna \
         --threads ${task.cpus} \
         --genus "${params.genus}" \
@@ -57,6 +61,7 @@ process PREPARE_REFERENCE {
         --bakta-tsv bakta_ref/bakta_ref.tsv \
         --curated-faa custom_ref_ref_proteins.faa \
         --bakta-faa bakta_ref/bakta_ref.faa \
+        --ref-genome ${ref_genome} \
         --prefix custom_ref
 
     echo "==> Reference preparation complete"

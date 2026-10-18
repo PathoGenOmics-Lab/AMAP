@@ -34,6 +34,18 @@ def _overlaps_any(trees, contig, strand, start, end):
     return tree is not None and len(tree[start:end + 1]) > 0
 
 
+def _overlapping(df, trees):
+    """Whether each feature of df overlaps one in trees, as a boolean mask.
+
+    Typed bool so that it stays a mask when df is empty: a column built from
+    an empty list is float64, and indexing a frame with it selects columns by
+    name. With every Bakta call in case 2 or 3, none is left for case 1 or
+    case 4, and the split stopped with a KeyError.
+    """
+    return pd.Series([_overlaps_any(trees, r.Contig, r.Strand, r.Start, r.End)
+                      for r in df.itertuples(index=False)], index=df.index, dtype=bool)
+
+
 def classify_case2_case3(bakta_df, miniprot_df, base_name=None):
     """Split into case 2 (perfect match) and case 3 (coordinate match, length mismatch)."""
     # Merge on Contig, Start, End and Strand: same coordinates on another strand
@@ -69,16 +81,11 @@ def classify_case1_case4(bakta_df, miniprot_df, base_name=None):
     indicator = bakta_df.merge(merged, on=common_cols, how='left', indicator=True)
     not_in_merged = indicator[indicator['_merge'] == 'left_only'].drop('_merge', axis=1)
     cols = ["Locus Tag", "Start", "End", "Strand", 'Length_nt', 'Contig']
-    not_in_merged = not_in_merged[cols].copy()
+    not_in_merged = not_in_merged[cols]
 
-    trees = _trees(miniprot_df)
-    not_in_merged['Overlaps'] = [
-        _overlaps_any(trees, r.Contig, r.Strand, r.Start, r.End)
-        for r in not_in_merged.itertuples(index=False)
-    ]
-
-    case4 = not_in_merged[not_in_merged['Overlaps']][cols]
-    case1 = not_in_merged[~not_in_merged['Overlaps']][cols]
+    overlaps = _overlapping(not_in_merged, _trees(miniprot_df))
+    case4 = not_in_merged[overlaps]
+    case1 = not_in_merged[~overlaps]
 
     if base_name:
         case4.to_csv(f"{base_name}-case4.tsv", sep='\t', index=False)
@@ -89,15 +96,8 @@ def classify_case1_case4(bakta_df, miniprot_df, base_name=None):
 
 def find_rv_missing(miniprot_df, bakta_df, base_name=None):
     """Find Miniprot hits with no overlap to any Bakta CDS on the same contig and strand."""
-    trees = _trees(_with_contig(bakta_df))
-
-    mp = _with_contig(miniprot_df).copy()
-    mp['Overlaps'] = [
-        _overlaps_any(trees, r.Contig, r.Strand, r.Start, r.End)
-        for r in mp.itertuples(index=False)
-    ]
-
-    no_overlap = mp[~mp['Overlaps']].drop(columns=['Overlaps'])
+    mp = _with_contig(miniprot_df)
+    no_overlap = mp[~_overlapping(mp, _trees(_with_contig(bakta_df)))]
     no_overlap = no_overlap[~((no_overlap['Match Nt'] == 0) & (no_overlap['Num nt'] == 0))]
 
     if base_name:

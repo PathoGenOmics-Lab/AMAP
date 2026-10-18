@@ -65,11 +65,12 @@ def match_bakta_contigs(bakta_df, miniprot_df):
     --keep-contig-headers, and miniprot keeps the FASTA headers. With nothing
     in common every comparison would be between different contigs and the
     whole classification would come out wrong without a word. One sequence
-    each can only be the same sequence; anything else is a hard error.
+    each can only be the same sequence; anything else is a hard error. With
+    no CDS from Bakta there is no name to compare.
     """
     bakta_contigs = set(bakta_df['Contig'])
     mp_contigs = set(miniprot_df.loc[miniprot_df['Contig'] != '*', 'Contig'])
-    if not mp_contigs or bakta_contigs & mp_contigs:
+    if not bakta_contigs or not mp_contigs or bakta_contigs & mp_contigs:
         return bakta_df
     if len(bakta_contigs) == 1 and len(mp_contigs) == 1:
         return bakta_df.assign(Contig=next(iter(mp_contigs)))

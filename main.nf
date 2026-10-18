@@ -25,6 +25,7 @@ params.tsv = 'samples.tsv'
 params.outdir = 'results'
 params.eggnog_db = 'eggnog_db'
 params.help = false
+params.version = false
 params.validate_only = false
 // Validation warnings stop the run too, not only its errors
 params.strict_validation = false
@@ -108,7 +109,7 @@ def helpMessage() {
     --max_time                  Maximum time per process. (Default: ${params.max_time})
     --scratch                   Use node-local scratch for I/O-heavy processes. (Default: ${params.scratch})
     --help                      Display this help message.
-    --version                   Print pipeline version and exit.
+    --version                   Print pipeline and Nextflow versions and exit.
 
     Organism-Agnostic Mode:
     --ref_annotation            Path to a trusted reference annotation (GFF3 or GenBank).
@@ -393,6 +394,13 @@ workflow {
         log.info helpMessage()
         exit 0
     }
+    if (params.version) {
+        // println rather than log.info, which Nextflow 26 prints with no line
+        // break between messages and `nextflow -q` does not print at all.
+        println "Pipeline    : ${workflow.manifest.name} v${workflow.manifest.version}"
+        println "Nextflow    : ${nextflow.version}"
+        exit 0
+    }
     log.info logo()
     log.info runSummary()
     workflow.onComplete = { onCompleteHandler() }
@@ -450,24 +458,36 @@ workflow {
     // later refuse a return in a workflow body, and exit() would cancel those
     // checks too, so the rest of the pipeline sits inside this if instead.
     if (!params.validate_only) {
-        // 1. Setup eggNOG database if not present
+        // 1. Setup eggNOG database if not present. Its folder is made here, on
+        // the host, and handed to EGGNOG_DB as an input, so that its container
+        // sees the folder (see EGGNOG_DB).
         if (!params.skip_functional_annotation) {
-            EGGNOG_DB()
+            eggnog_dir?.mkdirs()
+            if (!eggnog_dir?.isDirectory()) {
+                error "Cannot make a folder for the eggNOG database at --eggnog_db '${params.eggnog_db}'"
+            }
+            EGGNOG_DB(channel.value(eggnog_dir))
         }
 
         // 1b. Where the genomes come from: the sample sheet, or the container.
         genomes_ch = params.test_data ? TEST_GENOME() : fasta_ch
 
-        // 2. Perform MTB lineage typing or skip it
+        // 2. Perform MTB lineage typing or skip it. names_ch says, for every
+        // genome, the name its files carry, its sample ID and its lineage, for
+        // the steps that write the last two down: typing names a genome
+        // <lineage>_<sampleId>, and a sample ID can hold underscores of its
+        // own, so neither can be read back out of the name.
         if (!params.skip_typing) {
             PATHOTYPR(genomes_ch, pathotyper_snps_ch, pathotyper_ref_ch)
             typed_ch = PATHOTYPR.out.typed_fasta
+            names_ch = PATHOTYPR.out.names
         } else {
             // If skipping typing, create a placeholder file for caching.
             CREATE_EMPTY_FILE()
             typed_ch = genomes_ch.combine(CREATE_EMPTY_FILE.out).map { sampleId, fasta, empty_file ->
                 tuple(sampleId, fasta, empty_file)
             }
+            names_ch = genomes_ch.map { sampleId, _fasta -> tuple(sampleId, sampleId, 'Untyped') }
         }
 
         // 3. Annotate genomes with Bakta
@@ -509,7 +529,7 @@ workflow {
         MINIPROT(BAKTA_ANNOTATOR.out.for_miniprot, ref_proteome_ch, ref_genome_fasta_ch, bad_bakta_ch)
 
         // 6. Classify CDS cases based on alignments
-        TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases), ref_proteome_ch)
+        TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases).join(names_ch), ref_proteome_ch)
 
         // 7. Correct CDS based on classified cases
         FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix), ref_proteome_ch)
@@ -524,11 +544,8 @@ workflow {
             eggnog_faa_ch = FIX_CDS.out.for_eggnog.map { it[1] }.collect()
             eggnog_ids_ch = FIX_CDS.out.for_eggnog.map { it[0] }.collect()
 
-            // Wait for EGGNOG_DB to complete, then pass the actual DB directory
-            eggnog_db_ch = EGGNOG_DB.out.db_path.map {
-                def p = params.eggnog_db
-                file(p).isAbsolute() ? file(p) : file("${launchDir}/${p}")
-            }
+            // Wait for EGGNOG_DB to complete, then pass the folder it built the database in
+            eggnog_db_ch = EGGNOG_DB.out.db_path.map { eggnog_dir }
             ANNOT_EGGNOGMAP_BATCH(eggnog_faa_ch, eggnog_ids_ch, eggnog_db_ch)
 
             // Flatten batch output back to per-sample tuples: [sampleId, annotation]
@@ -543,7 +560,7 @@ workflow {
             ch_for_downstream = FIX_CDS.out.for_downstream.join(eggnog_results_ch)
 
             // 8. Generate final output files (GFF, GBK, Master Table)
-            GET_OUTPUTS(ch_for_downstream, mycobrowser_ref_ch)
+            GET_OUTPUTS(ch_for_downstream.join(names_ch.map { name, _sample, lineage -> tuple(name, lineage) }), mycobrowser_ref_ch)
 
             // 9. Find and analyze gene duplications
             GET_DUPLICATIONS(ch_for_downstream)
@@ -561,7 +578,7 @@ workflow {
             PANGENE(ch_for_downstream, ref_fastas_ch)
 
             // 11. Count annotations per category
-            GET_COUNT(GET_OUTPUTS.out.master_table)
+            GET_COUNT(GET_OUTPUTS.out.master_table.join(names_ch))
 
             // 12. Generate final reports
             // Collect summaries from different processes

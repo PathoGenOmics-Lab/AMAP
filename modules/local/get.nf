@@ -41,6 +41,9 @@ process GET_DUPLICATIONS {
 
     python3 ${projectDir}/bin/get_duplications.py duplications_${sampleId}
     python3 ${projectDir}/bin/dup_ex_multifasta.py duplications_${sampleId}_groups.tsv ${amap_faa}.renamed
+    # Named after the sample: GET_ALLDUP tells the genomes apart by the file
+    # their sequences came in.
+    mv ${amap_faa}.renamed.dup ${sampleId}.dup
     """
 }
 
@@ -60,7 +63,8 @@ process GET_OUTPUTS {
           path(amap_fna),
           path(bakta_tsv),
           path(fasta),
-          path(emapper)
+          path(emapper),
+          val(lineage)       // what typing called the sample, Untyped under --skip_typing
     // Mycobrowser's table when it is on the host, staged so that a container
     // sees it, or nothing: then params.mycobrowser_ref is a path inside the
     // container, where the default lives
@@ -110,7 +114,8 @@ process GET_OUTPUTS {
         ${sampleId}.AMAP.tsv \\
         ${bakta_tsv} \\
         "\$MYCO_ARG" \\
-        ${fasta}
+        ${fasta} \\
+        --lineage "${lineage}"
     python3 ${projectDir}/bin/to_panaroo.py --id ${sampleId}
 
     # Hard link (same inode, no extra I/O) — avoids broken symlinks with publishDir
@@ -145,8 +150,12 @@ process GET_COUNT {
                pattern: "*-AMAP.*.tsv"
 
     input:
+    // sample and lineage: the sample's ID in the sheet and what typing called
+    // it (Untyped under --skip_typing)
     tuple val(sampleId),
-          path(mastertable)
+          path(mastertable),
+          val(sample),
+          val(lineage)
 
     output:
     path("*.tsv")
@@ -155,7 +164,9 @@ process GET_COUNT {
     """
     # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     set -euo pipefail
-    python3 ${projectDir}/bin/count_annot.py ${mastertable}
+    python3 ${projectDir}/bin/count_annot.py ${mastertable} \\
+        --sample "${sample}" \\
+        --lineage "${lineage}"
     """
 }
 
@@ -176,6 +187,13 @@ process GET_ALLDUP {
     # Concatenate all per-sample duplication FASTAs
     # Use find+xargs instead of glob to avoid ARG_MAX with 500+ files
     find . -maxdepth 1 -name '*.dup' -print0 | xargs -0 cat > all_fastas.fa
+    # Which genome each sequence comes from: the sample its file is named
+    # after. Read back out of the sequence IDs, a sample ID with underscores
+    # of its own cut the genome short.
+    find . -maxdepth 1 -name '*.dup' -print0 | while IFS= read -r -d '' f; do
+        genome=\$(basename "\$f" .dup)
+        awk -v genome="\$genome" '/^>/ { print substr(\$1, 2) "\\t" genome }' "\$f"
+    done > genomes.tsv
     find . -maxdepth 1 -name '*.dup' -delete
 
     # Handle case where no samples have duplicated genes (empty concatenated FASTA)
@@ -213,6 +231,6 @@ process GET_ALLDUP {
     grep -v '^#' all_vs_all.raw | sort -k1,1 -k2,2 -k12,12gr >> all_vs_all.diamond
     rm all_vs_all.raw
 
-    python3 ${projectDir}/bin/network_genomes.py all_vs_all.diamond
+    python3 ${projectDir}/bin/network_genomes.py all_vs_all.diamond --genomes genomes.tsv
     """
 }

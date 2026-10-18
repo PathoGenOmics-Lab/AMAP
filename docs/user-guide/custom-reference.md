@@ -42,8 +42,9 @@ things.
 
 **1. Extracts the reference proteome.** Every CDS becomes a protein, headed
 `GENE_ID_START-END`. Those embedded coordinates are not decoration: the
-reconciliation step reads them back to tell a real gene locus from a paralogous
-placement, so the header format matters. From GenBank the existing
+paralog step reads them back to predict where each protein belongs in the
+sample, which tells its own locus from a paralog's, so the header format
+matters. From GenBank the existing
 `/translation` qualifier is used when present, otherwise the sequence is
 extracted and translated. From GFF3 everything is translated from the genome,
 and fragments under 10 amino acids are dropped.

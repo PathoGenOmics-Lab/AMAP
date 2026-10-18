@@ -134,9 +134,10 @@ interrupted.
 loses genes across contig boundaries, and they turn up in `*-rvmissing.tsv`
 rather than being corrected. `*-AMAP.qc.tsv` has the contig count and N50.
 
-**"Genes lost to coordinate collisions" in the log.** Multi-contig assembly where
-two genes share start, end and strand on different contigs. Rare, but see the
-note in [preparing inputs](../getting-started/inputs.md).
+**"Genes lost to (Start, End, Strand, Contig) collisions" in the log.** Two of
+the classification's sources listed a gene at exactly the same place, and one
+entry was kept. Genes on different contigs never collide, since the contig is
+part of the key.
 
 **`*-AMAP.clean.faa` has fewer sequences than the GFF3 has genes.** Expected.
 The clean proteome drops pseudogenes and internal-stop sequences. Use

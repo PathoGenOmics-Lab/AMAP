@@ -11,6 +11,8 @@
  */
 process VALIDATE_INPUTS {
     tag 'validation'
+    // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
+    ext code: { files("${projectDir}/bin/validate_inputs.py") }
     executor 'local'
     cpus 1
     memory '512.MB'
@@ -28,6 +30,7 @@ process VALIDATE_INPUTS {
     def bakta_arg = params.bakta_db ? "--bakta-db '${params.bakta_db}'" : ""
     def eggnog_arg = (!params.skip_functional_annotation && params.eggnog_db) ? "--eggnog-db '${params.eggnog_db}'" : ""
     """
+    # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     python3 ${projectDir}/bin/validate_inputs.py \
         --tsv ${tsv_file} \
         ${bakta_arg} \

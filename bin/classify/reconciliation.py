@@ -1,276 +1,95 @@
 """
-Post-resolution steps: reconciliation pass, missing gene recovery,
-deduplication, and final corrected TSV output.
+Post-resolution steps: missing gene recovery, deduplication, and the final
+corrected TSV.
 """
 
-import re
 from collections import Counter
-from functools import lru_cache
 
 import pandas as pd
+from intervaltree import IntervalTree
 
 from .ids import format_cluster_id
-from .overlaps import get_subset_overlap_percentage
-
-# Both helpers below are pure functions of a single string and are called
-# millions of times over a few thousand distinct IDs, so memoising them turns
-# the regex work into a dict lookup.
-_ID_CACHE_SIZE = 200_000
+from .overlaps import get_subset_overlap_percentage, _contig
 
 
-@lru_cache(maxsize=_ID_CACHE_SIZE)
-def _parse_ref_coords_cached(prot_id):
-    m = re.search(r'_(\d+)-(\d+)$', prot_id)
-    if m:
-        return int(m.group(1)), int(m.group(2))
-    return None, None
+def _frame(coord):
+    """Reading frame of a (Start, End, Strand, ...) coordinate, from its 5' end."""
+    return (coord[1] if len(coord) > 2 and coord[2] == '-' else coord[0]) % 3
 
 
-def parse_ref_coords_from_id(prot_id):
-    """Extract 1-based start and end from IDs like 'Rv2427A_2725571-2726087'."""
-    return _parse_ref_coords_cached(str(prot_id))
-
-
-@lru_cache(maxsize=_ID_CACHE_SIZE)
-def _extract_gene_name_cached(prot_id):
-    # Strip trailing _DIGITS-DIGITS (embedded coords)
-    m = re.match(r'^(.+?)_\d+-\d+$', prot_id)
-    if m:
-        return m.group(1)
-    # Strip sample prefix (e.g., L8_G26689_Rv0001 → Rv0001)
-    parts = prot_id.split('_')
-    if len(parts) >= 3:
-        return '_'.join(parts[2:])
-    return prot_id
-
-
-def _extract_gene_name(prot_id):
-    """Extract the base gene name (without coordinates) from a protein ID.
-
-    Examples:
-        'Rv0001_1-1524' → 'Rv0001'
-        'L8_G26689_Rv0001' → 'Rv0001'
-        'PE_PGRS1_123-456' → 'PE_PGRS1'
+def recover_missing_genes(combined_dict, miniprot_df, min_cover=0.5):
     """
-    return _extract_gene_name_cached(str(prot_id))
+    Add back reference proteins that no gene in the dict accounts for.
 
+    A placement is accounted for when a gene already sits on it: same contig
+    and strand, the same reading frame, covering at least min_cover of it, and
+    not known to be another reference gene. A protein is missing when none of
+    its placements is, and then its best one goes in.
 
-def _gene_names_match(id_a, id_b):
-    """Check if two protein IDs refer to the SAME gene (not just substring).
-    
-    Compares base gene names after stripping coordinates and sample prefixes.
-    This prevents false matches like Rv3508 ↔ Rv3508c, or Rv1 ↔ Rv10.
+    'Missing' used to mean that the protein's name was not among the dict's
+    values. Genes matched through case 2 and 3 are stored under Bakta locus
+    tags, so every protein looked missing (4034 of 4034 on H37Rv), and what
+    kept that from duplicating every gene was an exact-coordinate check that a
+    placement one base off went straight past. The frame matters because genes
+    that genuinely overlap sit in different frames (Rv0724A and Rv0725c), and
+    one does not account for the other. Neither does a different reference
+    gene in the same frame: E. coli nests hokC inside mokC and b4706 inside
+    b2537, and both genes of each pair are real.
     """
-    name_a = _extract_gene_name(id_a)
-    name_b = _extract_gene_name(id_b)
-    # Exact match after normalization
-    if name_a == name_b:
-        return True
-    # Also check if one is a suffix of the other (for sample-prefixed IDs)
-    # e.g., 'L8_G26689_Rv0001' has name 'Rv0001' which should match 'Rv0001'
-    # But 'Rv3508' should NOT match 'Rv3508c'
-    return False
+    reference_ids = set(miniprot_df['Prot Id'])
+    placed = miniprot_df[(miniprot_df['Start'] < miniprot_df['End'])
+                         & ~((miniprot_df['Match Nt'] == 0) & (miniprot_df['Num nt'] == 0))]
+    contig = placed['Contig'] if 'Contig' in placed.columns else pd.Series('', index=placed.index)
+    coords = {idx: (r['Start'], r['End'], r.get('Strand', '+'), contig[idx])
+              for idx, r in placed.iterrows()}
 
+    # The reference genes each gene of the dict stands for: itself, or for a
+    # Bakta call, the proteins placed at exactly its coordinates. None known
+    # means it can be any of them.
+    at_coord = {}
+    for idx, c in coords.items():
+        at_coord.setdefault(c, set()).add(placed.at[idx, 'Prot Id'])
 
-def reconcile_coordinates(combined_dict, miniprot_df, bakta_df=None):
-    """
-    Replace coordinates with true reference coordinates when available.
-    
-    For each gene in the dict, check if the protein ID contains embedded
-    coordinates (e.g., Rv1234_12345-67890). If the embedded coordinates
-    differ from the current ones but overlap significantly, replace them.
-    
-    Safety checks:
-    1. Only reconcile when lengths are comparable (within 2×) to prevent
-       paralog-driven coordinate replacement.
-    2. Remove genes placed at wrong positions (embedded coords don't match
-       actual position), UNLESS they are multi-copy elements (>2 Miniprot
-       hits), where placement at different positions is expected.
-    3. Use exact gene name matching (not substring) to prevent false
-       reconciliation (e.g., Rv3508 ↔ Rv3508c).
-    """
-    # Build ref coord map
-    ref_coords = {}
-    for prot_id in miniprot_df['Prot Id'].unique():
-        s, e = parse_ref_coords_from_id(prot_id)
-        if s and e:
-            ref_coords[prot_id] = (s, e)
+    def labels(coord, gene_id):
+        return {gene_id} if gene_id in reference_ids else at_coord.get(coord, set())
 
-    # Count hits per protein to identify multi-copy elements
-    hit_counts = miniprot_df.groupby('Prot Id').size()
+    trees = {}
 
-    # --- Lookup tables ---
-    # The per-gene work below used to scan every protein in hit_counts and
-    # every entry in ref_coords, calling _extract_gene_name on each one. That
-    # is O(genes x proteins) with a regex in the inner loop (~47M calls for a
-    # 4000-gene genome). Both scans only ever ask "which proteins share this
-    # gene name?", so index by gene name once up front.
-    hit_counts_map = hit_counts.to_dict()
+    def where(coord):
+        return _contig(coord), coord[2] if len(coord) > 2 else '+'
 
-    max_hits_by_name = {}
-    for pid, cnt in hit_counts_map.items():
-        name = _extract_gene_name(pid)
-        if cnt > max_hits_by_name.get(name, 0):
-            max_hits_by_name[name] = cnt
+    def add_to_tree(coord, gene_id):
+        tree = trees.setdefault(where(coord), IntervalTree())
+        tree[coord[0]:coord[1] + 1] = (_frame(coord), labels(coord, gene_id))
 
-    # Preserves ref_coords insertion order within each name bucket, so the
-    # "first acceptable reference wins" behaviour is unchanged.
-    ref_by_name = {}
-    for ref_id, ref_coord in ref_coords.items():
-        ref_by_name.setdefault(_extract_gene_name(ref_id), []).append((ref_id, ref_coord))
-
-    # Position lookups replacing repeated full-DataFrame boolean scans.
-    mp_ids_by_pos = {}
-    for mp_start, mp_end, mp_pid in zip(miniprot_df['Start'], miniprot_df['End'],
-                                        miniprot_df['Prot Id']):
-        mp_ids_by_pos.setdefault((mp_start, mp_end), []).append(mp_pid)
-
-    bakta_positions = set()
-    if bakta_df is not None:
-        bakta_positions = set(zip(bakta_df['Start'], bakta_df['End']))
-
-    to_remove = set()
-    to_add = {}
-    for coord, gene_id in list(combined_dict.items()):
-        # coord is (Start, End, Strand) — extract components
-        c_start, c_end, c_strand = coord[0], coord[1], coord[2] if len(coord) > 2 else '+'
-
-        # Check if THIS gene is a paralog placement: if its own ID has embedded
-        # coordinates that don't match its current position, it was placed at
-        # a paralogous region by Miniprot and should be removed.
-        # Exception 1: skip check if ANY protein hitting this position in Miniprot
-        # has embedded coords that match (proving this IS a real gene locus).
-        # Exception 2: skip check for multi-copy elements (>2 hits), where
-        # placement at different positions is expected (PE/PPE, IS elements).
-        own_s, own_e = parse_ref_coords_from_id(str(gene_id))
-        gene_name = _extract_gene_name(str(gene_id))
-        if own_s is not None and own_e is not None:
-            # Skip paralog check for multi-copy elements
-            n_hits = hit_counts_map.get(str(gene_id), 1)
-            # Also check without coords suffix
-            n_hits = max(n_hits, max_hits_by_name.get(gene_name, 0))
-
-            own_ref_len = own_e - own_s + 1
-            own_overlap = max(0, min(c_end, own_e) - max(c_start, own_s) + 1)
-            if own_ref_len > 0 and own_overlap / own_ref_len < 0.5 and n_hits <= 2:
-                # gene_id's embedded coords don't match → check if any OTHER
-                # Miniprot hit at this position validates it as a real locus
-                position_validated = False
-                for mp_pid in mp_ids_by_pos.get((c_start, c_end), ()):
-                    mp_s, mp_e = parse_ref_coords_from_id(mp_pid)
-                    if mp_s is not None and mp_e is not None:
-                        mp_len = mp_e - mp_s + 1
-                        mp_ov = max(0, min(c_end, mp_e) - max(c_start, mp_s) + 1)
-                        if mp_len > 0 and mp_ov / mp_len >= 0.5:
-                            position_validated = True
-                            break
-                # Also validate if Bakta has a gene at these exact coordinates
-                if not position_validated and bakta_df is not None:
-                    if (c_start, c_end) in bakta_positions:
-                        position_validated = True
-                if not position_validated:
-                    to_remove.add(coord)
-                    continue
-
-        # Exact gene name matching, NOT substring. ref_by_name holds exactly
-        # the references _gene_names_match would have accepted, so the
-        # non-matching entries the old loop walked over are simply skipped.
-        for ref_id, ref_coord in ref_by_name.get(gene_name, ()):
-            # ref_coord is (Start, End), add strand for dict key
-            ref_key = (ref_coord[0], ref_coord[1], c_strand)
-            if ref_coord != (c_start, c_end):
-                overlap = max(0, min(c_end, ref_coord[1]) - max(c_start, ref_coord[0]) + 1)
-                min_len = min(c_end - c_start + 1, ref_coord[1] - ref_coord[0] + 1)
-                max_len = max(c_end - c_start + 1, ref_coord[1] - ref_coord[0] + 1)
-                if min_len > 0 and overlap / min_len > 0.5 and max_len < 2 * min_len:
-                    to_remove.add(coord)
-                    to_add[ref_key] = ref_id
-                    break
-
-    # When removing paralog placements, check if a Bakta gene at that position
-    # should be restored (e.g., PE_PGRS genes where Miniprot fails to align
-    # the correct protein but Bakta calls the gene correctly).
-    bakta_restore = {}
-    if bakta_df is not None:
-        for c in to_remove:
-            if c not in to_add:  # Only for pure removals, not replacements
-                c_start, c_end = c[0], c[1]
-                bk_overlap = bakta_df[
-                    (bakta_df['Start'] <= c_start + 50) &
-                    (bakta_df['End'] >= c_end - 50)
-                ]
-                if not bk_overlap.empty:
-                    bk = bk_overlap.iloc[0]
-                    bk_strand = bk.get('Strand', c[2] if len(c) > 2 else '+')
-                    bk_coord = (bk['Start'], bk['End'], bk_strand)
-                    removed_len = c_end - c_start + 1
-                    bk_len = bk_coord[1] - bk_coord[0] + 1
-                    if (bk_len > 0 and removed_len > 0
-                            and max(bk_len, removed_len) < 2 * min(bk_len, removed_len)
-                            and bk_coord not in combined_dict
-                            and bk_coord not in to_add):
-                        bakta_restore[bk_coord] = bk['Locus Tag']
-
-    for c in to_remove:
-        combined_dict.pop(c, None)
-    for c, v in to_add.items():
-        if c not in combined_dict:
-            combined_dict[c] = v
-    for c, v in bakta_restore.items():
-        if c not in combined_dict:
-            combined_dict[c] = v
-
-
-def recover_missing_genes(combined_dict, miniprot_df):
-    """
-    Add reference genes that are completely absent from the coordinate dict.
-    
-    Safety: for each candidate, verify that the Miniprot alignment position
-    matches the coordinates embedded in the protein ID. If a protein named
-    'Rv1150_1278269-1278820' is placed at position 1164572-1165123, it
-    means Miniprot mapped it to a paralogous region — skip it.
-    
-    Tries all placements sorted by Match Nt descending, not just the best.
-    This handles cases where the best hit is a paralog but a weaker hit
-    at the correct position exists.
-    """
-    all_ref_ids = set(miniprot_df['Prot Id'].unique())
-    included_ids = set(combined_dict.values())
-    missing = all_ref_ids - included_ids
-
-    if not missing:
-        return
-
-    df_missing = miniprot_df[miniprot_df['Prot Id'].isin(missing)].copy()
-    if df_missing.empty:
-        return
-
-    # Sort by Match Nt descending so we try best placements first
-    df_missing = df_missing.sort_values('Match Nt', ascending=False)
-
-    recovered = set()
-    for _, row in df_missing.iterrows():
-        prot_id = row['Prot Id']
-        if prot_id in recovered:
-            continue  # Already recovered this gene from a better hit
-
-        strand = row.get('Strand', '+')
-        coord = (row['Start'], row['End'], strand)
-        if coord in combined_dict:
-            continue  # Position already occupied
-
-        # Verify placement matches embedded coordinates in Prot Id.
-        ref_s, ref_e = parse_ref_coords_from_id(prot_id)
-        if ref_s is not None and ref_e is not None:
-            ref_len = ref_e - ref_s + 1
-            placement_overlap = max(0, min(coord[1], ref_e) - max(coord[0], ref_s) + 1)
-            if ref_len > 0 and placement_overlap / ref_len < 0.5:
-                # Placement doesn't match embedded coords → paralog mapping
-                # Don't give up — try the next hit for this protein
+    def accounted(coord, prot_id):
+        length = coord[1] - coord[0] + 1
+        for iv in trees.get(where(coord), IntervalTree())[coord[0]:coord[1] + 1]:
+            frame, genes = iv.data
+            if frame != _frame(coord) or (genes and prot_id not in genes):
                 continue
+            if min(coord[1] + 1, iv.end) - max(coord[0], iv.begin) >= min_cover * length:
+                return True
+        return False
 
+    for coord, gene_id in combined_dict.items():
+        add_to_tree(coord, gene_id)
+
+    present = set()
+    for idx, c in coords.items():
+        prot_id = placed.at[idx, 'Prot Id']
+        if c in combined_dict or accounted(c, prot_id):
+            present.add(prot_id)
+
+    # Best placements first, so a missing protein goes in where it fits best.
+    for idx in placed.sort_values('Match Nt', ascending=False).index:
+        prot_id = placed.at[idx, 'Prot Id']
+        coord = coords[idx]
+        if prot_id in present or coord in combined_dict or accounted(coord, prot_id):
+            continue
         combined_dict[coord] = prot_id
-        recovered.add(prot_id)
+        add_to_tree(coord, prot_id)
+        present.add(prot_id)
 
 
 def deduplicate(combined_dict):
@@ -302,7 +121,7 @@ def deduplicate(combined_dict):
         subset_coords = set()
         for dc in dup_coords:
             for coord in non_dup_coords:
-                if get_subset_overlap_percentage(dc, coord) == 100:
+                if _contig(dc) == _contig(coord) and get_subset_overlap_percentage(dc, coord) == 100:
                     subset_coords.add(dc)
                     break
 
@@ -327,12 +146,24 @@ def write_corrected_tsv(combined_dict, miniprot_df, bakta_df, base_name):
     Filters out entries with start=0 or end=0, assigns strands from
     miniprot/bakta matches, and formats IDs.
     """
-    # Sort by start coordinate and filter invalid entries
-    sorted_dict = dict(sorted(combined_dict.items(), key=lambda x: (x[0][0], x[0][1])))
+    # Contigs in the order the assembly has them (Bakta lists them that way),
+    # then by start coordinate; filter invalid entries.
+    rank = {}
+    if 'Contig' in bakta_df.columns:
+        rank = {c: i for i, c in enumerate(dict.fromkeys(bakta_df['Contig']))}
+
+    def order(contig, start, end=0):
+        return (rank.get(contig, len(rank)), contig, start, end)
+
+    sorted_dict = dict(sorted(combined_dict.items(),
+                              key=lambda x: order(_contig(x[0]), x[0][0], x[0][1])))
     filtered = {
         k: v for k, v in sorted_dict.items()
         if k[0] != 0 and k[1] != 0
     }
+
+    mp_contig = miniprot_df['Contig'] if 'Contig' in miniprot_df.columns else ''
+    bk_contig = bakta_df['Contig'] if 'Contig' in bakta_df.columns else ''
 
     singles = []
     multis = []
@@ -340,30 +171,35 @@ def write_corrected_tsv(combined_dict, miniprot_df, bakta_df, base_name):
 
     for coord_key, value in filtered.items():
         start, end = coord_key[0], coord_key[1]
+        contig = _contig(coord_key)
         # Use strand from key if available, otherwise derive from data
         strand = coord_key[2] if len(coord_key) > 2 else _find_strand(start, end, miniprot_df, bakta_df)
 
-        mp_matches = miniprot_df[(miniprot_df['Start'] == start) & (miniprot_df['End'] == end)]
-        bk_matches = bakta_df[(bakta_df['Start'] == start) & (bakta_df['End'] == end)]
+        mp_matches = miniprot_df[(miniprot_df['Start'] == start) & (miniprot_df['End'] == end)
+                                 & (mp_contig == contig)]
+        bk_matches = bakta_df[(bakta_df['Start'] == start) & (bakta_df['End'] == end)
+                              & (bk_contig == contig)]
 
         if not bk_matches.empty:
             cluster_id = format_cluster_id(bk_matches.iloc[0]['Locus Tag'], base_name)
             rv_ids = ", ".join(mp_matches['Prot Id'].unique()) if not mp_matches.empty else ""
-            singles.append([cluster_id, strand, start, end, rv_ids])
+            singles.append([cluster_id, strand, start, end, rv_ids, contig])
         else:
             rv_ids = mp_matches['Prot Id'].unique() if not mp_matches.empty else []
             if len(rv_ids) == 0:
                 cluster_id = format_cluster_id(value, base_name)
-                singles.append([cluster_id, strand, start, end, ""])
+                singles.append([cluster_id, strand, start, end, "", contig])
             elif len(rv_ids) < 2:
                 cluster_id = format_cluster_id(rv_ids[0], base_name)
-                singles.append([cluster_id, strand, start, end, ", ".join(rv_ids)])
+                singles.append([cluster_id, strand, start, end, ", ".join(rv_ids), contig])
             else:
                 cluster_id = f"{base_name}_dup_{dup_counter}"
                 dup_counter += 1
-                multis.append([cluster_id, strand, start, end, ", ".join(rv_ids)])
+                multis.append([cluster_id, strand, start, end, ", ".join(rv_ids), contig])
 
-    final = sorted(singles + multis, key=lambda x: x[2])
+    # The contig is the sixth column: check_cds.py translates each gene from
+    # it, where it used to guess the contig from the coordinates alone.
+    final = sorted(singles + multis, key=lambda x: order(x[5], x[2]))
 
     output_path = f"{base_name}_corrected.tsv"
     with open(output_path, 'w') as f:

@@ -936,12 +936,13 @@ class TestDeduplicateRvs:
                 'rvs': rvs, 'pseudogene': pseudo, 'contig': contig}
 
     def test_tie_goes_to_the_copy_bakta_also_called(self):
-        """Between copies that tie, one Bakta called at the same coordinates
-        wins: it used to be whichever came first in the genome."""
+        """Between copies that tie and cannot both stay, one Bakta called at
+        the same coordinates wins: it used to be whichever came first in the
+        genome."""
         from deduplicate_rvs import deduplicate
-        genes = [self._gene('S1_g1', 266553, 266789, 'g1', '-', pseudo='yes'),
-                 self._gene('S1_02737', 2770445, 2770681, 'g1', pseudo='yes')]
-        kept, _ = deduplicate(genes, {(2770445, 2770681, '+', 'c1')})
+        genes = [self._gene('S1_g1', 266553, 266789, 'g1'),
+                 self._gene('S1_02737', 266556, 266792, 'g1')]
+        kept, _ = deduplicate(genes, {(266556, 266792, '+', 'c1')})
         assert [g['id'] for g in kept] == ['S1_02737']
 
     def test_bakta_support_only_breaks_ties(self):
@@ -962,17 +963,21 @@ class TestDeduplicateRvs:
         kept, removed = deduplicate(genes)
         assert len(kept) == 3 and not removed
 
-    def test_pseudogenes_and_pieces_are_not_copies(self):
-        """A further copy must be intact, nearly as long as the best one, and
-        clear of the copies kept; anything else is a remnant of the gene."""
+    def test_pieces_are_not_copies_but_disrupted_copies_are(self):
+        """A further copy must be nearly as long as the best one and clear of
+        the copies kept, and a pseudogene also nearly as long as the reference
+        protein: a piece of the gene is not a copy, a disrupted copy at a
+        locus of its own is, flagged as the pseudogene it is."""
         from deduplicate_rvs import deduplicate
         genes = [self._gene('S1_best', 1000, 1899, 'g1'),
                  self._gene('S1_pseudo', 5000, 5899, 'g1', pseudo='yes'),
                  self._gene('S1_piece', 9000, 9599, 'g1'),
                  self._gene('S1_overlapping', 1300, 2199, 'g1'),
-                 self._gene('S1_copy', 20000, 20869, 'g1')]
-        kept, _ = deduplicate(genes)
-        assert [g['id'] for g in kept] == ['S1_best', 'S1_copy']
+                 self._gene('S1_copy', 20000, 20869, 'g1'),
+                 self._gene('S1_short_pseudo', 30000, 30824, 'g1', pseudo='yes'),
+                 self._gene('S1_short', 40000, 40824, 'g1')]
+        kept, _ = deduplicate(genes, ref_residues={'g1': 310})
+        assert [g['id'] for g in kept] == ['S1_best', 'S1_pseudo', 'S1_copy', 'S1_short']
 
     def test_a_copy_on_another_reference_gene_is_not_kept(self):
         """In M. bovis an intact copy of Rv2177c lies inside Rv2424c, a
@@ -997,13 +1002,15 @@ class TestDeduplicateRvs:
         assert len(kept) == 2
 
     def test_synteny_breaks_the_remaining_ties(self):
-        """In CDC1551 an 81-residue copy of Rv3022c also opens another PPE
-        gene, 2.4 kb before its own locus, and that one came first."""
+        """The copy where the protein belongs keeps its place, rather than the
+        one that comes first in the genome; here that one lies on another
+        reference gene and goes."""
         from deduplicate_rvs import deduplicate
         genes = [self._gene('S1_Rv3022c', 3373737, 3373979, 'Rv3022c', '-', pseudo='yes'),
-                 self._gene('S1_Rv3022c', 3376177, 3376419, 'Rv3022c', '-', pseudo='yes')]
+                 self._gene('S1_Rv3022c', 3376177, 3376419, 'Rv3022c', '-', pseudo='yes'),
+                 self._gene('S1_Rv3018c', 3373047, 3373979, 'Rv3018c', '-')]
         kept, _ = deduplicate(genes, distance={0: 2440.0, 1: 0.0})
-        assert [g['start'] for g in kept] == ['3376177']
+        assert [g['start'] for g in kept] == ['3376177', '3373047']
 
     def test_synteny_distance_follows_the_neighbours(self):
         """The sample is 5 kb ahead of the reference here; the copy that sits

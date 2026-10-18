@@ -12,6 +12,8 @@
  */
 process PREPARE_REFERENCE {
     tag 'prepare_ref'
+    // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
+    ext code: { files("${projectDir}/bin/{extract_ref_proteins.py,find_bakta_false_positives.py}") }
     // Resources defined in nextflow.config (PREPARE_REFERENCE)
 
     input:
@@ -25,6 +27,7 @@ process PREPARE_REFERENCE {
 
     script:
     """
+    # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     set -euo pipefail
 
     # 1. Extract curated proteins from the user's trusted annotation

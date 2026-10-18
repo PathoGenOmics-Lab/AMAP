@@ -69,6 +69,24 @@ The quickest way to run the whole pipeline is the test profile:
 nextflow run . -profile docker,test
 ```
 
+### Pipeline code and `-resume`
+
+Nextflow hashes a task's inputs and script, not the files the script calls by
+path, so `python3 ${projectDir}/bin/check_cds.py` alone would let `-resume` hand
+back what the old `check_cds.py` produced. Every process that runs AMAP code
+therefore lists those files in `ext code`, and its script names `task.ext.code`
+in a comment, which puts them in the cache key (Nextflow 24.04 and later):
+
+```groovy
+ext code: { files("${projectDir}/bin/{check_cds.py,deduplicate_rvs.py,classify/*.py}") }
+```
+
+A script that imports `classify` needs `classify/*.py` in the list. The reverse
+also bites: Nextflow adds to a task's cache key any `bin/` entry its script names
+as a bare word, which is why PATHOTYPR quotes its `'classify'` subcommand.
+`tests/test_cache_keys.py` fails when a process runs a file it does not list,
+lists one that does not exist, or names a `bin/` entry it does not declare.
+
 ## Working on the container
 
 ```bash

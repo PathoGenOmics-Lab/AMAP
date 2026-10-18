@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 from Bio import SeqIO
 import csv
-from Bio.SeqFeature import SeqFeature, FeatureLocation
+from Bio.SeqFeature import SeqFeature, FeatureLocation, BeforePosition, AfterPosition
 
 # Allow importing from bin/classify/ when run as a script, the same way
 # classify_cases.py does. classify.ids only needs `re`, so this stays cheap.
@@ -48,6 +48,22 @@ def filter_bakta(bakta_pd):
     bakta_pd_rest = bakta_pd[bakta_pd['Type'] != 'cds']
     return bakta_pd_cds, bakta_pd_rest
 
+def _open_ends(partial, strand_int):
+    """Which coordinates a contig cut off, as (left, right), from the 5' and
+    3' ends check_cds.py names; the 5' end is the right one on the minus
+    strand."""
+    ends = {e.strip() for e in str(partial or '').split(',') if e.strip()}
+    five, three = "5'" in ends, "3'" in ends
+    return (three, five) if strand_int == -1 else (five, three)
+
+
+def _location(start, end, strand_int, partial):
+    """A feature's location, with < or > at the ends its contig cut off."""
+    left, right = _open_ends(partial, strand_int)
+    return FeatureLocation(BeforePosition(start) if left else start,
+                           AfterPosition(end) if right else end, strand=strand_int)
+
+
 def tsv_to_gbk(tsv_file, fasta_file, gbk_file, molecule_type='DNA'):
     """Convert a TSV annotation file + FASTA to GenBank format."""
     secuencias = SeqIO.to_dict(SeqIO.parse(fasta_file, "fasta"))
@@ -65,6 +81,8 @@ def tsv_to_gbk(tsv_file, fasta_file, gbk_file, molecule_type='DNA'):
             if len(row) < 9:
                 continue
             seq_id, feature_type, start, end, strand, locus_tag, gene, product, db_xrefs = row[:9]
+            # AMAP's own columns, in tables written since they were added
+            pseudo_flag, partial, note = (row[9:12] + ['', '', ''])[:3]
             if seq_id not in secuencias:
                 continue
             try:
@@ -84,16 +102,16 @@ def tsv_to_gbk(tsv_file, fasta_file, gbk_file, molecule_type='DNA'):
                     sequence = sequence.reverse_complement()
                 # Use full translation (not to_stop) to handle pseudogenes
                 # with internal stop codons. Strip trailing * if present.
-                full_translation = str(sequence.translate()).rstrip('*')
-                # If there are internal stops, mark as pseudogene in qualifiers
-                if '*' in full_translation:
+                full_translation = str(sequence[:len(sequence) - len(sequence) % 3].translate()).rstrip('*')
+                if pseudo_flag == 'yes' or '*' in full_translation:
+                    # A pseudogene: AMAP says why, else the stops speak for it.
+                    # GenBank gives a /pseudo CDS no translation.
                     qualifiers['pseudo'] = ['']
-                    qualifiers['note'] = [f'contains {full_translation.count("*")} internal stop codon(s)']
-                    # GenBank convention: pseudogenes use to_stop translation
-                    qualifiers['translation'] = [str(sequence.translate(to_stop=True))]
+                    qualifiers['note'] = [note or f'contains {full_translation.count("*")} internal stop codon(s)']
                 else:
                     qualifiers['translation'] = [full_translation]
-            feature = SeqFeature(FeatureLocation(start, end, strand=strand_int), type=feature_type, qualifiers=qualifiers)
+            location = _location(start, end, strand_int, partial)
+            feature = SeqFeature(location, type=feature_type, qualifiers=qualifiers)
             secuencias[seq_id].features.append(feature)
 
     with open(gbk_file, 'w') as gbk:
@@ -106,10 +124,10 @@ def columns():
     "KEGG_Pathway", "KEGG_Module", "KEGG_Reaction", "KEGG_rclass", "BRITE",
     "KEGG_TC", "CAZy", "BiGG_Reaction", "PFAMs"
     ]
-    # check_cds.py writes the contig last; a table from before contigs were
-    # carried through reads with it empty.
+    # check_cds.py writes the contig, the partial ends and the note last; a table
+    # from before they were carried through reads with them empty.
     name_correctedtsv = [
-    "id", "strand", "start", "end", "rvs", "pseudogene", "contig"
+    "id", "strand", "start", "end", "rvs", "pseudogene", "contig", "partial", "note"
     ]
     name_bakta = [
         "Sequence Id","Type", "Start","Stop","Strand","Locus Tag", "Gene","Product","DbXrefs"
@@ -176,7 +194,8 @@ def generate_master_table(eggnog_pd, correctedtsv_pd, bakta_pd_cds, myco_pd, bas
 def generate_tsv(merged_df, bakta_rest_df, fasta_file_path, output_file_path):
     # Create a copy of the merged DataFrame to avoid SettingWithCopyWarning
     keep = ['id', 'strand', 'start', 'end', 'rvs', 'Preferred_name', 'Gene', 'Product_x', 'Description']
-    new_df = merged_df[keep + (['contig'] if 'contig' in merged_df.columns else [])].copy()
+    extra = [c for c in ('contig', 'pseudogene', 'partial', 'note') if c in merged_df.columns]
+    new_df = merged_df[keep + extra].copy()
 
     # Use loc to set values and avoid warnings
     new_df.loc[:, 'Preferred_name'] = new_df['Preferred_name'].replace('-', np.nan)
@@ -192,8 +211,11 @@ def generate_tsv(merged_df, bakta_rest_df, fasta_file_path, output_file_path):
     new_df.loc[:, 'rvs'] = 'AMAP_ids:' + new_df['rvs'].fillna('').astype(str)
     
     # Renaming columns
-    new_column_names = {'id': 'Locus Tag', 'strand': 'Strand', 'start': 'Start', 'end': 'Stop', 'Combined_Gene': 'Gene', 'Combined_Description': 'Product', 'rvs': 'DbXrefs'}
+    new_column_names = {'id': 'Locus Tag', 'strand': 'Strand', 'start': 'Start', 'end': 'Stop', 'Combined_Gene': 'Gene', 'Combined_Description': 'Product', 'rvs': 'DbXrefs',
+                        'pseudogene': 'Pseudogene', 'partial': 'Partial', 'note': 'Note'}
     new_df.rename(columns=new_column_names, inplace=True)
+    for col in ('Pseudogene', 'Partial', 'Note'):
+        new_df[col] = new_df[col].fillna('').astype(str) if col in new_df.columns else ''
 
     # Setting additional columns: assign Sequence Id per gene, from the contig
     # check_cds.py recorded. Guessing it from the coordinates, the smallest
@@ -235,8 +257,10 @@ def generate_tsv(merged_df, bakta_rest_df, fasta_file_path, output_file_path):
         print("WARNING: Bakta's sequence names do not match the FASTA; run it with "
               "--keep-contig-headers", file=sys.stderr)
 
-    # Reordering columns
-    column_order = ["Sequence Id", "Type", "Start", "Stop", "Strand", "Locus Tag", "Gene", "Product", "DbXrefs"]
+    # Reordering columns: Bakta's nine, then whether AMAP calls the gene a
+    # pseudogene, which ends a contig cut off, and why.
+    column_order = ["Sequence Id", "Type", "Start", "Stop", "Strand", "Locus Tag", "Gene", "Product", "DbXrefs",
+                    "Pseudogene", "Partial", "Note"]
     new_df = new_df[column_order]
 
     # Concatenating with bakta_rest_df and sorting
@@ -247,7 +271,7 @@ def generate_tsv(merged_df, bakta_rest_df, fasta_file_path, output_file_path):
         "# Annotated with AMAP",
         "# Software: v0.1.0",
         "# URL: https://github.com/PathoGenOmics-Lab/AMAP",
-        "#Sequence Id\tType\tStart\tStop\tStrand\tLocus Tag\tGene\tProduct\tDbXrefs"
+        "#Sequence Id\tType\tStart\tStop\tStrand\tLocus Tag\tGene\tProduct\tDbXrefs\tPseudogene\tPartial\tNote"
     ]) + "\n"
     
     # Writing to file
@@ -328,13 +352,29 @@ def generate_gff(merged_df, tsv_df, gff_file_path, fasta_file_path):
             phase = '0' if feat_type == 'CDS' else '.'
 
             if feat_type == 'CDS':
+                # A pseudogene, and the ends a contig cut off, as NCBI writes
+                # them: pseudo=true, and partial=true with the open end given
+                # as start_range=.,START or end_range=END,.
+                flags = ''
+                if str(row.get('Pseudogene', '')) == 'yes':
+                    flags += ';pseudo=true'
+                left, right = _open_ends(row.get('Partial', ''), -1 if strand == '-' else 1)
+                if left or right:
+                    flags += ';partial=true'
+                    if left:
+                        flags += f';start_range=.,{start}'
+                    if right:
+                        flags += f';end_range={stop},.'
+                reason = row.get('Note', '')
+                reason = '' if pd.isna(reason) else str(reason)
+
                 # Emit gene feature first (GFF3 spec compliance)
                 gene_id = f"gene-{locus_tag}"
-                gene_attrs = f"ID={gene_id};Name={gene};locus_tag={locus_tag}"
+                gene_attrs = f"ID={gene_id};Name={gene};locus_tag={locus_tag}{flags}"
                 file_gff.write(f"{seq_id}\tAMAP\tgene\t{start}\t{stop}\t.\t{strand}\t.\t{gene_attrs}\n")
 
                 # Build CDS attributes with eggNOG functional annotation
-                cds_attrs = f"ID={locus_tag};Parent={gene_id};Name={gene};product={product};Dbxref={dbxrefs}"
+                cds_attrs = f"ID={locus_tag};Parent={gene_id};Name={gene};product={product};Dbxref={dbxrefs}{flags}"
 
                 # Add eggNOG attributes if available
                 einfo = eggnog_lookup.get(row['Locus Tag'], {})
@@ -344,8 +384,9 @@ def generate_gff(merged_df, tsv_df, gff_file_path, fasta_file_path):
                     cds_attrs += f";eC_number={_escape_gff3(einfo['EC'])}"
                 if 'COG_category' in einfo:
                     cds_attrs += f";COG_category={_escape_gff3(einfo['COG_category'])}"
-                if 'Description' in einfo:
-                    cds_attrs += f";Note={_escape_gff3(einfo['Description'])}"
+                notes = [n for n in (reason, einfo.get('Description', '')) if n]
+                if notes:
+                    cds_attrs += ";Note=" + ",".join(_escape_gff3(n) for n in notes)
                 if 'KEGG_ko' in einfo:
                     cds_attrs += f";KEGG_ko={_escape_gff3(einfo['KEGG_ko'])}"
                 if 'KEGG_Pathway' in einfo:

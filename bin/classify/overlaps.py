@@ -6,6 +6,9 @@ conflicts by comparing Bakta vs Miniprot alignment lengths.
 
 Coordinate convention: all coordinates are 1-based inclusive (GFF/GenBank style).
 Length = End - Start + 1. IntervalTree uses half-open [Start, End+1).
+A gene's key is (Start, End, Strand, Contig): the contig goes last so that code
+reading the first three keeps working, and features only ever overlap when they
+share a contig.
 """
 
 from typing import Dict, List, Tuple, Optional
@@ -45,15 +48,40 @@ def _range_length(r):
     return r[1] - r[0] + 1
 
 
+def _contig(coord):
+    return coord[3] if len(coord) > 3 else ''
+
+
+def _same_frame(a, b, strand):
+    """Whether two (Start, End) spans on one strand are read in the same frame,
+    judged from their 5' ends."""
+    i = 1 if strand == '-' else 0
+    return (a[i] - b[i]) % 3 == 0
+
+
 def build_overlap_tree(tree_df, overlap_df, tree_id_col, overlap_id_col):
-    """Build an IntervalTree and find overlaps between two DataFrames."""
-    tree = IntervalTree()
+    """For each feature of tree_df, the features of overlap_df overlapping it on
+    the same strand of the same contig.
+
+    Case 4 is defined strand by strand, but this grouping was not: about 8% of
+    the groups (101 of 1255 on H37Rv) put an alignment on one strand together
+    with a Bakta call on the other, and a gene on the other strand counted as a
+    competing call.
+    """
+    def where(row):
+        return row.get('Contig', ''), '-' if row.get('Strand', '+') == '-' else '+'
+
+    trees = {}
     for idx, row in tree_df.iterrows():
         if row['Start'] < row['End']:
+            tree = trees.setdefault(where(row), IntervalTree())
             tree[row['Start']:row['End']+1] = (idx, row[tree_id_col])
 
     overlap_counts = {}
     for _, row in overlap_df.iterrows():
+        tree = trees.get(where(row))
+        if tree is None:
+            continue
         for iv in tree[row['Start']:row['End']+1]:
             tree_idx, tree_id = iv.data
             if tree_idx not in overlap_counts:
@@ -82,13 +110,17 @@ def create_overlap_groups(filtered_overlaps, case4_df, miniprot_df):
         # filtered_overlaps was built with case4 as the tree source
         if i in miniprot_df.index:
             mp_coords = [(miniprot_df.at[i, 'Start'], miniprot_df.at[i, 'End'])]
+            mp_contig = miniprot_df.at[i, 'Contig'] if 'Contig' in miniprot_df.columns else ''
         else:
             mp_coords = [(0, 0)]
+            mp_contig = ''
         groups[i] = {
             'case4': [(r['Start'], r['End']) for _, r in case4_rows.iterrows()],
             # Kept apart from 'case4' because callers unpack those as pairs.
             'case4_strands': [r.get('Strand', '+') for _, r in case4_rows.iterrows()],
+            'case4_contigs': [r.get('Contig', '') for _, r in case4_rows.iterrows()],
             'miniprot_df': mp_coords,
+            'contig': mp_contig,
             'Prot Id': row['Prot Id'],
             'Locus Tags': row['Locus Tags']
         }
@@ -104,6 +136,7 @@ def resolve_single_overlaps(single_groups, miniprot_df, combined_dict, new_group
     - Use Bakta only if substantially longer (>550 bp difference)
     - Remove existing entries with ≥70% overlap if the new one is longer
     """
+    reference_ids = set(miniprot_df['Prot Id'])
     for key, value in single_groups.items():
         bakta_len = value['case4'][0][1] - value['case4'][0][0] + 1
         # The group key is the index of the Miniprot hit being resolved. Looking
@@ -113,29 +146,44 @@ def resolve_single_overlaps(single_groups, miniprot_df, combined_dict, new_group
         mp_row = miniprot_df.loc[key]
         rv_len = mp_row['End'] - mp_row['Start'] + 1
         strand = mp_row.get('Strand', '+')
+        contig = mp_row.get('Contig', '')
         bakta_strand = value['case4_strands'][0] if value.get('case4_strands') else strand
+        bakta_contig = value['case4_contigs'][0] if value.get('case4_contigs') else contig
 
         locus_tag = value['Locus Tags'][0]
         n_overlaps = len(new_groups[locus_tag]['Locus Tags']) if locus_tag in new_groups else 0
 
+        # A much longer Bakta call is taken as a sign the alignment fragmented,
+        # but only an alignment that stops short of the end of its protein can
+        # have. One that reaches it, stop codon included, is the whole gene,
+        # and a longer call in its frame ends at the same stop and merely
+        # starts further upstream: plcD (Rv1755c) on CDC1551, 843 bp in H37Rv,
+        # 1545 bp in Bakta's call. A call in another frame is another gene and
+        # keeps its chance to win on length; the alignment, if it loses, comes
+        # back in recover_missing_genes, since nothing covers it in its frame.
+        complete = (bool(mp_row.get('Complete', False))
+                    and _same_frame(value['miniprot_df'][0], value['case4'][0], strand))
+
         if n_overlaps > 1:
-            new_coord, new_id = (*value['miniprot_df'][0], strand), value['Prot Id']
+            new_coord, new_id = (*value['miniprot_df'][0], strand, contig), value['Prot Id']
         elif rv_len > bakta_len:
-            new_coord, new_id = (*value['miniprot_df'][0], strand), value['Prot Id']
-        elif rv_len < bakta_len and abs(bakta_len - rv_len) > 550:
-            new_coord, new_id = (*value['case4'][0], bakta_strand), value['Locus Tags'][0]
+            new_coord, new_id = (*value['miniprot_df'][0], strand, contig), value['Prot Id']
+        elif rv_len < bakta_len and abs(bakta_len - rv_len) > 550 and not complete:
+            new_coord, new_id = (*value['case4'][0], bakta_strand, bakta_contig), value['Locus Tags'][0]
         else:
-            new_coord, new_id = (*value['miniprot_df'][0], strand), value['Prot Id']
+            new_coord, new_id = (*value['miniprot_df'][0], strand, contig), value['Prot Id']
 
-        _insert_with_dedup(combined_dict, new_coord, new_id)
+        _insert_with_dedup(combined_dict, new_coord, new_id, reference_ids=reference_ids)
 
 
-def resolve_multiple_overlaps(multiple_groups, miniprot_df, combined_dict):
+def resolve_multiple_overlaps(multiple_groups, miniprot_df, combined_dict, new_groups=None):
     """
     Resolve N-to-1 overlaps (multiple Bakta CDS vs one Miniprot hit).
     
     Pick the best overlapping Bakta CDS, then compare to Miniprot by length.
     """
+    reference_ids = set(miniprot_df['Prot Id'])
+    new_groups = new_groups or {}
     for key, value in multiple_groups.items():
         miniprot_range = value['miniprot_df'][0]
         prot_id = value['Prot Id']
@@ -143,46 +191,64 @@ def resolve_multiple_overlaps(multiple_groups, miniprot_df, combined_dict):
         # Strand of the hit being resolved, not of the protein's first placement
         # (see resolve_single_overlaps).
         strand = miniprot_df.at[key, 'Strand'] if key in miniprot_df.index else '+'
+        contig = value.get('contig', '')
         case4_strands = value.get('case4_strands') or [strand] * len(value['case4'])
+        case4_contigs = value.get('case4_contigs') or [contig] * len(value['case4'])
 
-        best = (None, None, -1, strand)
+        best = (None, None, -1, strand, contig)
         for i, r in enumerate(value['case4']):
             pct = get_overlap_percentage(r, miniprot_range)
             if pct > best[2]:
                 tag = value['Locus Tags'][i] if i < len(value['Locus Tags']) else "Unknown"
-                best = (r, tag, pct, case4_strands[i])
+                best = (r, tag, pct, case4_strands[i], case4_contigs[i])
 
         if not best[0]:
             continue
 
-        if _range_length(miniprot_range) >= _range_length(best[0]) or \
+        # As in resolve_single_overlaps: only a fragmentary alignment loses to a
+        # much longer Bakta call, and never to one that spans other reference
+        # genes as well, which is several genes read as one. Rv3022c and
+        # Rv3021c are one reading frame in CDC1551, and Rv3022c ends up here
+        # rather than with the single overlaps because it shares four bases
+        # with PE29.
+        complete = (bool(miniprot_df.at[key, 'Complete'])
+                    if key in miniprot_df.index and 'Complete' in miniprot_df.columns else False)
+        complete = complete and _same_frame(miniprot_range, best[0], strand)
+        spans_others = best[1] in new_groups and len(new_groups[best[1]]['Locus Tags']) > 1
+        if complete or spans_others or _range_length(miniprot_range) >= _range_length(best[0]) or \
            (_range_length(best[0]) - _range_length(miniprot_range)) < 500:
-            chosen_coord, chosen_id = (*miniprot_range, strand), prot_id
+            chosen_coord, chosen_id = (*miniprot_range, strand, contig), prot_id
         else:
-            chosen_coord, chosen_id = (*best[0], best[3]), best[1]
+            chosen_coord, chosen_id = (*best[0], best[3], best[4]), best[1]
 
-        _insert_with_dedup(combined_dict, chosen_coord, chosen_id, threshold=550)
+        _insert_with_dedup(combined_dict, chosen_coord, chosen_id, threshold=550,
+                           reference_ids=reference_ids)
 
 
-def _is_reference_gene(gene_id):
-    """Check if a gene ID looks like a reference gene (has embedded coordinates).
-    
-    Reference proteins from extract_ref_proteins.py always have the format
-    GENE_ID_START-END (e.g., Rv0001_1-1524, GENE_001_1234-5678).
-    This replaces the hardcoded "Rv" check to support organism-agnostic mode.
+def _is_reference_gene(gene_id, reference_ids=frozenset()):
+    """Whether a gene in the dict is a reference protein's placement.
+
+    This used to look for coordinates embedded in the ID, but clean_id strips
+    them before any ID reaches the dict (since the March 2026 refactor), so no
+    gene ever counted as a reference gene and any call of similar length could
+    displace one: Bakta's version of Rv1614, one codon longer, replaced it.
+    The callers pass the reference protein IDs instead.
     """
-    import re
-    return bool(re.search(r'_\d+-\d+$', str(gene_id)))
+    return gene_id in reference_ids
 
 
-def _insert_with_dedup(combined_dict, new_coord, new_id, threshold=550):
+def _insert_with_dedup(combined_dict, new_coord, new_id, threshold=550,
+                       reference_ids=frozenset()):
     """Insert a coordinate into the dict, resolving overlaps with existing entries.
     
-    Coordinates are (Start, End, Strand) 3-tuples. Overlap checks only
-    compare genes on the SAME strand — opposite-strand genes never conflict.
+    Coordinates are (Start, End, Strand, Contig). Overlap checks only compare
+    genes on the SAME strand of the same contig; anything else never conflicts.
+    A reference gene already in the dict only gives way to a call that is
+    longer by more than the threshold.
     """
     new_start, new_end = new_coord[0], new_coord[1]
     new_strand = new_coord[2] if len(new_coord) > 2 else '+'
+    new_contig = _contig(new_coord)
     coords_to_add = {new_coord: new_id}
     coords_to_remove = set()
 
@@ -191,8 +257,8 @@ def _insert_with_dedup(combined_dict, new_coord, new_id, threshold=550):
             continue
         exist_start, exist_end = exist_coord[0], exist_coord[1]
         exist_strand = exist_coord[2] if len(exist_coord) > 2 else '+'
-        # Only compare genes on the same strand
-        if new_strand != exist_strand:
+        # Only compare genes on the same strand of the same contig
+        if new_strand != exist_strand or new_contig != _contig(exist_coord):
             continue
         if new_end <= exist_start or new_start >= exist_end:
             continue  # no overlap
@@ -203,7 +269,7 @@ def _insert_with_dedup(combined_dict, new_coord, new_id, threshold=550):
             len_exist = _range_length((exist_start, exist_end))
             if len_new > len_exist and (len_new - len_exist) > threshold:
                 coords_to_remove.add(exist_coord)
-            elif (len_exist - len_new) < threshold and not _is_reference_gene(exist_id):
+            elif (len_exist - len_new) < threshold and not _is_reference_gene(exist_id, reference_ids):
                 coords_to_remove.add(exist_coord)
             else:
                 # The existing entry wins, so the new coordinate is discarded.

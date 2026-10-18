@@ -42,7 +42,7 @@ fi
 if [ ! -s "$SAMPLE/$SAMPLE.tsv" ]; then
     echo "==> Bakta (once)" >&2
     export TMPDIR=$(mktemp -d) MPLCONFIGDIR=$(mktemp -d)
-    bakta --db /data/bakta_db/db-light --skip-trna --threads "${THREADS:-4}" \
+    bakta --db /data/bakta_db/db-light --keep-contig-headers --skip-trna --threads "${THREADS:-4}" \
         --genus "Mycobacterium" --species "Mycobacterium tuberculosis" \
         --force --output "$SAMPLE" --prefix "$SAMPLE" --locus-tag "$SAMPLE" \
         --proteins "$REF/sequence.gb" --tmp-dir "$TMPDIR" "$SAMPLE.fasta" > bakta.log 2>&1
@@ -61,11 +61,13 @@ rm -rf "$WORK/run"
 mkdir -p "$WORK/run"
 cd "$WORK/run"
 python3 "$REPO/bin/classify_cases.py" -b "$IN/$SAMPLE/$SAMPLE.tsv" -p "$IN/$SAMPLE.paf" \
-    -bb "$IN/$SAMPLE-badbakta.paf" -c "$IN/$SAMPLE-ref.paf" > classify.log 2>&1
+    -bb "$IN/$SAMPLE-badbakta.paf" -c "$IN/$SAMPLE-ref.paf" \
+    --genome "$IN/$SAMPLE.fasta" --ref-proteome "$REF/aa_H37Rv.translated.fas" > classify.log 2>&1
 python3 "$REPO/bin/check_cds.py" "$IN/$SAMPLE.fasta" "${SAMPLE}_corrected.tsv" \
     --ref-proteome "$REF/aa_H37Rv.translated.fas" > check.log 2>&1
 python3 "$REPO/bin/deduplicate_rvs.py" "$SAMPLE.AMAP.tsv" --faa "$SAMPLE.AMAP.faa" \
-    --fna "$SAMPLE.AMAP.fna" --bakta "$IN/$SAMPLE/$SAMPLE.tsv" > dedup.log 2>&1
+    --fna "$SAMPLE.AMAP.fna" --bakta "$IN/$SAMPLE/$SAMPLE.tsv" \
+    --ref-proteome "$REF/aa_H37Rv.translated.fas" > dedup.log 2>&1
 
 echo "==> score against the GenBank record" >&2
 python3 "$REPO/tests/selftest/score_selftest.py" "$REF/sequence.gb" \

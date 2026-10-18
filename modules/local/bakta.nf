@@ -34,8 +34,12 @@ process BAKTA_ANNOTATOR {
     export MPLCONFIGDIR="\$TMPDIR"
     trap "rm -rf \$TMPDIR" EXIT
 
+    # --keep-contig-headers: by default Bakta renames every sequence to
+    # contig_N, so its table no longer names the contigs the FASTA and the
+    # miniprot alignments do, and genes cannot be matched to their contig.
     bakta \\
         --db "${params.bakta_db}" \\
+        --keep-contig-headers \\
         --skip-trna \\
         --threads ${task.cpus} \\
         --genus "${genus}" \\

@@ -9,6 +9,7 @@ process TYPE_CASES {
 
     input:
     tuple val(sampleId), path(miniprot_paf), path(badbakta_paf), path(h37rv_paf), path(fasta), path(bakta_tsv), path(bakta_faa)
+    path ref_proteome      // the proteome miniprot aligned, to place exactly what it could not
 
     output:
     tuple val(sampleId), path("${sampleId}_corrected.tsv"), emit: for_fix
@@ -25,6 +26,8 @@ process TYPE_CASES {
         -p ${miniprot_paf} \\
         -bb ${badbakta_paf} \\
         -c ${h37rv_paf} \\
+        --genome ${fasta} \\
+        --ref-proteome ${ref_proteome} \\
     || {
         echo "ERROR: Classification failed for sample ${sampleId}" >&2
         echo "Input sizes: bakta=\$(wc -l < ${bakta_tsv})L miniprot=\$(wc -l < ${miniprot_paf})L" >&2
@@ -54,11 +57,12 @@ process FIX_CDS {
     python3 ${projectDir}/bin/check_cds.py ${fasta} ${corrected_tsv} \\
         --ref-proteome ${ref_proteome}
 
-    # Deduplicate genes with the same Rv assignment
+    # Deduplicate genes with the same Rv assignment, keeping real copies
     python3 ${projectDir}/bin/deduplicate_rvs.py \\
         *.AMAP.tsv \\
         --faa *.AMAP.faa \\
         --fna *.AMAP.fna \\
-        --bakta ${bakta_tsv}
+        --bakta ${bakta_tsv} \\
+        --ref-proteome ${ref_proteome}
     """
 }

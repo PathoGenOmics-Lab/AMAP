@@ -42,7 +42,7 @@ N_ANCHORS = 5
 # its locus. Genes that merely overlap at their ends stay well below it.
 MIN_COVER = 0.5
 
-_HELPER_COLS = ('Ref Start', 'Ref End', 'Contig')
+_HELPER_COLS = ('Ref Start', 'Ref End')
 
 
 def _midpoint(start, end):

@@ -6,7 +6,7 @@ Unit tests for the AMAP classification module.
 Tests cover:
 - ID cleaning and formatting (ids.py)
 - Overlap calculations (overlaps.py)
-- Coordinate reconciliation (reconciliation.py)
+- Recovery and deduplication (reconciliation.py)
 - Case classification (cases.py)
 - I/O functions (io.py)
 """
@@ -25,9 +25,6 @@ from classify.ids import clean_id, format_cluster_id
 from classify.overlaps import (
     get_overlap_percentage, get_subset_overlap_percentage,
     _range_length, _insert_with_dedup, _is_reference_gene
-)
-from classify.reconciliation import (
-    parse_ref_coords_from_id, _extract_gene_name, _gene_names_match
 )
 
 
@@ -146,19 +143,20 @@ class TestSubsetOverlap:
 
 
 class TestIsReferenceGene:
-    """Tests for _is_reference_gene — detects embedded coordinates."""
-    
-    def test_rv_with_coords(self):
-        assert _is_reference_gene('Rv0001_1-1524') is True
-    
-    def test_locus_tag_no_coords(self):
-        assert _is_reference_gene('ABCDE_00042') is False
-    
-    def test_pe_pgrs_with_coords(self):
-        assert _is_reference_gene('PE_PGRS1_703830-704057') is True
-    
-    def test_empty_string(self):
-        assert _is_reference_gene('') is False
+    """A gene in the dict is a reference gene when its ID is a reference protein's."""
+
+    def test_reference_protein(self):
+        assert _is_reference_gene('Rv0001', {'Rv0001', 'Rv0002'}) is True
+
+    def test_locus_tag(self):
+        assert _is_reference_gene('ABCDE_00042', {'Rv0001'}) is False
+
+    def test_pe_pgrs(self):
+        assert _is_reference_gene('PE_PGRS1', {'PE_PGRS1'}) is True
+
+    def test_nothing_is_one_without_the_reference_ids(self):
+        """Coordinates in an ID are no sign: clean_id has removed them by then."""
+        assert _is_reference_gene('Rv0001_1-1524') is False
 
 
 class TestInsertWithDedup:
@@ -198,129 +196,29 @@ class TestInsertWithDedup:
         """
         d = {
             (100, 900, '+'): 'baktaGene_short',
-            (150, 950, '+'): 'Rv0001_150-950',
+            (150, 950, '+'): 'Rv0001',
         }
-        _insert_with_dedup(d, (120, 920, '+'), 'newGene')
+        _insert_with_dedup(d, (120, 920, '+'), 'newGene', reference_ids={'Rv0001'})
         assert (120, 920, '+') not in d          # candidate rejected
-        assert set(d.values()) == {'baktaGene_short', 'Rv0001_150-950'}
+        assert set(d.values()) == {'baktaGene_short', 'Rv0001'}
+
+    def test_similar_call_does_not_displace_a_reference_gene(self):
+        """Bakta's version of Rv1614, one codon longer, replaced the reference
+        gene: telling reference genes apart relied on coordinates in the ID,
+        which clean_id had already removed."""
+        d = {(1000, 2500, '+', 'c1'): 'Rv1614'}
+        _insert_with_dedup(d, (997, 2500, '+', 'c1'), 'S1_01690', reference_ids={'Rv1614'})
+        assert d == {(1000, 2500, '+', 'c1'): 'Rv1614'}
+
+    def test_a_much_longer_call_still_displaces_a_reference_gene(self):
+        d = {(1000, 2400, '+', 'c1'): 'Rv0001'}
+        _insert_with_dedup(d, (449, 2400, '+', 'c1'), 'S1_00001', reference_ids={'Rv0001'})
+        assert d == {(449, 2400, '+', 'c1'): 'S1_00001'}
 
 
 # =============================================================================
 # RECONCILIATION MODULE
 # =============================================================================
-
-class TestParseRefCoords:
-    """Tests for parse_ref_coords_from_id."""
-    
-    def test_simple_coords(self):
-        start, end = parse_ref_coords_from_id('Rv0001_1-1524')
-        assert start == 1
-        assert end == 1524
-    
-    def test_large_coords(self):
-        start, end = parse_ref_coords_from_id('Rv0609A_703830-704057')
-        assert start == 703830
-        assert end == 704057
-    
-    def test_no_coords(self):
-        result = parse_ref_coords_from_id('Rv0001')
-        assert result == (None, None)
-    
-    def test_prefixed_coords(self):
-        start, end = parse_ref_coords_from_id('L8_G26689_Rv0001_1-1524')
-        assert start == 1
-        assert end == 1524
-
-
-class TestExtractGeneName:
-    """Tests for _extract_gene_name."""
-    
-    def test_with_coords(self):
-        assert _extract_gene_name('Rv0001_1-1524') == 'Rv0001'
-    
-    def test_without_coords(self):
-        assert _extract_gene_name('Rv0001') == 'Rv0001'
-    
-    def test_prefixed(self):
-        # _extract_gene_name uses clean_id which strips coords, then takes last part
-        result = _extract_gene_name('L8_G26689_Rv0001')
-        assert 'Rv0001' in result
-
-
-class TestGeneNamesMatch:
-    """Tests for _gene_names_match — prevents substring false matches."""
-    
-    def test_exact_match(self):
-        assert _gene_names_match('Rv3508', 'Rv3508') is True
-    
-    def test_substring_no_match(self):
-        """Rv3508 should NOT match Rv3508c."""
-        assert _gene_names_match('Rv3508', 'Rv3508c') is False
-    
-    def test_rv1_rv10_no_match(self):
-        """Rv1 should NOT match Rv10."""
-        assert _gene_names_match('Rv1', 'Rv10') is False
-    
-    def test_with_coords(self):
-        assert _gene_names_match('Rv0001_1-1524', 'Rv0001') is True
-    
-    def test_completely_different(self):
-        assert _gene_names_match('Rv0001', 'Rv9999') is False
-
-
-class TestReconcileCoordinates:
-    """Behaviour locked in around the gene-name indexed lookups.
-
-    reconcile_coordinates used to scan every protein and every reference for
-    each gene; it now indexes both by gene name up front. These cases pin the
-    semantics that indexing must preserve.
-    """
-
-    @staticmethod
-    def _mp(rows):
-        return pd.DataFrame(rows, columns=['Prot Id', 'Start', 'End', 'Strand',
-                                           'Match Nt', 'Num nt'])
-
-    def test_replaces_with_reference_coordinates(self):
-        from classify.reconciliation import reconcile_coordinates
-        combined = {(1000, 1900, '+'): 'Rv0001_1010-1910'}
-        mp = self._mp([['Rv0001_1010-1910', 1010, 1910, '+', 900, 900]])
-        reconcile_coordinates(combined, mp)
-        assert combined == {(1010, 1910, '+'): 'Rv0001_1010-1910'}
-
-    def test_does_not_reconcile_similar_names(self):
-        """Rv3508 must not be pulled onto Rv3508c's coordinates."""
-        from classify.reconciliation import reconcile_coordinates
-        combined = {(1000, 1900, '+'): 'Rv3508_1000-1900'}
-        mp = self._mp([['Rv3508c_1010-1910', 1010, 1910, '+', 900, 900],
-                       ['Rv3508_1000-1900', 1000, 1900, '+', 900, 900]])
-        reconcile_coordinates(combined, mp)
-        assert combined == {(1000, 1900, '+'): 'Rv3508_1000-1900'}
-
-    def test_multi_copy_element_survives_paralog_check(self):
-        """>2 miniprot hits means placement away from the embedded coords is expected."""
-        from classify.reconciliation import reconcile_coordinates
-        combined = {(500000, 500600, '+'): 'PE_PGRS1_1000-1600'}
-        mp = self._mp([['PE_PGRS1_1000-1600', 1000, 1600, '+', 600, 600],
-                       ['PE_PGRS1_1000-1600', 500000, 500600, '+', 600, 600],
-                       ['PE_PGRS1_1000-1600', 900000, 900600, '+', 600, 600]])
-        reconcile_coordinates(combined, mp)
-        assert (500000, 500600, '+') in combined
-
-    def test_bakta_validates_position(self):
-        """A Bakta call at the exact coordinates rescues a mismatched placement."""
-        from classify.reconciliation import reconcile_coordinates
-        combined = {(500000, 500600, '+'): 'Rv0001_1000-1600'}
-        mp = self._mp([['Rv0001_1000-1600', 500000, 500600, '+', 600, 600]])
-        bk = pd.DataFrame([['L4_G1_00001', 500000, 500600, '+', 601]],
-                          columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt'])
-        without_bakta = dict(combined)
-        reconcile_coordinates(without_bakta, mp, None)
-        with_bakta = dict(combined)
-        reconcile_coordinates(with_bakta, mp, bk)
-        assert (500000, 500600, '+') not in without_bakta
-        assert (500000, 500600, '+') in with_bakta
-
 
 class TestDeduplicate:
     """deduplicate must never drop a gene entirely."""
@@ -344,6 +242,52 @@ class TestDeduplicate:
         assert combined == before
 
 
+class TestRecoverMissingGenes:
+    """A reference protein goes back in only when no gene accounts for it."""
+
+    @staticmethod
+    def _mp(rows):
+        return pd.DataFrame(rows, columns=['Prot Id', 'Start', 'End', 'Strand', 'Match Nt',
+                                           'Num nt', 'Contig'])
+
+    def test_placement_a_codon_off_a_call_is_not_added_again(self):
+        """Genes matched in case 2 and 3 are stored under Bakta locus tags, so
+        every protein looked missing by name, and only an exact-coordinate
+        check kept it out: a placement a codon away went in as a second gene."""
+        from classify.reconciliation import recover_missing_genes
+        combined = {(1000, 1900, '+', 'c1'): 'S1_00001'}
+        recover_missing_genes(combined, self._mp([['Rv0001', 1003, 1900, '+', 897, 897, 'c1']]))
+        assert combined == {(1000, 1900, '+', 'c1'): 'S1_00001'}
+
+    def test_a_gene_in_another_frame_accounts_for_nothing(self):
+        """Genes that really overlap sit in different frames."""
+        from classify.reconciliation import recover_missing_genes
+        combined = {(1000, 1900, '+', 'c1'): 'S1_00001'}
+        recover_missing_genes(combined, self._mp([['Rv0002', 1001, 1600, '+', 600, 600, 'c1']]))
+        assert combined[(1001, 1600, '+', 'c1')] == 'Rv0002'
+
+    def test_another_reference_gene_in_the_same_frame_accounts_for_nothing(self):
+        """E. coli nests hokC (b4412) inside mokC (b0018), in one frame."""
+        from classify.reconciliation import recover_missing_genes
+        mp = self._mp([['b0018', 16751, 16960, '-', 210, 210, 'c1'],
+                       ['b4412', 16751, 16903, '-', 153, 153, 'c1']])
+        combined = {(16751, 16960, '-', 'c1'): 'b0018'}
+        recover_missing_genes(combined, mp)
+        assert combined[(16751, 16903, '-', 'c1')] == 'b4412'
+
+        # The same with mokC under the locus tag of the Bakta call that matched it.
+        combined = {(16751, 16960, '-', 'c1'): 'S1_00018'}
+        recover_missing_genes(combined, mp)
+        assert combined[(16751, 16903, '-', 'c1')] == 'b4412'
+
+    def test_a_missing_protein_goes_in_once_where_it_fits_best(self):
+        from classify.reconciliation import recover_missing_genes
+        combined = {}
+        recover_missing_genes(combined, self._mp([['Rv0003', 5000, 5900, '+', 850, 900, 'c1'],
+                                                  ['Rv0003', 9000, 9900, '+', 900, 900, 'c1']]))
+        assert combined == {(9000, 9900, '+', 'c1'): 'Rv0003'}
+
+
 # =============================================================================
 # INTEGRATION-STYLE TESTS
 # =============================================================================
@@ -362,8 +306,17 @@ class TestCoordsDict:
         })
         result = create_coords_dict(df, 'Locus Tag')
         assert len(result) == 2  # Both genes preserved
-        assert result[(100, 200, '+')] == 'gene_fwd'
-        assert result[(100, 200, '-')] == 'gene_rev'
+        assert result[(100, 200, '+', '')] == 'gene_fwd'
+        assert result[(100, 200, '-', '')] == 'gene_rev'
+
+    def test_contig_aware_keys(self):
+        """Every contig of a draft starts at 1: the same coordinates on two
+        contigs are two genes."""
+        from classify_cases import create_coords_dict
+        df = pd.DataFrame({'Start': [100, 100], 'End': [200, 200], 'Strand': ['+', '+'],
+                           'Contig': ['c1', 'c2'], 'Locus Tag': ['g1', 'g2']})
+        result = create_coords_dict(df, 'Locus Tag')
+        assert result == {(100, 200, '+', 'c1'): 'g1', (100, 200, '+', 'c2'): 'g2'}
     
     def test_duplicate_coords_first_wins(self):
         from classify_cases import create_coords_dict
@@ -375,7 +328,7 @@ class TestCoordsDict:
         })
         result = create_coords_dict(df, 'Locus Tag')
         assert len(result) == 1
-        assert result[(100, 200, '+')] == 'first'
+        assert result[(100, 200, '+', '')] == 'first'
 
 
 # =============================================================================
@@ -831,31 +784,118 @@ class TestCheckCds:
 class TestDeduplicateRvs:
     """Tests for deduplicate_rvs.py."""
 
+    @staticmethod
+    def _gene(id_, start, end, rvs, strand='+', pseudo='no', contig='c1'):
+        return {'id': id_, 'strand': strand, 'start': str(start), 'end': str(end),
+                'rvs': rvs, 'pseudogene': pseudo, 'contig': contig}
+
     def test_tie_goes_to_the_copy_bakta_also_called(self):
-        """E. coli K-12 b2635 aligns to its own locus and to a prophage copy
-        at 266553, both 237 bp. The tie went to whichever came first in the
-        genome; the copy Bakta called at the same coordinates now wins."""
+        """Between copies that tie, one Bakta called at the same coordinates
+        wins: it used to be whichever came first in the genome."""
         from deduplicate_rvs import deduplicate
-        genes = [
-            {'id': 'S1_b2635', 'strand': '-', 'start': '266553', 'end': '266789',
-             'rvs': 'b2635', 'pseudogene': 'no'},
-            {'id': 'S1_02737', 'strand': '+', 'start': '2770445', 'end': '2770681',
-             'rvs': 'b2635', 'pseudogene': 'no'},
-        ]
-        kept, _ = deduplicate(genes, {(2770445, 2770681, '+')})
+        genes = [self._gene('S1_g1', 266553, 266789, 'g1', '-', pseudo='yes'),
+                 self._gene('S1_02737', 2770445, 2770681, 'g1', pseudo='yes')]
+        kept, _ = deduplicate(genes, {(2770445, 2770681, '+', 'c1')})
         assert [g['id'] for g in kept] == ['S1_02737']
 
     def test_bakta_support_only_breaks_ties(self):
         """A longer copy still wins over a Bakta-confirmed shorter one."""
         from deduplicate_rvs import deduplicate
-        genes = [
-            {'id': 'S1_a', 'strand': '+', 'start': '100', 'end': '399',
-             'rvs': 'g1', 'pseudogene': 'no'},
-            {'id': 'S1_b', 'strand': '+', 'start': '1000', 'end': '1201',
-             'rvs': 'g1', 'pseudogene': 'no'},
-        ]
-        kept, _ = deduplicate(genes, {(1000, 1201, '+')})
+        genes = [self._gene('S1_a', 100, 399, 'g1'), self._gene('S1_b', 1000, 1201, 'g1')]
+        kept, _ = deduplicate(genes, {(1000, 1201, '+', 'c1')})
         assert [g['id'] for g in kept] == ['S1_a']
+
+    def test_further_copies_of_a_gene_are_kept(self):
+        """E. coli Sakai carries K-12 prophage genes several times over, and
+        every copy but one was deleted: genes missing from the annotation and
+        from the duplication analysis, which is about exactly these."""
+        from deduplicate_rvs import deduplicate
+        genes = [self._gene('Sakai_01184', 1184948, 1185481, 'b1554', '-'),
+                 self._gene('Sakai_01273', 1273009, 1273542, 'b1554'),
+                 self._gene('Sakai_b1554', 1558513, 1559046, 'b1554')]
+        kept, removed = deduplicate(genes)
+        assert len(kept) == 3 and not removed
+
+    def test_pseudogenes_and_pieces_are_not_copies(self):
+        """A further copy must be intact, nearly as long as the best one, and
+        clear of the copies kept; anything else is a remnant of the gene."""
+        from deduplicate_rvs import deduplicate
+        genes = [self._gene('S1_best', 1000, 1899, 'g1'),
+                 self._gene('S1_pseudo', 5000, 5899, 'g1', pseudo='yes'),
+                 self._gene('S1_piece', 9000, 9599, 'g1'),
+                 self._gene('S1_overlapping', 1300, 2199, 'g1'),
+                 self._gene('S1_copy', 20000, 20869, 'g1')]
+        kept, _ = deduplicate(genes)
+        assert [g['id'] for g in kept] == ['S1_best', 'S1_copy']
+
+    def test_a_copy_on_another_reference_gene_is_not_kept(self):
+        """In M. bovis an intact copy of Rv2177c lies inside Rv2424c, a
+        pseudogene at its own locus."""
+        from deduplicate_rvs import deduplicate
+        genes = [self._gene('S1_02275', 2422727, 2423392, 'Rv2177c', '-'),
+                 self._gene('S1_Rv2177c', 2693372, 2694037, 'Rv2177c', '-'),
+                 self._gene('S1_Rv2424c', 2693372, 2694371, 'Rv2424c', '-', pseudo='yes')]
+        kept, _ = deduplicate(genes)
+        assert [g['id'] for g in kept] == ['S1_02275', 'S1_Rv2424c']
+
+        # A gene on the other strand is another locus.
+        genes[2]['strand'] = '+'
+        kept, _ = deduplicate(genes)
+        assert len(kept) == 3
+
+    def test_copies_on_other_contigs_do_not_overlap(self):
+        from deduplicate_rvs import deduplicate
+        genes = [self._gene('S1_g1', 1000, 1899, 'g1', contig='c1'),
+                 self._gene('S1_g1', 1000, 1899, 'g1', contig='c2')]
+        kept, _ = deduplicate(genes)
+        assert len(kept) == 2
+
+    def test_synteny_breaks_the_remaining_ties(self):
+        """In CDC1551 an 81-residue copy of Rv3022c also opens another PPE
+        gene, 2.4 kb before its own locus, and that one came first."""
+        from deduplicate_rvs import deduplicate
+        genes = [self._gene('S1_Rv3022c', 3373737, 3373979, 'Rv3022c', '-', pseudo='yes'),
+                 self._gene('S1_Rv3022c', 3376177, 3376419, 'Rv3022c', '-', pseudo='yes')]
+        kept, _ = deduplicate(genes, distance={0: 2440.0, 1: 0.0})
+        assert [g['start'] for g in kept] == ['3376177']
+
+    def test_synteny_distance_follows_the_neighbours(self):
+        """The sample is 5 kb ahead of the reference here; the copy that sits
+        5 kb after the protein's reference position is the syntenic one."""
+        from deduplicate_rvs import synteny_distance
+        ref = {f'g{i}': (i * 1000, i * 1000 + 899) for i in range(1, 11)}
+        genes = [self._gene(f'S1_g{i}', i * 1000 + 5000, i * 1000 + 5899, f'g{i}')
+                 for i in range(1, 11) if i != 5]
+        genes += [self._gene('S1_g5', 5000 + 5000, 5899 + 5000, 'g5'),
+                  self._gene('S1_g5', 5000 + 40000, 5899 + 40000, 'g5')]
+        dist = synteny_distance(genes, ref)
+        assert dist[len(genes) - 2] < 100 < 30000 < dist[len(genes) - 1]
+
+    def test_copies_get_ids_of_their_own(self):
+        """Copies only miniprot placed are all named after their protein, and
+        the master table keeps one row per id."""
+        from deduplicate_rvs import unique_ids
+        genes = [self._gene('S1_b4570', 1, 393, 'b4570'), self._gene('S1_b4570_2', 900, 1292, 'x'),
+                 self._gene('S1_b4570', 2000, 2392, 'b4570'), self._gene('S1_b4570', 3000, 3392, 'b4570')]
+        assert unique_ids(genes) == {2: 'S1_b4570_3', 3: 'S1_b4570_4'}
+
+    def test_table_and_fasta_keep_the_same_ids(self):
+        import subprocess
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            tsv, faa = os.path.join(d, 's.AMAP.tsv'), os.path.join(d, 's.AMAP.faa')
+            with open(tsv, 'w') as f:
+                f.write("id\tstrand\tstart\tend\trvs\tpseudogene\tcontig\n")
+                f.write("S1_b4570\t+\t1\t393\tb4570\tno\tc1\n")
+                f.write("S1_b4570\t-\t2000\t2392\tb4570\tno\tc1\n")
+            with open(faa, 'w') as f:
+                f.write(">S1_b4570;+;0-393\nMKT\n>S1_b4570;-;1999-2392\nMKT\n")
+            script = os.path.join(os.path.dirname(__file__), '..', 'bin', 'deduplicate_rvs.py')
+            subprocess.run([sys.executable, script, tsv, '--faa', faa], check=True, capture_output=True)
+            table = pd.read_csv(tsv, sep='\t')
+            with open(faa) as f:
+                headers = [l[1:].split(';')[0] for l in f if l.startswith('>')]
+        assert list(table['id']) == ['S1_b4570', 'S1_b4570_2'] == headers
 
     def test_removing_one_copy_keeps_the_others(self):
         """A multi-copy gene has one record per placement, all sharing an id.
@@ -940,6 +980,27 @@ class TestReadPaf:
         assert len(df) == 2
         assert list(df['Prot Id']) == ['Rv0001_1-1524', 'Rv0002_2052-3260']
         assert list(df['Start']) == [0, 2051]
+
+    def test_complete_means_the_whole_protein_and_its_stop(self):
+        """plcD aligns end to end, its final '*' on a stop codon (st:i:1).
+        Rv3022c, which the reference annotates without a stop, aligns end to end
+        with none (st:i:0), and Rv0002 misses its first 20 residues. Rows
+        without fs:i carry st:i one column earlier."""
+        from classify.io import read_miniprot
+        path = self._write(
+            "Rv1755c_1986854-1987696\t281\t0\t281\t-\tchr\t9000\t100\t943\t843\t843\t0"
+            "\tAS:i:1491\tms:i:1491\tnp:i:281\tfs:i:0\tst:i:1\tcg:Z:281M\n"
+            "Rv3022c_3380440-3380682\t81\t0\t81\t-\tchr\t9000\t2000\t2243\t243\t243\t0"
+            "\tAS:i:411\tms:i:411\tnp:i:81\tfs:i:0\tst:i:0\tcg:Z:81M\n"
+            "Rv0001_1-903\t301\t0\t301\t+\tchr\t9000\t3000\t3903\t903\t903\t0"
+            "\tAS:i:1500\tms:i:1500\tnp:i:301\tst:i:1\tcg:Z:301M\n"
+            "Rv0002_2052-3260\t403\t20\t403\t+\tchr\t9000\t5060\t6209\t1149\t1149\t0"
+            "\tAS:i:1000\tms:i:1000\tnp:i:383\tst:i:1\tcg:Z:383M\n"
+        )
+        df = read_miniprot(path)
+        os.unlink(path)
+        assert dict(zip(df['Prot Id'], df['Complete'])) == {
+            'Rv1755c': True, 'Rv3022c': False, 'Rv0001': True, 'Rv0002': False}
 
     def test_empty_paf(self):
         from classify.io import _read_paf
@@ -1136,7 +1197,7 @@ class TestParalogPlacements:
         from classify.synteny import drop_paralog_placements
         out = drop_paralog_placements(self._frame())
         assert list(out.columns) == ['Prot Id', 'Prot len', 'Strand', 'Start', 'End',
-                                     'Match Nt', 'Num nt']
+                                     'Match Nt', 'Num nt', 'Contig']
 
     def test_paralog_on_another_genes_locus_is_dropped(self):
         """Rv1945 also lands inside Rv1148c; that copy is Rv1148c's locus."""
@@ -1329,7 +1390,7 @@ class TestStrandOfResolvedHit:
                                          case4, mp)
         combined = {}
         resolve_single_overlaps(groups, mp, combined, {v['Prot Id']: v for v in b_groups.values()})
-        assert combined == {(2_030_347, 2_030_643, '+'): 'Rv1792'}
+        assert combined == {(2_030_347, 2_030_643, '+', ''): 'Rv1792'}
 
     def test_bakta_coordinates_keep_baktas_strand(self):
         """When the Bakta call wins, it keeps the strand Bakta gave it."""
@@ -1338,10 +1399,260 @@ class TestStrandOfResolvedHit:
         mp = pd.DataFrame([['X', 100, '-', 10_000, 10_300, 300, 300]],
                           columns=['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt'])
         # Much longer than the hit, so the Bakta coordinates are chosen.
-        case4 = pd.DataFrame([['S1_00001', 9_000, 10_300, '+', 1_301]],
+        case4 = pd.DataFrame([['S1_00001', 9_000, 10_300, '-', 1_301]],
                              columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt'])
         groups = create_overlap_groups(build_overlap_tree(mp, case4, 'Prot Id', 'Locus Tag'),
                                        case4, mp)
         combined = {}
         resolve_single_overlaps(groups, mp, combined, {})
-        assert combined == {(9_000, 10_300, '+'): 'S1_00001'}
+        assert combined == {(9_000, 10_300, '-', ''): 'S1_00001'}
+
+    def test_opposite_strands_do_not_compete(self):
+        """Case 4 is defined strand by strand; the grouping that resolves it was
+        not, and about 8% of its groups mixed an alignment on one strand with a
+        call on the other."""
+        from classify.overlaps import build_overlap_tree
+        mp = pd.DataFrame([['X', 100, '-', 10_000, 10_300, 300, 300]],
+                          columns=['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt'])
+        case4 = pd.DataFrame([['S1_00001', 9_000, 10_300, '+', 1_301]],
+                             columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt'])
+        assert build_overlap_tree(mp, case4, 'Prot Id', 'Locus Tag') == {}
+
+
+class TestAlignmentQuality:
+    """Case 4 weighs how much of its protein an alignment covers, not only how
+    long it is next to Bakta's call."""
+
+    @staticmethod
+    def _resolve(mp, case4):
+        from classify.overlaps import (build_overlap_tree, create_overlap_groups,
+                                       resolve_single_overlaps, resolve_multiple_overlaps)
+        overlaps = build_overlap_tree(mp, case4, 'Prot Id', 'Locus Tag')
+        single = create_overlap_groups({k: v for k, v in overlaps.items() if v['count'] == 1},
+                                       case4, mp)
+        multiple = create_overlap_groups({k: v for k, v in overlaps.items() if v['count'] > 1},
+                                         case4, mp)
+        b_groups = create_overlap_groups(build_overlap_tree(case4, mp, 'Locus Tag', 'Prot Id'),
+                                         case4, mp)
+        new_groups = {v['Prot Id']: v for v in b_groups.values()}
+        combined = {}
+        resolve_single_overlaps(single, mp, combined, new_groups)
+        resolve_multiple_overlaps(multiple, mp, combined, new_groups)
+        return combined
+
+    @staticmethod
+    def _mp(rows):
+        return pd.DataFrame(rows, columns=['Prot Id', 'Prot len', 'Strand', 'Start', 'End',
+                                           'Match Nt', 'Num nt', 'Complete'])
+
+    @staticmethod
+    def _case4(rows):
+        return pd.DataFrame(rows, columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt'])
+
+    def test_complete_alignment_beats_a_much_longer_call(self):
+        """plcD on CDC1551: Bakta's call ends at the same stop and starts
+        702 bp further upstream, and it replaced the gene."""
+        mp = self._mp([['Rv1755c', 281, '-', 1_977_868, 1_978_710, 843, 843, True]])
+        case4 = self._case4([['S1_01840', 1_977_868, 1_979_412, '-', 1_545]])
+        assert self._resolve(mp, case4) == {(1_977_868, 1_978_710, '-', ''): 'Rv1755c'}
+
+    def test_a_call_in_another_frame_is_another_gene(self):
+        """K-12 ybfO ends four bases into ybfC, in another frame. Being
+        complete must not cost the call its place; ybfC, losing on length,
+        comes back as a gene nothing covers in its frame."""
+        from classify.reconciliation import recover_missing_genes
+        mp = self._mp([['b0704', 190, '+', 735_650, 736_219, 570, 570, True]])
+        case4 = self._case4([['S1_00703', 734_220, 735_653, '+', 1_434]])
+        combined = self._resolve(mp, case4)
+        assert combined == {(734_220, 735_653, '+', ''): 'S1_00703'}
+        recover_missing_genes(combined, mp)
+        assert combined[(735_650, 736_219, '+', '')] == 'b0704'
+
+        # The same among several calls.
+        case4 = self._case4([['S1_00703', 734_220, 735_653, '+', 1_434],
+                             ['S1_00705', 736_216, 739_000, '+', 2_785]])
+        assert self._resolve(mp, case4) == {(734_220, 735_653, '+', ''): 'S1_00703'}
+
+    def test_partial_alignment_still_gives_way(self):
+        mp = self._mp([['Rv1755c', 281, '-', 1_977_868, 1_978_710, 843, 843, False]])
+        case4 = self._case4([['S1_01840', 1_977_868, 1_979_412, '-', 1_545]])
+        assert self._resolve(mp, case4) == {(1_977_868, 1_979_412, '-', ''): 'S1_01840'}
+
+    def test_complete_alignment_also_wins_among_several_calls(self):
+        """The same alignment touching a second call by its last four bases
+        is resolved with the multiple overlaps, under the same rule."""
+        mp = self._mp([['Rv1755c', 281, '-', 1_977_868, 1_978_710, 843, 843, True]])
+        case4 = self._case4([['S1_01840', 1_977_868, 1_979_412, '-', 1_545],
+                             ['S1_01839', 1_976_870, 1_977_871, '-', 1_002]])
+        assert self._resolve(mp, case4) == {(1_977_868, 1_978_710, '-', ''): 'Rv1755c'}
+
+    def test_call_spanning_several_reference_genes_does_not_win(self):
+        """Rv3022c and Rv3021c are one reading frame in CDC1551, called as one
+        1308 bp gene. Rv3022c shares four bases with PE29, so it is resolved
+        with the multiple overlaps, where the call won on length and then lost
+        to Rv3021c, and Rv3022c was gone."""
+        mp = self._mp([['Rv3021c', 359, '-', 3_375_112, 3_376_176, 1_050, 1_065, False],
+                       ['Rv3022c', 81, '-', 3_376_177, 3_376_419, 243, 243, False],
+                       ['Rv3022A', 105, '-', 3_376_416, 3_376_730, 315, 315, True]])
+        case4 = self._case4([['S1_03152', 3_375_112, 3_376_419, '-', 1_308],
+                             ['S1_03153', 3_376_416, 3_376_733, '-', 318]])
+        assert self._resolve(mp, case4) == {
+            (3_375_112, 3_376_176, '-', ''): 'Rv3021c',
+            (3_376_177, 3_376_419, '-', ''): 'Rv3022c',
+            (3_376_416, 3_376_730, '-', ''): 'Rv3022A'}
+
+
+class TestExactPlacements:
+    """miniprot places none of K-12's 33 smallest proteins (8 to 29 residues);
+    the ones the genome encodes exactly are found by looking for them."""
+
+    # MKLVWFYH from a GTG start, then a stop: 8 residues, 27 bp.
+    ORF = "GTG" "AAACTGGTTTGGTTTTATCAT" "TAA"
+    FILL = "GCA" * 10
+
+    @staticmethod
+    def _revcomp(s):
+        return s[::-1].translate(str.maketrans("ACGT", "TGCA"))
+
+    def _frames(self, d, genome):
+        from classify.exact import _six_frames
+        path = os.path.join(d, 'g.fasta')
+        with open(path, 'w') as f:
+            f.write(">chr\n" + genome + "\n")
+        return _six_frames(path)
+
+    def test_found_on_either_strand(self):
+        from classify.exact import find_exact
+        genome = self.FILL + self.ORF + self.FILL + self._revcomp(self.ORF) + self.FILL
+        with tempfile.TemporaryDirectory() as d:
+            hits = list(find_exact('MKLVWFYH*', self._frames(d, genome)))
+        assert hits == [('chr', 31, 57, '+'), ('chr', 88, 114, '-')]
+
+    def test_needs_a_start_codon_and_a_stop(self):
+        from classify.exact import find_exact
+        no_start = "GCT" + self.ORF[3:]
+        no_stop = self.ORF[:-3] + "TGG"
+        with tempfile.TemporaryDirectory() as d:
+            assert list(find_exact('MKLVWFYH*', self._frames(d, self.FILL + no_start + self.FILL))) == []
+            assert list(find_exact('MKLVWFYH*', self._frames(d, self.FILL + no_stop + self.FILL))) == []
+
+    def test_an_unplaced_protein_gets_a_complete_placement(self):
+        from classify.exact import place_unplaced_proteins
+        cols = ['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt',
+                'Contig', 'Complete', 'Ref Start', 'Ref End']
+        mp = pd.DataFrame([['gS', 9, '*', 1, 0, 0, 0, '*', False, 1000.0, 1026.0],
+                           ['gP', 101, '+', 300, 602, 303, 303, 'chr', True, 300.0, 602.0],
+                           ['gT', 6, '*', 1, 0, 0, 0, '*', False, 2000.0, 2017.0]], columns=cols)
+        with tempfile.TemporaryDirectory() as d:
+            genome = os.path.join(d, 'g.fasta')
+            with open(genome, 'w') as f:
+                f.write(">chr\n" + self.FILL + self.ORF + self.FILL + "ATGAAACTGGTTTGGTAA" + "\n")
+            proteome = os.path.join(d, 'p.faa')
+            with open(proteome, 'w') as f:
+                f.write(">gS_1000-1026\nMKLVWFYH*\n>gP_300-602\nM" + "A" * 99 + "*\n"
+                        ">gT_2000-2017\nMKLVW*\n")
+            out = place_unplaced_proteins(mp, genome, proteome)
+        assert out.drop(columns='Prot len').values.tolist() == [
+            ['gP', '+', 300, 602, 303, 303, 'chr', True, 300.0, 602.0],
+            ['gT', '*', 1, 0, 0, 0, '*', False, 2000.0, 2017.0],
+            ['gS', '+', 31, 57, 27, 27, 'chr', True, 1000.0, 1026.0]]
+
+
+# =============================================================================
+# CONTIGS
+# =============================================================================
+
+class TestContigs:
+    """Every contig of a draft assembly starts at 1, so coordinates alone do not
+    say which contig a gene is on. Cut into 40 contigs, CDC1551 had 87% of its
+    proteins translated from the wrong contig."""
+
+    @staticmethod
+    def _bakta(rows):
+        return pd.DataFrame(rows, columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt', 'Contig'])
+
+    @staticmethod
+    def _mp(rows):
+        return pd.DataFrame(rows, columns=['Prot Id', 'Prot len', 'Strand', 'Start', 'End',
+                                           'Match Nt', 'Num nt', 'Contig'])
+
+    def test_same_coordinates_on_another_contig_are_not_a_match(self):
+        from classify.cases import classify_case2_case3, classify_case1_case4, find_rv_missing
+        bk = self._bakta([['S1_00001', 100, 399, '+', 300, 'c2']])
+        mp = self._mp([['Rv0001', 100, '+', 100, 399, 300, 300, 'c1']])
+        case2, _ = classify_case2_case3(bk, mp)
+        case4, case1 = classify_case1_case4(bk, mp)
+        assert case2.empty and case4.empty
+        assert list(case1['Locus Tag']) == ['S1_00001']
+        assert list(find_rv_missing(mp, bk)['Prot Id']) == ['Rv0001']
+
+    def test_genes_on_different_contigs_never_displace_each_other(self):
+        from classify.overlaps import _insert_with_dedup
+        combined = {(100, 900, '+', 'c1'): 'Rv0001'}
+        _insert_with_dedup(combined, (150, 950, '+', 'c2'), 'S1_00002')
+        assert combined == {(100, 900, '+', 'c1'): 'Rv0001', (150, 950, '+', 'c2'): 'S1_00002'}
+
+    def test_bakta_names_must_match_the_genome(self):
+        """Without --keep-contig-headers Bakta calls every sequence contig_N."""
+        from classify_cases import match_bakta_contigs
+        one = match_bakta_contigs(self._bakta([['S1_00001', 1, 300, '+', 300, 'contig_1']]),
+                                  self._mp([['Rv0001', 100, '+', 1, 300, 300, 300, 'S1']]))
+        assert set(one['Contig']) == {'S1'}
+        with pytest.raises(SystemExit):
+            match_bakta_contigs(
+                self._bakta([['S1_00001', 1, 300, '+', 300, 'contig_1'],
+                             ['S1_00002', 1, 300, '+', 300, 'contig_2']]),
+                self._mp([['Rv0001', 100, '+', 1, 300, 300, 300, 'S1'],
+                          ['Rv0002', 100, '+', 1, 300, 300, 300, 'node_2']]))
+
+    def test_check_cds_translates_from_the_genes_own_contig(self):
+        """The gene is on c2, but its coordinates also fit the shorter c1, which
+        is what the old guess picked."""
+        import subprocess
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            with open(os.path.join(d, 'g.fasta'), 'w') as f:
+                f.write(">c1\n" + "GCT" * 20 + "\n")
+                f.write(">c2\n" + "ATG" + "GCT" * 11 + "TAA" + "GCT" * 40 + "\n")
+            with open(os.path.join(d, 'sample_corrected.tsv'), 'w') as f:
+                f.write("S1_00001\t+\t1\t39\tRv0001\tc2\n")
+            script = os.path.join(os.path.dirname(__file__), '..', 'bin', 'check_cds.py')
+            subprocess.run([sys.executable, script, 'g.fasta', 'sample_corrected.tsv'],
+                           cwd=d, check=True, capture_output=True)
+            out = pd.read_csv(os.path.join(d, 'sample.AMAP.tsv'), sep='\t')
+            with open(os.path.join(d, 'sample.AMAP.faa')) as fh:
+                protein = fh.read().split('\n')[1]
+        assert out.iloc[0]['pseudogene'] == 'no'
+        assert out.iloc[0]['contig'] == 'c2'
+        assert list(out.columns)[-1] == 'contig'
+        assert protein == 'M' + 'A' * 11
+
+    def test_dedup_overlap_only_counts_on_the_same_contig(self):
+        from deduplicate_rvs import deduplicate
+        genes = [
+            {'id': 'S1_Rv0001', 'strand': '+', 'start': '100', 'end': '900',
+             'rvs': 'Rv0001', 'pseudogene': 'no', 'contig': 'c1'},
+            {'id': 'S1_00002', 'strand': '+', 'start': '100', 'end': '900',
+             'rvs': '', 'pseudogene': 'no', 'contig': 'c2'},
+        ]
+        kept, _ = deduplicate(genes)
+        assert [g['id'] for g in kept] == ['S1_Rv0001', 'S1_00002']
+
+    def test_final_tables_put_each_gene_on_its_contig(self):
+        """generate_tsv placed each gene on the smallest contig its coordinates
+        fit in: 90% of a 40-contig draft ended up on the wrong one."""
+        from generate_tsv_gff_gbk import generate_tsv
+        import tempfile as tf
+        merged = pd.DataFrame({
+            'id': ['S1_00001', 'S1_00002'], 'strand': ['+', '+'], 'start': [1, 1], 'end': [30, 30],
+            'rvs': ['Rv0001', 'Rv0002'], 'Preferred_name': ['-', '-'], 'Gene': ['a', 'b'],
+            'Product_x': ['p', 'q'], 'Description': ['-', '-'], 'contig': ['big', 'small']})
+        rest = pd.DataFrame(columns=["Sequence Id", "Type", "Start", "Stop", "Strand",
+                                     "Locus Tag", "Gene", "Product", "DbXrefs"])
+        with tf.TemporaryDirectory() as d:
+            fasta = os.path.join(d, 'g.fasta')
+            with open(fasta, 'w') as f:
+                f.write(">big\n" + "A" * 900 + "\n>small\n" + "A" * 60 + "\n")
+            out = generate_tsv(merged, rest, fasta, os.path.join(d, 'out.tsv'))
+        placed = dict(zip(out['Locus Tag'], out['Sequence Id']))
+        assert placed == {'S1_00001': 'big', 'S1_00002': 'small'}

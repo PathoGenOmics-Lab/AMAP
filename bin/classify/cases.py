@@ -11,21 +11,42 @@ Case classification: split genes into case1–4 + rv_missing.
 import pandas as pd
 from intervaltree import IntervalTree
 
+from .io import PAF_COLS
+
+
+def _with_contig(df):
+    """A frame built without contigs (tests, single-sequence callers) is one contig."""
+    return df if 'Contig' in df.columns else df.assign(Contig='')
+
+
+def _trees(df):
+    """IntervalTrees of df's features, one per (contig, strand)."""
+    trees = {}
+    for row in df.itertuples(index=False):
+        if row.Start < row.End:
+            tree = trees.setdefault((row.Contig, '-' if row.Strand == '-' else '+'), IntervalTree())
+            tree[row.Start:row.End + 1] = True
+    return trees
+
+
+def _overlaps_any(trees, contig, strand, start, end):
+    tree = trees.get((contig, '-' if strand == '-' else '+'))
+    return tree is not None and len(tree[start:end + 1]) > 0
+
 
 def classify_case2_case3(bakta_df, miniprot_df, base_name=None):
     """Split into case 2 (perfect match) and case 3 (coordinate match, length mismatch)."""
-    # Merge on Start, End AND Strand to avoid cross-strand false matches
-    bakta_for_merge = bakta_df.copy()
-    mp_for_merge = miniprot_df.copy()
-    merged = pd.merge(bakta_for_merge, mp_for_merge,
-                       left_on=['Start', 'End', 'Strand'],
-                       right_on=['Start', 'End', 'Strand'])
+    # Merge on Contig, Start, End and Strand: same coordinates on another strand
+    # or another contig are another gene.
+    bakta_for_merge = _with_contig(bakta_df)
+    mp_for_merge = _with_contig(miniprot_df)
+    merged = pd.merge(bakta_for_merge, mp_for_merge, on=['Contig', 'Start', 'End', 'Strand'])
     merged['Difference'] = merged['Length_nt'] - merged['Num nt']
 
     case2 = merged[merged['Difference'] == 0]
     case3 = merged[merged['Difference'] != 0]
 
-    case2 = case2[["Locus Tag", "Start", "End", "Strand", 'Length_nt']].drop_duplicates()
+    case2 = case2[["Locus Tag", "Start", "End", "Strand", 'Length_nt', 'Contig']].drop_duplicates()
 
     if base_name:
         case3.to_csv(f"{base_name}-case3.tsv", sep='\t', index=False)
@@ -36,36 +57,28 @@ def classify_case2_case3(bakta_df, miniprot_df, base_name=None):
 
 def classify_case1_case4(bakta_df, miniprot_df, base_name=None):
     """Split non-matching Bakta CDS into case 1 (no overlap) and case 4 (overlap)."""
-    bakta_df = bakta_df.copy()
+    bakta_df = _with_contig(bakta_df).copy()
+    miniprot_df = _with_contig(miniprot_df)
     bakta_df['Length_nt'] = bakta_df['End'] - bakta_df['Start'] + 1
-    # Merge on Start, End AND Strand to avoid cross-strand false exclusions.
+    # Merge on Contig, Start, End AND Strand to avoid cross-strand false exclusions.
     # Without Strand: a gene at (100,200,+) matching miniprot at (100,200,-)
     # would be excluded here AND from case2/3 → silently lost from annotation.
-    merged = pd.merge(bakta_df, miniprot_df, on=['Start', 'End', 'Strand'], how='inner')
+    merged = pd.merge(bakta_df, miniprot_df, on=['Contig', 'Start', 'End', 'Strand'], how='inner')
 
     common_cols = [c for c in bakta_df.columns if c in merged.columns]
     indicator = bakta_df.merge(merged, on=common_cols, how='left', indicator=True)
     not_in_merged = indicator[indicator['_merge'] == 'left_only'].drop('_merge', axis=1)
-    not_in_merged = not_in_merged[["Locus Tag", "Start", "End", "Strand", 'Length_nt']]
+    cols = ["Locus Tag", "Start", "End", "Strand", 'Length_nt', 'Contig']
+    not_in_merged = not_in_merged[cols].copy()
 
-    # Build strand-aware IntervalTrees for overlap queries
-    tree_plus = IntervalTree()
-    tree_minus = IntervalTree()
-    for _, row in miniprot_df.iterrows():
-        if row['Start'] < row['End']:
-            if row['Strand'] == '-':
-                tree_minus[row['Start']:row['End']+1] = True
-            else:
-                tree_plus[row['Start']:row['End']+1] = True
+    trees = _trees(miniprot_df)
+    not_in_merged['Overlaps'] = [
+        _overlaps_any(trees, r.Contig, r.Strand, r.Start, r.End)
+        for r in not_in_merged.itertuples(index=False)
+    ]
 
-    not_in_merged = not_in_merged.copy()
-    def _has_strand_overlap(r):
-        t = tree_minus if r['Strand'] == '-' else tree_plus
-        return len(t[r['Start']:r['End']+1]) > 0
-    not_in_merged['Overlaps'] = not_in_merged.apply(_has_strand_overlap, axis=1)
-
-    case4 = not_in_merged[not_in_merged['Overlaps']][["Locus Tag", "Start", "End", "Strand", 'Length_nt']]
-    case1 = not_in_merged[~not_in_merged['Overlaps']][["Locus Tag", "Start", "End", "Strand", 'Length_nt']]
+    case4 = not_in_merged[not_in_merged['Overlaps']][cols]
+    case1 = not_in_merged[~not_in_merged['Overlaps']][cols]
 
     if base_name:
         case4.to_csv(f"{base_name}-case4.tsv", sep='\t', index=False)
@@ -75,27 +88,22 @@ def classify_case1_case4(bakta_df, miniprot_df, base_name=None):
 
 
 def find_rv_missing(miniprot_df, bakta_df, base_name=None):
-    """Find Miniprot hits with no overlap to any Bakta CDS on the same strand."""
-    tree_plus = IntervalTree()
-    tree_minus = IntervalTree()
-    for _, row in bakta_df.iterrows():
-        if row['Start'] < row['End']:
-            if row['Strand'] == '-':
-                tree_minus[row['Start']:row['End']+1] = True
-            else:
-                tree_plus[row['Start']:row['End']+1] = True
+    """Find Miniprot hits with no overlap to any Bakta CDS on the same contig and strand."""
+    trees = _trees(_with_contig(bakta_df))
 
-    mp = miniprot_df.copy()
-    mp['Overlaps'] = mp.apply(
-        lambda r: len((tree_minus if r['Strand'] == '-' else tree_plus)[r['Start']:r['End']+1]) > 0,
-        axis=1
-    )
+    mp = _with_contig(miniprot_df).copy()
+    mp['Overlaps'] = [
+        _overlaps_any(trees, r.Contig, r.Strand, r.Start, r.End)
+        for r in mp.itertuples(index=False)
+    ]
 
     no_overlap = mp[~mp['Overlaps']].drop(columns=['Overlaps'])
     no_overlap = no_overlap[~((no_overlap['Match Nt'] == 0) & (no_overlap['Num nt'] == 0))]
 
     if base_name:
-        no_overlap.to_csv(f"{base_name}-rvmissing.tsv", sep='\t', index=False)
+        # The report reads this file by position: keep its seven columns.
+        no_overlap[[c for c in PAF_COLS if c in no_overlap.columns]].to_csv(
+            f"{base_name}-rvmissing.tsv", sep='\t', index=False)
 
     return no_overlap
 
@@ -110,22 +118,23 @@ def filter_case1(case1, bakta_df_bad, cds_path):
     """
     from .io import read_miniprot_unfiltered
 
-    # Build overlap tree from bad-bakta alignments
-    bad_tree = IntervalTree()
-    for _, row in bakta_df_bad.iterrows():
-        if row['Start'] < row['End']:
-            bad_tree[row['Start']:row['End']+1] = True
+    # Build overlap trees from bad-bakta alignments, one per contig
+    bad_trees = {}
+    for row in _with_contig(bakta_df_bad).itertuples(index=False):
+        if row.Start < row.End:
+            bad_trees.setdefault(row.Contig, IntervalTree())[row.Start:row.End + 1] = True
 
-    def calc_overlap(start, end):
+    def calc_overlap(contig, start, end):
         total = 0
-        for iv in bad_tree[start:end+1]:
+        for iv in bad_trees.get(contig, IntervalTree())[start:end+1]:
             # iv.begin = Start (1-based), iv.end = End+1 (half-open)
             # Use end+1 and iv.end directly for half-open interval math
             total += max(0, min(end + 1, iv.end) - max(start, iv.begin))
         return total
 
-    case1 = case1.copy()
-    case1['Overlap_Length'] = case1.apply(lambda r: calc_overlap(r['Start'], r['End']), axis=1)
+    case1 = _with_contig(case1).copy()
+    case1['Overlap_Length'] = [calc_overlap(r.Contig, r.Start, r.End)
+                               for r in case1.itertuples(index=False)]
     case1['Overlap_Percentage'] = (case1['Overlap_Length'] / case1['Length_nt']) * 100
 
     high_overlap = case1[case1['Overlap_Percentage'] >= 80]

@@ -125,9 +125,12 @@ def get_goodseq(sequence, start, end, strand, max_distance=300):
     return start, end, strand
 
 def read_to_pandas(file):
+    """The corrected table: id, strand, start, end, rvs and, since contigs are
+    carried through, the contig each gene is on. Older five-column tables still
+    read; they say nothing about contigs."""
     logging.info(f"Reading annotation file {file}")
-    df = pd.read_csv(file, sep='\t', header=None)
-    df.columns = ["id", "strand", "start", "end", "rvs"]
+    df = pd.read_csv(file, sep='\t', header=None, dtype={4: str, 5: str})
+    df.columns = ["id", "strand", "start", "end", "rvs", "contig"][:df.shape[1]]
     return df
 
 # Start codons of translation table 11, the bacterial code.
@@ -251,8 +254,10 @@ def extract_and_translate_cds(fasta_file, annotation_df, ref_proteins=None):
     # Sort contigs by length (longest first) for coordinate-based matching
     sorted_contigs = sorted(fasta_records.values(), key=lambda r: len(r.seq), reverse=True)
     is_multi_contig = len(fasta_records) > 1
-    if is_multi_contig:
-        logging.warning(f"Multi-contig assembly: {len(fasta_records)} contigs — matching genes to contigs by coordinate")
+    has_contig = 'contig' in annotation_df.columns
+    if is_multi_contig and not has_contig:
+        logging.warning(f"Multi-contig assembly ({len(fasta_records)} contigs) but no contig column: "
+                        f"guessing each gene's contig from its coordinates, which is usually wrong")
     default_contig = sorted_contigs[0]
     cds_amino_acids = {}
     cds_nts = {}
@@ -272,12 +277,18 @@ def extract_and_translate_cds(fasta_file, annotation_df, ref_proteins=None):
             indices_to_drop.append(index)
             continue
 
-        # Select the correct contig for this gene.
-        # For multi-contig: find the smallest contig where the gene fits.
-        # Sorted desc by length, so we iterate and keep the LAST match
-        # (= smallest fitting contig, tightest fit).
-        # WARNING: This is ambiguous when contigs overlap in coordinate ranges.
-        if is_multi_contig:
+        # Translate the gene from its own contig. Without a contig column the
+        # old guess remains: the smallest contig the coordinates fit in, which
+        # on a draft assembly is almost never the gene's (it chose right for
+        # 11% of CDC1551 cut into 40 contigs, and translated the rest from
+        # another contig's sequence).
+        if has_contig and str(row['contig']) in fasta_records:
+            fasta_seq = fasta_records[str(row['contig'])]
+        elif has_contig and pd.notna(row['contig']) and is_multi_contig:
+            logging.warning(f"Skipping {ide}: contig '{row['contig']}' not in {fasta_file}")
+            indices_to_drop.append(index)
+            continue
+        elif is_multi_contig:
             fasta_seq = default_contig
             best_len = float('inf')
             for contig in sorted_contigs:
@@ -467,7 +478,8 @@ def main():
     
     # Remove duplicate (start, end) entries BEFORE translation to avoid wasted work
     n_before = len(annotation_df)
-    annotation_df = annotation_df.drop_duplicates(subset=['start', 'end'], keep='first')
+    place = ['contig', 'start', 'end'] if 'contig' in annotation_df.columns else ['start', 'end']
+    annotation_df = annotation_df.drop_duplicates(subset=place, keep='first')
     n_after = len(annotation_df)
     if n_before != n_after:
         logging.info(f"Removed {n_before - n_after} duplicate coordinate entries before translation")
@@ -480,13 +492,13 @@ def main():
     annotation_df['rvs'] = annotation_df['rvs'].fillna('')
 
     # Find duplicates based on 'start' and 'end' columns
-    duplicados = annotation_df[annotation_df[['start', 'end']].duplicated(keep=False)]
+    duplicados = annotation_df[annotation_df[place].duplicated(keep=False)]
     logging.info("Found duplicates")
     logging.info(duplicados)
 
     # Keep only one entry per duplicated (start, end) pair — remove all but the first
     if not duplicados.empty:
-        indices_para_mantener = duplicados.groupby(['start', 'end']).apply(lambda x: x.index[0])
+        indices_para_mantener = duplicados.groupby(place).apply(lambda x: x.index[0])
         indices_para_eliminar = duplicados.index.difference(indices_para_mantener)
         logging.info(f"Keeping {len(indices_para_mantener)} unique entries, removing {len(indices_para_eliminar)} duplicates")
 
@@ -508,6 +520,10 @@ def main():
     cds_amino_acids = {k: v for k, v in cds_amino_acids.items() if k in surviving}
     cds_nts = {k: v for k, v in cds_nts.items() if k in surviving}
 
+    # The contig goes last, so readers that take the first six columns by
+    # position (generate_tsv_gff_gbk.py) keep reading what they always did.
+    if 'contig' in annotation_df.columns:
+        annotation_df = annotation_df[[c for c in annotation_df.columns if c != 'contig'] + ['contig']]
     logging.info(f"Saving filtered annotation DataFrame to {base_name + '.AMAP.tsv'}")
     annotation_df.to_csv(base_name + '.AMAP.tsv', sep='\t', index=False)
 

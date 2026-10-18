@@ -1301,7 +1301,7 @@
     if (table) {
       var rows = [
         ["Size", "size", 0], ["AvgDegree", "avg_degree", 2], ["Density", "density", 2],
-        ["AvgClustering", "avg_clustering", 2], ["AvgPathLength", "avg_path_length", 2], ["Modularity", "modularity", 1]
+        ["AvgClustering", "avg_clustering", 2], ["AvgPathLength", "avg_path_length", 2]
       ];
       table.innerHTML =
         "<thead><tr><th>Column</th>" + sides.map(function (s, k) {

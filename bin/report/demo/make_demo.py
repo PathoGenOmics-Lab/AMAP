@@ -153,26 +153,44 @@ for i in range(3600):
     pan.append(f"group_{i:05d}\t" + "\t".join(map(str, row)))
 w("input_pangene.txt", pan)
 
-# --- homologous communities across genomes ---
-dup = ["\t".join([
-    "Community", "Size1", "Size2", "AverageDegree1", "AverageDegree2",
-    "AverageCloseness1", "AverageCloseness2", "AverageBetweenness1",
-    "AverageBetweenness2", "Density1", "Density2", "ClusteringCoefficient1",
-    "ClusteringCoefficient2", "AveragePathLength1", "AveragePathLength2",
-    "transitivity1", "transitivity2", "modularity1", "modularity2"])]
+# --- homologous communities across genomes, as GET_ALLDUP writes them: a row
+# per pair, a community of one genome and its homolog in another, each with its
+# size, its proteins' COG categories, its network metrics and the proteins.
+# A protein eggNOG gave no category keeps the ID FIX_CDS wrote and counts as '-'.
+FAMILY_COGS = ["L", "L", "L", "S", "K", "M", "I", "Q"]  # transposases first
+
+
+def community(genome, n, cog):
+    """A community of n proteins of a family in category cog: its size, COG
+    counts, metrics and proteins."""
+    nodes = []
+    for locus in rng.sample(range(1, 4100), n):
+        if rng.random() < 0.8:
+            nodes.append(f"{genome}_{locus:05d};{cog}")
+        else:
+            s = rng.randint(1, 4_400_000)
+            nodes.append(f"{genome}_{locus:05d};{rng.choice('+-')};{s}-{s + rng.randrange(150, 3000, 3)}")
+    cats = [p.split(";")[1] if p.count(";") == 1 else "-" for p in nodes]
+    counts = {c: cats.count(c) for c in sorted(set(cats), key=lambda c: (-cats.count(c), c))}
+    if n == 2 or rng.random() < 0.7:   # every protein matches every other
+        metrics = [float(n - 1), 1.0, 1.0 if n > 2 else 0.0, 1.0]
+    else:
+        density = round(rng.uniform(0.5, 0.9), 3)
+        metrics = [round(density * (n - 1), 3), density,
+                   round(rng.uniform(0.4, 0.9), 3), round(rng.uniform(1.1, 1.9), 3)]
+    return [n, counts] + metrics + [", ".join(sorted(nodes))]
+
+
+dup = ["\t".join(f"{c}{k}" for k in "12" for c in [
+    "Genome", "Community", "Size", "Elements", "AvgDegree", "Density",
+    "AvgClustering", "AvgPathLength", "Nodes"])]
 for i in range(48):
+    g1, g2 = rng.sample(names, 2)
+    cog = rng.choice(FAMILY_COGS)
     s1 = rng.choice([2, 2, 3, 3, 4, 5, 6, 8, 11, 14, 19])
     s2 = max(2, s1 + rng.randint(-1, 3))
-    dup.append("\t".join(map(str, [
-        f"community_{i:03d}", s1, s2,
-        round(rng.uniform(1.2, 6.5), 2), round(rng.uniform(1.2, 6.5), 2),
-        round(rng.uniform(0.4, 0.95), 3), round(rng.uniform(0.4, 0.95), 3),
-        round(rng.uniform(0, 0.35), 3), round(rng.uniform(0, 0.35), 3),
-        round(rng.uniform(0.3, 1.0), 3), round(rng.uniform(0.3, 1.0), 3),
-        round(rng.uniform(0.3, 1.0), 3), round(rng.uniform(0.3, 1.0), 3),
-        round(rng.uniform(1.0, 2.6), 2), round(rng.uniform(1.0, 2.6), 2),
-        round(rng.uniform(0.3, 1.0), 3), round(rng.uniform(0.3, 1.0), 3),
-        round(rng.uniform(0.0, 0.6), 3), round(rng.uniform(0.0, 0.6), 3)])))
+    dup.append("\t".join(map(str, [g1, f"Community_{rng.randint(0, 40)}"] + community(g1, s1, cog)
+                              + [g2, f"Community_{rng.randint(0, 40)}"] + community(g2, s2, cog))))
 w("homologous_communities.tsv", dup)
 
 print(f"  {len(SAMPLES)} samples across {len(LINEAGES)} lineages")

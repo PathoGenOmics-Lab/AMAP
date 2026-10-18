@@ -89,6 +89,7 @@ directly comparable with 1.0.1.
 - **The benchmark on the front page**: the seven genomes whose answer is known, and how many of their genes AMAP finds, checked against `tests/benchmark/README.md`. A shared link to any page shows a card drawn from the front page's genes
 - **More that the docs got wrong**: the duplication page listed ten network metrics, the table has four, and its columns ending in 1 and 2 are the two communities of a pair, not two levels; Nextflow needs Java 17, not 11; `--skip_functional_annotation` leaves no GFF3 or GenBank, which come after eggNOG; tasks are capped at 16 GB on one machine and at 128 GB under a scheduler profile, not 50 GB; and lineage typing is not skipped on its own for other species, only Mycobrowser is
 - **The README in the site's style**: the metro map and the five outcomes in light and dark, the benchmark's scores, and the links a newcomer needs first
+- **The README opens with the logo, and its drawing plays**: the picture at the top was a still of the front page's drawing, dark whatever GitHub's theme. It now plays the drawing's four steps, in light or dark as the theme is, made by `tools/pictures.mjs` from the front page's own figure. The README's metro map gains the interactive report's station
 
 ### 🧪 Testing
 - **`tests/selftest/h37rv_selftest.sh`** annotates H37Rv with itself inside the container and fails unless every GenBank CDS comes back exactly

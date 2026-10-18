@@ -645,3 +645,41 @@ class TestValidateReferences:
         assert _inputs(body).get('references') == ('val', None)
         assert re.search(r"references\.each \{ param, given -> options << '--reference ' \+ "
                          r"quoted\.call\(param\) \+ ' ' \+ quoted\.call\(given\) \}", body)
+
+
+# ---------------------------------------------------------------------------
+# Checked whenever a step reads it
+# ---------------------------------------------------------------------------
+
+MAIN = (ROOT / 'main.nf').read_text()
+
+
+def _checked_when(name):
+    """When referenceFiles() in main.nf hands the file of --<name> to
+    VALIDATE_INPUTS, as a function of the params. Its conditions are made of
+    params, !, && and ||; anything else fails rather than read differently."""
+    body = re.search(r'^def referenceFiles\(\) \{\n(.*?)^\}', MAIN, re.S | re.M).group(1)
+    cond = re.search(rf"if \(([^)]*)\) \{{\s*files \+= \[\['{name}'", body)
+    assert cond, f'referenceFiles() hands --{name} over under no condition of its own'
+    expr = cond.group(1)
+    term = r"[!\s(]*params\.\w+[)\s]*"
+    if not re.fullmatch(rf"{term}(?:(?:&&|\|\|){term})*", expr):
+        raise ValueError(f'cannot evaluate {expr!r}')
+    python = re.sub(r'params\.(\w+)', r"bool(p['\1'])", expr)
+    python = python.replace('&&', ' and ').replace('||', ' or ').replace('!', ' not ')
+    return lambda p: eval(python, {}, {'p': p})
+
+
+class TestCheckedWhenRead:
+
+    def test_the_interactive_report_reads_mycobrowser(self):
+        call = re.search(r'^\s*AMAP_REPORT\((.*?)^\s*\)', MAIN, re.S | re.M)
+        assert call and 'mycobrowser_ref_ch' in call.group(1)
+
+    @pytest.mark.parametrize('functional', [True, False])
+    @pytest.mark.parametrize('skip', [True, False])
+    def test_mycobrowser_is_checked_whenever_it_is_read(self, functional, skip):
+        # AMAP_REPORT reads it in every run, GET_OUTPUTS with the functional
+        # annotation; only --skip_mycobrowser leaves it unread
+        params = {'skip_functional_annotation': not functional, 'skip_mycobrowser': skip}
+        assert _checked_when('mycobrowser_ref')(params) == (not skip)

@@ -11,7 +11,8 @@ Case classification: split genes into case1–4 + rv_missing.
 import pandas as pd
 from intervaltree import IntervalTree
 
-from .io import PAF_COLS
+from . import circular
+from .io import PAF_COLS, lengths
 
 
 def _with_contig(df):
@@ -20,18 +21,21 @@ def _with_contig(df):
 
 
 def _trees(df):
-    """IntervalTrees of df's features, one per (contig, strand)."""
+    """IntervalTrees of df's features, one per (contig, strand). A gene
+    across the origin goes in as both its copies (see circular.py)."""
     trees = {}
     for row in df.itertuples(index=False):
-        if row.Start < row.End:
-            tree = trees.setdefault((row.Contig, '-' if row.Strand == '-' else '+'), IntervalTree())
-            tree[row.Start:row.End + 1] = True
+        for start, end in circular.copies(row.Start, row.End, row.Contig):
+            if start < end:
+                tree = trees.setdefault((row.Contig, '-' if row.Strand == '-' else '+'), IntervalTree())
+                tree[start:end + 1] = True
     return trees
 
 
 def _overlaps_any(trees, contig, strand, start, end):
     tree = trees.get((contig, '-' if strand == '-' else '+'))
-    return tree is not None and len(tree[start:end + 1]) > 0
+    return tree is not None and any(len(tree[s:e + 1]) > 0
+                                    for s, e in circular.copies(start, end, contig))
 
 
 def _overlapping(df, trees):
@@ -71,7 +75,7 @@ def classify_case1_case4(bakta_df, miniprot_df, base_name=None):
     """Split non-matching Bakta CDS into case 1 (no overlap) and case 4 (overlap)."""
     bakta_df = _with_contig(bakta_df).copy()
     miniprot_df = _with_contig(miniprot_df)
-    bakta_df['Length_nt'] = bakta_df['End'] - bakta_df['Start'] + 1
+    bakta_df['Length_nt'] = lengths(bakta_df)
     # Merge on Contig, Start, End AND Strand to avoid cross-strand false exclusions.
     # Without Strand: a gene at (100,200,+) matching miniprot at (100,200,-)
     # would be excluded here AND from case2/3 → silently lost from annotation.
@@ -126,10 +130,13 @@ def filter_case1(case1, bakta_df_bad, cds_path):
 
     def calc_overlap(contig, start, end):
         total = 0
-        for iv in bad_trees.get(contig, IntervalTree())[start:end+1]:
-            # iv.begin = Start (1-based), iv.end = End+1 (half-open)
-            # Use end+1 and iv.end directly for half-open interval math
-            total += max(0, min(end + 1, iv.end) - max(start, iv.begin))
+        # Alignments sit on the sequence; a gene across its origin covers it
+        # with one piece in each copy.
+        for s, e in circular.copies(start, end, contig):
+            for iv in bad_trees.get(contig, IntervalTree())[s:e + 1]:
+                # iv.begin = Start (1-based), iv.end = End+1 (half-open)
+                # Use e+1 and iv.end directly for half-open interval math
+                total += max(0, min(e + 1, iv.end) - max(s, iv.begin))
         return total
 
     case1 = _with_contig(case1).copy()

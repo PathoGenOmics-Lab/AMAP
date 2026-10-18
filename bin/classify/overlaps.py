@@ -8,7 +8,8 @@ Coordinate convention: all coordinates are 1-based inclusive (GFF/GenBank style)
 Length = End - Start + 1. IntervalTree uses half-open [Start, End+1).
 A gene's key is (Start, End, Strand, Contig): the contig goes last so that code
 reading the first three keeps working, and features only ever overlap when they
-share a contig.
+share a contig. A gene across the origin of a circular sequence has its start
+after its end, and is measured with circular.py.
 """
 
 from typing import Dict, List, Tuple, Optional
@@ -16,45 +17,51 @@ from typing import Dict, List, Tuple, Optional
 import pandas as pd
 from intervaltree import IntervalTree
 
+from . import circular
+
 # Type aliases
 Coord = Tuple[int, int]           # (Start, End) pair
 Coord3 = Tuple[int, int, str]     # (Start, End, Strand) triple
 CoordDict = Dict[Coord3, str]     # Gene coordinate dictionary
 
 
-def get_overlap_percentage(range1: Coord, range2: Coord) -> float:
+def get_overlap_percentage(range1: Coord, range2: Coord, contig='') -> float:
     """Calculate overlap percentage relative to the larger range.
     
     Coordinates are 1-based inclusive: length = End - Start + 1.
     Overlap of [100,200] and [150,300] = min(200,300) - max(100,150) + 1 = 51 bp.
+    contig names the sequence of a range across its origin.
     """
-    intersection = max(0, min(range1[1], range2[1]) - max(range1[0], range2[0]) + 1)
-    max_length = max(range1[1] - range1[0] + 1, range2[1] - range2[0] + 1)
+    intersection = circular.shared(range1, range2, contig)
+    max_length = max(_range_length(range1, contig), _range_length(range2, contig))
     return (intersection / max_length) * 100 if max_length > 0 else 0
 
 
-def get_subset_overlap_percentage(range1, range2):
+def get_subset_overlap_percentage(range1, range2, contig=''):
     """Calculate overlap percentage relative to the smaller range.
     
     Coordinates are 1-based inclusive: length = End - Start + 1.
     """
-    intersection = max(0, min(range1[1], range2[1]) - max(range1[0], range2[0]) + 1)
-    min_length = min(range1[1] - range1[0] + 1, range2[1] - range2[0] + 1)
+    intersection = circular.shared(range1, range2, contig)
+    min_length = min(_range_length(range1, contig), _range_length(range2, contig))
     return (intersection / min_length) * 100 if min_length > 0 else 0
 
 
-def _range_length(r):
+def _range_length(r, contig=''):
     """Length of a 1-based inclusive coordinate range."""
-    return r[1] - r[0] + 1
+    return circular.length(r[0], r[1], contig)
 
 
 def _contig(coord):
     return coord[3] if len(coord) > 3 else ''
 
 
-def _same_frame(a, b, strand):
+def _same_frame(a, b, strand, contig=''):
     """Whether two (Start, End) spans on one strand are read in the same frame,
-    judged from their 5' ends."""
+    judged from their 5' ends. A span across the origin is judged by its copy
+    over the other (see circular.py)."""
+    a = circular.facing(a, b, contig)
+    b = circular.facing(b, a, contig)
     i = 1 if strand == '-' else 0
     return (a[i] - b[i]) % 3 == 0
 
@@ -73,17 +80,20 @@ def build_overlap_tree(tree_df, overlap_df, tree_id_col, overlap_id_col):
 
     trees = {}
     for idx, row in tree_df.iterrows():
-        if row['Start'] < row['End']:
-            tree = trees.setdefault(where(row), IntervalTree())
-            tree[row['Start']:row['End']+1] = (idx, row[tree_id_col])
+        for start, end in circular.copies(row['Start'], row['End'], row.get('Contig', '')):
+            if start < end:
+                tree = trees.setdefault(where(row), IntervalTree())
+                tree[start:end+1] = (idx, row[tree_id_col])
 
     overlap_counts = {}
     for _, row in overlap_df.iterrows():
         tree = trees.get(where(row))
         if tree is None:
             continue
-        for iv in tree[row['Start']:row['End']+1]:
-            tree_idx, tree_id = iv.data
+        # A gene across the origin is in the tree twice, and can be met twice.
+        hits = {iv.data: None for start, end in circular.copies(row['Start'], row['End'], row.get('Contig', ''))
+                for iv in tree[start:end+1]}
+        for tree_idx, tree_id in hits:
             if tree_idx not in overlap_counts:
                 overlap_counts[tree_idx] = {'count': 1, 'Prot Id': tree_id,
                                             'Locus Tags': [row[overlap_id_col]]}
@@ -138,7 +148,6 @@ def resolve_single_overlaps(single_groups, miniprot_df, combined_dict, new_group
     """
     reference_ids = set(miniprot_df['Prot Id'])
     for key, value in single_groups.items():
-        bakta_len = value['case4'][0][1] - value['case4'][0][0] + 1
         # The group key is the index of the Miniprot hit being resolved. Looking
         # the protein up by name instead returns its first placement, which for
         # a protein with several copies can sit elsewhere on the other strand:
@@ -149,6 +158,7 @@ def resolve_single_overlaps(single_groups, miniprot_df, combined_dict, new_group
         contig = mp_row.get('Contig', '')
         bakta_strand = value['case4_strands'][0] if value.get('case4_strands') else strand
         bakta_contig = value['case4_contigs'][0] if value.get('case4_contigs') else contig
+        bakta_len = _range_length(value['case4'][0], bakta_contig)
 
         locus_tag = value['Locus Tags'][0]
         n_overlaps = len(new_groups[locus_tag]['Locus Tags']) if locus_tag in new_groups else 0
@@ -162,7 +172,7 @@ def resolve_single_overlaps(single_groups, miniprot_df, combined_dict, new_group
         # keeps its chance to win on length; the alignment, if it loses, comes
         # back in recover_missing_genes, since nothing covers it in its frame.
         complete = (bool(mp_row.get('Complete', False))
-                    and _same_frame(value['miniprot_df'][0], value['case4'][0], strand))
+                    and _same_frame(value['miniprot_df'][0], value['case4'][0], strand, bakta_contig))
 
         if n_overlaps > 1:
             new_coord, new_id = (*value['miniprot_df'][0], strand, contig), value['Prot Id']
@@ -197,7 +207,7 @@ def resolve_multiple_overlaps(multiple_groups, miniprot_df, combined_dict, new_g
 
         best = (None, None, -1, strand, contig)
         for i, r in enumerate(value['case4']):
-            pct = get_overlap_percentage(r, miniprot_range)
+            pct = get_overlap_percentage(r, miniprot_range, case4_contigs[i])
             if pct > best[2]:
                 tag = value['Locus Tags'][i] if i < len(value['Locus Tags']) else "Unknown"
                 best = (r, tag, pct, case4_strands[i], case4_contigs[i])
@@ -213,10 +223,11 @@ def resolve_multiple_overlaps(multiple_groups, miniprot_df, combined_dict, new_g
         # with PE29.
         complete = (bool(miniprot_df.at[key, 'Complete'])
                     if key in miniprot_df.index and 'Complete' in miniprot_df.columns else False)
-        complete = complete and _same_frame(miniprot_range, best[0], strand)
+        complete = complete and _same_frame(miniprot_range, best[0], strand, best[4])
         spans_others = best[1] in new_groups and len(new_groups[best[1]]['Locus Tags']) > 1
-        if complete or spans_others or _range_length(miniprot_range) >= _range_length(best[0]) or \
-           (_range_length(best[0]) - _range_length(miniprot_range)) < 500:
+        best_len = _range_length(best[0], best[4])
+        if complete or spans_others or _range_length(miniprot_range) >= best_len or \
+           (best_len - _range_length(miniprot_range)) < 500:
             chosen_coord, chosen_id = (*miniprot_range, strand, contig), prot_id
         else:
             chosen_coord, chosen_id = (*best[0], best[3], best[4]), best[1]
@@ -260,13 +271,16 @@ def _insert_with_dedup(combined_dict, new_coord, new_id, threshold=550,
         # Only compare genes on the same strand of the same contig
         if new_strand != exist_strand or new_contig != _contig(exist_coord):
             continue
-        if new_end <= exist_start or new_start >= exist_end:
+        if circular.wraps(new_start, new_end) or circular.wraps(exist_start, exist_end):
+            if not circular.shared((new_start, new_end), (exist_start, exist_end), new_contig):
+                continue
+        elif new_end <= exist_start or new_start >= exist_end:
             continue  # no overlap
 
-        pct = get_overlap_percentage((new_start, new_end), (exist_start, exist_end))
+        pct = get_overlap_percentage((new_start, new_end), (exist_start, exist_end), new_contig)
         if pct >= 70:
-            len_new = _range_length((new_start, new_end))
-            len_exist = _range_length((exist_start, exist_end))
+            len_new = _range_length((new_start, new_end), new_contig)
+            len_exist = _range_length((exist_start, exist_end), new_contig)
             if len_new > len_exist and (len_new - len_exist) > threshold:
                 coords_to_remove.add(exist_coord)
             elif (len_exist - len_new) < threshold and not _is_reference_gene(exist_id, reference_ids):

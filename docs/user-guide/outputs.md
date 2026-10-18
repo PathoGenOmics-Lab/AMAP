@@ -112,6 +112,17 @@ are the last columns of the master table and of `*-AMAP.tsv`.
 
 <!-- figure: excerpt -->
 
+A gene across the origin of a circular sequence is written the way Bakta writes
+it. Bakta takes a sequence for a circular replicon when its FASTA description
+says `complete`, as NCBI's "complete genome" and "complete sequence" do, or
+`circular=true`, as Unicycler's does. In `*-AMAP.tsv` and the master table such
+a gene has its start after its end (stcE on plasmid pO157 of E. coli O157:H7
+Sakai is 92563 to 2502); in the GenBank it is `join(92563..92721,1..2502)` in a
+record marked circular; and in the GFF3 it ends past the sequence's last base,
+by the sequence's length (92563 to 95223 on the 92721 bp plasmid), on a
+`region` feature marked `Is_circular=true`, as the GFF3 specification and
+Bakta's own GFF3 have it.
+
 ### `*-AMAP.faa` versus `*-AMAP.clean.faa`
 
 `*-AMAP.faa` mirrors the annotation exactly, pseudogenes included, so gene

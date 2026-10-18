@@ -360,8 +360,9 @@ def read_versions(path):
 def read_params(path):
     """The parameters and the run's header comments from DUMP_PARAMS.
 
-    Read line by line rather than as YAML: the file DUMP_PARAMS writes
-    indents only the first parameter under `params:`.
+    Read line by line rather than as YAML: before AMAP wrote each value as a
+    JSON string under `params:`, DUMP_PARAMS indented only the first parameter
+    there, and those files should still read.
     """
     params, run = OrderedDict(), OrderedDict()
     in_params = False
@@ -380,7 +381,10 @@ def read_params(path):
             if in_params and m:
                 value = m.group(2).strip()
                 if len(value) >= 2 and value[0] == value[-1] == '"':
-                    value = value[1:-1]
+                    try:
+                        value = json.loads(value)
+                    except ValueError:
+                        value = value[1:-1]
                 params[m.group(1)] = value
     return params, run
 

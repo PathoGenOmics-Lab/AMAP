@@ -82,6 +82,10 @@ process DUMP_PARAMS {
     executor 'local'
     cpus 1
     memory '128.MB'
+    // Never from the cache. The script reads `params` as a whole, which
+    // Nextflow leaves out of the task's hash, so with -resume every later run
+    // got back the file of the first, whatever parameters it was given.
+    cache false
 
     publishDir "${params.outdir}/pipeline_info", mode: 'copy'
 
@@ -89,20 +93,27 @@ process DUMP_PARAMS {
     path 'params.yml'
 
     script:
-    // Write all params as YAML
-    def paramsList = params.collect { k, v -> "  ${k}: \"${v}\"" }.join('\n')
+    // Every line goes in at the script's own indentation, which Nextflow strips
+    // once the script is filled in: lines short of it made Nextflow strip less,
+    // which left all but the first parameter outside `params:` and the heredoc
+    // without its end. Values are JSON strings, which YAML reads as they are,
+    // so no value can break a line, and the quoted delimiter keeps the shell
+    // from expanding anything in them.
+    def lines = [
+        '# AMAP Pipeline Parameters',
+        "# Run: ${new java.util.Date()}",
+        "# Nextflow: ${nextflow.version}",
+        "# Pipeline: ${workflow.manifest.version ?: 'dev'}",
+        "# Command: ${workflow.commandLine.replaceAll(/[\r\n]+/, ' ')}",
+        "# Profile: ${workflow.profile}",
+        "# Work dir: ${workflow.workDir}",
+        "# Launch dir: ${workflow.launchDir}",
+        'params:'
+    ] + params.collect { k, v -> "  ${k}: ${groovy.json.JsonOutput.toJson(String.valueOf(v))}" }
+    def yaml = lines.join('\n    ')
     """
-    cat <<-YAML > params.yml
-    # AMAP Pipeline Parameters
-    # Run: ${new java.util.Date()}
-    # Nextflow: ${nextflow.version}
-    # Pipeline: ${workflow.manifest.version ?: 'dev'}
-    # Command: ${workflow.commandLine}
-    # Profile: ${workflow.profile}
-    # Work dir: ${workflow.workDir}
-    # Launch dir: ${workflow.launchDir}
-    params:
-    ${paramsList}
+    cat <<'YAML' > params.yml
+    ${yaml}
     YAML
     """
 }

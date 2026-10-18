@@ -988,6 +988,52 @@ class TestContigEnds(_CheckCdsTable):
         assert self._one(genome, ('S1_A', '+', 1, 63, 'gA')) == (1, 63, 'no', "")
 
 
+class TestCutAtAStartLikeCodon(_CheckCdsTable):
+    """A cut leaves whatever codon it falls before at the contig's edge, and one
+    in six codons inside H37Rv genes is one a gene can also start with. A gene
+    that opens there with one is a start only if its protein does not begin
+    inside its reference protein."""
+
+    # 40 residues with no stretch repeated, each one codon; L, I and V take
+    # CTG, ATC and GTG, which can all start a gene.
+    PROTEIN = "MTQRWKHEDSNPGYFACLTERWKDHQGSNPAYFIVCRTEW"
+    CODON = {'A': 'GCC', 'C': 'TGC', 'D': 'GAC', 'E': 'GAG', 'F': 'TTC', 'G': 'GGC', 'H': 'CAC',
+             'I': 'ATC', 'K': 'AAG', 'L': 'CTG', 'M': 'ATG', 'N': 'AAC', 'P': 'CCG', 'Q': 'CAG',
+             'R': 'CGC', 'S': 'TCC', 'T': 'ACC', 'V': 'GTG', 'W': 'TGG', 'Y': 'TAC'}
+    REF = {'gA_1000-1122': PROTEIN + '*'}
+
+    def _gene(self, protein):
+        return "".join(self.CODON[a] for a in protein) + "TAA"
+
+    def _one(self, genome, row):
+        with tempfile.TemporaryDirectory() as d:
+            t = self._table(d, genome, [row], self.REF)
+        return t.iloc[0].partial
+
+    def test_the_last_piece_of_a_cut_gene_is_5_prime_partial(self):
+        """Residue 17 is a leucine, CTG; the contig keeps two bases of the
+        codon before it."""
+        piece = "CC" + self._gene(self.PROTEIN[17:])      # 2 bases, then CTG ...
+        assert piece[2:5] == "CTG"
+        genome = piece + self.FILL
+        assert self._one(genome, ('S1_A', '+', 3, len(piece), 'gA')) == "5'"
+        genome = self._revcomp(genome)
+        n = len(genome)
+        assert self._one(genome, ('S1_A', '-', n - len(piece) + 1, n - 2, 'gA')) == "5'"
+
+    def test_a_whole_gene_at_the_edge_is_not(self):
+        genome = self._gene(self.PROTEIN) + self.FILL
+        assert self._one(genome, ('S1_A', '+', 1, 3 * len(self.PROTEIN) + 3, 'gA')) == ""
+
+    def test_without_a_reference_the_codon_decides(self):
+        """Without the reference protein the codon is all there is to go on."""
+        from check_cds import cut_at_5_prime
+        seq = "CC" + self._gene(self.PROTEIN[17:]) + self.FILL
+        assert not cut_at_5_prime(seq, 2, 2 + 3 * 24, '+')
+        assert cut_at_5_prime(seq, 2, 2 + 3 * 24, '+', self.PROTEIN[17:] + '*', self.PROTEIN + '*')
+        assert cut_at_5_prime(seq[:2] + "GCC" + seq[5:], 2, 2 + 3 * 24, '+')
+
+
 # =============================================================================
 # DEDUPLICATE RVS TESTS
 # =============================================================================

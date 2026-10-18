@@ -97,6 +97,15 @@ def convert_gbk_to_panaroo_gff3(gbk_path: Path, gff3_path: Path):
 
                 start = feature.location.start + 1
                 end = feature.location.end
+                # A gene across the origin of a circular sequence is a join of
+                # its end and its beginning, which Biopython spans as the whole
+                # sequence. GFF3 writes it from its start to past the last
+                # base, by the sequence's length, as Bakta does.
+                parts = sorted(feature.location.parts, key=lambda p: p.start)
+                if (len(parts) == 2 and parts[0].start == 0
+                        and parts[1].end == len(gbk_record.seq)):
+                    start = parts[1].start + 1
+                    end = parts[0].end + len(gbk_record.seq)
                 # feature.strand was removed in Biopython 1.85; the strand now
                 # lives on the location object.
                 strand = '+' if feature.location.strand == 1 else '-'

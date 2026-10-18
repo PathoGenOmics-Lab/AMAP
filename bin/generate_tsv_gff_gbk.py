@@ -8,11 +8,12 @@ import pandas as pd
 import numpy as np
 from Bio import SeqIO
 import csv
-from Bio.SeqFeature import SeqFeature, FeatureLocation, BeforePosition, AfterPosition
+from Bio.SeqFeature import SeqFeature, FeatureLocation, CompoundLocation, BeforePosition, AfterPosition
 
 # Allow importing from bin/classify/ when run as a script, the same way
 # classify_cases.py does. classify.ids only needs `re`, so this stays cheap.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from classify import circular
 from classify.ids import clean_id
 
 __author__ = 'Paula Ruiz-Rodriguez'
@@ -57,16 +58,35 @@ def _open_ends(partial, strand_int):
     return (three, five) if strand_int == -1 else (five, three)
 
 
-def _location(start, end, strand_int, partial):
-    """A feature's location, with < or > at the ends its contig cut off."""
+def _location(start, end, strand_int, partial, length=None):
+    """A feature's location, with < or > at the ends its contig cut off.
+
+    A gene across the origin of a circular sequence of `length` bases, start
+    after end (0-based start, end exclusive), is joined across it, as Bakta's
+    GenBank writes stcE on pO157 of E. coli Sakai: join(92563..92721,1..2502).
+    """
     left, right = _open_ends(partial, strand_int)
-    return FeatureLocation(BeforePosition(start) if left else start,
-                           AfterPosition(end) if right else end, strand=strand_int)
+    first = BeforePosition(start) if left else start
+    last = AfterPosition(end) if right else end
+    if length is None or not circular.wraps(start + 1, end):
+        return FeatureLocation(first, last, strand=strand_int)
+    parts = [FeatureLocation(first, length, strand=strand_int), FeatureLocation(0, last, strand=strand_int)]
+    # Parts go in the order the gene is read, from its 5' end
+    return CompoundLocation(parts[::-1] if strand_int == -1 else parts)
+
+
+def circular_ids(records, starts_ends):
+    """The sequences to write as circular: those Bakta joined end to end (see
+    classify/circular.py) and any a gene runs across. starts_ends holds
+    (sequence id, start, end) for the features, 1-based."""
+    ids = {r.id for r in records if circular.bakta_circular(r.description)}
+    return ids | {sid for sid, start, end in starts_ends if circular.wraps(start, end)}
 
 
 def tsv_to_gbk(tsv_file, fasta_file, gbk_file, molecule_type='DNA'):
     """Convert a TSV annotation file + FASTA to GenBank format."""
     secuencias = SeqIO.to_dict(SeqIO.parse(fasta_file, "fasta"))
+    wrapped = set()   # sequences a feature runs across
     
     for record in secuencias.values():
         record.annotations['molecule_type'] = molecule_type
@@ -96,10 +116,16 @@ def tsv_to_gbk(tsv_file, fasta_file, gbk_file, molecule_type='DNA'):
                 'product': [product],
                 'db_xref': db_xrefs.split(', ')
             }
+            location = _location(start, end, strand_int, partial, len(secuencias[seq_id].seq))
+            if isinstance(location, CompoundLocation):
+                wrapped.add(seq_id)
             if feature_type.lower() == 'cds':
-                sequence = secuencias[seq_id].seq[start:end]
-                if strand_int == -1:
-                    sequence = sequence.reverse_complement()
+                if isinstance(location, CompoundLocation):
+                    sequence = location.extract(secuencias[seq_id].seq)
+                else:
+                    sequence = secuencias[seq_id].seq[start:end]
+                    if strand_int == -1:
+                        sequence = sequence.reverse_complement()
                 # Use full translation (not to_stop) to handle pseudogenes
                 # with internal stop codons. Strip trailing * if present.
                 full_translation = str(sequence[:len(sequence) - len(sequence) % 3].translate()).rstrip('*')
@@ -110,10 +136,11 @@ def tsv_to_gbk(tsv_file, fasta_file, gbk_file, molecule_type='DNA'):
                     qualifiers['note'] = [note or f'contains {full_translation.count("*")} internal stop codon(s)']
                 else:
                     qualifiers['translation'] = [full_translation]
-            location = _location(start, end, strand_int, partial)
             feature = SeqFeature(location, type=feature_type, qualifiers=qualifiers)
             secuencias[seq_id].features.append(feature)
 
+    for seq_id in circular_ids(secuencias.values(), []) | wrapped:
+        secuencias[seq_id].annotations['topology'] = 'circular'
     with open(gbk_file, 'w') as gbk:
         SeqIO.write(secuencias.values(), gbk, 'genbank')
 
@@ -331,6 +358,10 @@ def generate_gff(merged_df, tsv_df, gff_file_path, fasta_file_path):
     # Parse FASTA for sequence-region pragmas
     fasta_records = list(SeqIO.parse(fasta_file_path, "fasta"))
     contig_lengths = {rec.id: len(rec.seq) for rec in fasta_records}
+    numeric = tsv_df.assign(_s=pd.to_numeric(tsv_df['Start'], errors='coerce'),
+                            _e=pd.to_numeric(tsv_df['Stop'], errors='coerce'))
+    circular_seqs = circular_ids(fasta_records, zip(numeric['Sequence Id'], numeric['_s'], numeric['_e']))
+    regions_written = set()
 
     with open(gff_file_path, 'w') as file_gff:
         file_gff.write("##gff-version 3\n")
@@ -345,6 +376,18 @@ def generate_gff(merged_df, tsv_df, gff_file_path, fasta_file_path):
             start = row['Start']
             stop = row['Stop']
             strand = row['Strand']
+            # A circular sequence is flagged on a region feature, and a
+            # feature across its origin ends past its last base, by the
+            # sequence's length (GFF3 spec, and what Bakta writes)
+            if seq_id in circular_seqs and seq_id not in regions_written and seq_id in contig_lengths:
+                file_gff.write(f"{seq_id}\tAMAP\tregion\t1\t{contig_lengths[seq_id]}\t.\t+\t.\t"
+                               f"ID={_escape_gff3(seq_id)};Name={_escape_gff3(seq_id)};Is_circular=true\n")
+                regions_written.add(seq_id)
+            try:
+                if circular.wraps(int(start), int(stop)) and seq_id in contig_lengths:
+                    stop = int(stop) + contig_lengths[seq_id]
+            except (TypeError, ValueError):
+                pass
             locus_tag = _escape_gff3(row['Locus Tag'])
             gene = _escape_gff3(row['Gene'])
             product = _escape_gff3(row['Product'])

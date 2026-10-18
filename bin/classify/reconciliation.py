@@ -8,8 +8,9 @@ from collections import Counter
 import pandas as pd
 from intervaltree import IntervalTree
 
+from . import circular
 from .ids import format_cluster_id
-from .overlaps import get_subset_overlap_percentage, _contig
+from .overlaps import get_subset_overlap_percentage, _contig, _range_length
 
 
 def _frame(coord):
@@ -55,6 +56,11 @@ def recover_missing_genes(combined_dict, miniprot_df, min_cover=0.5):
     Rv0100 in CDC1551 cut into contigs, placed on a contig of its own, kept
     the larger one from coming back after a 7.5 kb Bakta call had displaced it.
     Nor does a piece give its name to a call that has none.
+
+    A gene across the origin of a circular sequence (start after end) goes
+    into the trees as both its copies, each read in its own frame: it accounts
+    for a placement on either side of the origin. It used to stop the run
+    here, as an interval the trees refuse (stcE on pO157 of E. coli Sakai).
     """
     reference_ids = set(miniprot_df['Prot Id'])
     placed = miniprot_df[(miniprot_df['Start'] < miniprot_df['End'])
@@ -82,7 +88,8 @@ def recover_missing_genes(combined_dict, miniprot_df, min_cover=0.5):
 
     def add_to_tree(coord, gene_id):
         tree = trees.setdefault(where(coord), IntervalTree())
-        tree[coord[0]:coord[1] + 1] = (_frame(coord), labels(coord, gene_id), coord)
+        for start, end in circular.copies(coord[0], coord[1], _contig(coord)):
+            tree[start:end + 1] = (_frame((start, end) + tuple(coord[2:])), labels(coord, gene_id), coord)
 
     def accounted(coord, prot_id):
         """The genes of the dict that account for a placement, as
@@ -178,7 +185,8 @@ def deduplicate(combined_dict):
         subset_coords = set()
         for dc in dup_coords:
             for coord in non_dup_coords:
-                if _contig(dc) == _contig(coord) and get_subset_overlap_percentage(dc, coord) == 100:
+                if _contig(dc) == _contig(coord) and \
+                        get_subset_overlap_percentage(dc, coord, _contig(dc)) == 100:
                     subset_coords.add(dc)
                     break
 
@@ -189,7 +197,7 @@ def deduplicate(combined_dict):
             to_delete.update(subset_coords)
         elif subset_coords:
             # All are subsets — keep the largest one
-            best = max(dup_coords, key=lambda c: c[1] - c[0])
+            best = max(dup_coords, key=lambda c: _range_length(c, _contig(c)))
             to_delete.update(subset_coords - {best})
 
     for c in to_delete:

@@ -8,6 +8,7 @@ the FASTA and miniprot's: by default it renames every sequence to contig_N.
 """
 
 import pandas as pd
+from . import circular
 from .ids import clean_id
 
 # The columns -rvmissing.tsv has always had; the R report reads it by position.
@@ -28,9 +29,17 @@ def read_bakta(bakta_path):
     bakta_df.columns = columns
     bakta_df['Locus Tag'] = bakta_df['Locus Tag'].apply(clean_id)
     bakta_cds = bakta_df[bakta_df['Type'] == 'cds'].copy()
-    bakta_cds['Length_nt'] = bakta_cds['End'] - bakta_cds['Start'] + 1
     bakta_cds['Contig'] = bakta_cds['Sequence Id'].astype(str)
+    # A gene across the origin of a circular sequence is written start after
+    # end, as Bakta writes it (see circular.py).
+    bakta_cds['Length_nt'] = lengths(bakta_cds)
     return bakta_cds[["Locus Tag", "Start", "End", "Strand", 'Length_nt', 'Contig']]
+
+
+def lengths(df):
+    """Bases of every feature of a frame with Start, End and Contig."""
+    return pd.Series([circular.length(s, e, c) for s, e, c in zip(df['Start'], df['End'], df['Contig'])],
+                     index=df.index, dtype='int64')
 
 
 def _custom_filter(group):

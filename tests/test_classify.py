@@ -2001,6 +2001,18 @@ class TestEmptyCases:
         assert list(case1.columns) == cols and case1.empty
         assert list(case4.columns) == cols and case4.empty
 
+    @pytest.mark.parametrize('features', ["", "chr\ttRNA\t1000\t1072\t+\tS1_00001\ttrnA\ttRNA-Ala\t\n"],
+                             ids=['nothing', 'no_cds'])
+    def test_bakta_calls_no_cds(self, features):
+        """The reference genes are then all missing from Bakta. With no CDS
+        there was no contig name to compare, which read as Bakta naming the
+        sequences differently, and with nothing at all the table did not read."""
+        with tempfile.TemporaryDirectory() as d:
+            counts, corrected = self._classify(d, features)
+        assert counts['total_cds'] == 0 and counts['rv_missing'] == 2
+        assert corrected == [['S1_Rv0001', '+', '101', '400', 'Rv0001', 'chr'],
+                             ['S1_Rv0002', '-', '601', '900', 'Rv0002', 'chr']]
+
     def test_no_alignment_at_all(self):
         """find_rv_missing had the same mask: an empty miniprot table stopped it."""
         from classify.cases import find_rv_missing

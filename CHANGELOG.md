@@ -39,6 +39,7 @@ directly comparable with 1.0.1.
 - **`--skip_mycobrowser` in organism-agnostic mode**: a custom reference from another genus turned it on by reassigning the parameter, which current Nextflow ignores with a warning, so the run went ahead with Mycobrowser enabled. It is now worked out in the parameter's default
 - **Tasks leave the pipeline untouched**: the first time a copy of AMAP ran, Python cached the bytecode of AMAP's own modules inside it, in `bin/classify/__pycache__`, and with `pathotypr classify` naming that directory in PATHOTYPR's script, the first `-resume` re-ran PATHOTYPR, Bakta and everything after them. Tasks now run with `PYTHONDONTWRITEBYTECODE=1`
 - **Samples with no Bakta call outside cases 2 and 3**: when every Bakta call had an alignment at exactly its coordinates, which a small input can do, TYPE_CASES stopped with a KeyError, because the empty column of overlaps was read as a list of column names. Case 1 and case 4 now come out empty and the rest is classified as usual. An empty miniprot table stopped it the same way
+- **Samples Bakta calls no CDS on**: with no contig names from Bakta to compare, the contig check took them for different names and stopped the run, and a Bakta table with nothing but its header did not read. The genes miniprot places now come out as missing from Bakta, like any gene it did not call
 
 ### 🧹 Code
 - **`reconcile_coordinates` is gone**: it read reference coordinates from protein identifiers that have not carried them since March 2026, so it changed nothing. The paralog check does its job with the sample's own offsets
@@ -47,7 +48,7 @@ directly comparable with 1.0.1.
 - **`tests/selftest/h37rv_selftest.sh`** annotates H37Rv with itself inside the container and fails unless every GenBank CDS comes back exactly
 - **`tests/test_cache_keys.py`** fails when a process runs AMAP code that is not in its cache key, or when its script names a `bin/` entry as a bare word without declaring it
 - **`tests/benchmark/benchmark.sh`** scores the correction algorithm on seven genomes whose right answer is known (H37Rv twice, CDC1551 complete and in 40 contigs, M. bovis, E. coli K-12 and Sakai), downloading them and running Bakta and miniprot in the container the first time, and lists every gene that changed since an earlier run
-- **259 tests**, up from 92
+- **261 tests**, up from 92
 
 ## [1.0.1] - 2026-07-25
 

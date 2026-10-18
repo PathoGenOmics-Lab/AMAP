@@ -14,7 +14,7 @@ hide:
     <span class="amap-badge"><span class="amap-badge__k">version</span><span class="amap-badge__v">1.0.1</span></span>
     <span class="amap-badge amap-badge--alt"><span class="amap-badge__k">license</span><span class="amap-badge__v">GPL-3.0</span></span>
     <span class="amap-badge amap-badge--alt"><span class="amap-badge__k">nextflow</span><span class="amap-badge__v">&ge;23.04</span></span>
-    <span class="amap-badge amap-badge--alt"><span class="amap-badge__k">tests</span><span class="amap-badge__v">92 passing</span></span>
+    <span class="amap-badge amap-badge--alt"><span class="amap-badge__k">tests</span><span class="amap-badge__v">120 passing</span></span>
   </p>
   <p class="amap-cta">
     <a class="md-button md-button--primary" href="getting-started/tutorial/">

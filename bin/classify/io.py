@@ -69,18 +69,31 @@ def _read_paf(path):
     return df
 
 
-def read_miniprot(miniprot_path):
+def read_miniprot(miniprot_path, ref_coords=False):
     """Read Miniprot PAF output, apply best-match filtering per protein.
-    
+
     For multi-copy genes (PE/PPE, IS elements), the same protein can map
     to multiple genomic positions. We deduplicate per (Prot Id, Start, End),
     keeping the row with the highest Match Nt, and prefer perfect matches.
+
+    clean_id strips the reference coordinates from each protein ID. With
+    ref_coords=True they are kept as 'Ref Start' and 'Ref End', alongside the
+    'Contig' each placement is on, for synteny.drop_paralog_placements, which
+    drops all three again. Everything else gets the usual seven columns, which
+    the -rvmissing.tsv output and the report rely on.
     """
     miniprot_df = _read_paf(miniprot_path)
+    extra = []
+    if ref_coords:
+        coords = miniprot_df['Prot Id'].astype(str).str.extract(r'_(\d+)-(\d+)$')
+        miniprot_df['Ref Start'] = pd.to_numeric(coords[0])
+        miniprot_df['Ref End'] = pd.to_numeric(coords[1])
+        miniprot_df['Contig'] = miniprot_df['fasta Tag']
+        extra = ['Ref Start', 'Ref End', 'Contig']
     miniprot_df['Prot Id'] = miniprot_df['Prot Id'].apply(clean_id)
     miniprot_df['Start'] = miniprot_df['Start'] + 1  # 0-based → 1-based
 
-    last = miniprot_df[["Prot Id", "Prot len", "Strand", "Start", "End", "Match Nt", "Num nt"]].copy()
+    last = miniprot_df[["Prot Id", "Prot len", "Strand", "Start", "End", "Match Nt", "Num nt"] + extra].copy()
 
     # Mark perfect matches (aligned nt == total nt)
     last['_is_perfect'] = (last['Num nt'] - last['Match Nt'] == 0).astype(int)

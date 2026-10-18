@@ -614,53 +614,183 @@ class TestAppendStopCodon:
 class TestCheckCds:
     """Tests for check_cds.py."""
 
-    @staticmethod
-    def _run(tmpdir, gene_id, rvs):
-        """Annotate one 36 bp gene with no stop codon, with a TAA just past it.
+    GENOME = "ATG" + "GCT" * 11 + "TAA" + "GCT" * 20
 
-        Whether the gene is treated as a known reference pseudogene decides
-        between keeping 1-36 and extending to 1-39.
+    @staticmethod
+    def _run(tmpdir, gene_id, rvs, start=1, end=36, genome=None, proteome=None):
+        """Run check_cds.py on one gene and return (start, end, pseudogene).
+
+        The default genome holds a 36 bp gene with no stop codon and a TAA just
+        past it, so whether the gene is left alone or extended shows up as
+        keeping 1-36 or ending at 39. rvs carries plain reference names, as
+        classify_cases.py writes them; whatever check_cds knows about those
+        references comes from the proteome, when one is given.
         """
         import subprocess
-        genome = os.path.join(tmpdir, 'g.fasta')
-        with open(genome, 'w') as f:
-            f.write(">chr1\n" + "ATG" + "GCT" * 11 + "TAA" + "GCT" * 20 + "\n")
+        fasta = os.path.join(tmpdir, 'g.fasta')
+        with open(fasta, 'w') as f:
+            f.write(">chr1\n" + (genome or TestCheckCds.GENOME) + "\n")
         tsv = os.path.join(tmpdir, 'sample_corrected.tsv')
         with open(tsv, 'w') as f:
-            f.write(f"{gene_id}\t+\t1\t36\t{rvs}\n")
-        script = os.path.join(os.path.dirname(__file__), '..', 'bin', 'check_cds.py')
-        subprocess.run([sys.executable, script, genome, tsv],
-                       cwd=tmpdir, check=True, capture_output=True)
+            f.write(f"{gene_id}\t+\t{start}\t{end}\t{rvs}\n")
+        cmd = [sys.executable, os.path.join(os.path.dirname(__file__), '..', 'bin', 'check_cds.py'),
+               fasta, tsv]
+        if proteome:
+            faa = os.path.join(tmpdir, 'ref.faa')
+            with open(faa, 'w') as f:
+                f.writelines(f">{h}\n{seq}\n" for h, seq in proteome.items())
+            cmd += ['--ref-proteome', faa]
+        subprocess.run(cmd, cwd=tmpdir, check=True, capture_output=True)
         out = pd.read_csv(os.path.join(tmpdir, 'sample.AMAP.tsv'), sep='\t')
         return int(out.iloc[0]['start']), int(out.iloc[0]['end']), out.iloc[0]['pseudogene']
 
+    # 12 residues: the 36 bp gene translated, no stop.
+    STOPLESS = "MAAAAAAAAAAA"
+
     def test_reference_pseudogene_kept_for_mtbc(self):
+        """A reference protein without a stop marks a reference pseudogene."""
         import tempfile as tf
         with tf.TemporaryDirectory() as d:
-            assert self._run(d, 'S1_Rv0001', 'Rv0001_1-36') == (1, 36, 'yes')
+            got = self._run(d, 'S1_Rv0001', 'Rv0001', proteome={'Rv0001_1-36': self.STOPLESS})
+            assert got == (1, 36, 'yes')
 
     def test_reference_pseudogene_kept_for_other_organisms(self):
-        """The check was gated on the ID starting with 'Rv'.
+        """Nothing depends on the gene being called RvNNNN."""
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_thrA', 'thrA', proteome={'thrA_1-36': self.STOPLESS})
+            assert got == (1, 36, 'yes')
 
-        A gene called thrA behaves identically to one called Rv0001, so it must
-        not be extended just because of its name.
+    def test_reference_pseudogene_kept_with_several_references(self):
+        """rvs is comma separated when a gene matches several references."""
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_multi', 'Rv0001, Rv0002',
+                            proteome={'Rv0001_1-36': self.STOPLESS, 'Rv0002_500-600': self.STOPLESS})
+            assert got == (1, 36, 'yes')
+
+    def test_fragment_of_a_frameshifted_reference_runs_to_its_stop(self):
+        """E. coli b0240 is a frameshifted pseudogene: translated straight
+        through, its reference protein has no final stop, because the real one
+        is in another frame. The C-terminal fragment a sample carries in that
+        frame still ends at a stop, and is extended to it as before."""
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            # The reference protein ends in residues the fragment never reaches.
+            got = self._run(d, 'S1_b0240', 'b0240',
+                            proteome={'b0240_1-200': 'MAAAAAAAAAAA' + 'WRWRWRWRWR'})
+            assert got[:2] == (1, 39)
+
+    def test_join_cds_without_a_final_star_still_runs_to_its_stop(self):
+        """For a frameshifted (join) CDS the extracted protein has no '*' even
+        though the gene has a stop: b0240 is 133 residues over 1178 bp. Its
+        last residues match the gene's, so only the span says it is not a
+        reference annotated without a stop."""
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_b0240', 'b0240', proteome={'b0240_1-1178': self.STOPLESS})
+            assert got[:2] == (1, 39)
+
+    def test_reference_with_a_stop_means_the_sample_lost_it(self):
+        """If the reference protein has its stop, the sample's gene ran past it
+        and is extended to the next one, as it always was."""
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_Rv0001', 'Rv0001', proteome={'Rv0001_1-39': self.STOPLESS + '*'})
+            assert got[:2] == (1, 39)
+
+    def test_rvs_never_carries_coordinates(self):
+        """The pipeline writes plain names into rvs, so without the proteome
+        there is nothing to recognise a reference pseudogene by.
+
+        The previous check looked for coordinates in rvs and was tested with
+        hand-written ones; classify_cases.py had stopped writing them in March
+        2026, so in a real run it never fired.
         """
         import tempfile as tf
         with tf.TemporaryDirectory() as d:
-            assert self._run(d, 'S1_thrA', 'thrA_1-36') == (1, 36, 'yes')
-
-    def test_reference_pseudogene_kept_with_several_references(self):
-        """rvs is comma separated; any of them matching the position counts."""
-        import tempfile as tf
-        with tf.TemporaryDirectory() as d:
-            assert self._run(d, 'S1_multi', 'Rv0001_1-36, Rv0002_500-600') == (1, 36, 'yes')
+            assert self._run(d, 'S1_Rv0001', 'Rv0001')[:2] == (1, 39)
 
     def test_gene_without_reference_coordinates_is_extended(self):
-        """No embedded coordinates means nothing vouches for the boundary."""
+        """No reference means nothing vouches for the boundary."""
         import tempfile as tf
         with tf.TemporaryDirectory() as d:
-            start, end, _ = self._run(d, 'S1_00042', '')
+            start, end, _ = self._run(d, 'S1_00042', '', proteome={'Rv0001_1-36': self.STOPLESS})
             assert (start, end) == (1, 39)
+
+    def test_partial_final_codon_of_a_reference_pseudogene_is_kept(self):
+        """oxyR' (Rv2427A) spans 517 bp in the reference; its alignment covers
+        the 516 that make whole codons. The trailing base goes back on."""
+        import tempfile as tf
+        with tf.TemporaryDirectory() as d:
+            # Reference span 1-37 carries one base past the twelve codons.
+            got = self._run(d, 'S1_Rv2427A', 'Rv2427A',
+                            proteome={'Rv2427A_1-37': self.STOPLESS + 'A*'})
+            assert got == (1, 37, 'yes')
+
+    def test_clipped_n_terminus_is_restored(self):
+        """Miniprot aligned Rv3611 from residue 30 on CP110619."""
+        import tempfile as tf
+        genome = "ATG" + "AAA" * 5 + "GCT" * 10 + "TAA" + "GCT" * 10
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_Rv3611', 'Rv3611', start=19, end=51, genome=genome,
+                            proteome={'Rv3611_1-51': 'MKKKKK' + 'A' * 10 + '*'})
+            assert got == (1, 51, 'no')
+
+    def test_n_terminus_is_not_restored_across_a_stop(self):
+        """If the sample has a stop where the reference has residues, its
+        protein really is shorter."""
+        import tempfile as tf
+        genome = "ATG" + "AAA" * 2 + "TAA" + "AAA" * 2 + "GCT" * 10 + "TAA" + "GCT" * 10
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_Rv3611', 'Rv3611', start=19, end=51, genome=genome,
+                            proteome={'Rv3611_1-51': 'MKKKKK' + 'A' * 10 + '*'})
+            assert got[:2] == (19, 51)
+
+    def test_n_terminus_is_not_restored_when_upstream_differs(self):
+        """The gene is clipped, but the sample's upstream codons translate to
+        something else than the reference's first residues: its N-terminus is
+        not the reference's, so nothing is borrowed from it."""
+        import tempfile as tf
+        genome = "ATG" + "GAA" * 5 + "GCT" * 10 + "TAA" + "GCT" * 10
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_Rv3611', 'Rv3611', start=19, end=51, genome=genome,
+                            proteome={'Rv3611_1-51': 'MKKKKK' + 'A' * 10 + '*'})
+            assert got[:2] == (19, 51)
+
+    def test_internal_deletion_is_not_mistaken_for_a_clipped_start(self):
+        """M. bovis Rv3159c (PPE53) is one residue short through an in-frame
+        deletion and starts at the same ATG as H37Rv. With a CTG in front, an
+        earlier version of the completion put it on, giving LMNYSV..."""
+        import tempfile as tf
+        genome = "CTG" + "ATG" + "GCT" * 20 + "TAA" + "GCT" * 10
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_Rv3159c', 'Rv3159c', start=4, end=69, genome=genome,
+                            proteome={'Rv3159c_1-72': 'MD' + 'A' * 20 + '*'})
+            assert got[:2] == (4, 69)
+
+    def test_internal_deletion_with_a_start_codon_upstream(self):
+        """Same, with an ATG in front, which translates to the reference's
+        first residue: only the gene already lining up with the reference's
+        start says there is nothing to restore."""
+        import tempfile as tf
+        genome = "ATG" + "ATG" + "GCT" * 20 + "TAA" + "GCT" * 10
+        with tf.TemporaryDirectory() as d:
+            got = self._run(d, 'S1_Rv3159c', 'Rv3159c', start=4, end=69, genome=genome,
+                            proteome={'Rv3159c_1-72': 'MD' + 'A' * 20 + '*'})
+            assert got[:2] == (4, 69)
+
+    def test_far_stop_is_found_when_the_reference_says_how_far(self):
+        """The last 128 residues of a PE_PGRS went unaligned, 387 bp from the
+        stop; the default search stops at 300 bp."""
+        import tempfile as tf
+        genome = "ATG" + "GCT" * 150 + "TAA" + "GCT" * 20
+        protein = 'M' + 'A' * 150 + '*'
+        with tf.TemporaryDirectory() as d:
+            assert self._run(d, 'S1_g', 'gX', end=90, genome=genome,
+                             proteome={'gX_1-456': protein})[:2] == (1, 456)
+        with tf.TemporaryDirectory() as d:
+            assert self._run(d, 'S1_g', 'gX', end=90, genome=genome)[:2] == (1, 90)
 
     def test_fasta_matches_the_table_after_deduplication(self):
         """Two genes that extend onto the same coordinates leave one row.
@@ -700,6 +830,32 @@ class TestCheckCds:
 
 class TestDeduplicateRvs:
     """Tests for deduplicate_rvs.py."""
+
+    def test_tie_goes_to_the_copy_bakta_also_called(self):
+        """E. coli K-12 b2635 aligns to its own locus and to a prophage copy
+        at 266553, both 237 bp. The tie went to whichever came first in the
+        genome; the copy Bakta called at the same coordinates now wins."""
+        from deduplicate_rvs import deduplicate
+        genes = [
+            {'id': 'S1_b2635', 'strand': '-', 'start': '266553', 'end': '266789',
+             'rvs': 'b2635', 'pseudogene': 'no'},
+            {'id': 'S1_02737', 'strand': '+', 'start': '2770445', 'end': '2770681',
+             'rvs': 'b2635', 'pseudogene': 'no'},
+        ]
+        kept, _ = deduplicate(genes, {(2770445, 2770681, '+')})
+        assert [g['id'] for g in kept] == ['S1_02737']
+
+    def test_bakta_support_only_breaks_ties(self):
+        """A longer copy still wins over a Bakta-confirmed shorter one."""
+        from deduplicate_rvs import deduplicate
+        genes = [
+            {'id': 'S1_a', 'strand': '+', 'start': '100', 'end': '399',
+             'rvs': 'g1', 'pseudogene': 'no'},
+            {'id': 'S1_b', 'strand': '+', 'start': '1000', 'end': '1201',
+             'rvs': 'g1', 'pseudogene': 'no'},
+        ]
+        kept, _ = deduplicate(genes, {(1000, 1201, '+')})
+        assert [g['id'] for g in kept] == ['S1_a']
 
     def test_removing_one_copy_keeps_the_others(self):
         """A multi-copy gene has one record per placement, all sharing an id.
@@ -943,3 +1099,249 @@ class TestBiopythonCompat:
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
+
+
+# =============================================================================
+# PARALOG PLACEMENTS (synteny.py)
+# =============================================================================
+
+class TestParalogPlacements:
+    """drop_paralog_placements keeps each protein at its own locus.
+
+    The frames mimic read_miniprot(..., ref_coords=True): anchors are proteins
+    placed once, every 10 kb, and a 2 kb insertion halfway through the sample
+    shifts everything after it, so reference coordinates cannot be compared
+    with sample positions directly.
+    """
+
+    COLS = ['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt',
+            'Ref Start', 'Ref End', 'Contig']
+
+    @classmethod
+    def _frame(cls, extra=(), contig='chr', insertion_at=200_000, shift=2_000, n=40):
+        rows = []
+        for i in range(n):
+            ref = 10_000 * i + 1
+            pos = ref + (shift if ref > insertion_at else 0)
+            rows.append([f'g{i}', 300, '+', pos, pos + 899, 900, 900, ref, ref + 899, contig])
+        rows += [list(r) + [contig] if len(r) == 9 else list(r) for r in extra]
+        return pd.DataFrame(rows, columns=cls.COLS)
+
+    @staticmethod
+    def _placed(df, prot):
+        return sorted(df.loc[df['Prot Id'] == prot, 'Start'])
+
+    def test_returns_the_usual_columns(self):
+        """-rvmissing.tsv and the report expect exactly these seven."""
+        from classify.synteny import drop_paralog_placements
+        out = drop_paralog_placements(self._frame())
+        assert list(out.columns) == ['Prot Id', 'Prot len', 'Strand', 'Start', 'End',
+                                     'Match Nt', 'Num nt']
+
+    def test_paralog_on_another_genes_locus_is_dropped(self):
+        """Rv1945 also lands inside Rv1148c; that copy is Rv1148c's locus."""
+        from classify.synteny import drop_paralog_placements
+        # P belongs at reference 305_001, i.e. sample 307_001 after the insertion,
+        # and also aligns inside g5 at 50_001.
+        df = self._frame(extra=[
+            ['P', 300, '+', 307_101, 307_900, 800, 800, 305_101, 305_900],
+            ['P', 300, '+', 50_100, 50_899, 780, 800, 305_101, 305_900],
+        ])
+        out = drop_paralog_placements(df)
+        assert self._placed(out, 'P') == [307_101]
+        assert self._placed(out, 'g5') == [50_001]
+
+    def test_offsets_come_from_the_sample_not_the_reference(self):
+        """After an insertion, a protein's reference coordinates point at
+        another locus of the sample. Compared in absolute terms, a copy sitting
+        exactly there would pass for the protein's own; the local offset says
+        the protein is 5 kb further on.
+        """
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(shift=5_000)
+        df = df[df['Prot Id'] != 'g30']
+        extra = pd.DataFrame([
+            # Q belongs at reference 295_001, sample 300_001 after the shift.
+            ['Q', 300, '+', 300_001, 300_900, 900, 900, 295_001, 295_900, 'chr'],
+            # P belongs at reference 300_101, sample 305_101; it also aligns
+            # at 300_101, inside Q, where its reference coordinates point.
+            ['P', 300, '+', 305_101, 305_800, 700, 700, 300_101, 300_800, 'chr'],
+            ['P', 300, '+', 300_100, 300_799, 700, 700, 300_101, 300_800, 'chr'],
+        ], columns=self.COLS)
+        out = drop_paralog_placements(pd.concat([df, extra], ignore_index=True))
+        assert self._placed(out, 'P') == [305_101]
+        assert self._placed(out, 'Q') == [300_001]
+
+    def test_identical_copies_annotated_differently_follow_position(self):
+        """Rv1150 and Rv1041c: two identical copies of one element, annotated
+        as the short protein at one and the long one at the other. Only
+        position can tell which is which."""
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(extra=[
+            # short protein S belongs at 120_001, long protein L at 340_001
+            ['S', 184, '+', 120_001, 120_552, 552, 552, 120_001, 120_552],
+            ['S', 184, '+', 342_001, 342_552, 552, 552, 120_001, 120_552],
+            ['L', 288, '+', 120_001, 120_864, 864, 864, 340_001, 340_864],
+            ['L', 288, '+', 342_001, 342_864, 864, 864, 340_001, 340_864],
+        ])
+        out = drop_paralog_placements(df)
+        assert self._placed(out, 'S') == [120_001]
+        assert self._placed(out, 'L') == [342_001]
+
+    def test_better_match_is_not_dropped_for_its_position(self):
+        """E. coli Sakai has two of K-12's three ldr toxin copies. The second
+        one sits where b4423 belongs, but it is a b4421, which differs from
+        b4423 at two residues; position alone labelled it b4423."""
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(extra=[
+            # b4421-like belongs at 120_001; b4423-like at 125_001. The sample's
+            # copy at 125_001 is an exact b4421 and a 94% b4423.
+            ['b4421', 36, '+', 120_001, 120_108, 108, 108, 120_001, 120_108],
+            ['b4421', 36, '+', 125_001, 125_108, 108, 108, 120_001, 120_108],
+            ['b4423', 36, '+', 125_001, 125_108, 102, 108, 125_001, 125_108],
+        ])
+        out = drop_paralog_placements(df)
+        assert self._placed(out, 'b4421') == [120_001, 125_001]
+        assert self._placed(out, 'b4423') == [125_001]
+
+    def test_overlapping_genes_in_different_frames_are_kept(self):
+        """Rv1041c and Rv1042c really overlap, in different frames. A SNP in
+        one of them must not cost it its place to the other."""
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(extra=[
+            ['A', 288, '-', 100_001, 100_864, 864, 864, 100_001, 100_864],
+            ['B', 136, '-', 100_521, 100_928, 396, 408, 100_521, 100_928],
+        ])
+        out = drop_paralog_placements(df)
+        assert self._placed(out, 'A') == [100_001]
+        assert self._placed(out, 'B') == [100_521]
+
+    def test_neighbours_brought_into_one_frame_are_both_kept(self):
+        """Rv2879c and Rv2880c overlap in H37Rv in different frames; an indel
+        in CDC1551 puts them in one. They are neighbours in the reference, not
+        a paralog squatting on someone else's locus, so neither is dropped."""
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(extra=[
+            ['Rv2879c', 190, '-', 100_001, 100_570, 552, 570, 100_001, 100_570],
+            ['Rv2880c', 276, '-', 100_268, 100_828, 558, 561, 100_269, 100_828],
+        ])
+        out = drop_paralog_placements(df)
+        assert self._placed(out, 'Rv2879c') == [100_001]
+        assert self._placed(out, 'Rv2880c') == [100_268]
+
+    def test_paralog_next_door_after_a_deletion(self):
+        """CDC1551 lacks Rv3427c-Rv3428c; Rv3425 then lands on Rv3429, close
+        enough to home to look syntenic. The better match keeps the locus."""
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(extra=[
+            ['Rv3429', 179, '+', 155_001, 155_537, 537, 537, 155_001, 155_537],
+            ['Rv3425', 176, '+', 155_001, 155_528, 465, 528, 150_001, 150_528],
+        ])
+        out = drop_paralog_placements(df)
+        assert self._placed(out, 'Rv3429') == [155_001]
+        assert self._placed(out, 'Rv3425') == []
+
+    def test_copy_at_a_locus_nobody_claims_is_kept(self):
+        """An IS6110 insertion at a site the reference lacks, or a duplication
+        in the sample: no protein belongs there, so nothing is dropped."""
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(extra=[
+            ['IS', 300, '+', 150_001, 150_900, 900, 900, 150_001, 150_900],
+            ['IS', 300, '+', 255_001, 255_900, 900, 900, 150_001, 150_900],
+        ])
+        out = drop_paralog_placements(df)
+        assert self._placed(out, 'IS') == [150_001, 255_001]
+
+    def test_reverse_oriented_sequence(self):
+        """A reverse-complemented assembly maps positions backwards."""
+        from classify.synteny import drop_paralog_placements
+        L = 500_000
+        rows = []
+        for i in range(40):
+            ref = 10_000 * i + 1
+            rows.append([f'g{i}', 300, '-', L - ref - 899, L - ref, 900, 900, ref, ref + 899, 'chr'])
+        # P belongs at reference 205_101; its paralog copy sits inside g5.
+        own = L - 205_900
+        rows.append(['P', 300, '-', own, own + 799, 800, 800, 205_101, 205_900, 'chr'])
+        g5 = L - 50_001 - 899
+        rows.append(['P', 300, '-', g5 + 100, g5 + 899, 780, 800, 205_101, 205_900, 'chr'])
+        out = drop_paralog_placements(pd.DataFrame(rows, columns=self.COLS))
+        assert self._placed(out, 'P') == [own]
+
+    def test_contigs_are_kept_apart(self):
+        """Offsets from one contig say nothing about another."""
+        from classify.synteny import drop_paralog_placements
+        a = self._frame(contig='c1')
+        b = self._frame(contig='c2', shift=0)
+        b['Prot Id'] = 'h' + b['Prot Id']
+        extra = pd.DataFrame([
+            ['P', 300, '+', 120_101, 120_900, 800, 800, 120_101, 120_900, 'c2'],
+            ['P', 300, '+', 50_100, 50_899, 780, 800, 120_101, 120_900, 'c2'],
+        ], columns=self.COLS)
+        out = drop_paralog_placements(pd.concat([a, b, extra], ignore_index=True))
+        assert self._placed(out, 'P') == [120_101]
+        assert len(out) == len(a) + len(b) + 1
+
+    def test_unplaced_proteins_pass_through(self):
+        """miniprot -u writes a row for every protein it could not place, with
+        '*' for target and strand and zeros for coordinates. They used to crash
+        the interval tree on CDC1551, where Rv3427c is deleted."""
+        from classify.synteny import drop_paralog_placements
+        # The three CDC1551 lacks: three of them is what it takes for the '*'
+        # rows to look like a sequence with enough anchors to predict from.
+        df = self._frame(extra=[
+            ['Rv0793', 102, '*', 1, 0, 0, 0, 886_719, 887_024, '*'],
+            ['Rv3427c', 252, '*', 1, 0, 0, 0, 3_843_885, 3_844_640, '*'],
+            ['Rv3428c', 411, '*', 1, 0, 0, 0, 3_844_738, 3_845_970, '*'],
+        ])
+        out = drop_paralog_placements(df)
+        assert len(out) == len(df)
+        assert set(out.loc[out['Strand'] == '*', 'Prot Id']) == {'Rv0793', 'Rv3427c', 'Rv3428c'}
+
+    def test_without_reference_coordinates_nothing_changes(self):
+        from classify.synteny import drop_paralog_placements
+        df = self._frame(extra=[
+            ['P', 300, '+', 307_101, 307_900, 800, 800, None, None],
+            ['P', 300, '+', 50_101, 50_900, 780, 800, None, None],
+        ])
+        df['Ref Start'] = np.nan
+        df['Ref End'] = np.nan
+        assert len(drop_paralog_placements(df)) == len(df)
+
+
+class TestStrandOfResolvedHit:
+    """Resolving a conflict takes the strand of the hit being resolved."""
+
+    def test_second_placement_keeps_its_own_strand(self):
+        """esxM (Rv1792) is placed twice, its paralog first and on the other
+        strand; it came out at its own coordinates on the paralog's strand."""
+        from classify.overlaps import (build_overlap_tree, create_overlap_groups,
+                                       resolve_single_overlaps)
+        mp = pd.DataFrame([
+            ['Rv1792', 99, '-', 1_160_855, 1_161_151, 294, 297],
+            ['Rv1792', 99, '+', 2_030_347, 2_030_643, 297, 297],
+        ], columns=['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt'])
+        case4 = pd.DataFrame([['S1_01880', 2_030_401, 2_030_643, '+', 243]],
+                             columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt'])
+        groups = create_overlap_groups(build_overlap_tree(mp, case4, 'Prot Id', 'Locus Tag'),
+                                       case4, mp)
+        b_groups = create_overlap_groups(build_overlap_tree(case4, mp, 'Locus Tag', 'Prot Id'),
+                                         case4, mp)
+        combined = {}
+        resolve_single_overlaps(groups, mp, combined, {v['Prot Id']: v for v in b_groups.values()})
+        assert combined == {(2_030_347, 2_030_643, '+'): 'Rv1792'}
+
+    def test_bakta_coordinates_keep_baktas_strand(self):
+        """When the Bakta call wins, it keeps the strand Bakta gave it."""
+        from classify.overlaps import (build_overlap_tree, create_overlap_groups,
+                                       resolve_single_overlaps)
+        mp = pd.DataFrame([['X', 100, '-', 10_000, 10_300, 300, 300]],
+                          columns=['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt'])
+        # Much longer than the hit, so the Bakta coordinates are chosen.
+        case4 = pd.DataFrame([['S1_00001', 9_000, 10_300, '+', 1_301]],
+                             columns=['Locus Tag', 'Start', 'End', 'Strand', 'Length_nt'])
+        groups = create_overlap_groups(build_overlap_tree(mp, case4, 'Prot Id', 'Locus Tag'),
+                                       case4, mp)
+        combined = {}
+        resolve_single_overlaps(groups, mp, combined, {})
+        assert combined == {(9_000, 10_300, '+'): 'S1_00001'}

@@ -32,7 +32,20 @@ def overlap_fraction(s1, e1, s2, e2):
     return ov / length if length > 0 else 0
 
 
-def deduplicate(genes):
+def read_bakta_cds(path):
+    """(start, end, strand) of every CDS in a Bakta TSV."""
+    cds = set()
+    with open(path) as fh:
+        for line in fh:
+            if line.startswith('#'):
+                continue
+            f = line.rstrip('\n').split('\t')
+            if len(f) > 4 and f[1] == 'cds':
+                cds.add((int(f[2]), int(f[3]), f[4]))
+    return cds
+
+
+def deduplicate(genes, bakta_cds=frozenset()):
     """Remove duplicate Rv assignments and overlapping no-Rv genes."""
     # Index single-Rv genes by Rv
     rv_genes = defaultdict(list)
@@ -47,12 +60,17 @@ def deduplicate(genes):
     for rv, indices in rv_genes.items():
         if len(indices) <= 1:
             continue
-        # Score each: prefer non-pseudogene, then longer CDS
+        # Score each: prefer non-pseudogene, then longer CDS. Between copies
+        # that tie, prefer one Bakta called at exactly the same coordinates:
+        # two methods agreeing on a locus beats coming first in the genome,
+        # which is what decided before. In E. coli K-12 that kept a
+        # miniprot-only copy of b2635 at 266553 and dropped the real one.
         def score(idx):
             g = genes[idx]
             is_pseudo = 1 if g.get('pseudogene', 'no') == 'yes' else 0
             length = int(g['end']) - int(g['start']) + 1
-            return (-is_pseudo, length)  # higher is better
+            confirmed = (int(g['start']), int(g['end']), g['strand']) in bakta_cds
+            return (-is_pseudo, length, confirmed)  # higher is better
 
         ranked = sorted(indices, key=score, reverse=True)
         # Keep best, remove rest
@@ -121,11 +139,14 @@ def main():
     parser.add_argument('amap_tsv', help='AMAP TSV file (with header)')
     parser.add_argument('--faa', help='AMAP FAA file to filter', default=None)
     parser.add_argument('--fna', help='AMAP FNA file to filter', default=None)
+    parser.add_argument('--bakta', help='Bakta TSV, to break ties between copies of a gene '
+                                        'in favour of one Bakta also called', default=None)
     args = parser.parse_args()
 
     header, genes = parse_amap_tsv(args.amap_tsv)
     n_before = len(genes)
-    deduped, removed_indices = deduplicate(genes)
+    bakta_cds = read_bakta_cds(args.bakta) if args.bakta else frozenset()
+    deduped, removed_indices = deduplicate(genes, bakta_cds)
     n_removed = n_before - len(deduped)
 
     if n_removed > 0:

@@ -2,6 +2,29 @@
 
 All notable changes to AMAP are documented in this file.
 
+## [Unreleased]
+
+Annotating H37Rv against its own reference now gives back every CDS of the
+AL123456.3 GenBank record at exactly its coordinates, strand and name: 4031 of
+4031, against 4020 before. The changes apply to every genome, so results are not
+directly comparable with 1.0.1.
+
+### 🔬 Correctness
+- **Paralog copies no longer take another gene's place**: a protein with a paralog was placed at both loci, and which copy survived came down to insertion order. On H37Rv itself that lost Rv1150, Rv1945 and Rv2828c; on M. bovis it reported genes the strain lacks (the mce3 operon of RD7, the phiRv2 prophage of RD11, plcBC of RD5) as copies sitting on their paralogs. Each placement is now checked against where its protein belongs, predicted from the sample's own offset to the reference so that indels do not throw it off
+- **Strand of a resolved conflict**: taken from the protein's first placement anywhere in the genome instead of the one being resolved, so esxM (Rv1792), Rv3466 and two IS6110 copies came out at their own coordinates on the wrong strand; a Bakta call chosen over an alignment also took the alignment's strand
+- **Reference pseudogenes keep their extent**: PE21 (Rv2099c) and PPE48 (Rv3022c), which the reference annotates without a stop, were extended to the next one, and oxyR' (Rv2427A) and Rv3216 lost the partial final codon the reference gives them
+- **The 1.0.1 fix for reference pseudogenes never fired**: it looked for reference coordinates in a column that has not carried them since March 2026, and its tests wrote them in by hand. `check_cds.py` now reads the reference proteome instead
+- **Alignments that stop short are completed**: miniprot can miss a protein's N-terminus (Rv3611 on CP110619) or leave a repetitive C-terminus unaligned further from its stop than the 300 bp searched; the reference protein now says how much is missing
+- **Ties between copies of a gene** go to the one Bakta also called, not the one that comes first in the genome (E. coli K-12 b2635)
+
+### 🐛 Pipeline
+- **The default H37Rv reference under Docker**: its files live inside the container and were handed to processes as paths, so Nextflow mounted `/reference` from the host, which Docker Desktop refuses and Docker on Linux mounts empty over the container's own. `BUNDLED_REFERENCE` copies them out first
+- **`-profile test`**: `VALIDATE_INPUTS` still required the sample sheet the test profile does without. 1.0.1 had only been checked with `-preview`, which runs no task
+
+### 🧪 Testing
+- **`tests/selftest/h37rv_selftest.sh`** annotates H37Rv with itself inside the container and fails unless every GenBank CDS comes back exactly
+- **120 tests**, up from 92
+
 ## [1.0.1] - 2026-07-25
 
 Bug fixes, most of them found by running the pipeline on real genomes rather

@@ -12,6 +12,38 @@ Coordinates throughout are 1-based inclusive, so a gene's length is
 `end - start + 1`. Every comparison is strand-aware: genes on opposite strands
 at the same position are different genes and never conflict.
 
+## 0. Paralog placements
+
+Miniprot places a reference protein everywhere it scores within 5% of its best,
+so a protein with a paralog is placed at both loci. Before anything is
+classified, each placement is checked against where the protein belongs.
+
+The reference proteome carries each protein's coordinates in its header
+(`Rv1150_1278269-1278820`), but those are reference coordinates, and any indel
+upstream shifts every position after it. So each placement's reference position
+is predicted from the nearest proteins placed only once, which follow the
+sample's local offset from the reference, and the placement closest to where the
+protein belongs is its **syntenic** one. A placement is then dropped when all of
+these hold:
+
+- another protein's syntenic placement covers at least **50%** of it, on the
+  same strand and in the **same reading frame**
+- that protein matches there **at least as well**
+- the two proteins live in different places in the reference, so they are not
+  simply neighbours that overlap
+
+What this removes is a protein sitting on someone else's locus: Rv1945 on
+Rv1148c, the mce3 genes M. bovis has lost (RD7) on their mce1 paralogs, or the
+sixteen other IS6110 names on each IS6110 copy. What it leaves alone is a copy
+at a locus no protein claims, such as an IS6110 insertion at a site the
+reference lacks or a duplication in the sample, and genes that genuinely
+overlap, which sit in different frames (Rv1041c and Rv1042c).
+
+When two proteins both look syntenic at one locus, which happens when a deletion
+removes a gene and leaves its paralog next door as the nearest place left, the
+better match keeps the locus. CDC1551 lacks Rv3427c and Rv3428c, and without
+this Rv3425 and Rv3426 would sit on Rv3429.
+
 ## 1. Classification
 
 Every Bakta CDS is compared against the Miniprot alignments.
@@ -82,41 +114,27 @@ coordinate overlaps an existing one by **70% or more** on the same strand:
 
 - the new gene displaces the existing one if it is longer by **more than 550 bp**
 - it also displaces it if the existing gene is shorter by less than that margin
-  **and is not a reference gene**, reference genes being identified by the
-  coordinates embedded in their identifiers
+  and is not a reference gene
 - otherwise the existing gene stands and the new coordinate is dropped
+
+The reference-gene test looks for coordinates embedded in the identifier, and
+identifiers have been stripped of them since the alignments are read, so at
+present no gene qualifies and the second rule applies to all of them.
 
 ## 5. Reconciliation
 
-Reference proteins carry their true coordinates in their headers
-(`Rv0001_1-1524`). Two things follow.
-
-**Coordinate replacement.** When an accepted gene matches a reference gene by
-exact name and their coordinates overlap by more than half the shorter one, with
-neither more than twice the other, the reference coordinates replace the
-current ones. Name matching is exact after normalisation, so `Rv3508` does not
-match `Rv3508c` and `Rv1` does not match `Rv10`.
-
-**Paralog removal.** If a gene's own embedded coordinates overlap its actual
-position by less than half, Miniprot placed it on a paralogous region. It is
-removed, unless one of these holds:
-
-- another alignment at that exact position does have matching embedded
-  coordinates, proving the locus is real
-- Bakta independently called a gene at exactly those coordinates
-- the protein has more than two alignments across the genome, so it is
-  multi-copy and placement away from the reference position is expected, which
-  is what keeps PE/PPE and IS elements intact
-
-When a gene is removed and Bakta had called something at roughly that position
-with a comparable length, the Bakta call is restored in its place.
+`reconcile_coordinates` was written to replace a gene's coordinates with the
+ones embedded in its reference identifier, and to remove genes placed away from
+them. It reads those coordinates from identifiers that no longer carry any, so
+in a run it changes nothing. Comparing them in absolute terms would also be
+wrong for any genome but the reference, where an upstream indel shifts every
+position. Step 0 does the paralog part of its job with the sample's own offsets.
 
 ## 6. Rescuing missing genes
 
 Reference genes still absent from the set are added back, best alignment first.
-A placement is only accepted if it overlaps the protein's embedded coordinates
-by at least half, so a gene that only aligns to a paralogous region is left out
-rather than placed wrongly. If the best hit fails that test, the next is tried.
+Placements on other genes' loci have already been dropped in step 0, so what is
+left to rescue sits where the gene belongs or at a locus nobody claims.
 
 ## 7. Final deduplication
 
@@ -124,18 +142,36 @@ Where one gene ends up at several coordinates, entries fully contained inside a
 different gene are dropped, always keeping at least one entry per gene so
 nothing disappears entirely.
 
+After the stop codon check, `deduplicate_rvs.py` keeps one gene per reference
+protein: a non-pseudogene over a pseudogene, then the longer one, then the one
+Bakta also called at exactly those coordinates. The last only breaks ties,
+which used to go to whichever copy came first in the genome.
+
 ## 8. Stop codon check
 
 `check_cds.py` translates every surviving CDS.
 
+It is given the reference proteome, which settles what a translation alone
+cannot.
+
 **No terminal stop codon.** Coordinates are extended to the next in-frame stop,
-searching up to 300 bp in the right direction for the strand. If the extension
+searching 300 bp in the right direction for the strand, or as far as the
+reference protein says is missing when that is further. If the extension
 introduces internal stops or finds nothing, the original coordinates are kept
 and the gene is flagged as a pseudogene.
 
-**Reference genes are exempt.** If the coordinates match the ones embedded in
-the identifier, the gene is a known pseudogene in the reference and is left
-alone rather than extended.
+**Reference pseudogenes keep their extent.** When the reference protein spans
+its annotated stretch codon for codon with no stop (PE21, Rv2099c; PPE48,
+Rv3022c) and the gene ends where it does, the reference annotates it without a
+stop, and the gene is left as it is and flagged. A reference pseudogene
+annotated with a partial final codon (oxyR', Rv2427A) gets that base back,
+since an alignment only covers whole codons.
+
+**Clipped N-termini are restored.** When a gene ends in a stop but is short of
+its reference protein at the start, and the codons upstream open with a start
+codon and translate to the missing residues, the gene is extended to cover
+them. A gene that already starts where its reference does is shorter somewhere
+inside, and is left alone.
 
 **Internal stop codons.** Flagged as a pseudogene and kept, with the flag
 propagated to the master table and the GFF3. `*-AMAP.clean.faa` excludes them.
@@ -162,9 +198,11 @@ sets of coordinates overlap, which one survives into the curated annotation.
 | Bakta length advantage | multiple overlaps | 500 bp |
 | Overlap for deduplication | on insert | 70% |
 | Length margin for displacement | on insert | 550 bp |
-| Placement overlap | reconciliation and rescue | 50% |
-| Multi-copy alignment count | paralog exemption | more than 2 |
-| Stop codon search | quality control | 300 bp |
+| Distance from the predicted position | paralog placements | 10 kb |
+| Proteins placed once, each side, for the local offset | paralog placements | 5 |
+| Cover to claim another protein's placement | paralog placements | 50% |
+| Stop codon search | quality control | 300 bp, or what the reference protein is missing |
+| Identity to restore a clipped N-terminus | quality control | 90% |
 
 These are constants in `bin/classify/`, tuned on MTBC. Another organism may want
 different values, particularly the 550 bp length margins, which assume genes of

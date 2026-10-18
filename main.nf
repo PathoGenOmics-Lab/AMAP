@@ -264,7 +264,7 @@ include { GET_ALLDUP }          from './modules/local/get'
 include { PANGENE }             from './modules/local/pangene'
 include { REPORT_INPUTS }       from './modules/local/freport'
 include { FINAL_REPORT }        from './modules/local/freport'
-include { PREPARE_REFERENCE }   from './modules/local/reference'
+include { PREPARE_REFERENCE; BUNDLED_REFERENCE } from './modules/local/reference'
 include { VALIDATE_INPUTS }     from './modules/local/validation'
 include { SOFTWARE_VERSIONS }   from './modules/local/versions'
 include { DUMP_PARAMS }         from './modules/local/versions'
@@ -345,8 +345,13 @@ fasta_ch.count().subscribe { n ->
 // --- WORKFLOW ---
 //
 workflow {
-    // 0. Input validation + reproducibility — always runs first
-    VALIDATE_INPUTS(Channel.value(file(params.tsv)))
+    // 0. Input validation and reproducibility, before anything else. The test
+    // profile has no sample sheet to validate, only the reference genome the
+    // container ships, so validating params.tsv would fail on a file that was
+    // never meant to exist.
+    if (!params.test_data) {
+        VALIDATE_INPUTS(Channel.value(file(params.tsv)))
+    }
     SOFTWARE_VERSIONS()
     DUMP_PARAMS()
 
@@ -389,9 +394,19 @@ workflow {
         ref_genome_fasta_ch = PREPARE_REFERENCE.out.ref_genome_fasta
         bad_bakta_ch        = PREPARE_REFERENCE.out.bad_bakta
     } else {
-        ref_proteome_ch     = Channel.value(file(params.miniprot_ref_aa))
-        ref_genome_fasta_ch = Channel.value(file(params.miniprot_ref_h37rv))
-        bad_bakta_ch        = Channel.value(file(params.miniprot_ref_bad_bakta))
+        // Files given on the host are staged as usual. The defaults live inside
+        // the container, and BUNDLED_REFERENCE copies them out (see there).
+        def refs = [params.miniprot_ref_aa, params.miniprot_ref_h37rv, params.miniprot_ref_bad_bakta]
+        if (refs.every { file(it).exists() }) {
+            ref_proteome_ch     = Channel.value(file(params.miniprot_ref_aa))
+            ref_genome_fasta_ch = Channel.value(file(params.miniprot_ref_h37rv))
+            bad_bakta_ch        = Channel.value(file(params.miniprot_ref_bad_bakta))
+        } else {
+            BUNDLED_REFERENCE()
+            ref_proteome_ch     = BUNDLED_REFERENCE.out.ref_proteome.first()
+            ref_genome_fasta_ch = BUNDLED_REFERENCE.out.ref_genome_fasta.first()
+            bad_bakta_ch        = BUNDLED_REFERENCE.out.bad_bakta.first()
+        }
     }
 
     // 5. Align proteins to the genome with Miniprot
@@ -401,7 +416,7 @@ workflow {
     TYPE_CASES(MINIPROT.out.paf_files.join(BAKTA_ANNOTATOR.out.for_cases))
 
     // 7. Correct CDS based on classified cases
-    FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix))
+    FIX_CDS(TYPE_CASES.out.for_fix.join(BAKTA_ANNOTATOR.out.for_fix), ref_proteome_ch)
 
     // --- FUNCTIONAL ANNOTATION AND DOWNSTREAM ANALYSIS ---
     // This entire block will be skipped if --skip_functional_annotation is used

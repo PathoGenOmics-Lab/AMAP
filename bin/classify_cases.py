@@ -29,6 +29,7 @@ from classify.reconciliation import (
 )
 from classify.plotting import generate_overlap_plot
 from classify.ids import format_cluster_id
+from classify.synteny import drop_paralog_placements
 
 __author__ = 'Paula Ruiz-Rodriguez'
 __credits__ = ['Paula Ruiz-Rodriguez', 'PathoGenOmics']
@@ -69,7 +70,9 @@ def main():
 
     # --- 1. Read inputs ---
     bakta_df = read_bakta(args.bakta)
-    miniprot_df = read_miniprot(args.miniprot)
+    # A protein with a paralog is placed at both loci; keep only the placements
+    # that do not land on a locus another protein syntenically owns.
+    miniprot_df = drop_paralog_placements(read_miniprot(args.miniprot, ref_coords=True))
     bakta_df_bad = read_miniprot_unfiltered(args.badbakta)
 
     # --- 2. Classify cases ---

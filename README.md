@@ -8,7 +8,7 @@
 [![Nextflow](https://img.shields.io/badge/Nextflow-%E2%89%A5%2024.04-%2330ba91?style=plastic)](https://github.com/nextflow-io/nextflow)
 [![License: GPL v3](https://img.shields.io/badge/License%3A-GPL%20v3-orange?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP/blob/main/LICENSE)
 [![Docker Image](https://img.shields.io/badge/Docker%20Image-AMAP-blue?style=plastic&logo=docker)](https://hub.docker.com/repository/docker/paururo/amap/general)
-[![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024447-%23c9ac02?style=plastic)](https://doi.org/10.5281/zenodo.8024447)
+[![Zenodo](https://img.shields.io/badge/doi%3A-10.5281%2Fzenodo.8024446-%23c9ac02?style=plastic)](https://doi.org/10.5281/zenodo.8024446)
 [![Docs](https://img.shields.io/badge/docs-pathogenomics--lab.github.io%2FAMAP-2f9e8a?style=plastic)](https://pathogenomics-lab.github.io/AMAP/)
 
 __Paula Ruiz-Rodriguez<sup>1</sup>__ 
@@ -188,11 +188,11 @@ See
 
 ## Citation
 
->Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software]. https://doi.org/10.5281/zenodo.8024447
+>Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software]. https://doi.org/10.5281/zenodo.8024446
 ```bibtex
 @software{Ruiz-Rodriguez_AMAP_2026,
   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},
-  doi = {10.5281/zenodo.8024447},
+  doi = {10.5281/zenodo.8024446},
   license = {GPL-3.0},
   month = apr,
   title = {{AMAP}},

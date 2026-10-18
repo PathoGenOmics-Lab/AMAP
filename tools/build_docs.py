@@ -1194,7 +1194,7 @@ def footer(root: str) -> str:
     return (
         '<footer class="foot">\n  <div class="wrap">\n    <div>\n      <h3>Cite</h3>\n'
         "      <blockquote>Ruiz-Rodriguez, P., &amp; Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software].</blockquote>\n"
-        '      <p class="doi">Software: <a href="https://doi.org/10.5281/zenodo.8024447">doi:10.5281/zenodo.8024447</a></p>\n    </div>\n'
+        '      <p class="doi">Software: <a href="https://doi.org/10.5281/zenodo.8024446">doi:10.5281/zenodo.8024446</a></p>\n    </div>\n'
         "    <div>\n      <h3>Learn more</h3>\n      <ul>\n"
         f'        <li><a href="{root}getting-started/tutorial.html">Tutorial</a></li>\n'
         f'        <li><a href="{root}{INDEX}">Documentation</a></li>\n'

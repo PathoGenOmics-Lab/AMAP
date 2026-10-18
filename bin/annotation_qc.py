@@ -21,6 +21,10 @@ import os
 import pandas as pd
 from collections import Counter
 
+# Allow importing from bin/classify/ when run as a script, as classify_cases.py does.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from classify import circular
+
 
 def parse_fasta_stats(fasta_path):
     """Compute basic assembly metrics from FASTA."""
@@ -109,8 +113,18 @@ def compute_qc(mastertable_path, fasta_path, output_path):
             break
 
     if start_col and end_col:
-        lengths = (pd.to_numeric(df[end_col], errors='coerce') - 
-                   pd.to_numeric(df[start_col], errors='coerce') + 1).dropna()
+        starts = pd.to_numeric(df[start_col], errors='coerce')
+        ends = pd.to_numeric(df[end_col], errors='coerce')
+        lengths = ends - starts + 1
+        # A gene across the origin of a circular sequence (start after end)
+        # runs on from the sequence's last base to its first.
+        across = (starts > ends) & (ends > 0)
+        if across.any():
+            sizes = circular.read_lengths(fasta_path)
+            contigs = (df['contig'].astype(str) if 'contig' in df.columns
+                       else pd.Series(next(iter(sizes), ''), index=df.index))
+            lengths[across] += contigs[across].map(sizes)
+        lengths = lengths.dropna()
         mean_len = round(lengths.mean(), 0) if len(lengths) > 0 else 0
         median_len = round(lengths.median(), 0) if len(lengths) > 0 else 0
         total_coding_bp = lengths.sum()

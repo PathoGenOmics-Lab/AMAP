@@ -627,7 +627,7 @@ def code_value(path: str, pattern: str) -> float | None:
 # problem in its own right: the code moved and this table has to follow it.
 RULES = {
     "single_bp": ("bin/classify/overlaps.py", r"abs\(bakta_len - rv_len\) > (\d+)"),
-    "multiple_bp": ("bin/classify/overlaps.py", r"\(_range_length\(best\[0\]\) - _range_length\(miniprot_range\)\) < (\d+)"),
+    "multiple_bp": ("bin/classify/overlaps.py", r"\(best_len - _range_length\(miniprot_range\)\) < (\d+)"),
     "insert_overlap_pct": ("bin/classify/overlaps.py", r"if pct >= (\d+):"),
     "insert_margin_bp": ("bin/classify/overlaps.py", r"def _insert_with_dedup\(combined_dict, new_coord, new_id, threshold=(\d+)"),
     "false_positive_pct": ("bin/classify/cases.py", r"case1\['Overlap_Percentage'\] >= (\d+)"),

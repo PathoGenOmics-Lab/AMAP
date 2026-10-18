@@ -30,11 +30,12 @@ Combine them with commas:
 nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv
 ```
 
-Write the container profile first. From Nextflow 25.10 on, where two profiles
-set the same thing the later one wins, and the container profiles cap every task
-at 16 GB, which suits a laptop: `-profile slurm,singularity` would hold a cluster
-run to that, where `-profile singularity,slurm` gets the cluster's 128 GB.
-Without an executor profile everything runs on the local machine.
+The order does not matter: each profile sets its own kind of thing. The ceilings
+on what any one task may ask for come from which profiles are on, not from their
+order: 48 CPUs, 256 GB and 120 h with `highmem`, 4 CPUs, 8 GB and 1 h with
+`test`, 48 CPUs, 128 GB and 72 h with an executor profile, and otherwise the
+machine's CPUs, 16 GB and 72 h. Without an executor profile everything runs on
+the local machine.
 
 ## On a laptop or workstation
 

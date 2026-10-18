@@ -837,8 +837,9 @@ def image_figure(_renderer: "Renderer", _lines: list[str]) -> str:
 
 # ── A run on a cluster ──
 #
-# The scheduler's settings come from nextflow.config's profiles, and the
-# launcher's from the job script the HPC page gives, so neither can drift.
+# The scheduler's settings come from nextflow.config's profiles and the caps it
+# sets after them, and the launcher's from the job script the HPC page gives, so
+# neither can drift.
 
 
 def profile_settings(name: str) -> dict[str, str]:
@@ -847,6 +848,26 @@ def profile_settings(name: str) -> dict[str, str]:
     if not block:
         raise SystemExit(f"tools/build_docs.py: nextflow.config has no profile {name}")
     return dict(re.findall(r"^\s+([\w.]+)\s*=\s*'?([^'\n]+?)'?\s*(?://.*)?$", block.group(1), re.M))
+
+
+def caps() -> dict[str, dict[str, str]]:
+    """The caps nextflow.config sets after its profiles, by what decides them:
+    {"highmem", "test", "scheduler", "machine"} -> {"cpus", "memory", "time"}.
+    Each is a line `params.max_X = params.highmem ? a : params.test_data ? b :
+    ... : otherwise`, and the first flag that is on picks the value."""
+    config = Path("nextflow.config").read_text(encoding="utf-8")
+    start = config.index("\nprofiles {")
+    after = config[start + re.search(r"^\}", config[start + 1:], re.M).end() + 1:]
+    flags = {"highmem": "highmem", "test": "test_data", "scheduler": "scheduler", "machine": None}
+    found = {kind: {} for kind in flags}
+    for cap, expr in re.findall(r"^params\.max_(cpus|memory|time)\s*=\s*(.+)$", after, re.M):
+        branches = dict(re.findall(r"params\.(\w+)\s*\?\s*([^:]+?)\s*:", expr))
+        otherwise = expr.rsplit(":", 1)[-1].strip()
+        for kind, flag in flags.items():
+            found[kind][cap] = branches.get(flag, otherwise).strip("'")
+    if any(len(values) != 3 for values in found.values()):
+        raise SystemExit("tools/build_docs.py: nextflow.config no longer sets the caps the way caps() reads them")
+    return found
 
 
 def local_processes() -> list[str]:
@@ -861,7 +882,8 @@ def hpc_figure(_renderer: "Renderer", lines: list[str]) -> str:
     sbatch = dict(re.findall(r"^#SBATCH --([\w-]+)=(\S+)", script, re.M))
     rate = lambda s: s["executor.submitRateLimit"].replace("/1min", " a minute")
     other_rates = sorted({rate(s) for s in others.values()})
-    memory = slurm["params.max_memory"].replace(".GB", " GB")
+    cluster = caps()["scheduler"]
+    memory = cluster["memory"].replace(".GB", " GB")
     hours = int(sbatch["time"].split(":")[0])
     launcher = (
         '<div class="hpc-box hpc-launch"><p class="hpc-title">The launcher</p>'
@@ -876,7 +898,7 @@ def hpc_figure(_renderer: "Renderer", lines: list[str]) -> str:
     )
     nodes = (
         '<div class="hpc-box hpc-nodes"><p class="hpc-title">The compute nodes</p>'
-        f"<p>One job per task, at most {slurm['params.max_cpus']} CPUs and {memory} each, in the AMAP image, "
+        f"<p>One job per task, at most {cluster['cpus']} CPUs and {memory} each, in the AMAP image, "
         + ("working on the node's own disk and copying back only the results.</p>" if slurm.get("params.scratch") == "true" else "</p>")
         + '<div class="hpc-tasks"><span>per sample: Bakta, miniprot, the correction, duplications, pangenome</span>'
         "<span>once for all: eggNOG, the genomes compared, the report</span></div></div>"

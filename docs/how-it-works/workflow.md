@@ -159,6 +159,10 @@ corrected annotations and produces a gene presence/absence matrix, which the
 report turns into core, softcore, shell and cloud classifications, a frequency
 spectrum and presence/absence heatmaps.
 
+Each sample's corrected proteins are aligned with miniprot onto every other
+sample's genome: the ones PATHOTYPR renamed or, with `--skip_typing`, the
+genomes of the sample sheet, each under its sample ID.
+
 ## 10. Report
 
 A single self-contained HTML file built from every output above. Sample quality,

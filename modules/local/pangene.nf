@@ -6,6 +6,10 @@
  * sample's genome (ref_fastas) using miniprot. With N samples, this is
  * N×(N-1) alignments total.
  *
+ * The genomes are told apart by file name, one <name>.fasta per sample, and
+ * the one named like the sample's own genome is left out. PATHOTYPR writes
+ * them; with --skip_typing, PANGENE_GENOME below does.
+ *
  * The reference FASTAs are provided as a SINGLE directory (via stageAs)
  * to avoid Nextflow staging N-1 individual symlinks per sample — which at
  * 500 samples means 249,500 staging operations.
@@ -30,7 +34,7 @@ process PANGENE {
           path(baktatsv),
           path(fasta),
           path(emapper)
-    path ref_fastas, stageAs: 'refs/*'  // staged reference FASTA files from PATHOTYPR
+    path ref_fastas, stageAs: 'refs/*'  // every sample's genome, from PATHOTYPR or PANGENE_GENOME
 
     output:
     tuple val(sampleId),
@@ -99,5 +103,30 @@ process PANGENE {
     gfatools stat ${sampleId}.gfa > ${sampleId}.stat
 
     rm -f *.paf
+    """
+}
+
+/*
+ * The genome PANGENE aligns against when lineage typing is skipped: the
+ * sample sheet's own, copied to <sampleId>.fasta. As given, two samples' files
+ * can share a name (assembly.fasta from two assemblies), which PANGENE cannot
+ * stage side by side, and a name that does not end in .fasta is never aligned
+ * against.
+ */
+process PANGENE_GENOME {
+    tag "$sampleId"
+
+    input:
+    // Staged in a directory of its own: a genome already called
+    // <sampleId>.fasta would otherwise be copied onto itself, through the link
+    // Nextflow stages it as.
+    tuple val(sampleId), path(fasta, stageAs: 'input/*')
+
+    output:
+    tuple val(sampleId), path("${sampleId}.fasta")
+
+    script:
+    """
+    cp "${fasta}" "${sampleId}.fasta"
     """
 }

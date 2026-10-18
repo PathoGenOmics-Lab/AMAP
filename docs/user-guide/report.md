@@ -1,36 +1,26 @@
----
-title: The report
----
-
 # The report
 
 Every run ends in one file, `results/final_report.html`. It is self-contained:
 all the figures, tables and JavaScript are embedded, so it opens with no
 network and survives being emailed to someone who has never heard of Nextflow.
 
-<div class="grid cards" markdown>
+To see what the sections look like before running anything, open the
+[example report](../examples/demo_report.html): a rendered report for twelve
+MTBC genomes across four lineages.
 
-- :material-file-chart: __See one__
-
-    ---
-
-    A rendered report for twelve MTBC genomes across four lineages, so you can
-    see what the sections look like before running anything.
-
-    [:octicons-arrow-right-24: Open the example report](../examples/demo_report.html){ target=_blank }
-
-</div>
-
-!!! note "The example uses generated data"
-
-    The twelve samples in it are synthetic. The distributions are drawn around
-    a real *M. tuberculosis* CDC1551 run, so the shapes are representative,
-    but no conclusion should be drawn from the numbers themselves.
-
-    `bin/report/demo/make_demo.py` builds that dataset if you want to render
-    the report yourself without waiting for a pipeline run.
+> [!NOTE]
+> **The example uses generated data**
+>
+> The twelve samples in it are synthetic. The distributions are drawn around
+> a real *M. tuberculosis* CDC1551 run, so the shapes are representative,
+> but no conclusion should be drawn from the numbers themselves.
+>
+> `bin/report/demo/make_demo.py` builds that dataset if you want to render
+> the report yourself without waiting for a pipeline run.
 
 ## What is in it
+
+<!-- figure: report-map -->
 
 ### Overview
 
@@ -56,7 +46,8 @@ comparison against the reference distribution. Each has its own per-category
 breakdown in counts and percentages, with the statistical tests alongside.
 
 PE/PPE gene families get their own section, since they are both the hardest
-part of an MTBC genome to annotate and usually the most interesting.
+part of an MTBC genome to annotate and usually the most interesting. The
+pseudogenes of each lineage close it.
 
 ### KEGG pathways
 
@@ -73,6 +64,13 @@ each number means.
 Core, softcore, shell and cloud classification, the gene frequency spectrum,
 and presence/absence heatmaps.
 
+### CDS statistics
+
+How many genes fall in each case, lineage by lineage: box and violin plots with
+Dunn's tests between lineages, the share of each case in every lineage, a
+heatmap of the means, and a table per case with the count, mean, median and
+spread of each lineage.
+
 ### Master table explorer
 
 Every gene of every sample in one searchable, sortable table, with the
@@ -81,17 +79,12 @@ without leaving the report.
 
 ## What changes when steps are skipped
 
-`--skip_typing`
-: Everything still renders, but every sample is grouped under `Untyped`, so
+- **`--skip_typing`**: Everything still renders, but every sample is grouped under `Untyped`, so
   the per-lineage comparisons have a single group and the statistical tests
   drop out.
-
-`--skip_mycobrowser`
-: The Mycobrowser and PE/PPE sections are omitted. COG, KEGG, pangenome and
+- **`--skip_mycobrowser`**: The Mycobrowser and PE/PPE sections are omitted. COG, KEGG, pangenome and
   duplications are unaffected. This is automatic for non-MTBC organisms.
-
-`--skip_functional_annotation`
-: No report at all. The run stops after correction.
+- **`--skip_functional_annotation`**: No report at all. The run stops after correction.
 
 ## Rendering it yourself
 
@@ -116,13 +109,14 @@ docker run --rm -v "$PWD:/w" -w /w paururo/amap:latest \
                 qc_file="/w/demo_inputs/input_qc.txt"))'
 ```
 
-!!! warning "Keep it self-contained"
-
-    Nothing in the Rmd, `header.html` or `styles.css` may point at a remote
-    URL. pandoc will fetch and inline a remote resource when the machine
-    rendering has a network, which hides the problem, and leave it dangling
-    when it does not. A report rendered on an isolated compute node then
-    arrives with a broken image and a browser trying to reach the internet.
-
-    Both logos live next to the Rmd for this reason, and the image zoom is
-    plain DOM rather than jQuery from a CDN.
+> [!WARNING]
+> **Keep it self-contained**
+>
+> Nothing in the Rmd, `header.html` or `styles.css` may point at a remote
+> URL. pandoc will fetch and inline a remote resource when the machine
+> rendering has a network, which hides the problem, and leave it dangling
+> when it does not. A report rendered on an isolated compute node then
+> arrives with a broken image and a browser trying to reach the internet.
+>
+> Both logos live next to the Rmd for this reason, and the image zoom is
+> plain DOM rather than jQuery from a CDN.

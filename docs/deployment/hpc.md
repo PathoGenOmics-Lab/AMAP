@@ -1,7 +1,3 @@
----
-title: HPC deployment
----
-
 # Running on a cluster
 
 Past a couple of dozen genomes, a scheduler is worth the setup. Combine a
@@ -10,6 +6,8 @@ container profile with an executor profile:
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv
 ```
+
+<!-- figure: hpc -->
 
 ## The executor profiles
 

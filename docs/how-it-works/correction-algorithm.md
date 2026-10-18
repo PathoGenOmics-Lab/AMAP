@@ -1,7 +1,3 @@
----
-title: The correction algorithm
----
-
 # The correction algorithm
 
 The core of AMAP. It referees between the initial Bakta annotation and the
@@ -22,12 +18,14 @@ contigs as the FASTA and Miniprot do; by default it renames them `contig_N`.
 Miniprot needs a seed of several residues and enough score to report an
 alignment, which a protein of a few dozen residues rarely gives it: annotating
 *E. coli* K-12 with its own proteome, it placed none of 33 proteins of 8 to 29
-residues, and it put the ldr toxin b4665, 19 residues three of which differ
-from its neighbour's, on that neighbour only. Every protein without an exact,
+residues, and it put the toxin IbsC (b4665), 19 residues three of which differ
+from its neighbour IbsD's, on that neighbour only. Every protein without an exact,
 complete placement is looked for in the six-frame translation of the genome,
 preceded by a start codon and followed by a stop, and each exact copy found
 where Miniprot did not already place the protein becomes a complete placement.
 Proteins shorter than 8 residues are not searched.
+
+<!-- figure: small-protein -->
 
 A protein of up to **50** residues with no exact copy is looked for again,
 allowing substitutions in at most **a fifth** of its residues after the first,
@@ -53,6 +51,8 @@ placement of that protein which runs off a contig edge on the side of the cut,
 within 30 bp, is a piece of the gene and becomes a placement of the gene's
 protein. In the CDC1551 draft that places 22 of the 25 smaller pieces; the
 other three are five or six codons long.
+
+<!-- figure: contig-end-2 -->
 
 ### Paralog placements
 
@@ -84,6 +84,10 @@ at a locus no protein claims, such as an IS6110 insertion at a site the
 reference lacks or a duplication in the sample, and genes that genuinely
 overlap, which sit in different frames (Rv1041c and Rv1042c).
 
+<!-- figure: paralogs-1 -->
+
+<!-- figure: paralogs-2 -->
+
 When two proteins both look syntenic at one locus, which happens when a deletion
 removes a gene and leaves its paralog next door as the nearest place left, the
 better match keeps the locus. CDC1551 lacks Rv3427c and Rv3428c, and without
@@ -96,8 +100,12 @@ Every Bakta CDS is compared against the Miniprot alignments.
 **Case 2, perfect match.** Same start, same end, same strand as an alignment,
 and the same length. Correct, kept as is.
 
+<!-- figure: case2 -->
+
 **Case 3, imperfect match.** Same coordinates, but the aligned length differs,
 typically from indels. Reliable enough, kept.
+
+<!-- figure: case3 -->
 
 **Case 4, conflicting overlap.** A Bakta CDS and an alignment overlap on the
 same strand, but their coordinates do not match. This is the conflict that has
@@ -127,6 +135,10 @@ Novel-gene candidates are scrutinised before being believed. A candidate is
 Candidates that pass both, and candidates with no reference alignment to judge
 by, are kept as `case1_kept`.
 
+<!-- figure: case1-dropped -->
+
+<!-- figure: case1-kept -->
+
 ## 3. Resolving case 4
 
 ### Single overlaps
@@ -137,6 +149,8 @@ contig. Lengths are compared, and:
 - **the reference wins by default**
 - the Bakta version wins only if it is longer by **more than 550 bp**, and the
   alignment is not **complete** in the call's reading frame
+
+<!-- figure: case4-start -->
 
 The asymmetry is deliberate. A reference alignment is usually the better
 boundary, but a much longer Bakta call normally means the alignment fragmented,
@@ -150,6 +164,8 @@ step 5. A call that wins in the alignment's frame is the protein's gene, longer
 than in the reference, and takes its name in step 5. If the Bakta CDS overlaps
 more than one alignment, the reference wins regardless.
 
+<!-- figure: case4-longer -->
+
 ### Multiple overlaps
 
 Several Bakta CDS against one alignment, the signature of a gene that has been
@@ -161,6 +177,8 @@ alignment on length:
   the call overlaps other alignments as well, which makes it several reference
   genes read as one (Rv3022c and Rv3021c are one reading frame in CDC1551)
 - otherwise the Bakta CDS wins
+
+<!-- figure: case4-split -->
 
 ## 4. Deduplication on insert
 
@@ -188,6 +206,8 @@ frames (Rv0724A and Rv0725c); another reference gene in the same frame does not
 count either, since some are nested (*E. coli* hokC inside mokC). Placements on
 other genes' loci have already been dropped in step 0, so what is left to rescue
 sits where the gene belongs or at a locus nobody claims.
+
+<!-- figure: missing -->
 
 A gene that stands for no reference protein accounts for any placement in its
 frame: the Bakta call that won its locus in step 3 over a shorter alignment.
@@ -228,6 +248,10 @@ other, and together they are at most **110%** of the reference gene's length.
 Copies and pieces only Miniprot placed are all named after their protein, so
 later ones get `_2`, `_3` to keep identifiers unique.
 
+<!-- figure: copies-1 -->
+
+<!-- figure: copies-2 -->
+
 ## 7. Stop codon check
 
 `check_cds.py` translates every surviving CDS.
@@ -250,6 +274,8 @@ reason, as PGAP and Bakta treat a frameshift. Often that frame runs on into the
 next gene, whose stop is then the next one (in M. bovis Rv0590 into Rv0590A and
 Rv3373 into Rv3374), and extending would annotate that gene twice.
 
+<!-- figure: frameshift -->
+
 **Genes a contig cut short are partial.** In a draft assembly, a gene whose
 frame reaches the end of its contig with no stop, from within 30 bp of it, was
 cut by the assembly: it runs to the last codon there and is marked `3'`
@@ -259,6 +285,8 @@ start a gene but whose protein begins inside its reference protein: a cut
 leaves whatever codon it falls before at the edge, and one in six codons inside
 H37Rv genes is one a gene can start with. Neither is a pseudogene. Each piece
 of a cut gene is annotated this way, under the gene's name.
+
+<!-- figure: contig-end -->
 
 **Reference pseudogenes keep their extent.** When the reference protein spans
 its annotated stretch codon for codon with no stop (PE21, Rv2099c; PPE48,
@@ -278,15 +306,6 @@ propagated to the master table and the GFF3. `*-AMAP.clean.faa` excludes them.
 
 **Untranslatable genes are dropped** from the annotation table as well as the
 FASTA files, so the two never disagree.
-
-<div class="amap-figure" markdown>
-![AMAP correction algorithm](../assets/correction-algorithm.svg)
-/// caption
-Two passes. The top row assigns every Bakta call a case from how it matches the
-H37Rv reference. The bottom row takes those cases and decides, wherever the two
-sets of coordinates overlap, which one survives into the curated annotation.
-///
-</div>
 
 ## Threshold summary
 

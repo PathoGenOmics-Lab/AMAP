@@ -12,61 +12,88 @@ __and Mireia Coscolla<sup>1</sup>__
 <br>
 <sub> 1. I<sup>2</sup>SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Valencia, Spain </sub>  
 
-<table>
-  <tr>
-    <td width="350">
-      <img src=".github/AMAP.png" title="AMAP logo" style="width:350px; height: auto;">
-    </td>
-    <td style="padding-left: 20px;">
-      <p>AMAP is a bioinformatics pipeline written in Nextflow for processing, annotating and correcting annotations of prokaryotic genomes. Originally developed for the <em>Mycobacterium tuberculosis</em> complex (MTBC), the reference-based correction adjusts approximately 30% of the genes in a given genome.</p>
-      <p>AMAP is <strong>fully organism-agnostic</strong>: provide any trusted reference annotation (<code>--ref_annotation</code> + <code>--ref_genome</code>) to annotate <em>E. coli</em>, <em>S. aureus</em>, or any prokaryote. MTBC-specific features (lineage typing, Mycobrowser) are auto-detected and gracefully skipped for non-MTBC organisms.</p>
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <a href="https://pathogenomics-lab.github.io/AMAP/"><img src="docs/assets/social-card.png" alt="Bakta calls the genes. AMAP checks every one: the first 12.4 kb of M. tuberculosis CDC1551, Bakta's calls, the H37Rv proteins aligned and the genes AMAP keeps." width="820"></a>
+</p>
 
-## 📖 Documentation
+AMAP annotates assembled bacterial genomes with Bakta, aligns a trusted
+reference proteome onto them with miniprot, and settles every disagreement
+between the two: late starts, genes split in two, calls that are not genes,
+genes Bakta missed. Built for the *Mycobacterium tuberculosis* complex, where it
+changes about 30% of the genes, and for any species you have a trusted
+annotation for (`--ref_annotation` + `--ref_genome`).
 
-Full documentation is published at
-**[pathogenomics-lab.github.io/AMAP](https://pathogenomics-lab.github.io/AMAP/)**:
-installation, every parameter, the output layout, deployment on HPC, and a
-reference for the correction algorithm itself (how each case is classified,
-which coordinates win a conflict, and the thresholds behind those decisions).
+**[The website](https://pathogenomics-lab.github.io/AMAP/)**: [start here](https://pathogenomics-lab.github.io/AMAP/index.html#start),
+[the tutorial](https://pathogenomics-lab.github.io/AMAP/getting-started/tutorial.html),
+[how it works, step by step](https://pathogenomics-lab.github.io/AMAP/how-it-works.html), and
+[the documentation](https://pathogenomics-lab.github.io/AMAP/documentation.html).
 
 | | |
 | :--- | :--- |
 | [Quickstart](https://pathogenomics-lab.github.io/AMAP/getting-started/quickstart.html) | From an installed Nextflow to an open report |
 | [Parameters](https://pathogenomics-lab.github.io/AMAP/user-guide/parameters.html) | Every flag and its default |
 | [Outputs](https://pathogenomics-lab.github.io/AMAP/user-guide/outputs.html) | What every file is |
-| [How it works](https://pathogenomics-lab.github.io/AMAP/how-it-works.html) | The workflow and the correction algorithm |
+| [The correction algorithm](https://pathogenomics-lab.github.io/AMAP/how-it-works/correction-algorithm.html) | Every rule and threshold, drawn on real genes |
 | [Custom reference](https://pathogenomics-lab.github.io/AMAP/user-guide/custom-reference.html) | Annotating non-MTBC organisms |
 | [Troubleshooting](https://pathogenomics-lab.github.io/AMAP/deployment/troubleshooting.html) | When a run fails |
 
-## What can AMAP do?
+## What AMAP decides
 
-AMAP takes assembled genomes and produces a corrected, functionally annotated
-gene set. It annotates each genome with Bakta, aligns a trusted reference
-proteome onto it with Miniprot, and then acts as a referee between the two:
-every CDS is classified, conflicting coordinates are resolved, reference genes
-the annotator missed are rescued, and every final CDS is checked for a valid
-stop codon.
+Every Bakta call is compared with where the reference proteins align, on the
+same strand of the same contig. That puts it in one of four cases, and a
+reference gene with no call at all is a fifth. These are real genes of
+*M. tuberculosis* CDC1551; [step through each one](https://pathogenomics-lab.github.io/AMAP/how-it-works.html)
+on the website.
 
-The main steps:
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/outcomes-dark.png">
+  <img src="docs/assets/readme/outcomes-light.png" alt="The five outcomes on real genes of CDC1551: a perfect match kept, an imperfect match kept, a conflicting overlap settled on the reference's coordinates, a potentially novel gene kept, and a missing reference gene put back.">
+</picture>
+
+## Does it work?
+
+[`tests/benchmark`](tests/benchmark) runs the correction on seven genomes and
+scores it against an annotation AMAP did not make: the reference's own genes,
+carried onto the other genomes by a whole-genome alignment. Every gene a genome
+carries unchanged is found at exactly its coordinates, under its name; of the
+genes that changed, 98 to 99% still sit where the alignment puts them, under
+their name.
+
+| Genome | Unchanged genes, exact | Changed genes, found |
+| :--- | ---: | ---: |
+| *M. tuberculosis* H37Rv, against itself | 4026 / 4026 | |
+| H37Rv CP110619, against H37Rv | 3986 / 3986 | 49 / 50 |
+| *M. tuberculosis* CDC1551, against H37Rv | 3097 / 3097 | 854 / 863 |
+| *M. bovis* AF2122/97, against H37Rv | 2391 / 2391 | 1506 / 1515 |
+| CDC1551 cut into 40 contigs | 3072 / 3072 | |
+| *E. coli* K-12, against itself | 4286 / 4286 | |
+| *E. coli* O157:H7 Sakai, against K-12 | 220 / 220 | 3337 / 3367 |
+
+## The pipeline
+
+Stations are the processes of `main.nf`, in the order its workflow runs them;
+lines are what travels between them. On the website the map is
+[interactive](https://pathogenomics-lab.github.io/AMAP/how-it-works/workflow.html).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/metro-dark.png">
+  <img src="docs/assets/readme/metro-light.png" alt="The AMAP pipeline as a metro map: sample sheet, input checks, lineage typing, Bakta, miniprot with the reference, the cases, the correction, eggNOG-mapper with its database, then the GFF3 and GenBank, counts, duplications, the pangenome and the report.">
+</picture>
 
 1. **Database setup** ([eggNOG](https://github.com/eggnogdb/)): builds the eggNOG database if it is not already there.
-2. **MTBC lineage typing** ([pathotypr](https://github.com/PathoGenOmics-Lab/pathotypr)): assigns lineages from phylogenetic markers and renames the genomes accordingly. Skippable.
+2. **MTBC lineage typing** ([pathotypr](https://github.com/PathoGenOmics-Lab/pathotypr)): assigns lineages from phylogenetic markers and renames the genomes accordingly. Turned off with `--skip_typing`.
 3. **Genome annotation** ([Bakta](https://github.com/oschwengers/bakta)): CDS, tRNAs and other features, the baseline that AMAP corrects.
 4. **Protein alignment** ([miniprot](https://github.com/lh3/miniprot)): the reference proteome aligned onto each genome.
 5. **CDS case classification**: every CDS sorted by how it relates to the reference (novel, perfect match, imperfect match, conflicting coordinates, or a reference gene the annotator missed).
-6. **Annotation correction**: conflicts resolved and coordinates adjusted into a corrected gene set.
-7. **Functional annotation** ([eggNOG-mapper](https://github.com/eggnogdb/eggnog-mapper)): COG, KEGG, GO, EC, PFAM and CAZy assignments.
+6. **Annotation correction**: conflicts resolved, coordinates adjusted and every gene translated into a corrected gene set.
+7. **Functional annotation** ([eggNOG-mapper](https://github.com/eggnogdb/eggnog-mapper)): COG, KEGG, GO, EC, PFAM and CAZy assignments, and the corrected GFF3 and GenBank.
 8. **Gene duplication analysis**: duplication families per genome, plus homologous communities across genomes with network metrics.
 9. **Pangenome analysis** ([pangene](https://github.com/lh3/pangene)): gene content compared across the whole set.
 10. **Report**: a single self-contained HTML file covering all of the above.
 
-The [how it works](https://pathogenomics-lab.github.io/AMAP/how-it-works.html)
-section documents each step and the correction algorithm in detail.
-
-![AMAP pipeline map](.github/metroAMAP_trayectos_css_clean_anim.svg)
+Mycobrowser's functional categories describe tuberculosis genes, so they are
+skipped on their own when a custom reference is not a *Mycobacterium*; lineage
+typing is turned off with `--skip_typing`.
 
 ## Quickstart
 

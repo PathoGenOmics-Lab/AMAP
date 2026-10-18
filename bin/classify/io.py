@@ -16,11 +16,16 @@ PAF_COLS = ["Prot Id", "Prot len", "Strand", "Start", "End", "Match Nt", "Num nt
 
 def read_bakta(bakta_path):
     """Read and process a Bakta TSV file, returning CDS-only entries."""
-    bakta_df = pd.read_csv(bakta_path, comment='#', sep='\t', header=None)
-    bakta_df.columns = [
+    columns = [
         "Sequence Id", "Type", "Start", "End", "Strand",
         "Locus Tag", "Gene", "Product", "DbXrefs"
     ]
+    try:
+        bakta_df = pd.read_csv(bakta_path, comment='#', sep='\t', header=None)
+    except pd.errors.EmptyDataError:
+        # Bakta found nothing on the sequence: its TSV is only the header.
+        bakta_df = pd.DataFrame(columns=columns)
+    bakta_df.columns = columns
     bakta_df['Locus Tag'] = bakta_df['Locus Tag'].apply(clean_id)
     bakta_cds = bakta_df[bakta_df['Type'] == 'cds'].copy()
     bakta_cds['Length_nt'] = bakta_cds['End'] - bakta_cds['Start'] + 1

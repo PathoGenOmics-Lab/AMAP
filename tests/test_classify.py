@@ -1627,26 +1627,47 @@ class TestExactPlacements:
             assert list(find_exact('MKLVWFYH*', self._frames(d, self.FILL + no_start + self.FILL))) == []
             assert list(find_exact('MKLVWFYH*', self._frames(d, self.FILL + no_stop + self.FILL))) == []
 
-    def test_an_unplaced_protein_gets_a_complete_placement(self):
-        from classify.exact import place_unplaced_proteins
+    def test_proteins_without_an_exact_placement_get_one(self):
+        """gS was left unplaced; gQ was only placed with mismatches somewhere
+        else, as miniprot put the ldr toxin b4665 on b4664, and gU only in
+        part; gR's exact copy is where miniprot already placed it, which is
+        left as it was; gP has an exact placement; gT is too short to search."""
+        from classify.exact import place_exact_matches
+        orf_q = "ATG" + "CGT" * 7 + "TAA"                  # MRRRRRRR
+        orf_r = "ATG" + "GAA" * 7 + "TGA"                  # MEEEEEEE
+        orf_u = "ATG" + "TTC" * 7 + "TAG"                  # MFFFFFFF
+        genome_seq = (self.FILL + self.ORF + self.FILL + "ATGAAACTGGTTTGGTAA"
+                      + self.FILL + orf_q + self.FILL + orf_r + self.FILL + orf_u + self.FILL)
+        q = genome_seq.index(orf_q) + 1
+        r = genome_seq.index(orf_r) + 1
+        u = genome_seq.index(orf_u) + 1
         cols = ['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt',
                 'Contig', 'Complete', 'Ref Start', 'Ref End']
         mp = pd.DataFrame([['gS', 9, '*', 1, 0, 0, 0, '*', False, 1000.0, 1026.0],
                            ['gP', 101, '+', 300, 602, 303, 303, 'chr', True, 300.0, 602.0],
-                           ['gT', 6, '*', 1, 0, 0, 0, '*', False, 2000.0, 2017.0]], columns=cols)
+                           ['gT', 6, '*', 1, 0, 0, 0, '*', False, 2000.0, 2017.0],
+                           ['gQ', 9, '+', 500, 526, 20, 27, 'chr', True, 3000.0, 3026.0],
+                           ['gR', 9, '+', r, r + 23, 21, 24, 'chr', False, 4000.0, 4026.0],
+                           ['gU', 9, '+', 700, 720, 21, 21, 'chr', False, 5000.0, 5026.0]], columns=cols)
         with tempfile.TemporaryDirectory() as d:
             genome = os.path.join(d, 'g.fasta')
             with open(genome, 'w') as f:
-                f.write(">chr\n" + self.FILL + self.ORF + self.FILL + "ATGAAACTGGTTTGGTAA" + "\n")
+                f.write(">chr\n" + genome_seq + "\n")
             proteome = os.path.join(d, 'p.faa')
             with open(proteome, 'w') as f:
                 f.write(">gS_1000-1026\nMKLVWFYH*\n>gP_300-602\nM" + "A" * 99 + "*\n"
-                        ">gT_2000-2017\nMKLVW*\n")
-            out = place_unplaced_proteins(mp, genome, proteome)
+                        ">gT_2000-2017\nMKLVW*\n>gQ_3000-3026\nMRRRRRRR*\n>gR_4000-4026\nMEEEEEEE*\n"
+                        ">gU_5000-5026\nMFFFFFFF*\n")
+            out = place_exact_matches(mp, genome, proteome)
         assert out.drop(columns='Prot len').values.tolist() == [
             ['gP', '+', 300, 602, 303, 303, 'chr', True, 300.0, 602.0],
             ['gT', '*', 1, 0, 0, 0, '*', False, 2000.0, 2017.0],
-            ['gS', '+', 31, 57, 27, 27, 'chr', True, 1000.0, 1026.0]]
+            ['gQ', '+', 500, 526, 20, 27, 'chr', True, 3000.0, 3026.0],
+            ['gR', '+', r, r + 23, 21, 24, 'chr', False, 4000.0, 4026.0],
+            ['gU', '+', 700, 720, 21, 21, 'chr', False, 5000.0, 5026.0],
+            ['gS', '+', 31, 57, 27, 27, 'chr', True, 1000.0, 1026.0],
+            ['gQ', '+', q, q + 26, 27, 27, 'chr', True, 3000.0, 3026.0],
+            ['gU', '+', u, u + 26, 27, 27, 'chr', True, 5000.0, 5026.0]]
 
 
 # =============================================================================

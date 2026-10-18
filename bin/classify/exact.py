@@ -1,5 +1,6 @@
 """
-Exact placements for the proteins miniprot leaves unplaced.
+Exact placements for the proteins miniprot leaves unplaced, or places only
+with mismatches.
 
 miniprot needs a seed of several residues and enough score to report an
 alignment, which a protein of a few dozen residues rarely gives it: annotating
@@ -53,8 +54,16 @@ def find_exact(protein, frames):
             i = aa.find(rest, i + 1)
 
 
-def place_unplaced_proteins(miniprot_df, genome_path, proteome_path, min_residues=MIN_RESIDUES):
-    """Add a placement for every exact copy of a protein miniprot did not place.
+def place_exact_matches(miniprot_df, genome_path, proteome_path, min_residues=MIN_RESIDUES):
+    """Add a placement for every exact copy of a protein miniprot did not
+    place exactly.
+
+    That is a protein miniprot left unplaced, and also one it only placed with
+    mismatches: the ldr toxins of E. coli are 19 residues that differ in three
+    or four, and miniprot put b4665 on b4664's locus and nowhere else, so once
+    that placement went to its owner, b4665 had none, though its own locus
+    carries it exactly. A copy found where miniprot already placed the protein
+    is left to miniprot's alignment.
 
     Expects read_miniprot(..., ref_coords=True). The placements go in as
     complete alignments, with the reference coordinates from the protein's
@@ -62,7 +71,10 @@ def place_unplaced_proteins(miniprot_df, genome_path, proteome_path, min_residue
     """
     placed = miniprot_df[(miniprot_df['Start'] < miniprot_df['End'])
                          & (miniprot_df['Contig'] != '*')]
-    have = set(placed['Prot Id'])
+    exact = placed['Match Nt'] == placed['Num nt']
+    if 'Complete' in placed.columns:
+        exact &= placed['Complete'].astype(bool)
+    have = set(placed.loc[exact, 'Prot Id'])
     wanted = {}
     for rec in SeqIO.parse(proteome_path, 'fasta'):
         name = clean_id(rec.id)
@@ -72,11 +84,19 @@ def place_unplaced_proteins(miniprot_df, genome_path, proteome_path, min_residue
     if not wanted:
         return miniprot_df
 
+    def already_placed(name, contig, strand, start, end):
+        p = placed[(placed['Prot Id'] == name) & (placed['Contig'] == contig)
+                   & (placed['Strand'] == strand) & (placed['Start'] <= end) & (placed['End'] >= start)]
+        cover = (p['End'].clip(upper=end) - p['Start'].clip(lower=start) + 1)
+        return bool((cover >= 0.5 * (end - start + 1)).any())
+
     frames = _six_frames(genome_path)
     rows = []
     for name, (full_id, seq) in wanted.items():
         ref = re.search(r'_(\d+)-(\d+)$', full_id)
         for contig, start, end, strand in find_exact(seq, frames):
+            if already_placed(name, contig, strand, start, end):
+                continue
             row = {'Prot Id': name, 'Prot len': len(seq), 'Strand': strand,
                    'Start': start, 'End': end, 'Match Nt': end - start + 1,
                    'Num nt': end - start + 1, 'Contig': contig, 'Complete': True}

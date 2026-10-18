@@ -11,7 +11,14 @@ Validates:
 5. Database paths (Bakta DB, eggNOG DB)
 
 Usage:
-    validate_inputs.py --tsv samples.tsv [--bakta-db /path] [--eggnog-db /path] [--strict]
+    validate_inputs.py --tsv samples.tsv [--genomes staged.tsv] [--bakta-db /path] [--eggnog-db /path] [--strict]
+
+The sample sheet says where each genome is on the host, absolute or relative
+to where Nextflow was launched. A container sees only the folders Nextflow
+mounts for it, and a task runs in a directory of its own, so in the pipeline
+VALIDATE_INPUTS stages every genome as an input and passes --genomes, a table
+of where each sample's genome was staged, and each one is read from there.
+Messages still name the sheet's path.
 
 Exit codes:
     0 = all checks passed
@@ -61,27 +68,31 @@ def calc_n50(lengths):
     return 0
 
 
-def validate_fasta(path, sample_id, strict=False):
-    """Validate a single FASTA file. Returns (errors, warnings)."""
+def validate_fasta(path, sample_id, strict=False, shown_as=None):
+    """Validate a single FASTA file. Returns (errors, warnings).
+
+    `shown_as` is the name messages give the file, when it is read from
+    somewhere other than the path the user knows it by."""
     errors = []
     warnings = []
+    name = shown_as or path
 
     # Check file exists and is readable
     if not os.path.isfile(path):
-        return [f"FASTA file not found: {path}"], []
+        return [f"FASTA file not found: {name}"], []
     
     file_size = os.path.getsize(path)
     if file_size == 0:
-        return [f"FASTA file is empty: {path}"], []
+        return [f"FASTA file is empty: {name}"], []
 
     # Parse sequences
     try:
         contigs = list(parse_fasta(path))
     except Exception as e:
-        return [f"Cannot parse FASTA {path}: {e}"], []
+        return [f"Cannot parse FASTA {name}: {e}"], []
 
     if len(contigs) == 0:
-        return [f"No sequences found in {path}"], []
+        return [f"No sequences found in {name}"], []
 
     # Basic metrics
     n_contigs = len(contigs)
@@ -238,10 +249,23 @@ def validate_tsv(tsv_path):
         return [f"Cannot parse TSV {tsv_path}: {e}"], []
 
 
+def read_genome_table(handle):
+    """{sampleId: path} from a table with the columns sampleId and fasta.
+
+    VALIDATE_INPUTS writes it with the path each genome was staged at. Nothing
+    in it is quoted: a sample ID or a file name may hold a quote character."""
+    reader = csv.DictReader(handle, delimiter='\t', quoting=csv.QUOTE_NONE)
+    return {row['sampleId']: row['fasta'] for row in reader}
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="AMAP pre-flight input validation.")
     parser.add_argument("--tsv", required=True, help="Input samples TSV.")
+    parser.add_argument("--genomes", type=argparse.FileType('r'), default=None,
+                        help="Where to read each sample's genome instead of the "
+                             "path in the TSV: a table with the columns sampleId "
+                             "and fasta, or '-' to read it from standard input.")
     parser.add_argument("--bakta-db", default=None, help="Bakta database path.")
     parser.add_argument("--eggnog-db", default=None, help="eggNOG database path.")
     parser.add_argument("--strict", action="store_true",
@@ -294,12 +318,14 @@ def main():
     n_ok = 0
     n_warn = 0
     n_fail = 0
+    staged = read_genome_table(args.genomes) if args.genomes else {}
 
     for row in rows:
         sample_id = row.get('sampleId', 'unknown')
         fasta_path = row.get('fasta', '')
 
-        errors, warnings = validate_fasta(fasta_path, sample_id, args.strict)
+        errors, warnings = validate_fasta(staged.get(sample_id, fasta_path), sample_id,
+                                          args.strict, shown_as=fasta_path)
         all_errors.extend(errors)
         all_warnings.extend(warnings)
 

@@ -38,6 +38,7 @@ directly comparable with 1.0.1.
 - **Nextflow 25.10 and later**: the pipeline stopped before running anything, because the strict parser those versions use by default rejects the helper functions in `nextflow.config`, the statements outside the workflow in `main.nf`, the bare `env(SAMPLE_NAME)` output and `publishDir` paths that name a task input. Nextflow 26.10 also refuses the `return` that ended a `--validate_only` run. The resource caps are now the `resourceLimits` directive, which still takes `--max_cpus`, `--max_memory` and `--max_time` from the command line, a profile or a `-c` config. Nextflow 24.04, where that directive first appeared, is the new minimum
 - **`--skip_mycobrowser` in organism-agnostic mode**: a custom reference from another genus turned it on by reassigning the parameter, which current Nextflow ignores with a warning, so the run went ahead with Mycobrowser enabled. It is now worked out in the parameter's default
 - **Tasks leave the pipeline untouched**: the first time a copy of AMAP ran, Python cached the bytecode of AMAP's own modules inside it, in `bin/classify/__pycache__`, and with `pathotypr classify` naming that directory in PATHOTYPR's script, the first `-resume` re-ran PATHOTYPR, Bakta and everything after them. Tasks now run with `PYTHONDONTWRITEBYTECODE=1`
+- **Genomes kept outside the run's folder**: `VALIDATE_INPUTS` staged only the sample sheet and opened the paths written in it from inside its container, which sees only the folder that the work directory and the sheet share. Genomes anywhere else, `/data/genomes` while running from `~/project` for instance, were "FASTA file not found" and the run stopped before anything ran, and a relative path, which the sheet may use, was read from the task directory with or without a container. The genomes are now inputs of the process, each in a directory of its own so that two with the same file name do not collide, and each is read where Nextflow staged it
 
 ### 🧹 Code
 - **`reconcile_coordinates` is gone**: it read reference coordinates from protein identifiers that have not carried them since March 2026, so it changed nothing. The paralog check does its job with the sample's own offsets
@@ -46,7 +47,8 @@ directly comparable with 1.0.1.
 - **`tests/selftest/h37rv_selftest.sh`** annotates H37Rv with itself inside the container and fails unless every GenBank CDS comes back exactly
 - **`tests/test_cache_keys.py`** fails when a process runs AMAP code that is not in its cache key, or when its script names a `bin/` entry as a bare word without declaring it
 - **`tests/benchmark/benchmark.sh`** scores the correction algorithm on seven genomes whose right answer is known (H37Rv twice, CDC1551 complete and in 40 contigs, M. bovis, E. coli K-12 and Sakai), downloading them and running Bakta and miniprot in the container the first time, and lists every gene that changed since an earlier run
-- **257 tests**, up from 92
+- **`tests/test_validate_inputs.py`** runs `VALIDATE_INPUTS`'s own script, rendered as Nextflow renders it, in a task directory laid out as Nextflow lays one out: genomes in a folder the task cannot see, relative paths, two genomes with the same file name and a sheet of 500 samples
+- **271 tests**, up from 92
 
 ## [1.0.1] - 2026-07-25
 

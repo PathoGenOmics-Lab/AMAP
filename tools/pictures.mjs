@@ -6,16 +6,17 @@
 // docs/assets/report/. Then draws the card, 1200 by 630, from the front
 // page's own drawing, into docs/assets/social-card.png, the icon a phone
 // keeps on its home screen into docs/assets/touch-icon.png, and the README's
-// pictures, light and dark, into docs/assets/readme/: the metro map and the
-// five outcomes, as the site draws them. Run it after the example report, a
-// drawing or the logo changes:
+// pictures, light and dark, into docs/assets/readme/: the front page's drawing
+// as it plays, the metro map and the five outcomes, as the site draws them.
+// Run it after the example report, a drawing or the logo changes:
 //
 //   node tools/pictures.mjs
 //
-// Needs Node 22 or newer (for its WebSocket) and Google Chrome; CHROME points
-// at another Chrome or Chromium binary.
-import { spawn } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+// Needs Node 22 or newer (for its WebSocket), Google Chrome, and python3 with
+// Pillow for tools/gif.py; CHROME points at another Chrome or Chromium binary,
+// PYTHON at another Python.
+import { spawn, spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -174,6 +175,65 @@ body { margin: 0; padding: 16px; width: 1100px; }
     }
   } finally {
     rmSync(wide, { force: true })
+  }
+
+  // The front page's drawing, for the top of the README, playing as it plays
+  // there: Bakta's calls, the H37Rv proteins aligned, the two compared and
+  // what AMAP keeps. It is the front page's own figure, run by figures.js, so
+  // the steps, their labels and the counts are the site's; only the Replay
+  // button (hidden, as figures.js wires it up) and the invitation to point at a
+  // gene go, since a picture has neither. Each step is kept once its fade has
+  // ended, and tools/gif.py joins them.
+  const hero = readFileSync(join(DOCS, 'index.html'), 'utf8')
+    .match(/<figure class="demo" data-hero[\s\S]*?<\/figure>/)[0]
+    .replace(' Point at a gene.', '')
+  const frames = mkdtempSync(join(tmpdir(), 'amap-hero-'))
+  const playing = join(DOCS, '.readme-hero.html')
+  try {
+    for (const theme of ['light', 'dark']) {
+      writeFileSync(playing, `<!doctype html><html lang="en" data-theme="${theme}"><head><meta charset="utf-8">
+<link rel="stylesheet" href="assets/site.css"><style>
+body { margin: 0; width: 1200px;
+  background: radial-gradient(900px 420px at 85% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%), var(--bg); }
+.card { box-sizing: border-box; width: 1200px; padding: 44px 56px; }
+h1 { font-size: 56px; line-height: 1.04; letter-spacing: -0.025em; margin: 0 0 28px; }
+h1 .grad { display: block; }
+.demo-ctrl { display: none; }
+</style></head><body><div class="card">
+<h1>Bakta calls the genes. <span class="grad">AMAP checks every one.</span></h1>
+${hero}
+</div><script src="assets/figure-data.js"></script><script src="assets/figures.js"></script></body></html>`)
+      await page('Emulation.setDeviceMetricsOverride', { width: 1200, height: 1000, deviceScaleFactor: 1, mobile: false })
+      await page('Page.navigate', { url: pathToFileURL(playing).href })
+      const steps = []
+      for (let n = 1; n <= 4; n++) {
+        // figures.js moves on every 2.1 s: wait for the step, then for its fade.
+        for (let waited = 0; ; waited += 50) {
+          const { result } = await page('Runtime.evaluate', {
+            returnByValue: true, expression: `document.querySelector('[data-hero] svg')?.getAttribute('data-phase')`,
+          })
+          if (result.value === String(n)) break
+          if (waited > 15000) throw new Error(`the front page's drawing never reached step ${n}`)
+          await sleep(50)
+        }
+        await sleep(700)
+        const { result } = await page('Runtime.evaluate', {
+          returnByValue: true, expression: `(() => { const r = document.querySelector('.card').getBoundingClientRect(); return { w: r.width, h: Math.ceil(r.height) } })()`,
+        })
+        const { data } = await page('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: result.value.w, height: result.value.h, scale: 1 } })
+        const file = join(frames, `${theme}-${n}.png`)
+        writeFileSync(file, Buffer.from(data, 'base64'))
+        // As long as the site shows each step, and the last one twice as long.
+        steps.push(`${file}:${n === 4 ? 4200 : 2100}`)
+      }
+      const out = join(README, `hero-${theme}.gif`)
+      const joined = spawnSync(process.env.PYTHON || 'python3', [join(ROOT, 'tools', 'gif.py'), out, ...steps], { stdio: 'inherit' })
+      if (joined.status !== 0) throw new Error('tools/gif.py failed')
+      console.log(`docs/assets/readme/hero-${theme}.gif`)
+    }
+  } finally {
+    rmSync(playing, { force: true })
+    rmSync(frames, { recursive: true, force: true })
   }
 
   await shoot('touch-icon', `<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8">

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/AMAP.png" alt="AMAP logo" width="350">
+</p>
+
 # AMAP: Assisted Microbial Annotator Pipeline  
 [![PGO](https://img.shields.io/badge/PathoGenOmics-Lab-grey?style=plastic&labelColor=red)](https://github.com/PathoGenOmics-Lab)
 [![AMAP](https://img.shields.io/badge/AMAP-v1.0.1-green?style=plastic)](https://github.com/PathoGenOmics-Lab/AMAP)
@@ -12,9 +16,10 @@ __and Mireia Coscolla<sup>1</sup>__
 <br>
 <sub> 1. I<sup>2</sup>SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Valencia, Spain </sub>  
 
-<p align="center">
-  <a href="https://pathogenomics-lab.github.io/AMAP/"><img src="docs/assets/social-card.png" alt="Bakta calls the genes. AMAP checks every one: the first 12.4 kb of M. tuberculosis CDC1551, Bakta's calls, the H37Rv proteins aligned and the genes AMAP keeps." width="820"></a>
-</p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/hero-dark.gif">
+  <img src="docs/assets/readme/hero-light.gif" alt="Bakta calls the genes. AMAP checks every one. The first 12.4 kb of M. tuberculosis CDC1551 in four steps: Bakta's calls, the H37Rv proteins aligned there, the two compared call by call, and the genes AMAP keeps.">
+</picture>
 
 AMAP annotates assembled bacterial genomes with Bakta, aligns a trusted
 reference proteome onto them with miniprot, and settles every disagreement

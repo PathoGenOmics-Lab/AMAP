@@ -14,3 +14,6 @@ __pycache__/
 
 # Inputs and outputs of tests/selftest/h37rv_selftest.sh
 selftest_h37rv/
+
+# Genomes, truths and runs of tests/benchmark/benchmark.sh
+benchmark_work/

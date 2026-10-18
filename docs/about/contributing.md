@@ -63,6 +63,22 @@ output under `selftest_h37rv/`. After that it only runs `classify_cases.py`,
 `check_cds.py` and `deduplicate_rvs.py`, in seconds, and exits non-zero with
 the offending genes listed if anything is missing, misplaced or misnamed.
 
+H37Rv is one genome, and the one the defaults were tuned on. The accuracy
+benchmark in `tests/benchmark/` scores six more whose right answer is known:
+another H37Rv assembly, CDC1551 complete and cut into 40 contigs, M. bovis, and
+E. coli K-12 and Sakai against K-12 as a custom reference. Give a run a name,
+and the next one lists every gene that changed:
+
+```bash
+docker run --rm --platform linux/amd64 -v "$PWD:/amap" -w /amap \
+    paururo/amap:latest bash tests/benchmark/benchmark.sh benchmark_work before
+# change the algorithm, then
+docker run --rm --platform linux/amd64 -v "$PWD:/amap" -w /amap \
+    paururo/amap:latest bash tests/benchmark/benchmark.sh benchmark_work after before
+```
+
+`tests/benchmark/README.md` explains how the truth is built and what to expect.
+
 The quickest way to run the whole pipeline is the test profile:
 
 ```bash

@@ -108,7 +108,8 @@ def main():
     bakta_df = read_bakta(args.bakta)
     miniprot_df = read_miniprot(args.miniprot, ref_coords=True)
     # miniprot cannot seed an alignment for the smallest proteins, or puts them
-    # on a near-identical paralog; place the ones the genome encodes exactly.
+    # on a near-identical paralog; place the ones the genome encodes exactly,
+    # or for the shortest, with a few substitutions.
     if args.genome and args.ref_proteome:
         miniprot_df = place_exact_matches(miniprot_df, args.genome, args.ref_proteome)
     # A gene a contig end cut is placed by its larger piece alone; the others

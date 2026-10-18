@@ -9,6 +9,7 @@ category distributions.
 """
 
 import argparse
+import re
 import pandas as pd
 import numpy as np
 import matplotlib
@@ -26,6 +27,20 @@ __email__ = 'paula.ruiz.rodriguez@csic.es'
 __status__ = 'finished'
 __lab__ = 'PathoGenOmics (I2SysBio)'
 
+# What a gene without a COG category counts as, once. The report reads 'NaN'
+# as its category "NA", which it shows as "None".
+NO_COG = 'NaN'
+
+
+def cog_letters(category) -> list:
+    """
+    The COG categories of a gene, one letter each: "K", or "JK" for a gene in
+    both J and K. A gene with none, which eggNOG writes as '-', is NO_COG.
+    """
+    if pd.isna(category):
+        return [NO_COG]
+    return sorted(set(re.findall('[A-Z]', str(category).upper()))) or [NO_COG]
+
 
 def process_cog_categories(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -33,6 +48,7 @@ def process_cog_categories(df: pd.DataFrame) -> pd.DataFrame:
 
     The 'COG_category' column can contain multiple categories (e.g., "JKS").
     This function expands them so that each category is counted individually.
+    A gene without a COG category counts once, as NO_COG.
     The percentage is calculated against the total number of genes (rows)
     in the input dataframe.
 
@@ -47,8 +63,10 @@ def process_cog_categories(df: pd.DataFrame) -> pd.DataFrame:
     # Create a temporary DataFrame for COG processing
     cog_df = df[['lineage', 'genome', 'COG_category']].copy()
     
-    # Handle missing values, convert to uppercase, and then to lists of characters
-    cog_df['COG_category'] = cog_df['COG_category'].fillna('Unassigned').str.upper().apply(list)
+    # Each gene's categories. A gene without one used to be filled in as
+    # 'Unassigned' and split into letters like a category string, so it
+    # counted once in A, D, E, G, I and U and twice in N and S.
+    cog_df['COG_category'] = cog_df['COG_category'].apply(cog_letters)
     
     # Create a new row for each COG category character
     cog_df_exploded = cog_df.explode('COG_category')

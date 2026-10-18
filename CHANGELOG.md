@@ -43,6 +43,7 @@ directly comparable with 1.0.1.
 - **A Bakta database on the host**: `--bakta_db` reached the tasks as a path the container does not mount. With `-profile docker`, validation called the database missing and stopped the run, and where nothing validated it, as under `-profile test`, every sample failed three times and was ignored, and the run ended with nothing annotated and exit 0. A database on the host is now staged into `BAKTA_ANNOTATOR`, `PREPARE_REFERENCE` and `VALIDATE_INPUTS` like any other input; the default inside the container is used as before
 - **A warning on every run**: validation expected a `db.sqlite3` that no Bakta database has. It now checks for `version.json` and `bakta.db`, which Bakta cannot run without, so their absence stops the run, and names the database's type and version
 - **`--strict_validation`**: the documentation said validation warnings could be made to stop the run, but nothing passed the script's `--strict` on. The new parameter does
+- **eggNOG's database under Docker**: `EGGNOG_DB` built it in a folder it worked out for itself from `--eggnog_db`, and having no inputs, its container saw that folder only when Nextflow happened to mount it with the work directory and the pipeline's `bin/`, through a parent folder they share. Otherwise, as when running from `/data/project` with the pipeline in `~/.nextflow`, the database was downloaded and built inside the container and lost with it, and only `eggnog_db.ok` reached the host: later runs skipped `EGGNOG_DB`, and `ANNOT_EGGNOGMAP_BATCH` found no `bacteria.dmnd`. A database already there without `eggnog_db.ok` was built again. `main.nf` now makes the folder on the host and hands it to `EGGNOG_DB` as an input. A folder left with only `eggnog_db.ok` needs that file deleted, as validation says
 
 ### 🧹 Code
 - **`reconcile_coordinates` is gone**: it read reference coordinates from protein identifiers that have not carried them since March 2026, so it changed nothing. The paralog check does its job with the sample's own offsets
@@ -52,7 +53,8 @@ directly comparable with 1.0.1.
 - **`tests/test_cache_keys.py`** fails when a process runs AMAP code that is not in its cache key, or when its script names a `bin/` entry as a bare word without declaring it
 - **`tests/benchmark/benchmark.sh`** scores the correction algorithm on seven genomes whose right answer is known (H37Rv twice, CDC1551 complete and in 40 contigs, M. bovis, E. coli K-12 and Sakai), downloading them and running Bakta and miniprot in the container the first time, and lists every gene that changed since an earlier run
 - **`tests/test_validate_inputs.py`** runs `VALIDATE_INPUTS`'s own script, rendered as Nextflow renders it, in a task directory laid out as Nextflow lays one out: genomes in a folder the task cannot see, relative paths, two genomes with the same file name and a sheet of 500 samples; and checks both databases, eggNOG's in each state `EGGNOG_DB` can leave it in
-- **287 tests**, up from 92
+- **`tests/test_eggnog_db.py`** runs `EGGNOG_DB`'s own script, rendered as Nextflow renders it, with its folder staged as Nextflow stages an input and stand-ins for eggNOG-mapper's download and build: the database is built in that folder whatever it is called, one already there is used as it is, and a short `bacteria.dmnd` is built again
+- **292 tests**, up from 92
 
 ## [1.0.1] - 2026-07-25
 

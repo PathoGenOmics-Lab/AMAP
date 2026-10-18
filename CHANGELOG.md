@@ -22,6 +22,7 @@ directly comparable with 1.0.1.
 - **Reference genes are protected again**: the check looked for coordinates in identifiers that no longer carry them, so any call of similar length could displace a reference gene (Rv1614)
 - **Missing genes are recovered by what covers them**: genes stored under Bakta locus tags looked missing by name, so a placement a codon off its gene went back in as a second copy. With the case 4 changes, ORFs annotated twice fall from 10 to 3 on CDC1551 and from 16 to 6 on M. bovis, where the reference has none
 - **Real copies of a gene are kept**: `deduplicate_rvs.py` deleted every copy of a gene but one, 34 genes on E. coli O157:H7 Sakai, which were then missing from the annotation and from the duplication analysis. Further copies get identifiers of their own
+- **Genes that lost their stop no longer swallow the next gene**: `check_cds.py` extended a gene without a stop to the next one in its frame, which after an indel is the next gene's, so that gene was annotated a second time in the same frame (M. bovis Rv0590 over Rv0590A, Rv3373 over Rv3374, Rv2293c over Rv2292c). Such a gene now keeps its extent as a pseudogene, unless the extension only restores residues its reference protein has. ORFs annotated twice fall from 3 to 2 on CDC1551 and from 6 to 3 on M. bovis, and none of those left comes from an extension
 - **Small proteins**: miniprot placed none of the 33 proteins of 8 to 29 residues in E. coli K-12. Those the genome encodes exactly are now found in its six-frame translation, which takes K-12 against itself from 4252 to 4285 of 4294 genes and Sakai from 198 to 219 of 220
 
 ### 🐛 Pipeline
@@ -36,7 +37,7 @@ directly comparable with 1.0.1.
 ### 🧪 Testing
 - **`tests/selftest/h37rv_selftest.sh`** annotates H37Rv with itself inside the container and fails unless every GenBank CDS comes back exactly
 - **`tests/test_cache_keys.py`** fails when a process runs AMAP code that is not in its cache key, or when its script names a `bin/` entry as a bare word without declaring it
-- **242 tests**, up from 92
+- **248 tests**, up from 92
 
 ## [1.0.1] - 2026-07-25
 

@@ -777,6 +777,97 @@ class TestCheckCds:
             assert faa == fna
 
 
+class TestReadThrough:
+    """A gene that lost its stop must not be extended through the next gene.
+
+    Gene A (21 codons, no stop in the sample) is followed in its own frame by
+    five more codons and gene B, so the first stop after A is B's.
+    """
+
+    A = "ATG" + "GCT" * 20                       # 1-63
+    GAP = "GCT" * 5                              # 64-78
+    B = "ATG" + "AAA" * 10 + "TAA"               # 79-114
+    FILL = "GCA" * 10
+    PROTEOME = {'gA_1-66': 'M' + 'A' * 20 + '*', 'gB_200-235': 'M' + 'K' * 10 + '*'}
+
+    @staticmethod
+    def _run(d, genome, rows, proteome):
+        """check_cds.py on a table of (id, strand, start, end, rvs) rows; the
+        output table indexed by id."""
+        import subprocess
+        with open(os.path.join(d, 'g.fasta'), 'w') as f:
+            f.write(">chr1\n" + genome + "\n")
+        with open(os.path.join(d, 'sample_corrected.tsv'), 'w') as f:
+            f.writelines("\t".join(map(str, r)) + "\tchr1\n" for r in rows)
+        with open(os.path.join(d, 'ref.faa'), 'w') as f:
+            f.writelines(f">{h}\n{seq}\n" for h, seq in proteome.items())
+        subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), '..', 'bin', 'check_cds.py'),
+                        'g.fasta', 'sample_corrected.tsv', '--ref-proteome', 'ref.faa'],
+                       cwd=d, check=True, capture_output=True)
+        out = pd.read_csv(os.path.join(d, 'sample.AMAP.tsv'), sep='\t')
+        return {r.id: (int(r.start), int(r.end), r.pseudogene) for r in out.itertuples()}
+
+    @staticmethod
+    def _revcomp(seq):
+        return seq[::-1].translate(str.maketrans("ACGT", "TGCA"))
+
+    def test_a_gene_that_lost_its_stop_does_not_swallow_the_next(self):
+        """M. bovis Rv0590 ran on through Rv0590A and Rv3373 through Rv3374,
+        annotating the second gene twice in one frame."""
+        genome = self.A + self.GAP + self.B + self.FILL
+        rows = [('S1_A', '+', 1, 63, 'gA'), ('S1_B', '+', 79, 114, 'gB')]
+        with tempfile.TemporaryDirectory() as d:
+            got = self._run(d, genome, rows, self.PROTEOME)
+        assert got == {'S1_A': (1, 63, 'yes'), 'S1_B': (79, 114, 'no')}
+
+    def test_the_same_on_the_minus_strand(self):
+        genome = self._revcomp(self.A + self.GAP + self.B + self.FILL)
+        n = len(genome)
+        rows = [('S1_A', '-', n - 62, n, 'gA'), ('S1_B', '-', n - 113, n - 78, 'gB')]
+        with tempfile.TemporaryDirectory() as d:
+            got = self._run(d, genome, rows, self.PROTEOME)
+        assert got == {'S1_A': (n - 62, n, 'yes'), 'S1_B': (n - 113, n - 78, 'no')}
+
+    def test_with_no_gene_in_the_way_the_extension_stands(self):
+        """Running on into sequence no gene claims is what it always did."""
+        genome = self.A + self.GAP + self.B + self.FILL
+        with tempfile.TemporaryDirectory() as d:
+            got = self._run(d, genome, [('S1_A', '+', 1, 63, 'gA')], self.PROTEOME)
+        assert got == {'S1_A': (1, 114, 'no')}
+
+    def test_a_gene_in_another_frame_is_not_in_the_way(self):
+        """D overlaps the stretch A gains, but in another frame, so it is a
+        different reading of the sequence and A still reaches its stop."""
+        genome = self.A + self.GAP + self.B + self.FILL
+        rows = [('S1_A', '+', 1, 63, 'gA'), ('S1_D', '+', 65, 109, 'gD')]
+        proteome = dict(self.PROTEOME, **{'gD_65-109': 'X' * 15})
+        with tempfile.TemporaryDirectory() as d:
+            got = self._run(d, genome, rows, proteome)
+        assert got['S1_A'] == (1, 114, 'no')
+
+    def test_adding_just_the_stop_is_always_a_completion(self):
+        """E. coli b4587 only needed its stop codon, three bases on, and its
+        reference protein, a join CDS, has no final '*' to count from."""
+        genome = self.A + "TAA" + "GCT" * 20 + self.FILL
+        rows = [('S1_A', '+', 1, 63, 'gA'), ('S1_E', '+', 49, 120, 'gE')]
+        proteome = {'gA_1-70': 'M' + 'A' * 20, 'gE_49-120': 'M' + 'A' * 23}
+        with tempfile.TemporaryDirectory() as d:
+            got = self._run(d, genome, rows, proteome)
+        assert got['S1_A'] == (1, 66, 'no')
+
+    def test_an_alignment_that_stopped_short_is_still_completed(self):
+        """In CDC1551 one alignment ended two codons before a stop it shares
+        with a small nested gene; going on to it only restores residues the
+        reference protein has."""
+        a = "ATG" + "GCT" * 15 + "ATG" + "GCT" * 4          # 1-63, 21 residues
+        genome = a + "GCT" * 2 + "TAA" + self.FILL          # stop at 70-72
+        rows = [('S1_A', '+', 1, 63, 'gA'), ('S1_C', '+', 49, 72, 'gC')]
+        proteome = {'gA_1-72': 'M' + 'A' * 15 + 'M' + 'A' * 6 + '*', 'gC_49-72': 'M' + 'A' * 6 + '*'}
+        with tempfile.TemporaryDirectory() as d:
+            got = self._run(d, genome, rows, proteome)
+        assert got == {'S1_A': (1, 72, 'no'), 'S1_C': (49, 72, 'no')}
+
+
 # =============================================================================
 # DEDUPLICATE RVS TESTS
 # =============================================================================

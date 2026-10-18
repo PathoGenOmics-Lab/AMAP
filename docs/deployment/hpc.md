@@ -44,6 +44,19 @@ nextflow run PathoGenOmics-Lab/AMAP \
 passes anything else straight through, which is where accounting flags, QoS and
 node constraints go.
 
+On SLURM, Bakta's jobs, the longest a run sends, also ask for `--qos=medium`.
+The `slurm` profile sets that for Bakta alone, and for Bakta it takes the place
+of `-process.clusterOptions`, so give Bakta your site's options in a config
+passed with `-c`:
+
+```groovy
+process {
+    withName: 'BAKTA_ANNOTATOR' {
+        clusterOptions = '--qos=medium --account=mygroup'
+    }
+}
+```
+
 ## Scratch
 
 `--scratch` is on by default in every HPC profile, and it matters. Without it,

@@ -107,6 +107,12 @@
     -process.queue long \
     -process.clusterOptions &#x27;--account=mygroup&#x27;</pre></div>
 <p><code>-process.queue</code> sets the partition or queue, and <code>-process.clusterOptions</code> passes anything else straight through, which is where accounting flags, QoS and node constraints go.</p>
+<p>On SLURM, Bakta's jobs, the longest a run sends, also ask for <code>--qos=medium</code>. The <code>slurm</code> profile sets that for Bakta alone, and for Bakta it takes the place of <code>-process.clusterOptions</code>, so give Bakta your site's options in a config passed with <code>-c</code>:</p>
+<div class="code" data-lang="groovy"><pre>process {
+    withName: &#x27;BAKTA_ANNOTATOR&#x27; {
+        clusterOptions = &#x27;--qos=medium --account=mygroup&#x27;
+    }
+}</pre></div>
 <h2 id="scratch">Scratch<a class="anchor" href="#scratch" aria-label="Link to this section">#</a></h2>
 <p><code>--scratch</code> is on by default in every HPC profile, and it matters. Without it, every process reads and writes directly on the shared filesystem, and Bakta and eggNOG in particular generate enough metadata traffic to slow a cluster down for everyone. With it, work happens on node-local disk and only the results are copied back.</p>
 <p>Turn it off only if your nodes have no local disk:</p>

@@ -892,7 +892,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "HPC clusters",
 "section": "Fitting your site",
 "url": "deployment/hpc.html#fitting-your-site",
-"text": "nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm \\     --tsv samples.tsv \\     --max_cpus 64 --max_memory 256.GB \\     -process.queue long \\     -process.clusterOptions '--account=mygroup' -process.queue sets the partition or queue, and -process.clusterOptions passes anything else straight through, which is where accounting flags, QoS and node constraints go."
+"text": "nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm \\     --tsv samples.tsv \\     --max_cpus 64 --max_memory 256.GB \\     -process.queue long \\     -process.clusterOptions '--account=mygroup' -process.queue sets the partition or queue, and -process.clusterOptions passes anything else straight through, which is where accounting flags, QoS and node constraints go. On SLURM, Bakta's jobs, the longest a run sends, also ask for --qos=medium. The slurm profile sets that for Bakta alone, and for Bakta it takes the place of -process.clusterOptions, so give Bakta your site's options in"
 },
 {
 "page": "HPC clusters",

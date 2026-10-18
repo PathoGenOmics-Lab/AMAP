@@ -983,8 +983,10 @@ def failure_figure(_renderer: "Renderer", _lines: list[str]) -> str:
         r"errorStrategy = \{ task\.exitStatus in \[([\d, ]+)\] \? 'retry' : \(task\.attempt <= (\d+) \? 'retry' : 'ignore'\) \}\s*maxRetries = (\d+)",
         config,
     )
-    # Each withName block, up to the next one or the end of process { }.
-    blocks = dict(re.findall(r"withName: '(\w+)' \{(.*?)\n    \}", config, re.S))
+    # Each withName block of the top-level process { }, not a profile's: the
+    # slurm profile has one for Bakta of its own, with its QoS.
+    scope = re.search(r"^process \{\n(.*?)^\}", config, re.S | re.M).group(1)
+    blocks = dict(re.findall(r"withName: '(\w+)' \{(.*?)\n    \}", scope, re.S))
     bakta = re.search(r"memory\s*=\s*\{ (\d+)\.GB \* task\.attempt \}", blocks.get("BAKTA_ANNOTATOR", ""))
     terminate = [name for name, body in blocks.items() if "errorStrategy = 'terminate'" in body]
     eggnog = re.search(r"errorStrategy = \{ task\.exitStatus in \[[\d, ]+\] \? 'retry' : 'terminate' \}", blocks.get("ANNOT_EGGNOGMAP_BATCH", ""))

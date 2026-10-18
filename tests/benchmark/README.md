@@ -83,37 +83,45 @@ For each genome:
   with their own name
 - **wrong label**: at the right place under another name
 - **not exact**: nothing at exactly that place
+- **changed genes found with their name**: genes whose sequence differs from
+  the reference have no exact answer, but a gene should still sit where the
+  alignment puts them, on their strand, covering at least half of that stretch
+  and labelled with their name; how many of those AMAP flags as pseudogenes is
+  given too
 - **ORFs twice**: pairs of genes on one ORF (same contig and strand, the same
   reading frame, overlapping by at least half of the shorter). The references
   have none, except K-12, which nests eleven pairs of real genes this way.
 - for the draft, how many proteins are the translation of their gene on the
   contig the table puts it on
 
-`scores.tsv` in each run directory has them as a table. With a run to compare
-with, each genome also lists the genes of either run missing from the other,
-and whether a gene of the other run sits on the same reading frame there (the
-same gene with other boundaries) or nothing does (a gene lost or gained).
+A reference can give one gene several proteins from alternative start codons,
+all ending at its stop; K-12 does for cheA, infB, clpB and five more. AMAP
+annotates such a gene once, so its proteins are scored as one gene, found if
+any of them is.
+
+`scores.tsv` in each run directory has the scores as a table. With a run to
+compare with, each genome also lists the genes of either run missing from the
+other, and whether a gene of the other run sits on the same reading frame there
+(the same gene with other boundaries) or nothing does (a gene lost or gained).
 
 ## Expected results
 
 On `main` at 9c73f5b (October 2026):
 
-| Genome | exact | genes in the table | ORFs twice |
-| :--- | ---: | ---: | ---: |
-| H37Rv against itself | 4026 / 4026 | 4031 | 0 |
-| H37Rv CP110619 | 3986 / 3986 | 4036 | 0 |
-| CDC1551 | 3097 / 3097 | 4014 | 2 |
-| M. bovis | 2391 / 2391 | 3946 | 3 |
-| CDC1551, 40 contigs | 3072 / 3072 | 4015 | 2 |
-| E. coli K-12 against itself | 4285 / 4294 | 4310 | 2 |
-| E. coli Sakai | 219 / 220 | 5320 | 11 |
+| Genome | exact | changed genes found | genes in the table | ORFs twice |
+| :--- | ---: | ---: | ---: | ---: |
+| H37Rv against itself | 4026 / 4026 | | 4031 | 0 |
+| H37Rv CP110619 | 3986 / 3986 | 49 / 50 | 4036 | 0 |
+| CDC1551 | 3097 / 3097 | 855 / 863 | 4014 | 2 |
+| M. bovis | 2391 / 2391 | 1506 / 1515 | 3946 | 3 |
+| CDC1551, 40 contigs | 3072 / 3072 | | 4015 | 2 |
+| E. coli K-12 against itself | 4285 / 4286 | | 4310 | 2 |
+| E. coli Sakai | 219 / 220 | 3337 / 3367 | 5320 | 11 |
 
 In the draft every one of the 4015 proteins is the translation of its gene on
 its own contig. The first run took 15 minutes with 12 threads on an M-series
 Mac, Bakta included; a run on the cache takes under two minutes.
 
-The nine K-12 genes missed are mostly proteins the GenBank record gives twice
-for one gene, from alternative start codons (cheA, infB, clpB and others). The
-H37Rv self-test, `tests/selftest/h37rv_selftest.sh`, scores the same genome
+The H37Rv self-test, `tests/selftest/h37rv_selftest.sh`, scores the same genome
 against every CDS of the GenBank record instead of the proteome, and expects
 4031 of 4031.

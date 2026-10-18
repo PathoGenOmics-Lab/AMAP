@@ -250,47 +250,92 @@ def _doubles(df, contig_col):
 
 def score(args):
     """Truth genes found at exactly their coordinates and strand, labelled with
-    their own name; plus the ORFs the table annotates twice."""
+    their own name; plus the ORFs the table annotates twice.
+
+    A reference can give one gene several proteins from alternative start
+    codons, all ending at its stop (K-12 has cheA, infB, clpB and five more).
+    They are one gene, which AMAP annotates once, so they are scored as one
+    locus that counts as found if any of them is.
+    """
     truth = pd.read_csv(args.truth, sep="\t")
+    changed = truth[truth.status == "changed"]
     truth = truth[truth.status == "ok"]
     amap = _load_amap(args.amap)
     on_contigs = args.contig_map is not None
     if on_contigs:
         truth = _truth_on_contigs(truth, args.contig_map)
         key = lambda r: (r.contig, int(r.start), int(r.end), r.strand)
+        locus = lambda r: (r.name, r.contig, r.strand, r.start if r.strand == "-" else r.end)
     else:
         key = lambda r: (int(r.start), int(r.end), r.strand)
+        locus = lambda r: (r.name, r.strand, r.start if r.strand == "-" else r.end)
     names = defaultdict(set)
     for r in amap.itertuples():
         names[key(r)] |= {_base(x.strip()) for x in r.rvs.split(",") if x.strip()}
-    res = defaultdict(list)
+    outcome = {}
+    rank = {"exact": 2, "wrong label": 1, "not exact": 0}
     for t in truth.itertuples():
         k = key(t)
         if k not in names:
-            res["not exact"].append(t.name)
+            got = "not exact"
         elif _base(t.name) not in names[k]:
-            res["wrong label"].append(t.name)
+            got = "wrong label"
         else:
-            res["exact"].append(t.name)
-    n = len(truth)
+            got = "exact"
+        best = outcome.get(locus(t))
+        if best is None or rank[got] > rank[best[0]]:
+            outcome[locus(t)] = (got, t.name)
+    res = defaultdict(list)
+    for got, name in outcome.values():
+        res[got].append(name)
+    n = len(outcome)
+    isoforms = len(truth) - n
     doubles = _doubles(amap, "contig")
     line = {"genome": args.label, "truth": n, "exact": len(res["exact"]),
             "wrong_label": len(res["wrong label"]), "not_exact": len(res["not exact"]),
             "genes": len(amap), "pseudogenes": int((amap.pseudogene == "yes").sum()),
             "orfs_twice": doubles}
+    if not on_contigs and len(changed):
+        line.update(_changed_found(changed, amap))
     if on_contigs and args.fasta and args.faa:
         line.update(_own_contig(amap, args.fasta, args.faa))
     print(f"{args.label:<14} exact {len(res['exact'])}/{n} ({100 * len(res['exact']) / max(n, 1):.2f}%)"
           f"  wrong label {len(res['wrong label'])}  not exact {len(res['not exact'])}"
-          f"  | genes {len(amap)}  ORFs twice {doubles}"
+          + (f" ({isoforms} isoforms counted with their gene)" if isoforms else "")
+          + f"  | genes {len(amap)}  ORFs twice {doubles}"
+          + (f"  | changed genes found with their name {line['changed_found']}/{line['changed']}"
+             f" ({line['changed_pseudo']} of them pseudogenes)" if "changed" in line else "")
           + (f"  | proteins from their own contig {line['own_contig']}, from another {line['other_contig']}"
              if "own_contig" in line else ""))
-    for k in ("wrong label", "not exact"):
+    res["changed, not found"] = line.pop("changed_missed", [])
+    for k in ("wrong label", "not exact", "changed, not found"):
         if res[k]:
             print(f"    {k}: {', '.join(res[k][:12])}{' ...' if len(res[k]) > 12 else ''}")
     if args.tsv:
         new = not os.path.exists(args.tsv)
         pd.DataFrame([line]).to_csv(args.tsv, sep="\t", index=False, mode="a", header=new)
+
+
+def _changed_found(changed, amap):
+    """Genes whose sequence differs from the reference have no exact answer,
+    but they should still be annotated where the alignment puts them and
+    under their own name: a gene of the table on the same strand, covering at
+    least half of that stretch, with the name among its labels."""
+    found = pseudo = 0
+    missed = []
+    for t in changed.itertuples():
+        length = t.end - t.start + 1
+        o = amap[(amap.strand == t.strand) & (amap.start <= t.end) & (amap.end >= t.start)]
+        for r in o.itertuples():
+            cover = min(t.end, r.end) - max(t.start, r.start) + 1
+            if cover >= 0.5 * length and _base(t.name) in {_base(x.strip()) for x in r.rvs.split(",")}:
+                found += 1
+                pseudo += r.pseudogene == "yes"
+                break
+        else:
+            missed.append(t.name)
+    return {"changed": len(changed), "changed_found": found, "changed_pseudo": int(pseudo),
+            "changed_missed": missed}
 
 
 def _own_contig(amap, fasta, faa):

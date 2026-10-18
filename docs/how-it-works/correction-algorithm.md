@@ -22,10 +22,12 @@ contigs as the FASTA and Miniprot do; by default it renames them `contig_N`.
 Miniprot needs a seed of several residues and enough score to report an
 alignment, which a protein of a few dozen residues rarely gives it: annotating
 *E. coli* K-12 with its own proteome, it placed none of 33 proteins of 8 to 29
-residues. Every protein it leaves unplaced is looked for in the six-frame
-translation of the genome, preceded by a start codon and followed by a stop,
-and each exact copy found becomes a complete placement. Proteins shorter than
-8 residues are not searched.
+residues, and it put the ldr toxin b4665, 19 residues three of which differ
+from its neighbour's, on that neighbour only. Every protein without an exact,
+complete placement is looked for in the six-frame translation of the genome,
+preceded by a start codon and followed by a stop, and each exact copy found
+where Miniprot did not already place the protein becomes a complete placement.
+Proteins shorter than 8 residues are not searched.
 
 ### Paralog placements
 
@@ -168,9 +170,10 @@ After the stop codon check, `deduplicate_rvs.py` ranks the genes that share a
 reference protein: a non-pseudogene over a pseudogene, then the longer one, then
 one Bakta also called at exactly those coordinates, then the one nearer where
 the protein belongs by synteny. The first keeps its place. The others stay as
-**further copies** of the gene when they are intact, at least **90%** as long as
-the first, clear of the copies kept, and not covered by another reference gene;
-anything else is a remnant of the gene and goes. A genome can carry a gene more
+**further copies** of the gene when they are at least **90%** as long as the
+first, clear of the copies kept, and not covered by another reference gene; a
+pseudogene must also be 90% as long as the reference protein, which a piece of
+a split gene is not, and anything else is a remnant of the gene and goes. A genome can carry a gene more
 than once, and these copies are what the duplication analysis counts: *E. coli*
 O157:H7 Sakai keeps 34 that used to be deleted. Copies only Miniprot placed are
 all named after their protein, so later ones get `_2`, `_3` to keep identifiers
@@ -189,14 +192,22 @@ reference protein says is missing when that is further. If the extension
 introduces internal stops or finds nothing, the original coordinates are kept
 and the gene is flagged as a pseudogene.
 
-**Extensions stop short of the next gene.** When an indel removes a gene's stop,
-its reading frame runs on into the next gene, and the next stop is that gene's:
-in M. bovis Rv0590 runs on through Rv0590A, and Rv3373 through Rv3374.
-Extending would annotate the second gene a second time, in the same frame, so a
-gene whose extension would run through another gene in its frame keeps its
-extent and is flagged as a pseudogene. An extension that only restores residues
-the reference protein has, at most **10** past its end, still goes ahead: the
-alignment had merely stopped short.
+**An extension goes no further than the reference protein.** A gene may be
+extended to a stop at most **10** residues past the end of its reference
+protein: that completes an alignment that stopped short. A frame that runs on
+further has lost its stop or shifted, and the C-terminus it would add is not
+the gene's; the gene keeps its extent and is flagged as a pseudogene, with the
+reason, as PGAP and Bakta treat a frameshift. Often that frame runs on into the
+next gene, whose stop is then the next one (in M. bovis Rv0590 into Rv0590A and
+Rv3373 into Rv3374), and extending would annotate that gene twice.
+
+**Genes a contig cut short are partial.** In a draft assembly, a gene whose
+frame reaches the end of its contig with no stop, from within 30 bp of it, was
+cut by the assembly: it runs to the last codon there and is marked `3'`
+partial. One that opens within a codon of the contig's edge without a start
+codon is `5'` partial. Neither is a pseudogene. Only the piece Miniprot places
+is annotated, usually the larger one, as it reports only the placements within
+5% of a protein's best.
 
 **Reference pseudogenes keep their extent.** When the reference protein spans
 its annotated stretch codon for codon with no stop (PE21, Rv2099c; PPE48,
@@ -244,7 +255,8 @@ sets of coordinates overlap, which one survives into the curated annotation.
 | Length of a further copy, next to the first | final deduplication | 90% |
 | Cover by another reference gene that rules a copy out | final deduplication | 50% |
 | Stop codon search | quality control | 300 bp, or what the reference protein is missing |
-| Residues an extension through another gene may restore past the reference protein | quality control | 10 |
+| Residues an extension may run past the end of the reference protein | quality control | 10 |
+| Distance from a contig end within which a gene counts as cut | quality control | 30 bp at the 3' end, a codon at the 5' end |
 | Identity to restore a clipped N-terminus | quality control | 90% |
 
 These are constants in `bin/classify/`, tuned on MTBC. Another organism may want

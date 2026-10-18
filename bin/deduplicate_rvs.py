@@ -7,8 +7,10 @@ When several genes map to the same single Rv identifier, they are ranked by:
 same coordinates, (4) closer to where the protein sits in the reference, judged
 from the genes around it (with --ref-proteome). The first keeps its place.
 
-The rest are removed unless they are further copies of the gene: intact, at
-least nearly as long as the first, and clear of every copy kept. A genome can
+The rest are removed unless they are further copies of the gene: nearly as
+long as the first, clear of every copy kept, and not on another reference
+gene's locus; a pseudogene must also be nearly as long as the reference
+protein. A genome can
 carry a gene more than once, and those copies are what the duplication analysis
 counts; E. coli O157:H7 Sakai has several of K-12's prophage genes many times
 over, and every copy but one used to be deleted here.
@@ -71,6 +73,22 @@ def read_reference_positions(path):
     return positions
 
 
+def read_reference_lengths(path):
+    """How many residues each reference protein has, by name."""
+    lengths, name = {}, None
+    with open(path) as fh:
+        for line in fh:
+            if line.startswith('>'):
+                name = re.sub(r'_\d+-\d+$', '', line[1:].split()[0])
+                if name in lengths:
+                    name = None        # isoforms: the first protein counts
+                else:
+                    lengths[name] = 0
+            elif name is not None:
+                lengths[name] += len(line.strip().rstrip('*'))
+    return lengths
+
+
 def synteny_distance(genes, ref_positions):
     """How far each gene sits from where its reference protein belongs.
 
@@ -118,21 +136,31 @@ def _covered(gene, others, share=0.5):
     return False
 
 
-def is_copy(gene, kept, others=()):
+def is_copy(gene, kept, others=(), ref_residues=None):
     """Whether gene is a further copy of the gene whose copies are kept, the
-    first of them its best: intact, nearly as long as it, clear of the copies
-    kept, and not on the locus of another reference gene (others). In
-    M. bovis an intact copy of Rv2177c lies inside Rv2424c, a pseudogene where
-    it belongs, and two names would cover one locus."""
-    return (not _is_pseudo(gene)
-            and _length(gene) >= MIN_COPY_LENGTH * _length(kept[0])
+    first of them its best: nearly as long as it, clear of the copies kept,
+    and not on the locus of another reference gene (others). In M. bovis an
+    intact copy of Rv2177c lies inside Rv2424c, a pseudogene where it belongs,
+    and two names would cover one locus.
+
+    A copy may be a pseudogene, if it is also nearly as long as the reference
+    protein (ref_residues): a whole copy that is disrupted is still a copy of
+    the gene at a locus of its own, which E. coli Sakai's prophages have many
+    of, while a piece of the gene, which a frameshift can split in two, falls
+    short of the reference.
+    """
+    length = _length(gene)
+    whole = not ref_residues or length >= MIN_COPY_LENGTH * 3 * ref_residues
+    return (length >= MIN_COPY_LENGTH * _length(kept[0])
+            and (not _is_pseudo(gene) or whole)
             and not any(_overlap(gene, k) for k in kept)
             and not _covered(gene, others))
 
 
-def deduplicate(genes, bakta_cds=frozenset(), distance=None):
+def deduplicate(genes, bakta_cds=frozenset(), distance=None, ref_residues=None):
     """Remove duplicate Rv assignments and overlapping no-Rv genes."""
     distance = distance or {}
+    ref_residues = ref_residues or {}
     # Index single-Rv genes by Rv
     rv_genes = defaultdict(list)
     for i, g in enumerate(genes):
@@ -175,7 +203,7 @@ def deduplicate(genes, bakta_cds=frozenset(), distance=None):
             g = genes[idx]
             others = [o for o in by_contig[g.get('contig', '')]
                       if o.get('rvs', '').strip() not in ('', rv)]
-            if is_copy(g, kept, others):
+            if is_copy(g, kept, others, ref_residues.get(rv)):
                 kept.append(g)
             else:
                 remove.add(idx)
@@ -281,9 +309,10 @@ def main():
     bakta_cds = read_bakta_cds(args.bakta) if args.bakta else frozenset()
     distance = (synteny_distance(genes, read_reference_positions(args.ref_proteome))
                 if args.ref_proteome else {})
+    ref_residues = read_reference_lengths(args.ref_proteome) if args.ref_proteome else {}
     # Keyed by placement so the other copies of a multi-copy gene survive.
     removed_keys = set()
-    deduped, removed_indices = deduplicate(genes, bakta_cds, distance)
+    deduped, removed_indices = deduplicate(genes, bakta_cds, distance, ref_residues)
     removed_keys = {record_key(genes[i]) for i in removed_indices}
     removed_ids = sorted({genes[i]['id'] for i in removed_indices})
 

@@ -560,6 +560,61 @@ class TestAppendStopCodon:
         assert append_stop_codon('', 1, 36) == ''
 
 
+class TestGff3Proteome:
+    """A reference given as GFF3 must give the proteins its GenBank gives:
+    E. coli K-12's GFF3 now yields all 4318, identical, where each line was
+    translated on its own and 24 went missing."""
+
+    FILL = "GCA" * 10
+
+    def test_proteins_come_out_whole(self):
+        """A CDS of two lines is one protein, a protein of 8 residues is kept,
+        a GTG start reads as M, a selenocysteine is read through its UGA, and
+        on the minus strand the phase that counts is that of the 5' line, the
+        one with the highest coordinates."""
+        from extract_ref_proteins import extract_from_gff3
+        from Bio.Seq import Seq
+        a1, gap, a2 = "ATG" + "GCT" * 5, "C" * 12, "GCT" * 5 + "TAA"
+        b = str(Seq("ATG" + "AAA" * 7 + "TAA").reverse_complement())
+        c = "GTG" + "GCT" * 9 + "TAG"
+        d = "ATG" + "GCT" * 4 + "TGA" + "GCT" * 4 + "TAA"
+        e5 = "G" + "ATG" + "CCC" * 4                      # 5' line, one base before the start
+        e3 = "CCC" * 4 + "TAA"
+        e_hi, e_lo = str(Seq(e5).reverse_complement()), str(Seq(e3).reverse_complement())
+        genome = (self.FILL + a1 + gap + a2 + self.FILL + b + self.FILL + c + self.FILL
+                  + d + self.FILL + e_lo + gap + e_hi + self.FILL)
+        pos = {}
+        cursor = 0
+        for name, piece in (("a1", a1), ("a2", a2), ("b", b), ("c", c), ("d", d),
+                            ("e_lo", e_lo), ("e_hi", e_hi)):
+            cursor = genome.index(piece, cursor)
+            pos[name] = (cursor + 1, cursor + len(piece))
+            cursor += len(piece)
+        sec = pos["d"][0] + 15
+        lines = [("a1", "+", 0, "ID=cds-A;locus_tag=gA"), ("a2", "+", 0, "ID=cds-A;locus_tag=gA"),
+                 ("b", "-", 0, "ID=cds-B;locus_tag=gB"), ("c", "+", 0, "ID=cds-C;locus_tag=gC"),
+                 ("d", "+", 0, f"ID=cds-D;locus_tag=gD;transl_except=(pos:{sec}..{sec + 2}%2Caa:Sec)"),
+                 ("e_lo", "-", 0, "ID=cds-E;locus_tag=gE"), ("e_hi", "-", 1, "ID=cds-E;locus_tag=gE")]
+        with tempfile.TemporaryDirectory() as d_:
+            fasta, gff, out = (os.path.join(d_, n) for n in ("g.fasta", "g.gff3", "p.faa"))
+            with open(fasta, "w") as f:
+                f.write(">chr1\n" + genome + "\n")
+            with open(gff, "w") as f:
+                f.write("##gff-version 3\n")
+                for piece, strand, phase, attrs in lines:
+                    f.write(f"chr1\t.\tCDS\t{pos[piece][0]}\t{pos[piece][1]}\t.\t{strand}\t{phase}\t{attrs}\n")
+            extract_from_gff3(gff, fasta, out)
+            with open(out) as f:
+                got = dict(zip(*[iter(l.strip().lstrip(">") for l in f)] * 2))
+        assert got == {
+            f"gA_{pos['a1'][0]}-{pos['a2'][1]}": "M" + "A" * 10,
+            f"gB_{pos['b'][0]}-{pos['b'][1]}": "M" + "K" * 7 + "*",
+            f"gC_{pos['c'][0]}-{pos['c'][1]}": "M" + "A" * 9 + "*",
+            f"gD_{pos['d'][0]}-{pos['d'][1]}": "MAAAAUAAAA*",
+            f"gE_{pos['e_lo'][0]}-{pos['e_hi'][1]}": "M" + "P" * 8,
+        }
+
+
 # =============================================================================
 # CHECK CDS TESTS
 # =============================================================================
@@ -777,23 +832,15 @@ class TestCheckCds:
             assert faa == fna
 
 
-class TestReadThrough:
-    """A gene that lost its stop must not be extended through the next gene.
+class _CheckCdsTable:
+    """Runs check_cds.py on a small genome; no tests of its own."""
 
-    Gene A (21 codons, no stop in the sample) is followed in its own frame by
-    five more codons and gene B, so the first stop after A is B's.
-    """
-
-    A = "ATG" + "GCT" * 20                       # 1-63
-    GAP = "GCT" * 5                              # 64-78
-    B = "ATG" + "AAA" * 10 + "TAA"               # 79-114
     FILL = "GCA" * 10
-    PROTEOME = {'gA_1-66': 'M' + 'A' * 20 + '*', 'gB_200-235': 'M' + 'K' * 10 + '*'}
 
     @staticmethod
-    def _run(d, genome, rows, proteome):
-        """check_cds.py on a table of (id, strand, start, end, rvs) rows; the
-        output table indexed by id."""
+    def _table(d, genome, rows, proteome):
+        """check_cds.py on a table of (id, strand, start, end, rvs) rows on
+        chr1; the output table indexed by id."""
         import subprocess
         with open(os.path.join(d, 'g.fasta'), 'w') as f:
             f.write(">chr1\n" + genome + "\n")
@@ -804,12 +851,30 @@ class TestReadThrough:
         subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), '..', 'bin', 'check_cds.py'),
                         'g.fasta', 'sample_corrected.tsv', '--ref-proteome', 'ref.faa'],
                        cwd=d, check=True, capture_output=True)
-        out = pd.read_csv(os.path.join(d, 'sample.AMAP.tsv'), sep='\t')
-        return {r.id: (int(r.start), int(r.end), r.pseudogene) for r in out.itertuples()}
+        return pd.read_csv(os.path.join(d, 'sample.AMAP.tsv'), sep='\t', dtype=str,
+                           keep_default_na=False).set_index('id')
+
+    def _run(self, d, genome, rows, proteome):
+        t = self._table(d, genome, rows, proteome)
+        return {i: (int(r.start), int(r.end), r.pseudogene) for i, r in t.iterrows()}
 
     @staticmethod
     def _revcomp(seq):
         return seq[::-1].translate(str.maketrans("ACGT", "TGCA"))
+
+
+class TestReadThrough(_CheckCdsTable):
+    """A gene with no stop is extended to the next one in its frame only as far
+    as its reference protein goes, give or take ten residues.
+
+    Gene A (21 codons, no stop in the sample) is followed in its own frame by
+    five more codons and gene B, so the first stop after A is B's.
+    """
+
+    A = "ATG" + "GCT" * 20                       # 1-63
+    GAP = "GCT" * 5                              # 64-78
+    B = "ATG" + "AAA" * 10 + "TAA"               # 79-114
+    PROTEOME = {'gA_1-66': 'M' + 'A' * 20 + '*', 'gB_200-235': 'M' + 'K' * 10 + '*'}
 
     def test_a_gene_that_lost_its_stop_does_not_swallow_the_next(self):
         """M. bovis Rv0590 ran on through Rv0590A and Rv3373 through Rv3374,
@@ -817,8 +882,10 @@ class TestReadThrough:
         genome = self.A + self.GAP + self.B + self.FILL
         rows = [('S1_A', '+', 1, 63, 'gA'), ('S1_B', '+', 79, 114, 'gB')]
         with tempfile.TemporaryDirectory() as d:
-            got = self._run(d, genome, rows, self.PROTEOME)
-        assert got == {'S1_A': (1, 63, 'yes'), 'S1_B': (79, 114, 'no')}
+            t = self._table(d, genome, rows, self.PROTEOME)
+        assert (t.at['S1_A', 'start'], t.at['S1_A', 'end'], t.at['S1_A', 'pseudogene']) == ('1', '63', 'yes')
+        assert t.at['S1_A', 'note'].startswith('frameshift or lost stop codon: its frame runs on 16 residues')
+        assert (t.at['S1_B', 'start'], t.at['S1_B', 'end'], t.at['S1_B', 'pseudogene']) == ('79', '114', 'no')
 
     def test_the_same_on_the_minus_strand(self):
         genome = self._revcomp(self.A + self.GAP + self.B + self.FILL)
@@ -828,22 +895,28 @@ class TestReadThrough:
             got = self._run(d, genome, rows, self.PROTEOME)
         assert got == {'S1_A': (n - 62, n, 'yes'), 'S1_B': (n - 113, n - 78, 'no')}
 
-    def test_with_no_gene_in_the_way_the_extension_stands(self):
-        """Running on into sequence no gene claims is what it always did."""
+    def test_running_on_into_empty_sequence_is_the_same(self):
+        """With no gene in the way the made-up C-terminus is as made up."""
         genome = self.A + self.GAP + self.B + self.FILL
         with tempfile.TemporaryDirectory() as d:
             got = self._run(d, genome, [('S1_A', '+', 1, 63, 'gA')], self.PROTEOME)
-        assert got == {'S1_A': (1, 114, 'no')}
+        assert got == {'S1_A': (1, 63, 'yes')}
 
-    def test_a_gene_in_another_frame_is_not_in_the_way(self):
-        """D overlaps the stretch A gains, but in another frame, so it is a
-        different reading of the sequence and A still reaches its stop."""
+    def test_a_reference_without_a_final_star_is_measured_too(self):
+        """A join CDS is written without its '*'; its residues still say how
+        far the gene may go."""
         genome = self.A + self.GAP + self.B + self.FILL
-        rows = [('S1_A', '+', 1, 63, 'gA'), ('S1_D', '+', 65, 109, 'gD')]
-        proteome = dict(self.PROTEOME, **{'gD_65-109': 'X' * 15})
         with tempfile.TemporaryDirectory() as d:
-            got = self._run(d, genome, rows, proteome)
-        assert got['S1_A'] == (1, 114, 'no')
+            got = self._run(d, genome, [('S1_A', '+', 1, 63, 'gA')], {'gA_1-70': 'M' + 'A' * 20})
+        assert got == {'S1_A': (1, 63, 'yes')}
+
+    def test_a_few_residues_past_the_reference_still_extend(self):
+        """Four codons past the reference's end is within the ten allowed: a
+        stop a little further on, not a new C-terminus."""
+        genome = self.A + "GCT" * 4 + "TAA" + self.FILL
+        with tempfile.TemporaryDirectory() as d:
+            got = self._run(d, genome, [('S1_A', '+', 1, 63, 'gA')], self.PROTEOME)
+        assert got == {'S1_A': (1, 78, 'no')}
 
     def test_adding_just_the_stop_is_always_a_completion(self):
         """E. coli b4587 only needed its stop codon, three bases on, and its
@@ -868,6 +941,53 @@ class TestReadThrough:
         assert got == {'S1_A': (1, 72, 'no'), 'S1_C': (49, 72, 'no')}
 
 
+class TestContigEnds(_CheckCdsTable):
+    """A gene the assembly cut short at a contig end is partial, not a
+    pseudogene: in CDC1551 cut into 40 contigs, 14 of the 25 genes that span a
+    cut came out as pseudogenes and the rest as complete genes."""
+
+    REF = {'gA_1-66': 'M' + 'A' * 20 + '*'}
+
+    def _one(self, genome, row):
+        with tempfile.TemporaryDirectory() as d:
+            t = self._table(d, genome, [row], self.REF)
+        r = t.iloc[0]
+        return int(r.start), int(r.end), r.pseudogene, r.partial
+
+    def test_a_frame_that_runs_off_the_contig_is_3_prime_partial(self):
+        """The alignment stops short of the edge; the gene runs to the last
+        whole codon there."""
+        genome = self.FILL + "ATG" + "GCT" * 20 + "GC"
+        assert self._one(genome, ('S1_A', '+', 31, 81, 'gA')) == (31, 93, 'no', "3'")
+
+    def test_the_same_on_the_minus_strand(self):
+        genome = self._revcomp(self.FILL + "ATG" + "GCT" * 20 + "GC")
+        n = len(genome)
+        assert self._one(genome, ('S1_A', '-', n - 80, n - 30, 'gA')) == (n - 92, n - 30, 'no', "3'")
+
+    def test_a_frameshifted_gene_further_in_is_not_cut(self):
+        """In the CDC1551 draft, frameshifted Rv2561 reads on 353 bp to the end
+        of its contig with no stop, through the piece of Rv2562 the cut left
+        there; it is a pseudogene, not a gene the contig cut short."""
+        genome = self.FILL + "ATG" + "GCT" * 20 + "GCT" * 40
+        assert self._one(genome, ('S1_A', '+', 31, 93, 'gA'))[2:] == ('yes', '')
+        genome = self._revcomp(genome)
+        n = len(genome)
+        assert self._one(genome, ('S1_A', '-', n - 92, n - 30, 'gA'))[2:] == ('yes', '')
+
+    def test_a_gene_with_no_start_at_the_contig_edge_is_5_prime_partial(self):
+        genome = "GCT" * 20 + "TAA" + self.FILL
+        assert self._one(genome, ('S1_A', '+', 1, 63, 'gA')) == (1, 63, 'no', "5'")
+
+    def test_a_gene_across_a_whole_contig_is_partial_at_both_ends(self):
+        genome = "C" + "GCT" * 25 + "G"
+        assert self._one(genome, ('S1_A', '+', 2, 61, 'gA')) == (2, 76, 'no', "5',3'")
+
+    def test_a_start_codon_at_the_edge_is_a_start(self):
+        genome = "ATG" + "GCT" * 19 + "TAA" + self.FILL
+        assert self._one(genome, ('S1_A', '+', 1, 63, 'gA')) == (1, 63, 'no', "")
+
+
 # =============================================================================
 # DEDUPLICATE RVS TESTS
 # =============================================================================
@@ -881,12 +1001,13 @@ class TestDeduplicateRvs:
                 'rvs': rvs, 'pseudogene': pseudo, 'contig': contig}
 
     def test_tie_goes_to_the_copy_bakta_also_called(self):
-        """Between copies that tie, one Bakta called at the same coordinates
-        wins: it used to be whichever came first in the genome."""
+        """Between copies that tie and cannot both stay, one Bakta called at
+        the same coordinates wins: it used to be whichever came first in the
+        genome."""
         from deduplicate_rvs import deduplicate
-        genes = [self._gene('S1_g1', 266553, 266789, 'g1', '-', pseudo='yes'),
-                 self._gene('S1_02737', 2770445, 2770681, 'g1', pseudo='yes')]
-        kept, _ = deduplicate(genes, {(2770445, 2770681, '+', 'c1')})
+        genes = [self._gene('S1_g1', 266553, 266789, 'g1'),
+                 self._gene('S1_02737', 266556, 266792, 'g1')]
+        kept, _ = deduplicate(genes, {(266556, 266792, '+', 'c1')})
         assert [g['id'] for g in kept] == ['S1_02737']
 
     def test_bakta_support_only_breaks_ties(self):
@@ -907,17 +1028,21 @@ class TestDeduplicateRvs:
         kept, removed = deduplicate(genes)
         assert len(kept) == 3 and not removed
 
-    def test_pseudogenes_and_pieces_are_not_copies(self):
-        """A further copy must be intact, nearly as long as the best one, and
-        clear of the copies kept; anything else is a remnant of the gene."""
+    def test_pieces_are_not_copies_but_disrupted_copies_are(self):
+        """A further copy must be nearly as long as the best one and clear of
+        the copies kept, and a pseudogene also nearly as long as the reference
+        protein: a piece of the gene is not a copy, a disrupted copy at a
+        locus of its own is, flagged as the pseudogene it is."""
         from deduplicate_rvs import deduplicate
         genes = [self._gene('S1_best', 1000, 1899, 'g1'),
                  self._gene('S1_pseudo', 5000, 5899, 'g1', pseudo='yes'),
                  self._gene('S1_piece', 9000, 9599, 'g1'),
                  self._gene('S1_overlapping', 1300, 2199, 'g1'),
-                 self._gene('S1_copy', 20000, 20869, 'g1')]
-        kept, _ = deduplicate(genes)
-        assert [g['id'] for g in kept] == ['S1_best', 'S1_copy']
+                 self._gene('S1_copy', 20000, 20869, 'g1'),
+                 self._gene('S1_short_pseudo', 30000, 30824, 'g1', pseudo='yes'),
+                 self._gene('S1_short', 40000, 40824, 'g1')]
+        kept, _ = deduplicate(genes, ref_residues={'g1': 310})
+        assert [g['id'] for g in kept] == ['S1_best', 'S1_pseudo', 'S1_copy', 'S1_short']
 
     def test_a_copy_on_another_reference_gene_is_not_kept(self):
         """In M. bovis an intact copy of Rv2177c lies inside Rv2424c, a
@@ -942,13 +1067,15 @@ class TestDeduplicateRvs:
         assert len(kept) == 2
 
     def test_synteny_breaks_the_remaining_ties(self):
-        """In CDC1551 an 81-residue copy of Rv3022c also opens another PPE
-        gene, 2.4 kb before its own locus, and that one came first."""
+        """The copy where the protein belongs keeps its place, rather than the
+        one that comes first in the genome; here that one lies on another
+        reference gene and goes."""
         from deduplicate_rvs import deduplicate
         genes = [self._gene('S1_Rv3022c', 3373737, 3373979, 'Rv3022c', '-', pseudo='yes'),
-                 self._gene('S1_Rv3022c', 3376177, 3376419, 'Rv3022c', '-', pseudo='yes')]
+                 self._gene('S1_Rv3022c', 3376177, 3376419, 'Rv3022c', '-', pseudo='yes'),
+                 self._gene('S1_Rv3018c', 3373047, 3373979, 'Rv3018c', '-')]
         kept, _ = deduplicate(genes, distance={0: 2440.0, 1: 0.0})
-        assert [g['start'] for g in kept] == ['3376177']
+        assert [g['start'] for g in kept] == ['3376177', '3373047']
 
     def test_synteny_distance_follows_the_neighbours(self):
         """The sample is 5 kb ahead of the reference here; the copy that sits
@@ -1627,26 +1754,47 @@ class TestExactPlacements:
             assert list(find_exact('MKLVWFYH*', self._frames(d, self.FILL + no_start + self.FILL))) == []
             assert list(find_exact('MKLVWFYH*', self._frames(d, self.FILL + no_stop + self.FILL))) == []
 
-    def test_an_unplaced_protein_gets_a_complete_placement(self):
-        from classify.exact import place_unplaced_proteins
+    def test_proteins_without_an_exact_placement_get_one(self):
+        """gS was left unplaced; gQ was only placed with mismatches somewhere
+        else, as miniprot put the ldr toxin b4665 on b4664, and gU only in
+        part; gR's exact copy is where miniprot already placed it, which is
+        left as it was; gP has an exact placement; gT is too short to search."""
+        from classify.exact import place_exact_matches
+        orf_q = "ATG" + "CGT" * 7 + "TAA"                  # MRRRRRRR
+        orf_r = "ATG" + "GAA" * 7 + "TGA"                  # MEEEEEEE
+        orf_u = "ATG" + "TTC" * 7 + "TAG"                  # MFFFFFFF
+        genome_seq = (self.FILL + self.ORF + self.FILL + "ATGAAACTGGTTTGGTAA"
+                      + self.FILL + orf_q + self.FILL + orf_r + self.FILL + orf_u + self.FILL)
+        q = genome_seq.index(orf_q) + 1
+        r = genome_seq.index(orf_r) + 1
+        u = genome_seq.index(orf_u) + 1
         cols = ['Prot Id', 'Prot len', 'Strand', 'Start', 'End', 'Match Nt', 'Num nt',
                 'Contig', 'Complete', 'Ref Start', 'Ref End']
         mp = pd.DataFrame([['gS', 9, '*', 1, 0, 0, 0, '*', False, 1000.0, 1026.0],
                            ['gP', 101, '+', 300, 602, 303, 303, 'chr', True, 300.0, 602.0],
-                           ['gT', 6, '*', 1, 0, 0, 0, '*', False, 2000.0, 2017.0]], columns=cols)
+                           ['gT', 6, '*', 1, 0, 0, 0, '*', False, 2000.0, 2017.0],
+                           ['gQ', 9, '+', 500, 526, 20, 27, 'chr', True, 3000.0, 3026.0],
+                           ['gR', 9, '+', r, r + 23, 21, 24, 'chr', False, 4000.0, 4026.0],
+                           ['gU', 9, '+', 700, 720, 21, 21, 'chr', False, 5000.0, 5026.0]], columns=cols)
         with tempfile.TemporaryDirectory() as d:
             genome = os.path.join(d, 'g.fasta')
             with open(genome, 'w') as f:
-                f.write(">chr\n" + self.FILL + self.ORF + self.FILL + "ATGAAACTGGTTTGGTAA" + "\n")
+                f.write(">chr\n" + genome_seq + "\n")
             proteome = os.path.join(d, 'p.faa')
             with open(proteome, 'w') as f:
                 f.write(">gS_1000-1026\nMKLVWFYH*\n>gP_300-602\nM" + "A" * 99 + "*\n"
-                        ">gT_2000-2017\nMKLVW*\n")
-            out = place_unplaced_proteins(mp, genome, proteome)
+                        ">gT_2000-2017\nMKLVW*\n>gQ_3000-3026\nMRRRRRRR*\n>gR_4000-4026\nMEEEEEEE*\n"
+                        ">gU_5000-5026\nMFFFFFFF*\n")
+            out = place_exact_matches(mp, genome, proteome)
         assert out.drop(columns='Prot len').values.tolist() == [
             ['gP', '+', 300, 602, 303, 303, 'chr', True, 300.0, 602.0],
             ['gT', '*', 1, 0, 0, 0, '*', False, 2000.0, 2017.0],
-            ['gS', '+', 31, 57, 27, 27, 'chr', True, 1000.0, 1026.0]]
+            ['gQ', '+', 500, 526, 20, 27, 'chr', True, 3000.0, 3026.0],
+            ['gR', '+', r, r + 23, 21, 24, 'chr', False, 4000.0, 4026.0],
+            ['gU', '+', 700, 720, 21, 21, 'chr', False, 5000.0, 5026.0],
+            ['gS', '+', 31, 57, 27, 27, 'chr', True, 1000.0, 1026.0],
+            ['gQ', '+', q, q + 26, 27, 27, 'chr', True, 3000.0, 3026.0],
+            ['gU', '+', u, u + 26, 27, 27, 'chr', True, 5000.0, 5026.0]]
 
 
 # =============================================================================
@@ -1715,7 +1863,7 @@ class TestContigs:
                 protein = fh.read().split('\n')[1]
         assert out.iloc[0]['pseudogene'] == 'no'
         assert out.iloc[0]['contig'] == 'c2'
-        assert list(out.columns)[-1] == 'contig'
+        assert list(out.columns)[-3:] == ['contig', 'partial', 'note']
         assert protein == 'M' + 'A' * 11
 
     def test_dedup_overlap_only_counts_on_the_same_contig(self):
@@ -1728,6 +1876,46 @@ class TestContigs:
         ]
         kept, _ = deduplicate(genes)
         assert [g['id'] for g in kept] == ['S1_Rv0001', 'S1_00002']
+
+    def test_pseudogenes_and_partial_genes_reach_the_gff3_and_genbank(self):
+        """The GFF3 never said which genes were pseudogenes, though the master
+        table did, and the GenBank only for genes with an internal stop. Both
+        now carry AMAP's flag and its reason, and mark the ends a contig cut
+        off as NCBI does."""
+        from generate_tsv_gff_gbk import generate_tsv, generate_gff, tsv_to_gbk
+        from Bio import SeqIO as _SeqIO
+        import tempfile as tf
+        merged = pd.DataFrame({
+            'id': ['S1_00001', 'S1_00002', 'S1_00003'], 'strand': ['+', '-', '+'],
+            'start': [1, 31, 70], 'end': [30, 60, 99], 'rvs': ['Rv0001', 'Rv0002', 'Rv0003'],
+            'Preferred_name': ['-', '-', '-'], 'Gene': ['a', 'b', 'c'], 'Product_x': ['p', 'q', 'r'],
+            'Description': ['-', '-', '-'], 'contig': ['c1', 'c1', 'c1'],
+            'pseudogene': ['yes', 'no', 'no'], 'partial': ['', "5'", ''],
+            'note': ['frameshift or lost stop codon: its frame runs on 16 residues past the end of '
+                     'the reference protein', '', '']})
+        rest = pd.DataFrame(columns=["Sequence Id", "Type", "Start", "Stop", "Strand",
+                                     "Locus Tag", "Gene", "Product", "DbXrefs"])
+        with tf.TemporaryDirectory() as d:
+            fasta = os.path.join(d, 'g.fasta')
+            with open(fasta, 'w') as f:
+                f.write(">c1\n" + "ATG" + "GCT" * 32 + "TAA" + "\n")
+            tsv = os.path.join(d, 'out.tsv')
+            out = generate_tsv(merged, rest, fasta, tsv)
+            generate_gff(None, out, os.path.join(d, 'out.gff3'), fasta)
+            tsv_to_gbk(tsv, fasta, os.path.join(d, 'out.gbk'))
+            with open(os.path.join(d, 'out.gff3')) as f:
+                cds = {l.split('\t')[8].split(';')[0][3:]: l.split('\t')[8].strip()
+                       for l in f if '\tCDS\t' in l}
+            features = {ft.qualifiers['locus_tag'][0]: ft
+                        for ft in next(_SeqIO.parse(os.path.join(d, 'out.gbk'), 'genbank')).features}
+        assert 'pseudo=true' in cds['S1_00001'] and 'Note=frameshift or lost stop codon' in cds['S1_00001']
+        assert 'pseudo=true' not in cds['S1_00003'] and 'partial' not in cds['S1_00003']
+        # 5' partial on the minus strand: its open end is the right one
+        assert 'partial=true;end_range=60,.' in cds['S1_00002'] and 'start_range' not in cds['S1_00002']
+        assert 'pseudo' in features['S1_00001'].qualifiers and 'translation' not in features['S1_00001'].qualifiers
+        assert features['S1_00001'].qualifiers['note'][0].startswith('frameshift or lost stop codon')
+        assert str(features['S1_00002'].location) == '[30:>60](-)'
+        assert 'translation' in features['S1_00003'].qualifiers
 
     def test_final_tables_put_each_gene_on_its_contig(self):
         """generate_tsv placed each gene on the smallest contig its coordinates

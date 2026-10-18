@@ -136,6 +136,37 @@ def read_to_pandas(file):
 # Start codons of translation table 11, the bacterial code.
 START_CODONS = {"ATG", "GTG", "TTG", "CTG", "ATT", "ATC", "ATA"}
 
+# How many residues past the end of its reference protein an extension may add
+# and still count as completing an alignment that stopped short, the same 30 bp
+# the stop codon search allows beyond what the reference says is missing.
+COMPLETION_SLACK = 10
+
+
+def gene_index(annotation_df):
+    """Every gene's span (0-based, end exclusive) and 5' end, by contig and strand."""
+    has_contig = 'contig' in annotation_df.columns
+    genes = {}
+    for idx, row in annotation_df.iterrows():
+        strand = str(row['strand']).strip()
+        start, end = row['start'] - 1, row['end']
+        five = start if strand == '+' else end - 1
+        contig = str(row['contig']) if has_contig else ''
+        genes.setdefault((contig, strand), []).append((start, end, five, idx, row['id']))
+    return genes
+
+
+def runs_into(genes, index, contig, strand, start, end, new_start, new_end):
+    """The gene an extension from (start, end) to (new_start, new_end) runs
+    into: one on the same strand, read in the same frame, that overlaps the
+    stretch the extension adds. Coordinates 0-based, end exclusive; None when
+    there is no such gene."""
+    five = start if strand == '+' else end - 1
+    lo, hi = (end, new_end) if strand == '+' else (new_start, start)
+    for s, e, f, idx, ide in genes.get((contig, strand), ()):
+        if idx != index and (five - f) % 3 == 0 and s < hi and lo < e:
+            return ide
+    return None
+
 
 def read_reference_proteins(path):
     """Reference proteins by name, with the length of the span each was cut from.
@@ -259,6 +290,7 @@ def extract_and_translate_cds(fasta_file, annotation_df, ref_proteins=None):
         logging.warning(f"Multi-contig assembly ({len(fasta_records)} contigs) but no contig column: "
                         f"guessing each gene's contig from its coordinates, which is usually wrong")
     default_contig = sorted_contigs[0]
+    genes = gene_index(annotation_df)
     cds_amino_acids = {}
     cds_nts = {}
     pseudogene_ids = set()  # Track genes without terminal stop / with internal stops
@@ -415,15 +447,37 @@ def extract_and_translate_cds(fasta_file, annotation_df, ref_proteins=None):
                         sequence_nt = fasta_seq.seq[start:end]
 
                     new_translated = sequence_nt.translate()
-                    
+
+                    # An indel that removes a gene's stop sends its frame on into
+                    # the next gene, whose stop is then the next one: in M. bovis
+                    # Rv0590 ran on through Rv0590A and Rv3373 through Rv3374.
+                    # Extending would annotate that gene a second time, inside one
+                    # that gained a C-terminus its reference lacks, so the gene
+                    # keeps its extent as a pseudogene. Unless the extension only
+                    # restores residues the reference protein has, which means the
+                    # alignment had merely stopped short.
+                    into = runs_into(genes, index, str(row['contig']) if has_contig else '',
+                                     strand, orig_start, orig_end, start, end)
+                    added = (end - orig_end) if strand == '+' else (orig_start - start)
+                    # Counted in residues, which also holds for a reference
+                    # protein written without its final '*' (a join CDS).
+                    restores = ref is not None and added // 3 - 1 <= (
+                        len(ref[0].rstrip('*')) - len(str(translated_seq).rstrip('*')) + COMPLETION_SLACK)
+                    runs_on = into is not None and not restores
+
                     # Check that extension actually added a stop and didn't introduce internal stops
-                    if len(new_translated) > 0 and new_translated[-1] == "*" and "*" not in str(new_translated)[:-1]:
+                    if (len(new_translated) > 0 and new_translated[-1] == "*"
+                            and "*" not in str(new_translated)[:-1] and not runs_on):
                         cds_id = f"{ide};{strand};{start}-{end}"
                         cds_amino_acids[cds_id] = new_translated
                         cds_nts[cds_id] = sequence_nt
                     else:
                         # Extension failed — keep original coordinates
-                        logging.warning(f"Extension for {ide} produced errors, keeping original")
+                        if runs_on:
+                            logging.info(f"{ide} would run on through {into} in the same frame, "
+                                         f"keeping its extent as a pseudogene")
+                        else:
+                            logging.warning(f"Extension for {ide} produced errors, keeping original")
                         start, end = orig_start, orig_end
                         if strand == "-":
                             sequence_nt = fasta_seq.seq[start:end].reverse_complement()

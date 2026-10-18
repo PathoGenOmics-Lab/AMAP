@@ -189,6 +189,15 @@ reference protein says is missing when that is further. If the extension
 introduces internal stops or finds nothing, the original coordinates are kept
 and the gene is flagged as a pseudogene.
 
+**Extensions stop short of the next gene.** When an indel removes a gene's stop,
+its reading frame runs on into the next gene, and the next stop is that gene's:
+in M. bovis Rv0590 runs on through Rv0590A, and Rv3373 through Rv3374.
+Extending would annotate the second gene a second time, in the same frame, so a
+gene whose extension would run through another gene in its frame keeps its
+extent and is flagged as a pseudogene. An extension that only restores residues
+the reference protein has, at most **10** past its end, still goes ahead: the
+alignment had merely stopped short.
+
 **Reference pseudogenes keep their extent.** When the reference protein spans
 its annotated stretch codon for codon with no stop (PE21, Rv2099c; PPE48,
 Rv3022c) and the gene ends where it does, the reference annotates it without a
@@ -235,6 +244,7 @@ sets of coordinates overlap, which one survives into the curated annotation.
 | Length of a further copy, next to the first | final deduplication | 90% |
 | Cover by another reference gene that rules a copy out | final deduplication | 50% |
 | Stop codon search | quality control | 300 bp, or what the reference protein is missing |
+| Residues an extension through another gene may restore past the reference protein | quality control | 10 |
 | Identity to restore a clipped N-terminus | quality control | 90% |
 
 These are constants in `bin/classify/`, tuned on MTBC. Another organism may want

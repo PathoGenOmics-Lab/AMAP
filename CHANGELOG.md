@@ -48,8 +48,8 @@ directly comparable with 1.0.1.
 ### 🧪 Testing
 - **`tests/selftest/h37rv_selftest.sh`** annotates H37Rv with itself inside the container and fails unless every GenBank CDS comes back exactly
 - **`tests/test_cache_keys.py`** fails when a process runs AMAP code that is not in its cache key, or when its script names a `bin/` entry as a bare word without declaring it
-- **`tests/benchmark/benchmark.sh`** scores the correction algorithm on seven genomes whose right answer is known (H37Rv twice, CDC1551 complete and in 40 contigs, M. bovis, E. coli K-12 and Sakai), downloading them and running Bakta and miniprot in the container the first time, and lists every gene that changed since an earlier run
-- **257 tests**, up from 92
+- **`tests/benchmark/benchmark.sh`** scores the correction algorithm on seven genomes whose right answer is known (H37Rv twice, CDC1551 complete and in 40 contigs, M. bovis, E. coli K-12 and Sakai), downloading them and running Bakta and miniprot in the container the first time, and lists every gene that changed since an earlier run. A gene whose sequence changed counts as found when a gene with its name covers half of its own bases there, not half of the stretch it lands on, which an insertion can make far longer (63 kb with a prophage inside for b1004 in Sakai); a gene mostly deleted is not counted. Changed genes found: 50 of 50 in CP110619, 860 of 862 in CDC1551, 1515 of 1515 in M. bovis and 3363 of 3367 in Sakai, and the README says why each of the other six is not
+- **268 tests**, up from 92
 
 ## [1.0.1] - 2026-07-25
 

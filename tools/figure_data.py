@@ -37,6 +37,7 @@ from Bio import SeqIO
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "bin"))
 from classify.exact import place_exact_matches  # noqa: E402
+from classify.pieces import add_contig_end_pieces  # noqa: E402
 from classify.io import read_bakta, read_miniprot, read_miniprot_unfiltered  # noqa: E402
 from classify.synteny import drop_paralog_placements  # noqa: E402
 
@@ -44,8 +45,9 @@ OUT = ROOT / "docs" / "assets" / "figure-data.js"
 HEADER = """/* The genes the drawings show. Every one is real: a window of AMAP run on a
    genome whose right answer is known (tests/benchmark), with every Bakta call
    in it ("bakta", with the case the run gave it), every placement of a
-   reference protein the classification saw ("ref"), Bakta's known false
-   positives aligned there ("bad"), how the case 1 calls' proteins match the
+   reference protein the classification saw ("ref", "piece" marking the other
+   piece of a gene a contig end cuts), Bakta's known false positives aligned
+   there ("bad"), how the case 1 calls' proteins match the
    reference genome ("refMatch"), what the classification wrote ("corrected")
    and the genes AMAP kept ("amap"). Where check_cds.py changed a gene, the
    window carries the stretch of genome it read ("translate"); a window with a
@@ -80,6 +82,11 @@ class Genome:
         self.bakta = read_bakta(inputs / sample / f"{sample}.tsv")
         self.raw = read_miniprot(inputs / f"{sample}.paf", ref_coords=True)
         self.exact = place_exact_matches(self.raw, str(inputs / f"{sample}.fasta"), str(proteome))
+        # The other pieces of the genes a contig end cuts, from MINIPROT's
+        # second pass, as classify_cases.py adds them.
+        pieces = run / f"{sample}-pieces.paf"
+        if pieces.exists():
+            self.exact = add_contig_end_pieces(self.exact, str(pieces))
         self.syn = drop_paralog_placements(self.exact)
         self.case_of = {}
         for c in ("case1", "case2", "case3", "case4"):
@@ -117,6 +124,8 @@ class Genome:
             out["ref"].append({"prot": r["Prot Id"], "name": self.names.get(r["Prot Id"], r["Prot Id"]), "s": int(r["Start"]),
                                "e": int(r["End"]), "st": r["Strand"], "len": int(r["Prot len"]), "match": int(r["Match Nt"]),
                                "num": int(r["Num nt"]), "complete": bool(r["Complete"])})
+            if bool(r.get("Piece", False)):
+                out["ref"][-1]["piece"] = True
         if raw:
             out["miniprot"] = [{"prot": r["Prot Id"], "s": int(r["Start"]), "e": int(r["End"]), "st": r["Strand"],
                                 "match": int(r["Match Nt"]), "num": int(r["Num nt"])}
@@ -251,9 +260,11 @@ def main() -> int:
     k12 = Genome("E. coli K-12", inputs / "ecoli", "K12self", runs / "K-12", eco, eco_names)
     w["small-protein"] = k12.window(k12.sample, 3056150, 3058450, raw=True)
     w["small-protein"]["exact"] = exact_hit(k12, "b4665", 3056890, 3056949)
-    # A contig end: the CDC1551 draft's contig_10.
+    # A contig end: the CDC1551 draft's contig_10, and the end of contig_9,
+    # where the other piece of the gene it cuts lies.
     draft = Genome("M. tuberculosis CDC1551 in 40 contigs", inputs / "mtb_draft", "L4_CDC1551d", runs / "CDC1551-draft", mtb, mtb_names)
     w["contig-end"] = draft.window("contig_10", 100300, 102146)
+    w["contig-end-2"] = draft.window("contig_9", 3700, 4591)
     # A frame that runs into the next gene: M. bovis Rv0590 and Rv0590A.
     bovis = Genome("M. bovis AF2122/97", inputs / "mtb_mbovis", "La1_Mbovis", runs / "M.bovis", mtb, mtb_names)
     w["frameshift"] = bovis.window(bovis.sample, 688900, 690500)

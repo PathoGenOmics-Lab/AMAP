@@ -89,9 +89,9 @@
         "A call longer by more than 550 bp wins over an alignment that is not complete in its frame: such an alignment stopped short, and dropping a whole gene for it would be the worse mistake. Bakta's call, 3,303 bp longer, is kept.",
         "It ends in a stop codon: nothing to change.",
         NOTHING[6],
-        "It keeps Bakta's locus tag and product."
+        "It keeps Bakta's locus tag and product, and takes Rv2024c's name in its Dbxref: no other gene carries it, and the alignment spans more than half of the protein."
       ],
-      out: ["L4_CDC1551  AMAP  CDS  2267753  2272573  .  -  0  ID=L4_CDC1551_02139;Parent=gene-L4_CDC1551_02139;Name=;product=site-specific DNA-methyltransferase (adenine-specific);Dbxref=AMAP_ids:"]
+      out: ["L4_CDC1551  AMAP  CDS  2267753  2272573  .  -  0  ID=L4_CDC1551_02139;Parent=gene-L4_CDC1551_02139;Name=;product=site-specific DNA-methyltransferase (adenine-specific);Dbxref=AMAP_ids:Rv2024c"]
     },
     {
       key: "new", group: "The four cases", label: "Not in the reference", tag: "Case 1",
@@ -174,20 +174,24 @@
     },
     {
       key: "contig-end", group: "The harder ones", label: "Cut by a contig end", tag: "Partial",
-      panels: [{ key: "contig-end", from: 100250, to: 102146, tick: 500, edges: [{ at: 102146.5, label: "end of contig_10", side: "left", from: 1 }] }],
+      panels: [
+        { key: "contig-end", from: 100250, to: 102146, tick: 500, title: "The end of contig_10", edges: [{ at: 102146.5, label: "end of contig_10", side: "left", from: 1 }] },
+        { key: "contig-end-2", from: 3700, to: 4591, tick: 250, title: "The end of contig_9", edges: [{ at: 4591.5, label: "end of contig_9", side: "left", from: 1 }] }
+      ],
       text: [
-        "CDC1551 cut into 40 contigs. Near the end of contig_10 Bakta calls Rv1240's gene and two short genes on the minus strand, and nothing on the plus strand.",
-        "H37Rv's Rv1239c, 367 residues, aligns on the plus strand from 101,478 to the very end of the contig, 102,146: its first 223 residues. The rest of the gene is on another contig.",
-        "Rv1240's call matches it exactly, case 2. The two short calls have nothing aligned, case 1. Rv1239c has no call over it on its strand: a missing reference gene.",
-        "Rv1239c goes back in at its placement. The two short calls go: their proteins match the H37Rv genome at 98 and 99% identity, so they are not new.",
-        "Rv1239c's frame reaches the contig's end with no stop codon, from within 30 bp of it: the assembly cut the gene. It runs to the last codon there and is marked partial at its 3' end, which is not a pseudogene.",
-        NOTHING[6],
-        "The cut end is written the way NCBI writes it: partial=true with end_range in the GFF3, and a > before the end in the GenBank location."
+        "CDC1551 cut into 40 contigs. Near the end of contig_10 Bakta calls Rv1240's gene and two short genes on the minus strand, and nothing on the plus strand. At the end of contig_9 it calls sugC and a short hypothetical protein.",
+        "H37Rv's Rv1239c, 367 residues, aligns on the plus strand from 101,478 to the very end of contig_10, 102,146: its first 223 residues. Its last 144, which miniprot does not report beside the larger piece, are aligned again on their own, and land at the very end of contig_9: the other piece.",
+        "Rv1240's call and sugC's match exactly, case 2. The two short calls on contig_10 have nothing aligned, case 1. The short call on contig_9 overlaps the piece with other coordinates, case 4. On contig_10 Rv1239c has no call over it on its strand: a missing reference gene.",
+        "Rv1239c goes back in at its placement on contig_10, and on contig_9 the piece wins over the shorter call, as the reference does. The two short calls on contig_10 go: their proteins match the H37Rv genome at 98 and 99% identity, so they are not new.",
+        "Each piece's frame reaches its contig's end with no stop codon, from within 30 bp of it: the assembly cut the gene. The piece on contig_10 is marked partial at its 3' end, the one on contig_9 at its 5' end. Neither is a pseudogene.",
+        "Two genes carry Rv1239c, but they are the pieces of one cut gene, not copies, and both stay. Their IDs must differ: one is written Rv1239c and the other Rv1239c_2, both with Rv1239c in their Dbxref.",
+        "The cut ends are written the way NCBI writes them: partial=true with end_range in the GFF3, and a > before the cut end in the GenBank location."
       ],
       out: [
-        "contig_10  AMAP  CDS  101478  102146  .  +  0  ID=L4_CDC1551d_Rv1239c;Parent=gene-L4_CDC1551d_Rv1239c;Name=;product=;Dbxref=AMAP_ids:Rv1239c;partial=true;end_range=102146,.",
-        "     CDS             101478..>102146",
-        "                     /locus_tag=\"L4_CDC1551d_Rv1239c\""
+        "contig_9   AMAP  CDS  4160  4591  .  -  0  ID=L4_CDC1551d_Rv1239c;Parent=gene-L4_CDC1551d_Rv1239c;Name=;product=;Dbxref=AMAP_ids:Rv1239c;partial=true;end_range=4591,.",
+        "contig_10  AMAP  CDS  101478  102146  .  +  0  ID=L4_CDC1551d_Rv1239c_2;Parent=gene-L4_CDC1551d_Rv1239c_2;Name=;product=;Dbxref=AMAP_ids:Rv1239c;partial=true;end_range=102146,.",
+        "     CDS             complement(4160..>4591)",
+        "     CDS             101478..>102146"
       ]
     },
     {

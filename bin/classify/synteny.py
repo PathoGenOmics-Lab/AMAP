@@ -57,16 +57,32 @@ def predict_ref_positions(df):
     runs against the reference (reverse-complemented contig) maps positions
     backwards, so its orientation is read off its anchors first. Placements on
     a sequence with too few anchors get NaN and are left alone downstream.
+
+    A locus that several proteins are placed at, exactly, anchors nothing: it
+    is a repeat the reference has in several copies and the sample in one, so
+    each of its proteins has a single placement, but their reference positions
+    are spread over the genome. M. bovis has one IS6110, where each of H37Rv's
+    34 IS6110 proteins has its only placement, and they outvoted the genes
+    around it.
     """
     pred = pd.Series(np.nan, index=df.index, dtype=float)
     n_place = df.groupby('Prot Id')['Prot Id'].transform('size')
-    anchors = df[(n_place == 1) & df['Ref Start'].notna()]
+    strand = df['Strand'] if 'Strand' in df.columns else pd.Series('', index=df.index)
+    n_at = df.groupby([df['Contig'], df['Start'], df['End'], strand])['Prot Id'].transform('nunique')
+    anchors = df[(n_place == 1) & (n_at == 1) & df['Ref Start'].notna()]
 
     for contig, a in anchors.groupby('Contig'):
         if len(a) < 3:
             continue
-        a = a.sort_values('Start')
-        x = _midpoint(a['Start'], a['End']).to_numpy(dtype=float)
+        # In the order of the midpoints the search below runs on, ties broken
+        # by name. Sorted by start, two anchors starting together but ending
+        # apart left the midpoints out of order, and which window of anchors a
+        # placement got then hung on the order of the rows: in Sakai, b1162
+        # sits on b2127's locus, and adding unrelated rows to the table moved
+        # b2127's prediction 24 kb, past the tolerance.
+        a = a.assign(_x=_midpoint(a['Start'], a['End'])).sort_values(['_x', 'Prot Id'],
+                                                                      kind='mergesort')
+        x = a['_x'].to_numpy(dtype=float)
         r = _midpoint(a['Ref Start'], a['Ref End']).to_numpy(dtype=float)
         sign = -1.0 if np.median(np.sign(np.diff(r))) < 0 else 1.0
 

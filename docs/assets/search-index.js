@@ -604,7 +604,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The workflow",
 "section": "4. Protein alignment with Miniprot",
 "url": "how-it-works/workflow.html#4-protein-alignment-with-miniprot",
-"text": "Miniprot aligns the reference proteome onto each genome, spliced and frameshift-aware. Two alignments are produced: the reference proteome, and the false-positive set that will filter novel-gene candidates. Output is PAF. Coordinates are converted from 0-based to 1-based on read, and for a protein hitting several positions, the best hit per position is kept so multi-copy families such as PE/PPE keep all their placements."
+"text": "Miniprot aligns the reference proteome onto each genome, spliced and frameshift-aware. Two alignments are produced: the reference proteome, and the false-positive set that will filter novel-gene candidates. Output is PAF. Coordinates are converted from 0-based to 1-based on read, and for a protein hitting several positions, the best hit per position is kept so multi-copy families such as PE/PPE keep all their placements. In a draft assembly the genes a contig end cuts get a second pass. Miniprot places the larger piece of such a gene only, so what that placement lacks is aligned again as a pro"
 },
 {
 "page": "The workflow",
@@ -665,6 +665,12 @@ window.AMAP_DOCS_INDEX = [
 "section": "Small proteins",
 "url": "how-it-works/correction-algorithm.html#small-proteins",
 "text": "Miniprot needs a seed of several residues and enough score to report an alignment, which a protein of a few dozen residues rarely gives it: annotating E. coli K-12 with its own proteome, it placed none of 33 proteins of 8 to 29 residues, and it put the toxin IbsC (b4665), 19 residues three of which differ from its neighbour IbsD's, on that neighbour only. Every protein without an exact, complete placement is looked for in the six-frame translation of the genome, preceded by a start codon and followed by a stop, and each exact copy found where Miniprot did not already place the protein becomes "
+},
+{
+"page": "The correction algorithm",
+"section": "Pieces of cut genes",
+"url": "how-it-works/correction-algorithm.html#pieces-of-cut-genes",
+"text": "A draft assembly cuts the genes its contig breaks run through. Miniprot reports only the placements within 5% of a protein's best, so it places the larger piece of such a gene and not the smaller one at the end of another contig: in CDC1551 cut into 40 contigs, none of the 25 smaller pieces was annotated. A placement was cut by its contig when it lacks residues at one end of its protein, ends within 30 bp of the contig's edge on that side, and those residues would not fit in the bases left. What it lacks, if 8 residues or more, is aligned again as a protein of its own, and its best placement i"
 },
 {
 "page": "The correction algorithm",
@@ -730,7 +736,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The correction algorithm",
 "section": "Threshold summary",
 "url": "how-it-works/correction-algorithm.html#threshold-summary",
-"text": "False-positive overlap case 1 filtering 80% Reference match identity case 1 filtering 80% Bakta length advantage single overlaps 550 bp Bakta length advantage multiple overlaps 500 bp Overlap for deduplication on insert 70% Length margin for displacement on insert 550 bp Distance from the predicted position paralog placements 10 kb Proteins placed once, each side, for the local offset paralog placements 5 Cover to claim another protein's placement paralog placements 50% Shortest protein looked for exactly small proteins 8 residues Cover for a gene to account for a placement rescuing missing ge"
+"text": "False-positive overlap case 1 filtering 80% Reference match identity case 1 filtering 80% Bakta length advantage single overlaps 550 bp Bakta length advantage multiple overlaps 500 bp Overlap for deduplication on insert 70% Length margin for displacement on insert 550 bp Distance from the predicted position paralog placements 10 kb Proteins placed once, each side, for the local offset paralog placements 5 Cover to claim another protein's placement paralog placements 50% Shortest protein looked for exactly small proteins 8 residues Longest protein looked for with substitutions small proteins 50"
 },
 {
 "page": "The correction algorithm",

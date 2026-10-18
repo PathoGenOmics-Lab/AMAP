@@ -28,6 +28,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import textwrap
 from pathlib import Path
 
@@ -66,12 +67,16 @@ def process_script(nf_file, process):
 
 def render(script, values):
     """Groovy's triple-quoted string, for the little these scripts use: \\\\,
-    \\$ and ${...}. Anything else fails rather than render unlike Nextflow."""
+    \\$, ${...} and a backslash ending a line, which Groovy drops with the line
+    break. Anything else fails rather than render unlike Nextflow."""
     out, i = [], 0
     while i < len(script):
         c = script[i]
         if c == '\\':
             nxt = script[i + 1]
+            if nxt == '\n':
+                i += 2
+                continue
             if nxt not in '\\$':
                 raise ValueError(f'escape \\{nxt} not handled here')
             out.append(nxt)
@@ -218,6 +223,8 @@ def write_sample(d, name, copies):
             f.write(f'{key}_{s}-{e}\t{n}\t0\t{n}\t{st}\t{contig}\t{length}\t{s - 1}\t{e}\t{nt}\t{nt}\t0\t'
                     f'AS:i:500\tms:i:500\tnp:i:{n}\tfs:i:0\tst:i:1\tda:i:0\tdo:i:0\tcg:Z:{n}M\tcs:Z::{n}\n')
     (d / f'{name}-badbakta.paf').write_text('')
+    # one contig each, so no contig end cuts a gene: MINIPROT's second pass places nothing
+    (d / f'{name}-pieces.paf').write_text('')
     # Bakta's proteins of reference genes are all in the reference genome
     with open(d / f'{name}-ref.paf', 'w') as f:
         for key, s, e, st in ref:
@@ -278,10 +285,10 @@ def run_pipeline(base, samples, tools):
         cases = run_task(base / 'TYPE_CASES' / name, 'cases.nf', 'TYPE_CASES', {
             'sampleId': name, 'sample': sample, 'lineage': lineage,
             'miniprot_paf': f'{name}.paf', 'badbakta_paf': f'{name}-badbakta.paf',
-            'h37rv_paf': f'{name}-ref.paf', 'fasta': f'{name}.fasta',
-            'bakta_tsv': f'{name}.tsv', 'ref_proteome': 'ref.faa',
+            'h37rv_paf': f'{name}-ref.paf', 'pieces_paf': f'{name}-pieces.paf',
+            'fasta': f'{name}.fasta', 'bakta_tsv': f'{name}.tsv', 'ref_proteome': 'ref.faa',
         }, [d / f for f in (f'{name}.paf', f'{name}-badbakta.paf', f'{name}-ref.paf',
-                            f'{name}.fasta', f'{name}.tsv', 'ref.faa')], tools)
+                            f'{name}-pieces.paf', f'{name}.fasta', f'{name}.tsv', 'ref.faa')], tools)
 
         downstream = [d / f for f in (f'{name}.AMAP.tsv', f'{name}.AMAP.faa', f'{name}.AMAP.fna',
                                       f'{name}.tsv', f'{name}.fasta', f'{name}.emapper.annotations')]
@@ -413,17 +420,26 @@ def rscript():
     return exe
 
 
-def report_tables(tasks, rscript, empty=()):
-    """Run the report's chunks on a run's report inputs, the way FINAL_REPORT
-    hands them over, those named in `empty` left empty, and read back the
-    tables they build."""
-    work = tasks['report'].parent / ('FINAL_REPORT' + ''.join(f'-no-{e}' for e in empty))
-    work.mkdir()
+def stage_report_inputs(tasks, work, replace):
+    """A run's report inputs, REPORT_INPUTS' tables and GET_ALLDUP's
+    communities, in the folder `work`, those named in `replace` holding the
+    text given there instead. Returns their paths."""
+    staged = []
     for f in list(tasks['report'].glob('input_*.txt')) + [tasks['dup'] / 'homologous_communities.tsv']:
-        if f.name in empty:
-            (work / f.name).write_text('')
+        if f.name in replace:
+            (work / f.name).write_text(replace[f.name])
         else:
             (work / f.name).symlink_to(f)
+        staged.append(work / f.name)
+    return staged
+
+
+def report_tables(tasks, rscript, empty=(), replace=None):
+    """Run the report's chunks on a run's report inputs, the way FINAL_REPORT
+    hands them over, those named in `empty` left empty and those in `replace`
+    holding the text given there, and read back the tables they build."""
+    work = Path(tempfile.mkdtemp(prefix='FINAL_REPORT-', dir=tasks['report'].parent))
+    stage_report_inputs(tasks, work, {**dict.fromkeys(empty, ''), **(replace or {})})
     names = ['cog', 'myco', 'summary', 'noref', 'rvmissing', 'mastertables', 'pangene', 'qc']
     params = ', '.join([f'{"empty" if n == "noref" else "mastertable" if n == "mastertables" else n}'
                         f'_file="input_{n}.txt"' for n in names]
@@ -491,9 +507,23 @@ class TestReport:
     def test_every_gene_in_the_reference(self, typed, rscript):
         # As when H37Rv is annotated against itself: REPORT_INPUTS hands over
         # an empty table, whose columns R reads as logical, and cutting its
-        # genomes at underscores stopped the report
+        # genomes at underscores stopped the report. Every sample has none.
         tables = report_tables(typed, rscript, empty=['input_noref.txt'])
-        assert tables['noref'].empty
+        noref = tables['noref']
+        assert sorted(zip(noref['genome'], noref['V2'], noref['n'])) == \
+            sorted((sample, lineage, 0) for _, sample, lineage in TYPED)
+
+    def test_a_sample_with_every_gene_in_the_reference_counts_zero(self, typed, rscript):
+        # It stays in its lineage's box at 0 rather than drop out of it, which
+        # moved the box up to the samples that have some
+        _, none, _ = TYPED[0]
+        lines = (typed['report'] / 'input_noref.txt').read_text().splitlines(keepends=True)
+        others = ''.join(line for line in lines if line.split('\t')[0] != none)
+        tables = report_tables(typed, rscript, replace={'input_noref.txt': others})
+        noref = tables['noref']
+        assert sorted(zip(noref['genome'], noref['V2'], noref['n'])) == \
+            sorted((sample, lineage, 0 if sample == none else 2 + k)
+                   for k, (_, sample, lineage) in enumerate(TYPED))
 
     def test_missing_genes_by_lineage(self, report):
         tables, samples = report
@@ -509,6 +539,59 @@ class TestReport:
     def test_master_table_by_lineage(self, report):
         tables, samples = report
         assert set(tables['peppe']['lineage']) == {lineage for _, _, lineage in samples}
+
+
+# ---------------------------------------------------------------------------
+# The whole report, rendered by FINAL_REPORT's own script
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope='module')
+def pandoc(rscript):
+    """rmarkdown renders the report with pandoc (the container has both)."""
+    if subprocess.run([rscript, '-e', 'quit(status = !rmarkdown::pandoc_available())'],
+                      capture_output=True).returncode:
+        pytest.skip('rmarkdown or pandoc is not installed (the container has them)')
+
+
+def final_report(tasks, tools, replace=None):
+    """Run FINAL_REPORT's script on a run's report inputs, those named in
+    `replace` holding the text given there, and return the report's HTML."""
+    inputs = Path(tempfile.mkdtemp(prefix='inputs-', dir=tasks['report'].parent))
+    staged = stage_report_inputs(tasks, inputs, replace or {})
+    work = inputs.with_name(inputs.name.replace('inputs-', 'FINAL_REPORT-task-'))
+    tables = {f'input_{n}': f'input_{n}.txt' for n in
+              ['cog', 'myco', 'summary', 'noref', 'rvmissing', 'mastertables', 'pangene', 'qc']}
+    run_task(work, 'freport.nf', 'FINAL_REPORT', dict(
+        tables, dup_communities_tsv='homologous_communities.tsv',
+        **{'workflow.manifest.version': 'test'}),
+        staged + [tasks['dup'] / 'homologous_communities.html'], tools)
+    return (work / 'final_report.html').read_text(encoding='utf-8')
+
+
+def section(html, title):
+    """A section of the report, from its heading to the next one."""
+    start = html.index(f'>{title}</h2>')
+    return html[start:html.index('<h2', start)]
+
+
+class TestFinalReport:
+    """Each renders the whole report, figures and all, so there are two."""
+
+    def test_a_run(self, typed, tools, pandoc):
+        assert '<img' in section(final_report(typed, tools), 'CDS not in Reference')
+
+    def test_a_run_that_leaves_every_table_it_can_empty(self, typed, tools, pandoc):
+        # Every gene in the reference (H37Rv against itself), no reference gene
+        # missing, no Mycobrowser categories (--skip_mycobrowser), no pangenome
+        # to merge, no community across genomes. The first of these stopped
+        # FINAL_REPORT, and the run with it.
+        communities = (typed['dup'] / 'homologous_communities.tsv').read_text()
+        html = final_report(typed, tools, {
+            'input_noref.txt': '', 'input_rvmissing.txt': '', 'input_myco.txt': '',
+            'input_pangene.txt': '', 'homologous_communities.tsv': communities.splitlines(True)[0]})
+        noref = section(html, 'CDS not in Reference')
+        assert 'Every CDS of every sample matches a reference gene.' in noref
+        assert '<img' not in noref
 
 
 # ---------------------------------------------------------------------------

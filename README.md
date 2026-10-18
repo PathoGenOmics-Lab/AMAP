@@ -56,18 +56,18 @@ on the website.
 scores it against an annotation AMAP did not make: the reference's own genes,
 carried onto the other genomes by a whole-genome alignment. Every gene a genome
 carries unchanged is found at exactly its coordinates, under its name; of the
-genes that changed, 98 to 99% still sit where the alignment puts them, under
-their name.
+genes that changed, 99.8 to 100% still sit where the alignment puts them,
+under their name.
 
 | Genome | Unchanged genes, exact | Changed genes, found |
 | :--- | ---: | ---: |
 | *M. tuberculosis* H37Rv, against itself | 4026 / 4026 | |
-| H37Rv CP110619, against H37Rv | 3986 / 3986 | 49 / 50 |
-| *M. tuberculosis* CDC1551, against H37Rv | 3097 / 3097 | 854 / 863 |
-| *M. bovis* AF2122/97, against H37Rv | 2391 / 2391 | 1506 / 1515 |
+| H37Rv CP110619, against H37Rv | 3986 / 3986 | 50 / 50 |
+| *M. tuberculosis* CDC1551, against H37Rv | 3097 / 3097 | 860 / 862 |
+| *M. bovis* AF2122/97, against H37Rv | 2391 / 2391 | 1515 / 1515 |
 | CDC1551 cut into 40 contigs | 3072 / 3072 | |
 | *E. coli* K-12, against itself | 4286 / 4286 | |
-| *E. coli* O157:H7 Sakai, against K-12 | 220 / 220 | 3337 / 3367 |
+| *E. coli* O157:H7 Sakai, against K-12 | 220 / 220 | 3363 / 3367 |
 
 ## The pipeline
 

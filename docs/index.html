@@ -189,7 +189,7 @@ Erdman	/data/erdman.fna</pre></div>
           <p data-for="case4-split" hidden>Bakta calls two short genes where H37Rv's Rv0007 aligns end to end. The reference is longer than either call, so it wins.</p>
           <p data-for="case4-longer" hidden>Bakta's call is 3,303 bp longer than the alignment, which stops before the end of its protein. A call longer by more than 550 bp wins over an alignment that is not complete.</p>
           <div class="case-fig" data-fig-stage></div>
-          <p class="keeps"><b>AMAP keeps</b><span data-for="case4-start">the reference's coordinates, 1 to 1,524.</span><span data-for="case4-split" hidden>one gene, 9,914 to 10,828.</span><span data-for="case4-longer" hidden>Bakta's call, 2,267,753 to 2,272,573.</span></p>
+          <p class="keeps"><b>AMAP keeps</b><span data-for="case4-start">the reference's coordinates, 1 to 1,524.</span><span data-for="case4-split" hidden>one gene, 9,914 to 10,828.</span><span data-for="case4-longer" hidden>Bakta's call, 2,267,753 to 2,272,573, named Rv2024c.</span></p>
         </article>
         <article class="case" data-fig="case1-kept">
           <div class="case-head"><span class="case-tag c1">Case 1</span><h3>Potentially novel</h3></div>
@@ -218,17 +218,17 @@ Erdman	/data/erdman.fna</pre></div>
       <div class="section-head">
         <p class="kicker">Does it work?</p>
         <h2>Checked against genomes whose answer is known</h2>
-        <p>The accuracy benchmark runs the correction on seven genomes and scores it against an annotation AMAP did not make: the reference's own genes, carried onto the other genomes by a whole-genome alignment. Every gene a genome carries unchanged is found at exactly its coordinates, under its name. Of the genes that changed, which have no exact answer, 98 to 99% still sit where the alignment puts them, under their name.</p>
+        <p>The accuracy benchmark runs the correction on seven genomes and scores it against an annotation AMAP did not make: the reference's own genes, carried onto the other genomes by a whole-genome alignment. Every gene a genome carries unchanged is found at exactly its coordinates, under its name. Of the genes that changed, which have no exact answer, 99.8 to 100% still sit where the alignment puts them, under their name.</p>
       </div>
       <div class="proof" role="table" aria-label="Accuracy benchmark: genes found, per genome">
         <div class="pf-row pf-headrow" role="row"><span></span><span>Unchanged genes, at exactly their coordinates</span><span>Changed genes, found under their name</span></div>
 <div class="pf-row"><span class="pf-name"><b>M. tuberculosis H37Rv</b><small>against itself</small></span><span class="pf-bar pf-exact" data-found="4026" data-total="4026"><i style="width:100.00%"></i><b>4,026 / 4,026</b></span><span class="pf-bar pf-changed pf-none"><span>no gene changed</span></span></div>
-<div class="pf-row"><span class="pf-name"><b>H37Rv, another assembly</b><small>CP110619, against H37Rv</small></span><span class="pf-bar pf-exact" data-found="3986" data-total="3986"><i style="width:100.00%"></i><b>3,986 / 3,986</b></span><span class="pf-bar pf-changed" data-found="49" data-total="50"><i style="width:98.00%"></i><b>49 / 50</b></span></div>
-<div class="pf-row"><span class="pf-name"><b>M. tuberculosis CDC1551</b><small>against H37Rv</small></span><span class="pf-bar pf-exact" data-found="3097" data-total="3097"><i style="width:100.00%"></i><b>3,097 / 3,097</b></span><span class="pf-bar pf-changed" data-found="854" data-total="863"><i style="width:98.96%"></i><b>854 / 863</b></span></div>
-<div class="pf-row"><span class="pf-name"><b>M. bovis AF2122/97</b><small>against H37Rv</small></span><span class="pf-bar pf-exact" data-found="2391" data-total="2391"><i style="width:100.00%"></i><b>2,391 / 2,391</b></span><span class="pf-bar pf-changed" data-found="1506" data-total="1515"><i style="width:99.41%"></i><b>1,506 / 1,515</b></span></div>
+<div class="pf-row"><span class="pf-name"><b>H37Rv, another assembly</b><small>CP110619, against H37Rv</small></span><span class="pf-bar pf-exact" data-found="3986" data-total="3986"><i style="width:100.00%"></i><b>3,986 / 3,986</b></span><span class="pf-bar pf-changed" data-found="50" data-total="50"><i style="width:100.00%"></i><b>50 / 50</b></span></div>
+<div class="pf-row"><span class="pf-name"><b>M. tuberculosis CDC1551</b><small>against H37Rv</small></span><span class="pf-bar pf-exact" data-found="3097" data-total="3097"><i style="width:100.00%"></i><b>3,097 / 3,097</b></span><span class="pf-bar pf-changed" data-found="860" data-total="862"><i style="width:99.77%"></i><b>860 / 862</b></span></div>
+<div class="pf-row"><span class="pf-name"><b>M. bovis AF2122/97</b><small>against H37Rv</small></span><span class="pf-bar pf-exact" data-found="2391" data-total="2391"><i style="width:100.00%"></i><b>2,391 / 2,391</b></span><span class="pf-bar pf-changed" data-found="1515" data-total="1515"><i style="width:100.00%"></i><b>1,515 / 1,515</b></span></div>
 <div class="pf-row"><span class="pf-name"><b>CDC1551 in 40 contigs</b><small>a draft, against H37Rv</small></span><span class="pf-bar pf-exact" data-found="3072" data-total="3072"><i style="width:100.00%"></i><b>3,072 / 3,072</b></span><span class="pf-bar pf-changed pf-none"><span>no gene changed</span></span></div>
 <div class="pf-row"><span class="pf-name"><b>E. coli K-12 MG1655</b><small>against itself</small></span><span class="pf-bar pf-exact" data-found="4286" data-total="4286"><i style="width:100.00%"></i><b>4,286 / 4,286</b></span><span class="pf-bar pf-changed pf-none"><span>no gene changed</span></span></div>
-<div class="pf-row"><span class="pf-name"><b>E. coli O157:H7 Sakai</b><small>against K-12</small></span><span class="pf-bar pf-exact" data-found="220" data-total="220"><i style="width:100.00%"></i><b>220 / 220</b></span><span class="pf-bar pf-changed" data-found="3337" data-total="3367"><i style="width:99.11%"></i><b>3,337 / 3,367</b></span></div>
+<div class="pf-row"><span class="pf-name"><b>E. coli O157:H7 Sakai</b><small>against K-12</small></span><span class="pf-bar pf-exact" data-found="220" data-total="220"><i style="width:100.00%"></i><b>220 / 220</b></span><span class="pf-bar pf-changed" data-found="3363" data-total="3367"><i style="width:99.88%"></i><b>3,363 / 3,367</b></span></div>
       </div>
       <p class="note">Scores of <a href="https://github.com/PathoGenOmics-Lab/AMAP/tree/main/tests/benchmark">tests/benchmark</a>, which anyone can rerun in the container; the truth comes from the references and minimap2, never from AMAP.</p>
     </div>
@@ -313,7 +313,8 @@ Erdman	/data/erdman.fna</pre></div>
         </div>
         <div class="tabpanel" role="tabpanel" id="ex-gff" aria-labelledby="ex-gff-tab">
 <pre>contig_4   AMAP  CDS  164980  165406  .  -  0  ID=L4_CDC1551d_Rv0354c;&hellip;;Dbxref=AMAP_ids:Rv0354c;<mark>pseudo=true;Note=frameshift or lost stop codon: its frame runs on 41 residues past the end of the reference protein</mark>
-contig_10  AMAP  CDS  101478  102146  .  +  0  ID=L4_CDC1551d_Rv1239c;&hellip;;Dbxref=AMAP_ids:Rv1239c;<mark class="part">partial=true;end_range=102146,.</mark></pre>
+contig_9   AMAP  CDS  4160    4591    .  -  0  ID=L4_CDC1551d_Rv1239c;&hellip;;Dbxref=AMAP_ids:Rv1239c;<mark class="part">partial=true;end_range=4591,.</mark>
+contig_10  AMAP  CDS  101478  102146  .  +  0  ID=L4_CDC1551d_Rv1239c_2;&hellip;;Dbxref=AMAP_ids:Rv1239c;<mark class="part">partial=true;end_range=102146,.</mark></pre>
           <div class="key"><span><mark>pseudo=true</mark> a pseudogene, with the reason in <code>Note</code></span><span><mark class="part">partial=true</mark> cut by the end of its contig, with the open end in <code>end_range</code> or <code>start_range</code></span></div>
         </div>
         <div class="tabpanel" role="tabpanel" id="ex-gbk" aria-labelledby="ex-gbk-tab" hidden>
@@ -324,7 +325,7 @@ contig_10  AMAP  CDS  101478  102146  .  +  0  ID=L4_CDC1551d_Rv1239c;&hellip;;D
                      <mark>/note="frameshift or lost stop codon: its frame runs on 41
                      residues past the end of the reference protein"</mark>
      CDS             <mark class="part">101478..&gt;102146</mark>
-                     /locus_tag="L4_CDC1551d_Rv1239c"
+                     /locus_tag="L4_CDC1551d_Rv1239c_2"
                      /db_xref="AMAP_ids:Rv1239c"
                      /translation="VFPGFDALPEVLRPVARPQPPNAHPVAQPPAQALVDCGVYVCGQR&hellip;"</pre>
           <div class="key"><span><mark>/pseudo</mark> no <code>/translation</code>, and the reason in <code>/note</code></span><span><mark class="part">&gt;102146</mark> the 3' end runs off the contig (<code>&lt;</code> marks a cut 5' end)</span></div>

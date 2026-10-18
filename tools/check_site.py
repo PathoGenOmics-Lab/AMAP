@@ -329,10 +329,12 @@ def run_window(win: dict, contig: str, base: str) -> tuple[dict[str, int], list[
          for c in win["bakta"]],
         columns=["Locus Tag", "Start", "End", "Strand", "Length_nt", "Contig"],
     )
+    # Piece: a placement of the other piece of a gene a contig end cut, which
+    # recover_missing_genes must not take for a copy.
     mp = pd.DataFrame(
         [{"Prot Id": r["prot"], "Prot len": r["len"], "Strand": r["st"], "Start": r["s"], "End": r["e"], "Match Nt": r["match"],
-          "Num nt": r["num"], "Contig": contig, "Complete": r["complete"]} for r in win["ref"]],
-        columns=["Prot Id", "Prot len", "Strand", "Start", "End", "Match Nt", "Num nt", "Contig", "Complete"],
+          "Num nt": r["num"], "Contig": contig, "Complete": r["complete"], "Piece": bool(r.get("piece", False))} for r in win["ref"]],
+        columns=["Prot Id", "Prot len", "Strand", "Start", "End", "Match Nt", "Num nt", "Contig", "Complete", "Piece"],
     )
     bad = pd.DataFrame(
         [{"Prot Id": f["prot"], "Prot len": 0, "Strand": f["st"], "Start": f["s"], "End": f["e"], "Match Nt": 0, "Num nt": 0, "Contig": contig}
@@ -638,6 +640,16 @@ RULES = {
     "copy_length": ("bin/deduplicate_rvs.py", r"^MIN_COPY_LENGTH = ([\d.]+)"),
     "stop_search_bp": ("bin/check_cds.py", r"reach = (\d+)"),
     "past_reference_residues": ("bin/check_cds.py", r"^COMPLETION_SLACK = (\d+)"),
+    "near_max_residues": ("bin/classify/exact.py", r"^NEAR_MAX_RESIDUES = (\d+)"),
+    "near_max_differences": ("bin/classify/exact.py", r"^NEAR_MAX_DIFFERENCES = ([\d.]+)"),
+    "piece_edge_bp": ("bin/classify/pieces.py", r"^EDGE = (\d+)"),
+    "piece_edge_bp_pass": ("bin/contig_end_pieces.py", r"^EDGE = (\d+)"),
+    "piece_min_residues": ("bin/contig_end_pieces.py", r"^MIN_RESIDUES = (\d+)"),
+    # A placement names a longer call when 2 * span >= 3 * residues: half the codons.
+    "name_share": ("bin/classify/reconciliation.py", r"or (\d+) \* span >= 3 \* residues"),
+    "copy_cover": ("bin/deduplicate_rvs.py", r"def _covered\(gene, others, share=([\d.]+)\)"),
+    "pieces_length": ("bin/deduplicate_rvs.py", r"^MAX_PIECES_LENGTH = ([\d.]+)"),
+    "nterm_identity": ("bin/check_cds.py", r"if identity\(ext_aa, ref\[:k\]\) < ([\d.]+):"),
     "dup_cover_pct": ("bin/get_duplications.py", r"\(df_filtered\['p_query'\] >= (\d+)\)"),
     "dup_cover_pct_all": ("bin/network_genomes.py", r"\(df_filtered\['query_coverage'\] >= (\d+)\)"),
 }
@@ -651,6 +663,12 @@ def check_thresholds() -> list[str]:
         if value is None:
             problems.append(f"tools/check_site.py: the rule {rule} is no longer where it was in {path}; update RULES")
         values[rule] = value
+    # The naming rule is written as a ratio: 2 * span >= 3 * residues.
+    if values.get("name_share"):
+        values["name_share"] = 1 / values["name_share"]
+    if values.get("piece_edge_bp") != values.get("piece_edge_bp_pass"):
+        problems.append(f"bin/: a piece is cut within {values.get('piece_edge_bp')} bp of a contig edge in classify/pieces.py, "
+                        f"{values.get('piece_edge_bp_pass')} bp in contig_end_pieces.py")
     # What the pages say each number is.
     said = {
         "single_bp": [("index.html", r"longer by more than ([\d,]+) bp")],
@@ -772,6 +790,14 @@ def check_thresholds() -> list[str]:
         ("Proteins placed once, each side, for the local offset", "paralog placements"): ("anchors", "{:g}"),
         ("Cover to claim another protein's placement", "paralog placements"): ("claim_cover", "{:g}%", 0.01),
         ("Shortest protein looked for exactly", "small proteins"): ("exact_residues", "{:g} residues"),
+        ("Longest protein looked for with substitutions", "small proteins"): ("near_max_residues", "{:g} residues"),
+        ("Residues after the first that may differ", "small proteins"): ("near_max_differences", "{:g}%", 0.01),
+        ("Distance from a contig's edge for a placement, or a piece, to be cut there", "pieces of cut genes"): ("piece_edge_bp", "{:g} bp"),
+        ("Shortest part of a protein looked for at the other contig ends", "pieces of cut genes"): ("piece_min_residues", "{:g} residues"),
+        ("Share of its protein an alignment spans to name a longer call", "rescuing missing genes"): ("name_share", "{:g}%", 0.01),
+        ("Cover by another reference gene that rules a copy out", "final deduplication"): ("copy_cover", "{:g}%", 0.01),
+        ("Length of a gene's pieces together, next to the reference gene", "final deduplication"): ("pieces_length", "{:g}%", 0.01),
+        ("Identity to restore a clipped N-terminus", "quality control"): ("nterm_identity", "{:g}%", 0.01),
         ("Cover for a gene to account for a placement", "rescuing missing genes"): ("account_cover", "{:g}%", 0.01),
         ("Length of a further copy, next to the first", "final deduplication"): ("copy_length", "{:g}%", 0.01),
         ("Residues an extension may run past the end of the reference protein", "quality control"): ("past_reference_residues", "{:g}"),

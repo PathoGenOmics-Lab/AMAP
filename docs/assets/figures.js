@@ -381,13 +381,14 @@
     case3: { from: 23700, to: 25600, tick: 500, alt: "fhaA: the same ends as the aligned H37Rv protein, which has six residues more; AMAP keeps Bakta's call.", gaps: { Rv0020c: { at: 24706, label: "6 residues" } } },
     "case4-start": { from: -60, to: 1640, tick: 500, alt: "dnaA: Bakta's call starts at base 34, the aligned H37Rv protein at base 1; AMAP keeps the reference's start.", marks: [{ s: 1, e: 33, rows: [0, 1], label: "33 bp", labelAt: "right" }] },
     "case4-split": { from: 9850, to: 10950, tick: 250, alt: "Rv0007: two Bakta calls where one H37Rv protein aligns end to end; AMAP keeps one gene." },
-    "case4-longer": { from: 2267500, to: 2272800, tick: 1000, alt: "Rv2024c: Bakta's call is 3,303 bp longer than an alignment that stops before the end of its protein; AMAP keeps Bakta's call.", marks: [{ s: 2267753, e: 2271055, rows: [0, 1], label: "3,303 bp" }] },
+    "case4-longer": { from: 2267500, to: 2272800, tick: 1000, alt: "Rv2024c: Bakta's call is 3,303 bp longer than an alignment that stops before the end of its protein; AMAP keeps Bakta's call, named Rv2024c.", marks: [{ s: 2267753, e: 2271055, rows: [0, 1], label: "3,303 bp" }] },
     "case1-kept": { from: 1979300, to: 1985800, tick: 2000, alt: "Four Bakta calls in a stretch CDC1551 has and H37Rv does not; AMAP keeps all four." },
     "case1-dropped": { from: 11330, to: 11620, tick: 100, alt: "A Bakta call covered end to end by one of Bakta's known false positives; AMAP drops it." },
     "small-protein": { from: 3056150, to: 3058450, tick: 500, alt: "E. coli K-12: the exact search places IbsC, 19 residues, between fau and serA, where Bakta called nothing.", marks: [{ s: 3056890, e: 3056949, rows: ["bakta", "ref"], label: "IbsC, by the exact search", kind: "ref" }] },
     "paralogs-1": { from: 400150, to: 402300, tick: 500, alt: "CDC1551 near 400 kb: Rv0336 keeps its own locus, and Rv0515's placement there is dropped." },
     "paralogs-2": { from: 607300, to: 609950, tick: 500, alt: "CDC1551 near 608 kb: Rv0515 keeps its own locus, and Rv0336's placement there is dropped." },
-    "contig-end": { from: 100250, to: 102146, tick: 500, alt: "CDC1551 in 40 contigs: Rv1239c runs to the end of contig_10 with no stop codon and is marked partial at its 3' end.", edges: [{ at: 102146.5, label: "end of contig_10", side: "left" }] },
+    "contig-end": { from: 100250, to: 102146, tick: 500, alt: "CDC1551 in 40 contigs: Rv1239c runs to the end of contig_10 with no stop codon and this piece is marked partial at its 3' end.", edges: [{ at: 102146.5, label: "end of contig_10", side: "left" }] },
+    "contig-end-2": { from: 3700, to: 4591, tick: 250, alt: "CDC1551 in 40 contigs: the other piece of Rv1239c, its last 144 residues, at the very end of contig_9, kept over a short Bakta call and marked partial at its 5' end.", edges: [{ at: 4591.5, label: "end of contig_9", side: "left" }] },
     frameshift: { from: 688900, to: 690500, tick: 500, alt: "M. bovis: Rv0590's frame runs on through Rv0590A; AMAP keeps it at its extent as a pseudogene, and Rv0590A as a gene of its own.", marks: [{ s: 690104, e: 690306, rows: ["amap", "amap"], label: "67 residues past its protein" }] },
     "copies-1": { from: 616700, to: 621600, tick: 1000, labelIds: true, alt: "E. coli O157:H7 Sakai: the first of two whole RhsD copies, kept as b0497." },
     "copies-2": { from: 2045700, to: 2050700, tick: 1000, labelIds: true, alt: "The second RhsD copy, 1.4 Mb away, kept as b0497_2." },
@@ -732,7 +733,7 @@
     },
     MINIPROT: {
       name: "miniprot", proc: "MINIPROT", x: 440, y: 170, label: "below", hub: true,
-      text: "miniprot aligns the reference proteome onto each genome, plus the false-positive set, plus Bakta's proteins back onto the reference genome.",
+      text: "miniprot aligns the reference proteome onto each genome, plus the false-positive set, plus Bakta's proteins back onto the reference genome; then, for each placement a contig end cut, what it lacks, to find the gene's other piece.",
       reads: "each genome, Bakta's proteins, the reference", writes: "nothing published: the alignments go on to Classify", flags: "", doc: "how-it-works/workflow.html#4-protein-alignment-with-miniprot"
     },
     TYPE_CASES: {

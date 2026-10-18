@@ -106,12 +106,13 @@ FIGURES = {
     "copies-1": case_figure("copies-1", "E. coli O157:H7 Sakai against K-12: the first of two whole copies of RhsD (b0497)."),
     "copies-2": case_figure("copies-2", "The second copy, 1.4 Mb away, is a further copy and stays, as b0497_2."),
     "frameshift": case_figure("frameshift", "M. bovis: Rv0590's frame runs on 67 residues past its protein, through Rv0590A, to the end of Bakta's one long call. It keeps its extent as a pseudogene, and Rv0590A is a gene of its own."),
-    "contig-end": case_figure("contig-end", "CDC1551 in 40 contigs: Rv1239c's frame reaches the end of contig_10 with no stop codon, and the gene is marked partial at its 3' end."),
+    "contig-end": case_figure("contig-end", "CDC1551 in 40 contigs: Rv1239c's frame reaches the end of contig_10 with no stop codon, and this piece of the gene, Rv1239c_2, is marked partial at its 3' end. The other piece, at the end of contig_9, is marked partial at its 5' end."),
+    "contig-end-2": case_figure("contig-end-2", "The other piece of Rv1239c in the CDC1551 draft: its last 144 residues, placed by the second pass at the very end of contig_9. Bakta's short call over it is case 4, and the piece wins."),
     "case2": case_figure("case2", "Case 2 in CDC1551: dnaN, where Bakta and the aligned protein agree base for base."),
     "case3": case_figure("case3", "Case 3: fhaA, with the same ends as Rv0020c but six residues fewer."),
     "case4-start": case_figure("case4-start", "A single overlap: Bakta's dnaA starts 33 bp late, and the reference's start is kept."),
     "case4-split": case_figure("case4-split", "Multiple overlaps: two Bakta calls on Rv0007, which comes back as one gene."),
-    "case4-longer": case_figure("case4-longer", "A much longer call: 3,303 bp past an alignment that stops short of its protein's end, so Bakta's call is kept."),
+    "case4-longer": case_figure("case4-longer", "A much longer call: 3,303 bp past an alignment that stops short of its protein's end, so Bakta's call is kept, and it takes the protein's name, Rv2024c."),
     "case1-kept": case_figure("case1-kept", "Case 1 kept: four calls in a stretch CDC1551 has and H37Rv lacks."),
     "case1-dropped": case_figure("case1-dropped", "Case 1 removed: a call that Bakta's known false positives cover end to end."),
     "missing": case_figure("missing", "A missing reference gene: Rv0031, put back between two of Bakta's calls."),
@@ -258,7 +259,9 @@ EXCERPT = (
     '<div class="tabpanel" role="tabpanel" id="ex-gff" aria-labelledby="ex-gff-tab"><pre>'
     "contig_4   AMAP  CDS  164980  165406  .  -  0  ID=L4_CDC1551d_Rv0354c;&hellip;;Dbxref=AMAP_ids:Rv0354c;"
     "<mark>pseudo=true;Note=frameshift or lost stop codon: its frame runs on 41 residues past the end of the reference protein</mark>\n"
-    "contig_10  AMAP  CDS  101478  102146  .  +  0  ID=L4_CDC1551d_Rv1239c;&hellip;;Dbxref=AMAP_ids:Rv1239c;"
+    "contig_9   AMAP  CDS  4160    4591    .  -  0  ID=L4_CDC1551d_Rv1239c;&hellip;;Dbxref=AMAP_ids:Rv1239c;"
+    '<mark class="part">partial=true;end_range=4591,.</mark>\n'
+    "contig_10  AMAP  CDS  101478  102146  .  +  0  ID=L4_CDC1551d_Rv1239c_2;&hellip;;Dbxref=AMAP_ids:Rv1239c;"
     '<mark class="part">partial=true;end_range=102146,.</mark></pre>'
     '<div class="key"><span><mark>pseudo=true</mark> a pseudogene, the reason in <code>Note</code></span>'
     '<span><mark class="part">partial=true</mark> cut by its contig\'s end, the open end in <code>end_range</code> or <code>start_range</code></span></div></div>'
@@ -270,7 +273,7 @@ EXCERPT = (
     '                     <mark>/note="frameshift or lost stop codon: its frame runs on 41\n'
     '                     residues past the end of the reference protein"</mark>\n'
     '     CDS             <mark class="part">101478..&gt;102146</mark>\n'
-    '                     /locus_tag="L4_CDC1551d_Rv1239c"</pre>'
+    '                     /locus_tag="L4_CDC1551d_Rv1239c_2"</pre>'
     '<div class="key"><span><mark>/pseudo</mark> no <code>/translation</code>, the reason in <code>/note</code></span>'
     '<span><mark class="part">&gt;102146</mark> the 3\' end runs off the contig (<code>&lt;</code> marks a cut 5\' end)</span></div></div>'
     "<figcaption><code>&hellip;</code> stands for the attributes left out; the marks are written the way NCBI writes them.</figcaption></figure>"

@@ -5,6 +5,15 @@ process EGGNOG_DB {
     // Once built, it's reused across ALL pipeline runs — never rebuilt.
     storeDir "${params.eggnog_db}"
 
+    input:
+    // The folder to build the database in, --eggnog_db, which main.nf makes
+    // on the host. A container sees only the folders Nextflow mounts for a
+    // task, its inputs' among them. When the script worked the folder out for
+    // itself, the container had it only if a mount happened to cover it;
+    // otherwise the database was built inside the container and lost with it,
+    // and storeDir moved only eggnog_db.ok to the host.
+    path eggnog_db
+
     output:
     path "eggnog_db.ok", emit: db_path
 
@@ -12,15 +21,8 @@ process EGGNOG_DB {
     """
     set -euo pipefail
 
-    # Resolve the user-provided eggnog_db path
-    # Use launchDir (where user ran nextflow) for relative paths, NOT projectDir
-    # (which points to the pipeline cache and is wrong for user-supplied paths)
-    EGGNOG_DB_DIR="${params.eggnog_db}"
-    if [[ ! "\$EGGNOG_DB_DIR" = /* ]]; then
-        EGGNOG_DB_DIR="${launchDir}/${params.eggnog_db}"
-    fi
-
-    mkdir -p "\$EGGNOG_DB_DIR"
+    # The folder on the host, staged here as a link to it
+    EGGNOG_DB_DIR="${eggnog_db}"
 
     # ------------------------------------------------------------
     # 0) Quick exit if the bacteria DB already exists

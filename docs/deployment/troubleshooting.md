@@ -1,7 +1,3 @@
----
-title: Troubleshooting
----
-
 # Troubleshooting
 
 ## Reading a failure
@@ -24,36 +20,27 @@ inside the container reproduces the failure by hand.
 CPU, memory and runtime, which is the fastest way to see whether a failure was
 resources or logic.
 
+<!-- figure: failure -->
+
 ## Before the pipeline starts
 
-**"Unexpected input: '('" in `nextflow.config`**
-: Nextflow 25.10 and later read pipelines with a stricter parser, which older
+- **"Unexpected input: '('" in `nextflow.config`**: Nextflow 25.10 and later read pipelines with a stricter parser, which older
   copies of AMAP do not pass. Nextflow keeps the copy it downloaded first, so
   fetch the current one with `nextflow pull PathoGenOmics-Lab/AMAP` and run
   again. To run an older AMAP release as it is, `export NXF_SYNTAX_PARSER=v1`
   first.
-
-**"Input TSV file not found"**
-: The path in `--tsv` is wrong, or relative to somewhere other than where you
+- **"Input TSV file not found"**: The path in `--tsv` is wrong, or relative to somewhere other than where you
   launched Nextflow.
-
-**"Invalid TSV format"**
-: The header must be exactly `sampleId` and `fasta`, separated by a real tab.
+- **"Invalid TSV format"**: The header must be exactly `sampleId` and `fasta`, separated by a real tab.
   Spaces are the usual culprit. `cat -t samples.tsv` shows tabs as `^I`, and
   works on both Linux and macOS.
-
-**"FASTA file not found"**
-: A path in the sample sheet does not resolve. Absolute paths avoid the
+- **"FASTA file not found"**: A path in the sample sheet does not resolve. Absolute paths avoid the
   ambiguity.
-
-**"not found, neither on the host nor inside the container"**
-: A reference file the run reads is in neither place: a typo in its path, or
+- **"not found, neither on the host nor inside the container"**: A reference file the run reads is in neither place: a typo in its path, or
   one of the defaults, which ship in the container, on a run without one. Give
   the path to your own copy with its
   [reference argument](../user-guide/parameters.md#reference-and-database-arguments).
-
-**Validation failures**
-: `results/pipeline_info/validation.log` says which check failed and for which
+- **Validation failures**: `results/pipeline_info/validation.log` says which check failed and for which
   sample. Thresholds are in [preparing inputs](../getting-started/inputs.md).
 
 ## Container problems

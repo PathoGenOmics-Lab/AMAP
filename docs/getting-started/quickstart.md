@@ -1,7 +1,3 @@
----
-title: Quickstart
----
-
 # Quickstart
 
 This walks from an installed Nextflow to an open report. If Nextflow or a
@@ -33,29 +29,36 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
 
 ## 3. Run it
 
-=== "Docker"
+Pick what you have, and copy the command:
 
-    ```bash
-    nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv
-    ```
+<!-- figure: builder -->
 
-=== "Singularity"
+Or start from one of these:
 
-    ```bash
-    nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv
-    ```
+**Docker**
 
-=== "SLURM cluster"
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv
+```
 
-    ```bash
-    nextflow run PathoGenOmics-Lab/AMAP \
-        -profile singularity,slurm --tsv samples.tsv
-    ```
+**Singularity**
 
-Resource requests are capped at 24 CPUs and 50 GB by default, which is what the
-eggNOG annotation step asks for. Nextflow refuses to start a task requesting
-more memory than the machine has, so on anything smaller than a server, lower
-the ceiling:
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv
+```
+
+**SLURM cluster**
+
+```bash
+nextflow run PathoGenOmics-Lab/AMAP \
+    -profile singularity,slurm --tsv samples.tsv
+```
+
+The `docker` and `singularity` profiles cap every task at the machine's CPUs
+and 16 GB, and the scheduler profiles at 48 CPUs and 128 GB; a larger request,
+such as the 50 GB the eggNOG annotation asks for, is lowered to the cap.
+Nextflow refuses to start a task asking for more memory than the machine has,
+so on a smaller machine, lower the ceiling:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \
@@ -76,13 +79,14 @@ open first:
 | Corrected annotation, per sample | `results/AMAP/{sampleId}/*-AMAP.gff3` |
 | Protein sequences for downstream tools | `results/AMAP/{sampleId}/*-AMAP.clean.faa` |
 
-!!! note "Which protein file do I want?"
-
-    `*-AMAP.faa` holds every gene, pseudogenes included, so it mirrors the
-    annotation exactly. `*-AMAP.clean.faa` drops pseudogenes and sequences with
-    internal stop codons, which is what orthology, phylogenomics and dN/dS
-    tools expect. Reach for the clean one unless you specifically need the
-    complete set.
+> [!NOTE]
+> **Which protein file do I want?**
+>
+> `*-AMAP.faa` holds every gene, pseudogenes included, so it mirrors the
+> annotation exactly. `*-AMAP.clean.faa` drops pseudogenes and sequences with
+> internal stop codons, which is what orthology, phylogenomics and dN/dS
+> tools expect. Reach for the clean one unless you specifically need the
+> complete set.
 
 The [outputs page](../user-guide/outputs.md) covers every directory.
 
@@ -114,9 +118,10 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
 
 See [custom reference](../user-guide/custom-reference.md).
 
-**Just the corrected annotation.** If you do not need functional annotation,
+**Just the corrected genes.** If you do not need functional annotation,
 duplications, the pangenome or the report, stop after the correction step. It is
-much faster:
+much faster, and leaves the corrected genes as a table with their proteins and
+sequences; the GFF3 and GenBank files come after eggNOG, so there are none:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \

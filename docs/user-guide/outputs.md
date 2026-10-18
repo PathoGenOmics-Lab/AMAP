@@ -93,6 +93,20 @@ annotation rides along as `Ontology_term`, `eC_number`, `COG_category`,
 `KEGG_ko`, `KEGG_Pathway` and `PFAMs`. The sequences are appended after
 `##FASTA`.
 
+Two kinds of gene carry marks, written the way NCBI writes them:
+
+- **Pseudogenes** have `pseudo=true` in the GFF3 and `/pseudo` in the GenBank,
+  with the reason in `Note` and `/note`: internal stop codons, a frameshift or
+  lost stop that makes the frame run on past the end of the reference protein,
+  no stop at all, or a stop the reference itself lacks. A `/pseudo` CDS has no
+  `/translation`.
+- **Genes a contig end cut short**, in a draft assembly, have `partial=true`,
+  with `start_range=.,START` or `end_range=END,.` on the open end, and `<` or
+  `>` on that end of the GenBank location. They are not pseudogenes.
+
+The same three facts, `pseudogene`, `partial` (`5'`, `3'` or both) and `note`,
+are the last columns of the master table and of `*-AMAP.tsv`.
+
 ### `*-AMAP.faa` versus `*-AMAP.clean.faa`
 
 `*-AMAP.faa` mirrors the annotation exactly, pseudogenes included, so gene

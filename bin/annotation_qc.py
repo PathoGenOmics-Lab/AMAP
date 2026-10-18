@@ -90,12 +90,15 @@ def compute_qc(mastertable_path, fasta_path, output_path):
 
     total_cds = len(df)
     
-    # Pseudogenes
+    # Pseudogenes: the genes AMAP calls pseudogenes, in check_cds.py's
+    # `pseudogene` column, the flag behind the GFF3's pseudo=true and the
+    # GenBank's /pseudo. Mycobrowser's Is_Pseudogene was read first, and the
+    # master table always has it: empty when Mycobrowser is off, so every
+    # organism-agnostic run reported 0, and otherwise the sample's genes named
+    # after one of the reference's pseudogenes, whatever AMAP made of them.
     pseudo_count = 0
-    for col in ['Is_Pseudogene', 'pseudogene', 'is_pseudogene']:
-        if col in df.columns:
-            pseudo_count = df[col].astype(str).str.lower().isin(['true', 'yes', '1']).sum()
-            break
+    if 'pseudogene' in df.columns:
+        pseudo_count = int((df['pseudogene'] == 'yes').sum())
 
     # Hypothetical proteins
     hypo_count = 0

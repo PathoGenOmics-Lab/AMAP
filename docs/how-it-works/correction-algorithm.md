@@ -29,6 +29,23 @@ preceded by a start codon and followed by a stop, and each exact copy found
 where Miniprot did not already place the protein becomes a complete placement.
 Proteins shorter than 8 residues are not searched.
 
+### Pieces of cut genes
+
+A draft assembly cuts the genes its contig breaks run through. Miniprot reports
+only the placements within 5% of a protein's best, so it places the larger
+piece of such a gene and not the smaller one at the end of another contig: in
+CDC1551 cut into 40 contigs, none of the 25 smaller pieces was annotated. A
+placement was cut by its contig when it lacks residues at one end of its
+protein, ends within **30 bp** of the contig's edge on that side, and those
+residues would not fit in the bases left. What it lacks, if **8** residues or
+more, is aligned again as a protein of its own, and its best placement is the
+piece at the other contig end; this pass runs with `-L 10 -n 2`, so that
+Miniprot indexes and chains the short reading frames an edge leaves. A
+placement of that protein which runs off a contig edge on the side of the cut,
+within 30 bp, is a piece of the gene and becomes a placement of the gene's
+protein. In the CDC1551 draft that places 22 of the 25 smaller pieces; the
+other three are five or six codons long.
+
 ### Paralog placements
 
 Miniprot places a reference protein everywhere it scores within 5% of its best,
@@ -160,6 +177,11 @@ count either, since some are nested (*E. coli* hokC inside mokC). Placements on
 other genes' loci have already been dropped in step 0, so what is left to rescue
 sits where the gene belongs or at a locus nobody claims.
 
+The pieces of a cut gene are parts of its protein, not copies of it, so each is
+missing on its own, and one in place does not keep another out. In the CDC1551
+draft a 7.5 kb Bakta call displaced the larger piece of Rv0100, which comes back
+here though the smaller piece is in.
+
 ## 6. Final deduplication
 
 Where one gene ends up at several coordinates, entries fully contained inside a
@@ -175,9 +197,13 @@ first, clear of the copies kept, and not covered by another reference gene; a
 pseudogene must also be 90% as long as the reference protein, which a piece of
 a split gene is not, and anything else is a remnant of the gene and goes. A genome can carry a gene more
 than once, and these copies are what the duplication analysis counts: *E. coli*
-O157:H7 Sakai keeps 34 that used to be deleted. Copies only Miniprot placed are
-all named after their protein, so later ones get `_2`, `_3` to keep identifiers
-unique.
+O157:H7 Sakai keeps 34 that used to be deleted. The pieces of a cut gene stay
+as well, when the first gene is one of them: each is marked partial at its cut
+end, no two are open at the same end alone (a gene has one first piece and one
+last, and any number between that a contig holds whole), they are clear of each
+other, and together they are at most **110%** of the reference gene's length.
+Copies and pieces only Miniprot placed are all named after their protein, so
+later ones get `_2`, `_3` to keep identifiers unique.
 
 ## 7. Stop codon check
 
@@ -205,9 +231,11 @@ Rv3373 into Rv3374), and extending would annotate that gene twice.
 frame reaches the end of its contig with no stop, from within 30 bp of it, was
 cut by the assembly: it runs to the last codon there and is marked `3'`
 partial. One that opens within a codon of the contig's edge without a start
-codon is `5'` partial. Neither is a pseudogene. Only the piece Miniprot places
-is annotated, usually the larger one, as it reports only the placements within
-5% of a protein's best.
+codon is `5'` partial, and so is one that opens there with a codon that can
+start a gene but whose protein begins inside its reference protein: a cut
+leaves whatever codon it falls before at the edge, and one in six codons inside
+H37Rv genes is one a gene can start with. Neither is a pseudogene. Each piece
+of a cut gene is annotated this way, under the gene's name.
 
 **Reference pseudogenes keep their extent.** When the reference protein spans
 its annotated stretch codon for codon with no stop (PE21, Rv2099c; PPE48,
@@ -251,9 +279,12 @@ sets of coordinates overlap, which one survives into the curated annotation.
 | Proteins placed once, each side, for the local offset | paralog placements | 5 |
 | Cover to claim another protein's placement | paralog placements | 50% |
 | Shortest protein looked for exactly | small proteins | 8 residues |
+| Distance from a contig's edge for a placement, or a piece, to be cut there | pieces of cut genes | 30 bp |
+| Shortest part of a protein looked for at the other contig ends | pieces of cut genes | 8 residues |
 | Cover for a gene to account for a placement | rescuing missing genes | 50% |
 | Length of a further copy, next to the first | final deduplication | 90% |
 | Cover by another reference gene that rules a copy out | final deduplication | 50% |
+| Length of a gene's pieces together, next to the reference gene | final deduplication | 110% |
 | Stop codon search | quality control | 300 bp, or what the reference protein is missing |
 | Residues an extension may run past the end of the reference protein | quality control | 10 |
 | Distance from a contig end within which a gene counts as cut | quality control | 30 bp at the 3' end, a codon at the 5' end |

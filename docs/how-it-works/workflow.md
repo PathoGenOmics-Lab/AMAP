@@ -103,6 +103,12 @@ Output is PAF. Coordinates are converted from 0-based to 1-based on read, and
 for a protein hitting several positions, the best hit per position is kept so
 multi-copy families such as PE/PPE keep all their placements.
 
+In a draft assembly the genes a contig end cuts get a second pass. Miniprot
+places the larger piece of such a gene only, so what that placement lacks is
+aligned again as a protein of its own, and its placement at the end of another
+contig is the rest of the gene
+([pieces of cut genes](correction-algorithm.md#pieces-of-cut-genes)).
+
 ## 5. Case classification
 
 Every Bakta CDS is compared against the alignments and sorted into cases 1 to 4,

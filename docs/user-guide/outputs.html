@@ -174,7 +174,7 @@ contig_10  AMAP  CDS  101478  102146  .  +  0  ID=L4_CDC1551d_Rv1239c_2;&hellip;
 <p>A gene across the origin of a circular sequence is written the way Bakta writes it. Bakta takes a sequence for a circular replicon when its FASTA description says <code>complete</code>, as NCBI's "complete genome" and "complete sequence" do, or <code>circular=true</code>, as Unicycler's does. In <code>*-AMAP.tsv</code> and the master table such a gene has its start after its end (stcE on plasmid pO157 of E. coli O157:H7 Sakai is 92563 to 2502); in the GenBank it is <code>join(92563..92721,1..2502)</code> in a record marked circular; and in the GFF3 it ends past the sequence's last base, by the sequence's length (92563 to 95223 on the 92721 bp plasmid), on a <code>region</code> feature marked <code>Is_circular=true</code>, as the GFF3 specification and Bakta's own GFF3 have it.</p>
 <h3 id="-amapfaa-versus--amapcleanfaa"><code>*-AMAP.faa</code> versus <code>*-AMAP.clean.faa</code><a class="anchor" href="#-amapfaa-versus--amapcleanfaa" aria-label="Link to this section">#</a></h3>
 <p><code>*-AMAP.faa</code> mirrors the annotation exactly, pseudogenes included, so gene counts match the GFF3.</p>
-<p><code>*-AMAP.clean.faa</code> drops pseudogenes and any sequence with an internal stop codon, and strips the terminal stop. This is the file for orthology, phylogenomics, pangenome tools and dN/dS, all of which expect valid translations. It has fewer sequences than the GFF3 has genes, by design.</p>
+<p><code>*-AMAP.clean.faa</code> drops the genes AMAP calls pseudogenes, those with <code>pseudo=true</code> in the GFF3, and any sequence with an internal stop codon, and strips the terminal stop. This is the file for orthology, phylogenomics, pangenome tools and dN/dS, all of which expect valid translations. It has fewer sequences than the GFF3 has genes, by design.</p>
 <h3 id="-amapmastertabletsv"><code>*-AMAPmastertable.tsv</code><a class="anchor" href="#-amapmastertabletsv" aria-label="Link to this section">#</a></h3>
 <p>One row per gene, joining the corrected coordinates, the Bakta annotation, the eggNOG assignment (COG category, description, preferred name, GO, EC, KEGG, PFAMs, CAZy) and, for MTBC, the Mycobrowser functional category. This is the table to load when you want to ask a question about the annotation.</p>
 <h3 id="-amapqctsv"><code>*-AMAP.qc.tsv</code><a class="anchor" href="#-amapqctsv" aria-label="Link to this section">#</a></h3>
@@ -205,7 +205,7 @@ contig_10  AMAP  CDS  101478  102146  .  +  0  ID=L4_CDC1551d_Rv1239c_2;&hellip;
     <div>
       <h3>Cite</h3>
       <blockquote>Ruiz-Rodriguez, P., &amp; Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software].</blockquote>
-      <p class="doi">Software: <a href="https://doi.org/10.5281/zenodo.8024447">doi:10.5281/zenodo.8024447</a></p>
+      <p class="doi">Software: <a href="https://doi.org/10.5281/zenodo.8024446">doi:10.5281/zenodo.8024446</a></p>
     </div>
     <div>
       <h3>Learn more</h3>

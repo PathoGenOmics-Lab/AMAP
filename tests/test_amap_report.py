@@ -454,6 +454,15 @@ class TestWhatIsMissing:
         assert params['mycobrowser_ref'] == '/reference/Mycobacterium_tuberculosis_H37Rv_txt_v4.txt'
         assert info['nextflow'] == '26.10.2' and info['profile'] == 'docker'
 
+    def test_params_as_dump_params_writes_them_now(self, tmp_path):
+        # Every value a JSON string under `params:`, escapes and all
+        (tmp_path / 'params.yml').write_text(
+            '# AMAP Pipeline Parameters\n# Nextflow: 26.10.2\nparams:\n'
+            '  quote: "a \\"b\\" c"\n  back: "C:\\\\path"\n  multi: "one\\ntwo"\n')
+        params, info = ar.read_params(tmp_path / 'params.yml')
+        assert params == {'quote': 'a "b" c', 'back': 'C:\\path', 'multi': 'one\ntwo'}
+        assert info['nextflow'] == '26.10.2'
+
     def test_the_methods_carry_the_run(self, run):
         _, data = run
         meta = data['meta']

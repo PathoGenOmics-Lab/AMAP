@@ -376,7 +376,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Outputs",
 "section": "*-AMAP.faa versus *-AMAP.clean.faa",
 "url": "user-guide/outputs.html#-amapfaa-versus--amapcleanfaa",
-"text": "*-AMAP.faa mirrors the annotation exactly, pseudogenes included, so gene counts match the GFF3. *-AMAP.clean.faa drops pseudogenes and any sequence with an internal stop codon, and strips the terminal stop. This is the file for orthology, phylogenomics, pangenome tools and dN/dS, all of which expect valid translations. It has fewer sequences than the GFF3 has genes, by design."
+"text": "*-AMAP.faa mirrors the annotation exactly, pseudogenes included, so gene counts match the GFF3. *-AMAP.clean.faa drops the genes AMAP calls pseudogenes, those with pseudo=true in the GFF3, and any sequence with an internal stop codon, and strips the terminal stop. This is the file for orthology, phylogenomics, pangenome tools and dN/dS, all of which expect valid translations. It has fewer sequences than the GFF3 has genes, by design."
 },
 {
 "page": "Outputs",
@@ -454,7 +454,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The report",
 "section": "Functional annotation",
 "url": "user-guide/report.html#functional-annotation",
-"text": "COG categories from eggNOG, Mycobrowser functional categories for MTBC, and a comparison against the reference distribution. Each has its own per-category breakdown in counts and percentages, with the statistical tests alongside. PE/PPE gene families get their own section, since they are both the hardest part of an MTBC genome to annotate and usually the most interesting. The pseudogenes of each lineage close it."
+"text": "COG categories from eggNOG, Mycobrowser functional categories for MTBC, and a comparison against the reference distribution. Each has its own per-category breakdown in counts and percentages, with the statistical tests alongside. PE/PPE gene families get their own section, since they are both the hardest part of an MTBC genome to annotate and usually the most interesting. The pseudogenes close it: how many AMAP called in each sample, lineage by lineage, a sample with none at 0, the same genes the QC table counts and the GFF3 marks pseudo=true. The master table's note column says why each is a "
 },
 {
 "page": "The report",
@@ -892,7 +892,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "HPC clusters",
 "section": "Fitting your site",
 "url": "deployment/hpc.html#fitting-your-site",
-"text": "nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm \\     --tsv samples.tsv \\     --max_cpus 64 --max_memory 256.GB \\     -process.queue long \\     -process.clusterOptions '--account=mygroup' -process.queue sets the partition or queue, and -process.clusterOptions passes anything else straight through, which is where accounting flags, QoS and node constraints go."
+"text": "nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm \\     --tsv samples.tsv \\     --max_cpus 64 --max_memory 256.GB \\     -process.queue long \\     -process.clusterOptions '--account=mygroup' -process.queue sets the partition or queue, and -process.clusterOptions passes anything else straight through, which is where accounting flags, QoS and node constraints go. On SLURM, Bakta's jobs, the longest a run sends, also ask for --qos=medium. The slurm profile sets that for Bakta alone, and for Bakta it takes the place of -process.clusterOptions, so give Bakta your site's options in"
 },
 {
 "page": "HPC clusters",
@@ -1156,7 +1156,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Citation",
 "section": "",
 "url": "about/citation.html",
-"text": "Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software]. <https://doi.org/10.5281/zenodo.8024447> @software{Ruiz-Rodriguez_AMAP_2026,   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},   doi = {10.5281/zenodo.8024447},   license = {GPL-3.0},   month = apr,   title = {{AMAP}},   url = {https://github.com/PathoGenOmics-Lab/AMAP},   version = {1.0.1},   year = {2026}} The repository also carries a CITATION.cff, which GitHub reads to offer a formatted citation from the sidebar."
+"text": "Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software]. <https://doi.org/10.5281/zenodo.8024446> @software{Ruiz-Rodriguez_AMAP_2026,   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},   doi = {10.5281/zenodo.8024446},   license = {GPL-3.0},   month = apr,   title = {{AMAP}},   url = {https://github.com/PathoGenOmics-Lab/AMAP},   version = {1.0.1},   year = {2026}} The repository also carries a CITATION.cff, which GitHub reads to offer a formatted citation from the sidebar."
 },
 {
 "page": "Citation",

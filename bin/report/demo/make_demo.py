@@ -64,7 +64,8 @@ qc_rows.append("\t".join([
     "pseudogene_count", "hypothetical_pct", "mean_gene_length",
     "median_gene_length", "coding_density_pct", "eggnog_annotation_pct"]))
 
-master_header = ["simple_id", "lineage", "start", "end", "strand", "rvs",
+# as REPORT_INPUTS writes it: the sample each gene is from, then its master table
+master_header = ["sample", "simple_id", "lineage", "start", "end", "strand", "rvs",
                  "pseudogene", "COG_category", "Description", "Preferred_name",
                  "KEGG_Pathway", "Functional_Category"]
 master_rows.append("\t".join(master_header))
@@ -126,7 +127,7 @@ for lin, gid in SAMPLES:
         cat = rng.choices([m[0] for m in MYCO], [m[1] for m in MYCO])[0]
         s = rng.randint(1, 4_400_000)
         master_rows.append("\t".join([
-            f"{sample}_{i:05d}", lin, str(s), str(s + rng.randrange(150, 3000, 3)),
+            sample, f"{sample}_{i:05d}", lin, str(s), str(s + rng.randrange(150, 3000, 3)),
             rng.choice("+-"), f"Rv{rng.randint(1, 3924):04d}",
             rng.choice(["no"] * 24 + ["yes"]), rng.choice(COGS),
             "hypothetical protein" if cat == "conserved hypotheticals" else "putative enzyme",

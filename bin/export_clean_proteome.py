@@ -10,9 +10,10 @@ Usage:
     export_clean_proteome.py input.faa mastertable.tsv output.clean.faa
 
 Rules:
-1. Skip sequences flagged as pseudogenes in the master table (Is_Pseudogene == True)
+1. Skip the genes AMAP calls pseudogenes, those whose `pseudogene` is yes in
+   the master table, matched on the ID a FASTA header starts with
 2. Skip sequences containing internal '*' (stop codons within the ORF)
-3. Strip trailing '*' (terminal stop codon — valid but unwanted in most tools)
+3. Strip trailing '*' (terminal stop codon, valid but unwanted in most tools)
 4. Skip empty sequences (0 amino acids after cleaning)
 5. Preserve original FASTA headers
 """
@@ -23,20 +24,18 @@ import pandas as pd
 
 
 def load_pseudogene_ids(mastertable_path):
-    """Load set of gene IDs flagged as pseudogenes from the master table."""
-    pseudo_ids = set()
-    try:
-        df = pd.read_csv(mastertable_path, sep='\t', low_memory=False)
-        # Check both column name variants
-        for col in ['Is_Pseudogene', 'pseudogene', 'is_pseudogene']:
-            if col in df.columns:
-                pseudo_mask = df[col].astype(str).str.lower().isin(['true', 'yes', '1'])
-                id_col = 'simple_id' if 'simple_id' in df.columns else df.columns[0]
-                pseudo_ids.update(df.loc[pseudo_mask, id_col].dropna().tolist())
-                break
-    except Exception as e:
-        print(f"WARNING: Could not read pseudogene info from {mastertable_path}: {e}", file=sys.stderr)
-    return pseudo_ids
+    """The IDs of the genes AMAP calls pseudogenes: check_cds.py's `pseudogene`
+    column, the flag behind the GFF3's pseudo=true and the GenBank's /pseudo.
+
+    Mycobrowser's Is_Pseudogene was read first, and the master table always
+    has it: empty when Mycobrowser is off, and otherwise marking the sample's
+    genes named after one of the reference's pseudogenes, whatever AMAP made
+    of them. A table without these columns stops the export, where a warning
+    let every pseudogene through.
+    """
+    df = pd.read_csv(mastertable_path, sep='\t', usecols=['simple_id', 'pseudogene'],
+                     dtype=str, keep_default_na=False)
+    return set(df.loc[df['pseudogene'] == 'yes', 'simple_id'])
 
 
 def clean_proteome(input_faa, mastertable_path, output_faa):
@@ -59,7 +58,9 @@ def clean_proteome(input_faa, mastertable_path, output_faa):
                 return
             
             seq = ''.join(seq_parts)
-            gene_id = header.split()[0].lstrip('>')
+            # FIX_CDS writes ID;strand;start-end, and the master table has the
+            # ID alone, as simple_id
+            gene_id = header.split()[0].split(';')[0]
 
             # Check pseudogene
             if gene_id in pseudo_ids:

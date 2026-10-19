@@ -382,8 +382,11 @@ def visualize_network(
     homologous_map: Dict,
     output_path: Path
 ):
-    """Creates an interactive HTML network visualization using pyvis."""
-    net = Network(height='100vh', width='100%', bgcolor='#FFFFFF', font_color='black', notebook=False)
+    """Creates an interactive HTML network visualization using pyvis, with the
+    drawing library inside the page: pyvis's default loads it from a CDN, and
+    offline the page drew nothing."""
+    net = Network(height='100vh', width='100%', bgcolor='#FFFFFF', font_color='black', notebook=False,
+                  cdn_resources='in_line')
     net.force_atlas_2based(gravity=-50, central_gravity=0.01, spring_length=100)
 
     # Assign a unique color to each genome
@@ -449,7 +452,7 @@ def main():
         print("No significant BLAST hits — creating empty outputs.")
         pd.DataFrame().to_csv(output_tsv, sep="\t", index=False)
         # Create minimal HTML
-        net = Network(height='100vh', width='100%', bgcolor='#FFFFFF', notebook=False)
+        net = Network(height='100vh', width='100%', bgcolor='#FFFFFF', notebook=False, cdn_resources='in_line')
         net.write_html(str(output_html))
         print(f"Empty report at {output_tsv} and {output_html}")
         return

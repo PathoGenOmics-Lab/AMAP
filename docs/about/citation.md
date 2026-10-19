@@ -1,12 +1,12 @@
 # Citing AMAP
 
 > Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.1)
-> [Computer software]. <https://doi.org/10.5281/zenodo.8024447>
+> [Computer software]. <https://doi.org/10.5281/zenodo.8024446>
 
 ```bibtex
 @software{Ruiz-Rodriguez_AMAP_2026,
   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},
-  doi = {10.5281/zenodo.8024447},
+  doi = {10.5281/zenodo.8024446},
   license = {GPL-3.0},
   month = apr,
   title = {{AMAP}},

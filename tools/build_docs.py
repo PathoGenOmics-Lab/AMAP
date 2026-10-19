@@ -983,8 +983,10 @@ def failure_figure(_renderer: "Renderer", _lines: list[str]) -> str:
         r"errorStrategy = \{ task\.exitStatus in \[([\d, ]+)\] \? 'retry' : \(task\.attempt <= (\d+) \? 'retry' : 'ignore'\) \}\s*maxRetries = (\d+)",
         config,
     )
-    # Each withName block, up to the next one or the end of process { }.
-    blocks = dict(re.findall(r"withName: '(\w+)' \{(.*?)\n    \}", config, re.S))
+    # Each withName block of the top-level process { }, not a profile's: the
+    # slurm profile has one for Bakta of its own, with its QoS.
+    scope = re.search(r"^process \{\n(.*?)^\}", config, re.S | re.M).group(1)
+    blocks = dict(re.findall(r"withName: '(\w+)' \{(.*?)\n    \}", scope, re.S))
     bakta = re.search(r"memory\s*=\s*\{ (\d+)\.GB \* task\.attempt \}", blocks.get("BAKTA_ANNOTATOR", ""))
     terminate = [name for name, body in blocks.items() if "errorStrategy = 'terminate'" in body]
     eggnog = re.search(r"errorStrategy = \{ task\.exitStatus in \[[\d, ]+\] \? 'retry' : 'terminate' \}", blocks.get("ANNOT_EGGNOGMAP_BATCH", ""))
@@ -1192,7 +1194,7 @@ def footer(root: str) -> str:
     return (
         '<footer class="foot">\n  <div class="wrap">\n    <div>\n      <h3>Cite</h3>\n'
         "      <blockquote>Ruiz-Rodriguez, P., &amp; Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software].</blockquote>\n"
-        '      <p class="doi">Software: <a href="https://doi.org/10.5281/zenodo.8024447">doi:10.5281/zenodo.8024447</a></p>\n    </div>\n'
+        '      <p class="doi">Software: <a href="https://doi.org/10.5281/zenodo.8024446">doi:10.5281/zenodo.8024446</a></p>\n    </div>\n'
         "    <div>\n      <h3>Learn more</h3>\n      <ul>\n"
         f'        <li><a href="{root}getting-started/tutorial.html">Tutorial</a></li>\n'
         f'        <li><a href="{root}{INDEX}">Documentation</a></li>\n'

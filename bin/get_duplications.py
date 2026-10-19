@@ -136,8 +136,10 @@ def plot_network2(df, output_filename):
     n_clusters = len(set(partition.values()))
     unique_colors = get_unique_colors(n_clusters)
 
-    # Create a pyvis network object from the NetworkX graph
-    net = Network(height='1080px', width='100%', bgcolor='#FFFFFF', font_color='black')
+    # Create a pyvis network object from the NetworkX graph. The drawing library
+    # goes inside the page: pyvis's default loads it from a CDN, and offline the
+    # page drew nothing.
+    net = Network(height='1080px', width='100%', bgcolor='#FFFFFF', font_color='black', cdn_resources='in_line')
 
     # Set colors for each node based on the community
     for node in G.nodes:
@@ -190,7 +192,7 @@ def main():
         plt.savefig(args.file + "_network.png", format='png', dpi=300)
         plt.close()
         # Create empty interactive plot
-        net = Network(height='1080px', width='100%', bgcolor='#FFFFFF')
+        net = Network(height='1080px', width='100%', bgcolor='#FFFFFF', cdn_resources='in_line')
         net.write_html(args.file + "_network_interactive.html")
         return
 

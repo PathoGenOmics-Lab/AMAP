@@ -2,7 +2,12 @@
 
 Every command spelled out, nothing assumed. It uses a real genome you can
 download in one line, so you can follow along and compare your numbers against
-the ones printed here. Those numbers come from an actual run, not from memory.
+the ones printed here. Those numbers come from actual runs of these commands,
+not from memory, made on 18 October 2026 with AMAP at commit `947a99d`. The
+runs skipped eggNOG, with `--skip_functional_annotation`. None of the numbers
+depends on it, and the one table shown here that is written after it was made
+by hand from the same run, as [the sample check](#sanity-check-the-sample)
+explains.
 
 The genome is *Mycobacterium tuberculosis* CDC1551, corrected against the H37Rv
 reference that ships inside the AMAP container. At the end there is a second
@@ -104,9 +109,10 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
 ```
 
 You still get the corrected genes, which is what AMAP exists to produce, as a
-table with their proteins and sequences. What you lose is eggNOG categories, the
-GFF3 and GenBank files written after it, the pangenome, the duplication analysis
-and the report. The heaviest step left asks for 6 GB.
+table with their proteins and sequences, and `amap_report.html`. What you lose
+is eggNOG categories, the GFF3 and GenBank files written after it, the
+pangenome, the duplication analysis and `final_report.html`. The heaviest step
+left asks for 6 GB.
 
 > [!CAUTION]
 > **Docker Desktop has its own memory limit, and it is the one that counts**
@@ -198,6 +204,13 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --validate_only
 ```
 
+The checks write their verdict to `results/pipeline_info/validation.log`, which
+ends:
+
+```bash
+tail -n 8 results/pipeline_info/validation.log
+```
+
 ```text
 --- FASTA Validation (1 samples) ---
 
@@ -209,7 +222,7 @@ Total: 0 error(s), 0 warning(s)
   ✓ PASSED — all 1 samples look good
 ```
 
-This costs seconds and catches the mistakes that would otherwise surface twenty
+This costs seconds and catches the mistakes that would otherwise surface
 minutes in. [Preparing inputs](inputs.md) lists every check and its threshold.
 
 ## 6. Run it
@@ -236,16 +249,20 @@ If the run dies partway, `-resume` picks up from the last completed step.
 ## 7. Look at what came out
 
 ```bash
-ls results/
+ls -F results/
 ```
 
 ```text
 AMAP/  BAKTA/  CDS_CASES/  DUPLICATIONS/  PANGENE/  PATHOTYPR/
-pipeline_info/  final_report.html
+amap_report.html  final_report.html  pipeline_info/
 ```
 
+A run without eggNOG, like the ones behind this page, has no `DUPLICATIONS/`,
+`PANGENE/` or `final_report.html`.
+
 Open `results/final_report.html` first. It is self-contained, so it travels by
-email.
+email. `results/amap_report.html` goes through the same run question by
+question, and a run without eggNOG still gets it.
 
 ### Did the correction do anything?
 
@@ -255,9 +272,9 @@ column -t -s$'\t' results/CDS_CASES/summary/*-summary.tsv
 
 ```text
 Type           Number
-case2          2816     coordinates matched the reference exactly
+case2          2813     coordinates matched the reference exactly
 case3            24     coordinates matched, alignment length differed
-case4          1097     overlapped the reference but disagreed, resolved
+case4          1100     overlapped the reference but disagreed, resolved
 case1_initial   141     Bakta called it, the reference has nothing there
 rv_missing       97     the reference has a gene there, Bakta missed it
 total_cds      4077     what Bakta called before correction
@@ -267,8 +284,8 @@ case1_kept       11     kept as genuinely absent from H37Rv
 
 <!-- figure: case-counts -->
 
-Read that as: of 4077 Bakta calls, 2816 already agreed with the reference,
-1097 had to be adjudicated, and 97 reference genes Bakta had missed were
+Read that as: of 4077 Bakta calls, 2813 already agreed with the reference,
+1100 had to be adjudicated, and 97 reference genes Bakta had missed were
 rescued. Only 11 of the 141 apparently novel genes survived scrutiny, which is
 what you would expect for a strain of the same species as the reference.
 
@@ -278,13 +295,21 @@ what you would expect for a strain of the same species as the reference.
 column -t -s$'\t' results/AMAP/*/*-AMAP.qc.tsv
 ```
 
+Six of its eleven columns:
+
 ```text
 genome_size  n_contigs  gc_pct  total_cds  pseudogene_count  coding_density_pct
-4403837      1          65.61   4020       13                91.5
+4403837      1          65.61   4014       123               91.3
 ```
 
-65.6% GC and 91.5% coding density are what a healthy MTBC genome looks like. A
+65.6% GC and 91.3% coding density are what a healthy MTBC genome looks like. A
 number well outside that is worth investigating before trusting the rest.
+
+This table is written after eggNOG, so a run without it has none. The line
+above was made by running that step's own script, GET_OUTPUTS, on the
+corrected genes of the run behind this page, with an eggNOG table that has no
+rows. None of the six columns depends on eggNOG; the one that does,
+`eggnog_annotation_pct`, is left out.
 
 ### The files you will actually use
 
@@ -375,14 +400,14 @@ The case counts come out differently from the MTBC run, and the difference is
 biology rather than a problem:
 
 ```text
-case2          3325
-case3            34
-case4           537
-case1_kept     1356    genes O157:H7 has and K-12 does not
-rv_missing      102
+case2          3324
+case3            31
+case4           507
+case1_kept     1387    genes O157:H7 has and K-12 does not
+rv_missing      133
 ```
 
-Those 1356 are the prophages and the LEE island that O157:H7 carries and K-12
+Those 1387 are the prophages and the LEE island that O157:H7 carries and K-12
 lacks. Against a reference of your own species you should expect a large case 1
 when the strains genuinely differ, and a small one when they do not.
 
@@ -391,8 +416,10 @@ when the strains genuinely differ, and a small one when they do not.
 >
 > Coordinates from the annotation are used directly against the FASTA. An
 > annotation from a different assembly produces nonsense: proteins that do
-> not translate, and a nearly empty reference proteome. AMAP prints how many
-> proteins it extracted, so check the number looks like a genome's worth.
+> not translate, and a nearly empty reference proteome. AMAP writes how many
+> proteins it extracted into the work directory, where
+> `grep -h 'Curated proteins' work/*/*/.command.out` finds it (4318 on this
+> pair), so check the number looks like a genome's worth.
 
 [Custom reference](../user-guide/custom-reference.md) goes into what makes a
 good reference and what changes when you use one.

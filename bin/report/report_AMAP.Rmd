@@ -403,7 +403,8 @@ if (has_rvmissing) {
   } else { has_rvmissing <- FALSE }
 }
 
-# Master table
+# Master table: every sample's genes, each row with the sample it is from in
+# the column REPORT_INPUTS adds, the name the sample's files carry
 has_mastertable <- file.exists(params$mastertable_file) && file.info(params$mastertable_file)$size > 0
 if (has_mastertable) {
   mastertable <- tryCatch(
@@ -909,44 +910,52 @@ if (has_mastertable && exists("kegg_data")) {
 
 ## Pseudogene Detection {.tabset}
 
-Genes without a stop codon in their annotated coordinates — potential pseudogenes.
+The genes AMAP calls pseudogenes in each sample, by lineage: internal stop codons, a frameshift or lost stop that makes the frame run on past the end of the reference protein, no stop codon within reach, or a stop the reference itself lacks. They are the genes the GFF3 marks `pseudo=true` and the QC table counts, and the master table's `note` column says why each one is a pseudogene. A sample with none counts 0. Mycobrowser's `Is_Pseudogene` says whether a gene is a pseudogene in H37Rv, not in the sample, and is not counted.
 
-### Per Lineage
+### By Lineage
 ```{r pseudogenes, echo=FALSE, fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE}
-if (has_mastertable) {
-  # Pseudogenes can be detected from genes with internal stops or no terminal stop
-  # Using the rvs column: genes with known Rv ID that were flagged as pseudogenes
-  # Check both Mycobrowser's Is_Pseudogene and AMAP's pseudogene columns
-  has_myco_pseudo <- "Is_Pseudogene" %in% colnames(mastertable)
-  has_amap_pseudo <- "pseudogene" %in% colnames(mastertable)
-  if (has_myco_pseudo || has_amap_pseudo) {
-    pseudo_data <- mastertable %>%
-      
-      filter(
-        (if (has_myco_pseudo) (Is_Pseudogene %in% c("yes","Yes","TRUE",TRUE)) else FALSE) |
-        (if (has_amap_pseudo) (pseudogene %in% c("yes","Yes","TRUE",TRUE)) else FALSE)
-      )
-    
-    if (nrow(pseudo_data) > 0) {
-      pseudo_count <- pseudo_data %>%
-        count(lineage) %>%
-        arrange(desc(n))
-      
-      p <- ggplot(pseudo_count, aes(x=reorder(lineage, -n), y=n, fill=lineage)) +
-        geom_col(show.legend=FALSE) +
-        geom_text(aes(label=n), vjust=-0.3, size=3.5) +
-        scale_fill_manual(values=colors) +
-        labs(title="Pseudogenes per Lineage (Mycobrowser annotation)", x="Lineage", y="Count") +
-        theme_pubr()
-      print(p)
-    } else {
-      cat("No pseudogenes detected in the dataset.\n")
-    }
-  } else {
-    cat("No pseudogene columns found in master table (neither Is_Pseudogene nor pseudogene).\n")
-  }
-} else {
+if (!has_mastertable) {
   cat("Master table not available.\n")
+} else if (!all(c("sample", "pseudogene") %in% colnames(mastertable))) {
+  cat("The master table has no sample or no pseudogene column.\n")
+} else {
+  # AMAP's own call, as the QC table counts it. Mycobrowser's Is_Pseudogene
+  # was counted too, which says which genes are pseudogenes in H37Rv: CDC1551
+  # came out at 129, where AMAP calls 123, the other 6 being genes Mycobrowser
+  # marks that are intact in CDC1551; and without Mycobrowser the chart showed
+  # AMAP's calls under its name. Counted sample by sample, a sample with none
+  # at 0: counting the flagged rows dropped a lineage with none, and adding up
+  # a lineage's samples made one with more samples look as if it had more.
+  pseudo_count <- mastertable %>%
+    mutate(lineage = ifelse(is.na(lineage) | lineage == "", "NA", as.character(lineage))) %>%
+    group_by(Lineage = lineage, Sample = sample) %>%
+    summarise(Pseudogenes = sum(pseudogene %in% "yes"), .groups = 'drop') %>%
+    arrange(Lineage, Sample)
+
+  if (sum(pseudo_count$Pseudogenes) == 0) {
+    cat("AMAP called no pseudogene in any sample.\n")
+  } else {
+    p <- ggplot(pseudo_count, aes(x=Lineage, y=Pseudogenes, color=Lineage)) +
+      geom_boxplot(outlier.shape=NA, fill=NA, alpha=0.6) +
+      # side to side only, so each sample is drawn at its count
+      geom_jitter(alpha=0.7, width=0.25, height=0) +
+      scale_color_manual(values=colors) +
+      scale_y_continuous(breaks=function(x) unique(floor(pretty(x)))) +
+      expand_limits(y=0) +
+      labs(title="Pseudogenes AMAP Called per Sample", x="Lineage", y="Pseudogenes per sample") +
+      theme_pubr() +
+      theme(legend.position="none")
+    print(p)
+  }
+}
+```
+
+### Per Sample
+```{r pseudogenes_table, echo=FALSE, message=FALSE, warning=FALSE}
+if (exists("pseudo_count")) {
+  make_dt(pseudo_count, "pseudogenes_per_sample")
+} else {
+  cat("No pseudogene counts available.\n")
 }
 ```
 
@@ -1214,9 +1223,9 @@ Interactive explorer for the full annotation master table with all functional an
 
 ```{r master_explorer, echo=FALSE, message=FALSE, warning=FALSE}
 if (has_mastertable) {
-  # Show a subset of the most useful columns
+  # Show a subset of the most useful columns, a pseudogene's reason in its note
   display_cols <- intersect(
-    c("id","strand","start","end","rvs","pseudogene","COG_category","Description","Preferred_name",
+    c("id","strand","start","end","rvs","pseudogene","note","COG_category","Description","Preferred_name",
       "Gene","Product_x","KEGG_Pathway","KEGG_ko","GOs","EC","PFAMs","CAZy",
       "Functional_Category","Is_Pseudogene","Locus"),
     colnames(mastertable))

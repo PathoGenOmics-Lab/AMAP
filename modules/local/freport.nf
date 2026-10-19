@@ -42,17 +42,19 @@ process REPORT_INPUTS {
         tail -n +2 "\$f" | awk -v s="\$sample" -F'\\t' '{print \$0 "\\t" s}'
     done >> input_rvmissing.txt
 
-    # Master tables — use first NON-EMPTY file for header, strip rest
+    # Master tables: the first NON-EMPTY file's header, then every file's rows,
+    # each with the sample it is from (the name the file carries) in a first
+    # column, as the QC tables below, so FINAL_REPORT can count sample by sample
     touch input_mastertables.txt
     header_written=false
     find . -maxdepth 1 -name '*AMAPmastertable.tsv' -print0 | sort -z | while IFS= read -r -d '' f; do
         [ ! -s "\$f" ] && continue
+        sample=\$(basename "\$f" -AMAPmastertable.tsv)
         if ! \$header_written; then
-            cat "\$f"
+            head -1 "\$f" | awk '{print "sample\\t" \$0}'
             header_written=true
-        else
-            tail -n +2 "\$f"
         fi
+        tail -n +2 "\$f" | awk -v s="\$sample" '{print s "\\t" \$0}'
     done >> input_mastertables.txt
 
     # Pangene Rtab — merge with outer join (handles different gene families)

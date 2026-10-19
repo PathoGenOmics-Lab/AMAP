@@ -378,8 +378,9 @@ def referenceFiles() {
     if (!params.skip_typing) {
         files += [['pathotyper_snps', params.pathotyper_snps], ['pathotyper_ref', params.pathotyper_ref]]
     }
-    // Read by GET_OUTPUTS, which runs only with functional annotation
-    if (!params.skip_functional_annotation && !params.skip_mycobrowser) {
+    // Read by AMAP_REPORT in every run, and by GET_OUTPUTS with functional
+    // annotation, so it is checked with or without it
+    if (!params.skip_mycobrowser) {
         files += [['mycobrowser_ref', params.mycobrowser_ref]]
     }
     return files

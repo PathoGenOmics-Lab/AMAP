@@ -723,7 +723,10 @@ def check_thresholds() -> list[str]:
     # What each step asks for, in the tutorial's table, and the caps the
     # profiles set, where the pages give them.
     config = CONFIG.read_text(encoding="utf-8")
-    blocks = dict(re.findall(r"withName: '(\w+)' \{(.*?)\n    \}", config, re.S))
+    # The top-level process { } only: the slurm profile gives Bakta a block of
+    # its own, with its QoS and nothing it asks for.
+    scope = re.search(r"^process \{\n(.*?)^\}", config, re.S | re.M).group(1)
+    blocks = dict(re.findall(r"withName: '(\w+)' \{(.*?)\n    \}", scope, re.S))
 
     def asks(process: str) -> tuple[int, int]:
         body = blocks.get(process, "")

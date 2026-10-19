@@ -892,7 +892,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "HPC clusters",
 "section": "Fitting your site",
 "url": "deployment/hpc.html#fitting-your-site",
-"text": "nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm \\     --tsv samples.tsv \\     --max_cpus 64 --max_memory 256.GB \\     -process.queue long \\     -process.clusterOptions '--account=mygroup' -process.queue sets the partition or queue, and -process.clusterOptions passes anything else straight through, which is where accounting flags, QoS and node constraints go."
+"text": "nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm \\     --tsv samples.tsv \\     --max_cpus 64 --max_memory 256.GB \\     -process.queue long \\     -process.clusterOptions '--account=mygroup' -process.queue sets the partition or queue, and -process.clusterOptions passes anything else straight through, which is where accounting flags, QoS and node constraints go. On SLURM, Bakta's jobs, the longest a run sends, also ask for --qos=medium. The slurm profile sets that for Bakta alone, and for Bakta it takes the place of -process.clusterOptions, so give Bakta your site's options in"
 },
 {
 "page": "HPC clusters",
@@ -1156,7 +1156,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Citation",
 "section": "",
 "url": "about/citation.html",
-"text": "Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software]. <https://doi.org/10.5281/zenodo.8024447> @software{Ruiz-Rodriguez_AMAP_2026,   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},   doi = {10.5281/zenodo.8024447},   license = {GPL-3.0},   month = apr,   title = {{AMAP}},   url = {https://github.com/PathoGenOmics-Lab/AMAP},   version = {1.0.1},   year = {2026}} The repository also carries a CITATION.cff, which GitHub reads to offer a formatted citation from the sidebar."
+"text": "Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software]. <https://doi.org/10.5281/zenodo.8024446> @software{Ruiz-Rodriguez_AMAP_2026,   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},   doi = {10.5281/zenodo.8024446},   license = {GPL-3.0},   month = apr,   title = {{AMAP}},   url = {https://github.com/PathoGenOmics-Lab/AMAP},   version = {1.0.1},   year = {2026}} The repository also carries a CITATION.cff, which GitHub reads to offer a formatted citation from the sidebar."
 },
 {
 "page": "Citation",

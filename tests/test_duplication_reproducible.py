@@ -15,6 +15,8 @@ next, and write their networks without opening them.
   random layout and a random partition.
 - Both scripts wrote their networks with pyvis' show(), which also opens the
   file in a web browser: on a desktop, every run opened a tab per network.
+- Both loaded the networks' drawing library, vis-network, from a CDN, so
+  without the internet the pages drew nothing. It now goes inside each page.
 
 The scripts run with the arguments the two steps give them, on Diamond tables
 made up here, under three hash seeds, with BROWSER set to a stand-in that
@@ -26,6 +28,7 @@ import hashlib
 import itertools
 import os
 import random
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -192,3 +195,24 @@ class TestNoBrowser:
         assert not log.exists(), f'opened in a web browser: {log.read_text()}'
         assert (tmp_path / 'homologous_communities.html').stat().st_size
         assert (tmp_path / f'duplications_{SAMPLE}_network_interactive.html').stat().st_size
+        assert _offline(tmp_path / 'homologous_communities.html')
+        assert _offline(tmp_path / f'duplications_{SAMPLE}_network_interactive.html')
+
+
+# ---------------------------------------------------------------------------
+# Networks that draw without the internet
+# ---------------------------------------------------------------------------
+
+def _offline(page):
+    """Whether a network page carries its drawing library instead of asking a
+    CDN for it."""
+    html = page.read_text(encoding='utf-8')
+    return '* vis-network' in html and not re.search(r'(?:src|href)="https?://[^"]*vis-network', html)
+
+
+class TestOffline:
+
+    def test_the_networks_draw_without_the_internet(self, runs):
+        for d in runs.values():
+            for name in ('homologous_communities.html', f'duplications_{SAMPLE}_network_interactive.html'):
+                assert _offline(d / name), name

@@ -478,7 +478,7 @@ class TestCleanProteome:
             faa.write(">good_gene\nMKTLLFGAA\n>bad_gene\nMKT*LLFGAA\n")
             faa.flush()
         with tempfile.NamedTemporaryFile(mode='w', suffix='.tsv', delete=False) as mt:
-            mt.write("simple_id\tIs_Pseudogene\ngood_gene\tFalse\nbad_gene\tFalse\n")
+            mt.write("simple_id\tpseudogene\tIs_Pseudogene\ngood_gene\tno\t\nbad_gene\tno\t\n")
             mt.flush()
         outf = tempfile.mktemp(suffix='.faa')
         clean_proteome(faa.name, mt.name, outf)
@@ -491,12 +491,15 @@ class TestCleanProteome:
         assert '>bad_gene' not in content
     
     def test_strips_pseudogenes(self):
+        # AMAP's flag, found by the ID before the ';' of FIX_CDS's headers;
+        # Mycobrowser's Is_Pseudogene is about the reference gene in H37Rv
         from export_clean_proteome import clean_proteome
         with tempfile.NamedTemporaryFile(mode='w', suffix='.faa', delete=False) as faa:
-            faa.write(">real_gene\nMKTLLFGAA\n>pseudo_gene\nMKTLLFGAA\n")
+            faa.write(">real_gene;+;0-27\nMKTLLFGAA\n>pseudo_gene;-;30-57\nMKTLLFGAA\n")
             faa.flush()
         with tempfile.NamedTemporaryFile(mode='w', suffix='.tsv', delete=False) as mt:
-            mt.write("simple_id\tIs_Pseudogene\nreal_gene\tFalse\npseudo_gene\tTrue\n")
+            mt.write("simple_id\tpseudogene\tIs_Pseudogene\n"
+                     "real_gene\tno\tYes\npseudo_gene\tyes\tNo\n")
             mt.flush()
         outf = tempfile.mktemp(suffix='.faa')
         clean_proteome(faa.name, mt.name, outf)
@@ -505,8 +508,24 @@ class TestCleanProteome:
         os.unlink(faa.name)
         os.unlink(mt.name)
         os.unlink(outf)
-        assert '>real_gene' in content
+        assert '>real_gene;+;0-27' in content
         assert '>pseudo_gene' not in content
+
+    def test_a_master_table_without_amaps_flag_stops_it(self):
+        # rather than let every pseudogene through with a warning
+        from export_clean_proteome import clean_proteome
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.faa', delete=False) as faa:
+            faa.write(">pseudo_gene;-;30-57\nMKTLLFGAA\n")
+            faa.flush()
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tsv', delete=False) as mt:
+            mt.write("simple_id\tIs_Pseudogene\npseudo_gene\tNo\n")
+            mt.flush()
+        outf = tempfile.mktemp(suffix='.faa')
+        with pytest.raises(ValueError, match='pseudogene'):
+            clean_proteome(faa.name, mt.name, outf)
+        os.unlink(faa.name)
+        os.unlink(mt.name)
+        assert not os.path.exists(outf)
     
     def test_strips_trailing_stop(self):
         from export_clean_proteome import clean_proteome
@@ -514,7 +533,7 @@ class TestCleanProteome:
             faa.write(">gene1\nMKTLLFGAA*\n")
             faa.flush()
         with tempfile.NamedTemporaryFile(mode='w', suffix='.tsv', delete=False) as mt:
-            mt.write("simple_id\tIs_Pseudogene\ngene1\tFalse\n")
+            mt.write("simple_id\tpseudogene\tIs_Pseudogene\ngene1\tno\t\n")
             mt.flush()
         outf = tempfile.mktemp(suffix='.faa')
         clean_proteome(faa.name, mt.name, outf)

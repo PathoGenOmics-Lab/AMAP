@@ -376,7 +376,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Outputs",
 "section": "*-AMAP.faa versus *-AMAP.clean.faa",
 "url": "user-guide/outputs.html#-amapfaa-versus--amapcleanfaa",
-"text": "*-AMAP.faa mirrors the annotation exactly, pseudogenes included, so gene counts match the GFF3. *-AMAP.clean.faa drops pseudogenes and any sequence with an internal stop codon, and strips the terminal stop. This is the file for orthology, phylogenomics, pangenome tools and dN/dS, all of which expect valid translations. It has fewer sequences than the GFF3 has genes, by design."
+"text": "*-AMAP.faa mirrors the annotation exactly, pseudogenes included, so gene counts match the GFF3. *-AMAP.clean.faa drops the genes AMAP calls pseudogenes, those with pseudo=true in the GFF3, and any sequence with an internal stop codon, and strips the terminal stop. This is the file for orthology, phylogenomics, pangenome tools and dN/dS, all of which expect valid translations. It has fewer sequences than the GFF3 has genes, by design."
 },
 {
 "page": "Outputs",

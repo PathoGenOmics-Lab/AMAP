@@ -100,6 +100,7 @@ directly comparable with 1.0.1.
 - **The README opens with the logo, and its drawing plays**: the picture at the top was a still of the front page's drawing, dark whatever GitHub's theme. It now plays the drawing's four steps, in light or dark as the theme is, made by `tools/pictures.mjs` from the front page's own figure. The README's metro map gains the interactive report's station
 - **One DOI**: the README, CITATION.cff and every page of the website cited the DOI of one version on Zenodo, and the manifest, `main.nf` and the interactive report the concept DOI, which always resolves to the latest version. All of them cite the concept DOI now
 - **Bakta's options on a SLURM cluster**: the HPC page says how to give Bakta a site's options, since for Bakta the QoS the slurm profile sets takes the place of `-process.clusterOptions`
+- **The website is served as it is built**: GitHub Pages serves `docs/` from main, and by default runs Jekyll over it first, which would have made a page of each markdown file with front matter at the address of the page `tools/build_docs.py` builds from it. `docs/.nojekyll` turns Jekyll off, and `tools/check_site.py` fails without it
 
 ### 🧪 Testing
 - **`tests/selftest/h37rv_selftest.sh`** annotates H37Rv with itself inside the container and fails unless every GenBank CDS comes back exactly

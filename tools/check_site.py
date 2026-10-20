@@ -10,8 +10,9 @@ fails when it drifts. This does, in nine parts:
               has to open from a clone, offline), and every page carries the
               card a shared link shows;
   docs        the documentation pages are what tools/build_docs.py makes of the
-              markdown and the code today, and the markdown has no MkDocs
-              syntax left that would print as text;
+              markdown and the code today, the markdown has no MkDocs syntax
+              left that would print as text, and docs/.nojekyll is there to
+              keep GitHub Pages from running Jekyll over the markdown;
   options     every --option the pages or the command builder use is a
               parameter of main.nf or nextflow.config, and every -profile is
               one nextflow.config defines;
@@ -207,6 +208,11 @@ def check_docs_built() -> list[str]:
         return [str(error)]
     stale = [path.as_posix() for path, text in built.items() if not path.exists() or path.read_text(encoding="utf-8") != text]
     problems = [f"{p}: does not match its markdown; run python3 tools/build_docs.py" for p in stale]
+    # GitHub Pages serves docs/ from main, and by default runs Jekyll over it
+    # first, which makes a page of each markdown file with front matter at the
+    # address of the page built from it.
+    if not (SITE / ".nojekyll").exists():
+        problems.append("docs/.nojekyll is missing: GitHub Pages would run Jekyll over docs/")
     for _section, path, _title, _line in build_docs.PAGES:
         if path.endswith(".md"):
             in_fence = False

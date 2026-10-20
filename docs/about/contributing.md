@@ -114,7 +114,8 @@ the pipeline scripts without the image looking any different.
 ## Working on these docs
 
 The website is plain HTML in `docs/`, with nothing to build on the server:
-GitHub Pages serves the folder as it is, and it opens from a clone too. The long
+GitHub Pages serves the folder as it is (`docs/.nojekyll` keeps it from
+running Jekyll over the markdown), and it opens from a clone too. The long
 pages are the markdown files, which GitHub also renders, and
 `tools/build_docs.py` writes each one's `.html` next to it, with the site's
 header, page list, contents and search.

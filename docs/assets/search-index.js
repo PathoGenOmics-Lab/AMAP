@@ -1222,7 +1222,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Contributing",
 "section": "Working on these docs",
 "url": "about/contributing.html#working-on-these-docs",
-"text": "The website is plain HTML in docs/, with nothing to build on the server: GitHub Pages serves the folder as it is, and it opens from a clone too. The long pages are the markdown files, which GitHub also renders, and tools/build_docs.py writes each one's .html next to it, with the site's header, page list, contents and search. python3 tools/build_docs.py          # after editing any .md under docs/ python3 tools/check_site.py          # what CI runs python3 -m http.server -d docs 8000  # then open http://localhost:8000 The front page (docs/index.html) and the illustrated walk through the correct"
+"text": "The website is plain HTML in docs/, with nothing to build on the server: GitHub Pages serves the folder as it is (docs/.nojekyll keeps it from running Jekyll over the markdown), and it opens from a clone too. The long pages are the markdown files, which GitHub also renders, and tools/build_docs.py writes each one's .html next to it, with the site's header, page list, contents and search. python3 tools/build_docs.py          # after editing any .md under docs/ python3 tools/check_site.py          # what CI runs python3 -m http.server -d docs 8000  # then open http://localhost:8000 The front pag"
 },
 {
 "page": "Contributing",

@@ -1,8 +1,8 @@
 name: Documentation
 
 # The website is plain HTML in docs/, which GitHub Pages serves as it is from
-# main (Settings, Pages, Deploy from a branch: main, /docs), so there is nothing
-# to build or deploy here. This checks that the pages written from the markdown
+# main (Settings, Pages, Deploy from a branch: main, /docs; docs/.nojekyll keeps
+# Jekyll out of it), so there is nothing to build or deploy here. This checks that the pages written from the markdown
 # are current, and that every drawing, threshold, option and station on them
 # still matches the pipeline: a change to bin/ or main.nf that would make the
 # site wrong fails here as well.

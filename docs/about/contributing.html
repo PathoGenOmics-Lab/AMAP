@@ -128,7 +128,7 @@ docker run --rm --platform linux/amd64 -v &quot;$PWD:/amap&quot; -w /amap \
 docker/smoke_test.sh amap:dev</pre></div>
 <p>The smoke test checks the tools, the Python and R libraries, the bundled reference data, and runs the test suite with the image interpreter. Worth doing before proposing a change to the Dockerfile, since a library update can break the pipeline scripts without the image looking any different.</p>
 <h2 id="working-on-these-docs">Working on these docs<a class="anchor" href="#working-on-these-docs" aria-label="Link to this section">#</a></h2>
-<p>The website is plain HTML in <code>docs/</code>, with nothing to build on the server: GitHub Pages serves the folder as it is, and it opens from a clone too. The long pages are the markdown files, which GitHub also renders, and <code>tools/build_docs.py</code> writes each one's <code>.html</code> next to it, with the site's header, page list, contents and search.</p>
+<p>The website is plain HTML in <code>docs/</code>, with nothing to build on the server: GitHub Pages serves the folder as it is (<code>docs/.nojekyll</code> keeps it from running Jekyll over the markdown), and it opens from a clone too. The long pages are the markdown files, which GitHub also renders, and <code>tools/build_docs.py</code> writes each one's <code>.html</code> next to it, with the site's header, page list, contents and search.</p>
 <div class="code" data-lang="bash"><pre>python3 tools/build_docs.py          # after editing any .md under docs/
 python3 tools/check_site.py          # what CI runs
 python3 -m http.server -d docs 8000  # then open http://localhost:8000</pre></div>

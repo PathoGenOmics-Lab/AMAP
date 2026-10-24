@@ -497,18 +497,21 @@ class TestFunctionalInputs:
         assert set(data['functional']['cog']) == {'L4_H37Rv'}
 
     def test_pangene_matrix(self, tmp_path):
-        # Two genomes' Rtabs merged as REPORT_INPUTS merges them: each genome's
-        # genes against the other genome's sequence, named <other>_<genome>#0
+        # PANGENE's matrix: one row per gene of the run and one column per
+        # genome, named after it. Rv0001 is in both genomes, Rv1506c (RD4) in
+        # H37Rv only, and a gene no reference gene matches, named after the
+        # M. bovis copy, in M. bovis only
         rtab = tmp_path / 'input_pangene.txt'
         rtab.write_text(
-            'Gene\tA4_AF2122_L4_H37Rv#0\tL4_H37Rv_A4_AF2122#0\n'
-            'L4_H37Rv_Rv1507c;+;0-100\t0\t0\n'
-            'L4_H37Rv_Rv0001;+;0-100\t1\t0\n'
-            'A4_AF2122_Rv0001;+;0-100\t0\t1\n')
+            'Gene\tA4_AF2122\tL4_H37Rv\n'
+            'Rv0001\t1\t1\n'
+            'Rv1506c\t0\t1\n'
+            'A4_AF2122_01833\t1\t0\n')
         ar.main(_args(tmp_path, '--pangene', str(rtab)))
         data = ar.load_embedded((tmp_path / 'amap_report.html').read_text())
+        # each genome's genes, by how many of the other genomes carry them too
         assert data['pangene'] == {'L4_H37Rv': {'others': 1, 'hist': {'0': 1, '1': 1}},
-                                   'A4_AF2122': {'others': 1, 'hist': {'1': 1}}}
+                                   'A4_AF2122': {'others': 1, 'hist': {'0': 1, '1': 1}}}
 
     def test_homologous_communities(self, tmp_path):
         tsv = tmp_path / 'homologous_communities.tsv'

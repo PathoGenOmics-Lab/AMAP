@@ -574,23 +574,23 @@ workflow {
             // 9. Find and analyze gene duplications
             GET_DUPLICATIONS(ch_for_downstream)
         
-            // 10. Runs pangenome for the genes of each genome
-            // Each sample's proteins are aligned onto every other sample's
-            // genome, which PANGENE tells apart by file name. The genomes
-            // PATHOTYPR renamed have names of their own; without typing, each
-            // sample's genome from the sheet is copied to <sampleId>.fasta, and
-            // that copy is also the one PANGENE leaves out as the sample's own.
+            // 10. One pangenome for the whole run: the reference proteome and
+            // each sample's genes that no reference gene matches, aligned to
+            // every sample's genome, its own included. PANGENE names each
+            // genome's column after its file, <name>.fasta: PATHOTYPR names
+            // them so; without typing, each genome of the sheet is copied to
+            // <sampleId>.fasta, as two files of the sheet can share a name.
             if (!params.skip_typing) {
-                ref_fastas_ch = PATHOTYPR.out.typed_fasta.map { it[1] }.collect()
-                pangene_ch = ch_for_downstream
+                pangene_genomes_ch = ch_for_downstream.map { _sampleId, _amap_tsv, _amap_faa, _amap_fna, _bakta_tsv, fasta, _emapper -> fasta }
             } else {
                 PANGENE_GENOME(genomes_ch)
-                ref_fastas_ch = PANGENE_GENOME.out.map { _sampleId, genome -> genome }.collect()
-                pangene_ch = ch_for_downstream.join(PANGENE_GENOME.out).map { sampleId, amap_tsv, amap_faa, amap_fna, bakta_tsv, _fasta, emapper, genome ->
-                    tuple(sampleId, amap_tsv, amap_faa, amap_fna, bakta_tsv, genome, emapper)
-                }
+                pangene_genomes_ch = ch_for_downstream.join(PANGENE_GENOME.out).map { _sampleId, _amap_tsv, _amap_faa, _amap_fna, _bakta_tsv, _fasta, _emapper, genome -> genome }
             }
-            PANGENE(pangene_ch, ref_fastas_ch)
+            PANGENE(
+                pangene_genomes_ch.collect(),
+                ch_for_downstream.map { _sampleId, amap_tsv, amap_faa, _amap_fna, _bakta_tsv, _fasta, _emapper -> [amap_tsv, amap_faa] }.collect(),
+                ref_proteome_ch
+            )
 
             // 11. Count annotations per category
             GET_COUNT(GET_OUTPUTS.out.master_table.join(names_ch))
@@ -605,8 +605,8 @@ workflow {
             rvmissing_ch = TYPE_CASES.out.rvmissing.collect()
             mastertables_ch = GET_OUTPUTS.out.master_table.map { it[1] }.collect()
 
-            // Collect pangene Rtab files (or empty if skipped)
-            pangene_rtab_ch = PANGENE.out.pangene_out.map { it[3] }.collect().ifEmpty( file('NO_PANGENE') )
+            // The pangenome matrix (or a placeholder if PANGENE never ran)
+            pangene_rtab_ch = PANGENE.out.rtab.collect().ifEmpty( file('NO_PANGENE') )
             qc_stats_ch = GET_OUTPUTS.out.qc_stats.collect()
 
             REPORT_INPUTS(summaries_annot_ch, summaries_cases_ch, rvmissing_ch, mastertables_ch, pangene_rtab_ch, qc_stats_ch)

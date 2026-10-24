@@ -1068,28 +1068,26 @@ def build(args):
 
 
 def pangene_summary(rtab, samples):
-    """What PANGENE found, per genome: how many of its genes each other
-    genome carries. The merged matrix has one row per gene of every genome
-    and one column per genome a genome's genes were aligned to, named
-    <that genome>_<this genome>#0, so each genome's rows are read against
-    its own columns only."""
+    """What PANGENE found, per genome: how many of the genes it carries each
+    other genome carries too. The matrix has one row per gene of the run and
+    one column per genome, named after it, so a genome's genes are the rows
+    with a 1 in its column, and the other columns say where else they are."""
     if not rtab:
         return None
     names = [s['name'] for s in samples if not s.get('failed')]
+    columns = rtab['columns']
     out = {}
     for name in names:
-        cols = [i for i, c in enumerate(rtab['columns']) if c.split('#')[0].endswith('_' + name)]
-        if not cols:
+        if name not in columns:
             continue
+        own = columns.index(name)
+        others = [i for i in range(len(columns)) if i != own]
         hist = Counter()
-        n_genes = 0
-        for gene, values in rtab['rows']:
-            if not gene.startswith(name + '_'):
-                continue
-            n_genes += 1
-            hist[sum(values[i] for i in cols if i < len(values))] += 1
-        if n_genes:
-            out[name] = {'others': len(cols), 'hist': {str(k): v for k, v in sorted(hist.items())}}
+        for _gene, values in rtab['rows']:
+            if own < len(values) and values[own]:
+                hist[sum(values[i] for i in others if i < len(values))] += 1
+        if hist:
+            out[name] = {'others': len(others), 'hist': {str(k): v for k, v in sorted(hist.items())}}
     return out or None
 
 

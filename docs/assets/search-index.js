@@ -404,6 +404,12 @@ window.AMAP_DOCS_INDEX = [
 },
 {
 "page": "Outputs",
+"section": "PANGENE/pangenome.Rtab",
+"url": "user-guide/outputs.html#pangenepangenomertab",
+"text": "The gene presence/absence matrix of the whole run, the one both reports draw the pangenome from: one row per gene, one column per sample, 1 where pangene found the gene in that sample's genome. Every genome is searched with the same proteins, the reference proteome and the genes no reference gene matches, so a gene with a 1 in every column is one all the samples share. A gene is named after its reference gene (Rv1506c) or, when no reference gene matches it, after one sample's copy of it (L4_CDC1551_01396, the ID in that sample's master table)."
+},
+{
+"page": "Outputs",
 "section": "final_report.html",
 "url": "user-guide/outputs.html#final_reporthtml",
 "text": "Self-contained, so it travels by email. Covers per-sample quality, missing reference genes by lineage, PE/PPE family distribution, KEGG pathways, duplication communities and network topology, the pangenome (core, softcore, shell, cloud, frequency spectrum, presence/absence heatmaps), COG and Mycobrowser distributions, case statistics and the associated tests, plus a searchable master-table explorer."
@@ -682,7 +688,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The workflow",
 "section": "9. Pangenome",
 "url": "how-it-works/workflow.html#9-pangenome",
-"text": "pangene builds a pangenome graph from the corrected annotations and produces a gene presence/absence matrix, which the report turns into core, softcore, shell and cloud classifications, a frequency spectrum and presence/absence heatmaps. Each sample's corrected proteins are aligned with miniprot onto every other sample's genome: the ones PATHOTYPR renamed or, with --skip_typing, the genomes of the sample sheet, each under its sample ID."
+"text": "pangene builds one pangenome graph for the whole run and a gene presence/absence matrix, which the report turns into core, softcore, shell and cloud classifications, a frequency spectrum and presence/absence heatmaps. Every genome is searched with the same proteins: the reference proteome, and the genes of each sample that no reference gene matches. miniprot aligns them to every sample's genome, its own included: the ones PATHOTYPR renamed or, with --skip_typing, the genomes of the sample sheet, each under its sample ID. A row of the matrix is then a gene, named after its reference gene or, ou"
 },
 {
 "page": "The workflow",

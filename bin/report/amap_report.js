@@ -2060,7 +2060,7 @@
           }
           return { smp, total, all, none, some: total - all - none, others: p.others };
         });
-        el4 = card('Pangenome', 'What PANGENE found: each genome\'s genes aligned to every other genome. A gene in all of them is core to this run; one in none is this genome\'s own.', null,
+        el4 = card('Pangenome', 'What PANGENE found: the reference proteome and the genes no reference gene matches, searched for in every genome. A gene in every other genome is core to this run; one in none is this genome\'s own.', null,
           table({
             columns: [
               { key: 'genome', label: 'Genome', value: (r) => r.smp.id },

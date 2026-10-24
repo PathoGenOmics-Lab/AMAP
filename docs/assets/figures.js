@@ -778,8 +778,8 @@
     },
     PANGENE: {
       name: "Pangenome", proc: "PANGENE", x: 930, y: 320, label: "below", lineOnly: "pan",
-      text: "Each sample's corrected proteins aligned with miniprot onto every other sample's genome, then a pangene graph and a presence/absence matrix.",
-      reads: "the corrected proteins, and every genome: as PATHOTYPR renamed it, or with --skip_typing as the sample sheet gives it, under its sample ID", writes: "PANGENE/{sample}/", flags: "", doc: "how-it-works/workflow.html#9-pangenome", exit: "PANGENE/", exitSide: "right", functional: true
+      text: "The reference proteome and the genes no reference gene matches, aligned with miniprot to every genome, its own included, then one pangene graph for the run and a presence/absence matrix with a column per sample.",
+      reads: "the reference proteome, the corrected genes, and every genome: as PATHOTYPR renamed it, or with --skip_typing as the sample sheet gives it, under its sample ID", writes: "PANGENE/pangenome.gfa, .bubbles.txt, .Rtab, .stat", flags: "", doc: "how-it-works/workflow.html#9-pangenome", exit: "PANGENE/", exitSide: "right", functional: true
     },
     FINAL_REPORT: {
       name: "Report", proc: "FINAL_REPORT", x: 1050, y: 170, kind: "hub-end", label: "above",
@@ -950,7 +950,7 @@
       var text = state.custom && s.textCustom ? s.textCustom : s.text;
       var status = "";
       if (stationOff(key, state)) status = '<p class="note">Not run with the switches above.</p>';
-      if (key === "PANGENE" && state.skipTyping && !state.skipFunctional) status = '<p class="note">With <code>--skip_typing</code> it aligns onto the genomes of the sample sheet, each under its sample ID.</p>';
+      if (key === "PANGENE" && state.skipTyping && !state.skipFunctional) status = '<p class="note">With <code>--skip_typing</code> it searches the genomes of the sample sheet, each under its sample ID.</p>';
       info.innerHTML =
         "<div><h3>" + esc(s.name) + "<code>" + esc(proc) + "</code></h3><p>" + esc(text) + "</p>" + status +
         (s.doc ? '<p class="note"><a href="' + s.doc + '">More on this step</a></p>' : "") + "</div>" +

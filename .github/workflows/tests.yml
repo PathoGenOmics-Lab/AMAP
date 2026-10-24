@@ -22,11 +22,18 @@ concurrency:
 jobs:
   test:
     name: Python ${{ matrix.python-version }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.11"]
+        # 3.9 is the Python of the AMAP container. setup-python has no 3.9 for
+        # Ubuntu 26.04, which ubuntu-latest now is, and the job stopped at
+        # setup before running a test, so it runs on 24.04.
+        include:
+          - python-version: "3.9"
+            os: ubuntu-24.04
+          - python-version: "3.11"
+            os: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4

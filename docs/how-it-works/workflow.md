@@ -113,14 +113,18 @@ community.
 
 ## 9. Pangenome
 
-[pangene](https://github.com/lh3/pangene) builds a pangenome graph from the
-corrected annotations and produces a gene presence/absence matrix, which the
-report turns into core, softcore, shell and cloud classifications, a frequency
-spectrum and presence/absence heatmaps.
+[pangene](https://github.com/lh3/pangene) builds one pangenome graph for the
+whole run and a gene presence/absence matrix, which the report turns into core,
+softcore, shell and cloud classifications, a frequency spectrum and
+presence/absence heatmaps.
 
-Each sample's corrected proteins are aligned with miniprot onto every other
-sample's genome: the ones PATHOTYPR renamed or, with `--skip_typing`, the
-genomes of the sample sheet, each under its sample ID.
+Every genome is searched with the same proteins: the reference proteome, and
+the genes of each sample that no reference gene matches. miniprot aligns them
+to every sample's genome, its own included: the ones PATHOTYPR renamed or, with
+`--skip_typing`, the genomes of the sample sheet, each under its sample ID. A
+row of the matrix is then a gene, named after its reference gene or, outside
+the reference, after one sample's copy of it, and a column a sample, so the
+genes the samples share are the rows found in every column.
 
 ## 10. Report
 

@@ -57,7 +57,8 @@ process REPORT_INPUTS {
         tail -n +2 "\$f" | awk -v s="\$sample" '{print s "\\t" \$0}'
     done >> input_mastertables.txt
 
-    # Pangene Rtab — merge with outer join (handles different gene families)
+    # Pangenome matrix: PANGENE writes one for the whole run, a column per
+    # sample; merge_rtabs.py writes it as the reports read it, Gene and 0/1
     RTAB_COUNT=\$(find . -maxdepth 1 -name '*.Rtab' | wc -l)
     if [ "\$RTAB_COUNT" -gt 0 ]; then
         find . -maxdepth 1 -name '*.Rtab' -print0 | sort -z | xargs -0 python3 ${projectDir}/bin/merge_rtabs.py --output input_pangene.txt

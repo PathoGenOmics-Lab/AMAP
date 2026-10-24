@@ -305,17 +305,23 @@ def run_pipeline(base, samples, tools):
         dups = run_task(base / 'GET_DUPLICATIONS' / name, 'get.nf', 'GET_DUPLICATIONS',
                         dict(files, **{'task.cpus': 1}), downstream, tools)
 
-        # PANGENE leaves an empty Rtab when a sample has no other genome to
-        # align to; REPORT_INPUTS merges what there is
-        (base / 'inputs' / name / f'{name}.Rtab').write_text('')
         tasks['report_inputs'] += [p for p in cases.iterdir() if p.name.endswith(
             ('-summary.tsv', '-rvmissing.tsv'))]
         tasks['report_inputs'] += [p for p in count.iterdir() if p.suffix == '.tsv'
                                    and not p.is_symlink()]
-        tasks['report_inputs'] += [master, outputs / f'{name}-AMAP.qc.tsv',
-                                   base / 'inputs' / name / f'{name}.Rtab']
+        tasks['report_inputs'] += [master, outputs / f'{name}-AMAP.qc.tsv']
         tasks['alldup'] += [p for p in dups.iterdir() if p.suffix == '.dup']
         tasks['cases'][name], tasks['outputs'][name], tasks['count'][name] = cases, outputs, count
+    # PANGENE's matrix, one for the run: a column per genome, named after it.
+    # Every genome has the three reference genes and the same gene of no
+    # reference, which goes by the copy of the first genome in name order.
+    names = sorted(name for name, _sample, _lineage in samples)
+    first = read_tsv(base / 'inputs' / names[0] / f'{names[0]}.AMAP.tsv')
+    genes = ['Rv0001', 'Rv0002', 'Rv0003', first[first['rvs'] == '']['id'].iloc[0]]
+    lines = ['\t'.join(['Gene'] + names)] + ['\t'.join([gene] + ['1'] * len(names)) for gene in genes]
+    rtab = base / 'inputs' / 'pangenome.Rtab'
+    rtab.write_text('\n'.join(lines) + '\n')
+    tasks['report_inputs'].append(rtab)
     tasks['report'] = run_task(base / 'REPORT_INPUTS', 'freport.nf', 'REPORT_INPUTS', {},
                                tasks['report_inputs'], tools)
     tasks['dup'] = run_task(base / 'GET_ALLDUP', 'get.nf', 'GET_ALLDUP',

@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How AMAP decides, step by step</title>
-<meta name="description" content="Twelve real genes, seven steps each: what Bakta called, where the reference protein aligned, which case that makes, how the disagreement is settled, the stop codon check, copies, and what AMAP writes.">
+<meta name="description" content="Thirteen real genes, seven steps each: what Bakta called, where the reference protein aligned, which case that makes, how the disagreement is settled, the stop codon check, copies, and what AMAP writes.">
 <link rel="icon" href="assets/favicon.png" type="image/png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="AMAP">
 <meta property="og:title" content="How AMAP decides, step by step">
-<meta property="og:description" content="Twelve real genes, seven steps each: what Bakta called, where the reference protein aligned, which case that makes, how the disagreement is settled, the stop codon check, copies, and what AMAP writes.">
+<meta property="og:description" content="Thirteen real genes, seven steps each: what Bakta called, where the reference protein aligned, which case that makes, how the disagreement is settled, the stop codon check, copies, and what AMAP writes.">
 <meta property="og:url" content="https://pathogenomics-lab.github.io/AMAP/how-it-works.html">
 <meta property="og:image" content="https://pathogenomics-lab.github.io/AMAP/assets/social-card.png">
 <meta property="og:image:width" content="1200">
@@ -19,7 +19,7 @@
 <meta name="theme-color" content="#0b0f0e">
 <link rel="apple-touch-icon" href="assets/touch-icon.png">
 <link rel="stylesheet" href="assets/site.css">
-<script>try { document.documentElement.dataset.theme = localStorage.getItem("amap.theme") === "light" ? "light" : "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; }</script>
+<script>try { document.documentElement.dataset.theme = localStorage.getItem("amap.theme") === "light" ? "light" : "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; } document.documentElement.classList.add("js");</script>
 </head>
 <body>
 <a class="skip" href="#walk">Skip to the steps</a>
@@ -45,39 +45,72 @@
 <main>
   <section class="ref-hero how-hero">
     <div class="wrap">
+      <p class="crumb"><a href="documentation.html">Docs</a> / How it works</p>
       <h1>How AMAP decides</h1>
-      <p>One gene at a time, through the seven steps of the correction. Pick a story, then step through it or play it. Every gene here is a real one, from runs on genomes whose right answer is known; point at a gene for its coordinates.</p>
+      <p>One gene at a time, through the seven steps of the correction. Pick a story, then step through it or play it. Every gene here is a real one, from runs on genomes whose right answer is known; <span class="say-hover">point at</span><span class="say-touch">tap</span> a gene for its coordinates.</p>
     </div>
   </section>
 
   <section class="how" id="walk" data-how tabindex="-1">
     <div class="wrap">
-      <div class="how-pick" data-stories></div>
+      <div class="how-pick" data-stories>
+        <div class="how-group" data-group="The five outcomes">
+          <p class="q-title" id="g-outcomes">The five outcomes</p>
+          <div class="seg" role="group" aria-labelledby="g-outcomes">
+            <a href="how-it-works.html#new" data-story="new">Not in the reference <span class="how-tag">Case 1</span></a>
+            <a href="how-it-works.html#false" data-story="false">A known false call <span class="how-tag">Case 1</span></a>
+            <a href="how-it-works.html#agree" data-story="agree" aria-current="true">Agrees <span class="how-tag">Case 2</span></a>
+            <a href="how-it-works.html#same-ends" data-story="same-ends">Same ends, other length <span class="how-tag">Case 3</span></a>
+            <a href="how-it-works.html#late-start" data-story="late-start">Starts late <span class="how-tag">Case 4</span></a>
+            <a href="how-it-works.html#split" data-story="split">One gene, two calls <span class="how-tag">Case 4</span></a>
+            <a href="how-it-works.html#longer" data-story="longer">Much longer <span class="how-tag">Case 4</span></a>
+            <a href="how-it-works.html#missed" data-story="missed">Missed by Bakta <span class="how-tag">Missing</span></a>
+          </div>
+        </div>
+        <div class="how-group" data-group="The harder ones">
+          <p class="q-title" id="g-harder">The harder ones</p>
+          <div class="seg" role="group" aria-labelledby="g-harder">
+            <a href="how-it-works.html#paralog" data-story="paralog">On its paralog's locus <span class="how-tag">Paralogs</span></a>
+            <a href="how-it-works.html#small" data-story="small">Too small for miniprot <span class="how-tag">Exact search</span></a>
+            <a href="how-it-works.html#contig-end" data-story="contig-end">Cut by a contig end <span class="how-tag">Partial</span></a>
+            <a href="how-it-works.html#frameshift" data-story="frameshift">Runs into the next gene <span class="how-tag">Pseudogene</span></a>
+            <a href="how-it-works.html#copies" data-story="copies">Two real copies <span class="how-tag">Copies</span></a>
+          </div>
+        </div>
+      </div>
 
       <div class="how-layout">
-        <ol class="how-steps" data-steps aria-label="Steps"></ol>
+        <ol class="how-steps" data-steps aria-label="Steps">
+        <li><button type="button" data-step="1" aria-current="step"><span class="how-n">1</span>Bakta calls the genes</button></li>
+        <li><button type="button" data-step="2"><span class="how-n">2</span>The reference proteins are placed</button></li>
+        <li><button type="button" data-step="3"><span class="how-n">3</span>Each call is compared</button></li>
+        <li><button type="button" data-step="4"><span class="how-n">4</span>Disagreements are settled</button></li>
+        <li><button type="button" data-step="5"><span class="how-n">5</span>Every gene is translated</button></li>
+        <li><button type="button" data-step="6"><span class="how-n">6</span>Copies are sorted out</button></li>
+        <li><button type="button" data-step="7"><span class="how-n">7</span>Written to the annotation</button></li>
+        </ol>
 
         <div class="how-stage-card">
-          <div class="how-progress" aria-hidden="true"><i data-progress></i></div>
-          <p class="how-genome" data-genome></p>
+          <div class="how-progress" aria-hidden="true"><i data-progress style="width:14.2857%"></i></div>
+          <p class="how-genome" data-genome><i>M. tuberculosis</i> CDC1551, against H37Rv</p>
           <div class="how-stage" data-stage></div>
           <div class="legend how-legend">
             <span><i class="chip bakta"></i>Bakta's call</span>
-            <span><i class="chip ref"></i>reference protein, aligned</span>
+            <span><i class="chip ref"></i>H37Rv protein, aligned</span>
             <span><i class="chip amap"></i>what AMAP keeps</span>
-            <span><i class="chip drop"></i>dropped</span>
-            <span><i class="chip pseudo"></i>pseudogene</span>
-          </div>
-          <div class="how-text">
-            <p class="how-kicker" data-kicker></p>
-            <h2 data-step-title></h2>
-            <p data-step-text aria-live="polite"></p>
-            <div class="how-out" data-out hidden><pre></pre></div>
+            <span><i class="chip band-agree"></i>same coordinates</span>
           </div>
           <div class="how-nav">
-            <button class="btn btn-ghost" type="button" data-prev>Back</button>
-            <button class="btn btn-ghost" type="button" data-play>Play all</button>
-            <button class="btn btn-primary" type="button" data-next>Next</button>
+            <span class="how-hint" aria-hidden="true"><span class="k-steps"><kbd>&larr;</kbd> <kbd>&rarr;</kbd> to step</span><span class="k-genes"><kbd>&larr;</kbd> <kbd>&rarr;</kbd> along a row, <kbd>&uarr;</kbd> <kbd>&darr;</kbd> between rows</span></span>
+            <button class="btn btn-ghost" type="button" data-prev aria-disabled="true" aria-keyshortcuts="ArrowLeft">Back</button>
+            <button class="btn btn-ghost" type="button" data-play><span class="say-1">Play</span><span class="say-2">Pause</span></button>
+            <button class="btn btn-primary" type="button" data-next aria-keyshortcuts="ArrowRight"><span class="say-1">Next</span><span class="say-2">Start again</span></button>
+          </div>
+          <div class="how-text" aria-live="polite" aria-atomic="true">
+            <p class="how-kicker" data-kicker>Step 1 of 7 · Agrees</p>
+            <h2 data-step-title>Bakta calls the genes</h2>
+            <p data-step-text>Bakta calls dnaN from 2,052 to 3,260 on the plus strand.</p>
+            <div class="how-out" data-out hidden><pre></pre></div>
           </div>
         </div>
       </div>
@@ -91,6 +124,7 @@
       <h2>Go deeper</h2>
       <p class="note">The same steps, with every threshold and every file.</p>
       <div class="deep">
+        <a href="how-it-works/index.html"><b>Overview</b><span>What goes into a decision, and the five outcomes.</span></a>
         <a href="how-it-works/correction-algorithm.html"><b>The correction algorithm</b><span>Every rule and threshold, drawn on real genes.</span></a>
         <a href="how-it-works/workflow.html"><b>The workflow</b><span>Each step of the pipeline, on the metro map.</span></a>
         <a href="user-guide/outputs.html"><b>Outputs</b><span>Every folder and file, and what a healthy run looks like.</span></a>
@@ -98,6 +132,7 @@
         <a href="user-guide/custom-reference.html"><b>Custom reference</b><span>Any organism, against a trusted annotation of your own.</span></a>
         <a href="how-it-works/duplications.html"><b>Duplication metrics</b><span>What the network numbers mean.</span></a>
       </div>
+      <nav class="pager" aria-label="Previous and next page"><a class="prev" href="user-guide/custom-reference.html"><span>Previous</span>Custom reference</a><a class="next" href="how-it-works/index.html"><span>Next</span>Overview</a></nav>
     </div>
   </section>
 </main>
@@ -116,7 +151,7 @@
         <li><a href="documentation.html">Documentation</a></li>
         <li><a href="how-it-works.html">How it works</a></li>
         <li><a href="user-guide/parameters.html">Parameters</a></li>
-        <li><a href="https://github.com/PathoGenOmics-Lab/AMAP/blob/main/CHANGELOG.md">Changelog</a></li>
+        <li><a href="about/changelog.html">Changelog</a></li>
       </ul>
     </div>
     <div>

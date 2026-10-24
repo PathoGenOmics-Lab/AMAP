@@ -964,6 +964,35 @@ def check_readme(pages: dict[str, Page]) -> list[str]:
 EM_DASH = "\u2014"
 
 
+def check_stories(pages: dict[str, Page]) -> list[str]:
+    """The story chips written into how-it-works.html are how.js's stories, in
+    its order, so the page shows them before any script runs; and no drawing
+    hides a tab stop inside an image, where a screen reader names nothing."""
+    problems = []
+    keys = re.findall(r'^\s+key: "([\w-]+)", group:', HOW_JS.read_text(encoding="utf-8"), re.M)
+    page = (SITE / "how-it-works.html").read_text(encoding="utf-8")
+    chips = re.findall(r'<a\b[^>]*\bdata-story="([\w-]+)"', page)
+    if chips != keys:
+        problems.append(f"how-it-works.html: the story chips are {chips}, assets/how.js has the stories {keys}")
+    for href, key in re.findall(r'<a href="([^"]*)" data-story="([\w-]+)"', page):
+        if not href.endswith("#" + key):
+            problems.append(f"how-it-works.html: the chip of story {key} links to {href}")
+    # Pages: an <svg role="img"> with anything focusable inside.
+    for name in pages:
+        text = (SITE / name).read_text(encoding="utf-8")
+        for svg in re.finditer(r'<svg\b[^>]*\brole="img"[^>]*>(.*?)</svg>', text, re.S):
+            if "tabindex" in svg.group(1):
+                problems.append(f"{name}: an <svg role=\"img\"> holds an element with tabindex")
+    # Scripts: a function that writes an <svg role="img"> and gives anything a
+    # tabindex.
+    for script in (FIGURES_JS, HOW_JS):
+        source = script.read_text(encoding="utf-8")
+        for chunk in re.split(r"\n  function ", source):
+            if re.search(r"<svg[^\n]*role=\\?\"img", chunk) and "tabindex" in chunk:
+                problems.append(f"{script.relative_to(SITE)}: function {chunk.split('(')[0]} writes an <svg role=\"img\"> with a tabindex inside")
+    return problems
+
+
 def check_dashes() -> list[str]:
     """No em-dashes in what the site says. What a program prints is quoted as
     it prints it, so code blocks are left out (validate_inputs.py writes one),
@@ -998,6 +1027,7 @@ def main() -> int:
         ("benchmark", lambda: check_benchmark(pages)),
         ("metro", check_metro),
         ("readme", lambda: check_readme(pages)),
+        ("stories", lambda: check_stories(pages)),
         ("dashes", check_dashes),
     ]
     failed = 0

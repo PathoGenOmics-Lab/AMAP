@@ -1157,6 +1157,10 @@ label,
   stroke-width: 1;
 }
 
+.trk .row-frame {
+  transition: opacity 0.45s ease;
+}
+
 .trk .axis line,
 .trk .axis path {
   stroke: var(--line-strong);
@@ -1214,6 +1218,14 @@ label,
   fill: var(--on-track);
 }
 
+.trk .gname-above {
+  font-size: 10.5px;
+  paint-order: stroke;
+  stroke: var(--bg-elev);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
 .trk .gsub {
   font-size: 10px;
   fill: var(--muted);
@@ -1224,13 +1236,35 @@ label,
   stroke-width: 2;
 }
 
+/* What a figure points at: a hatched band with an edge of its own, in the
+   colour of what it marks, over the bands that join the rows. */
 .trk .diff {
-  fill: color-mix(in srgb, var(--warn) 22%, transparent);
-  stroke: none;
+  stroke: var(--warn);
+  stroke-width: 1.5;
 }
 
 .trk .diff-ref {
-  fill: color-mix(in srgb, var(--ref) 18%, transparent);
+  stroke: var(--ref);
+}
+
+.trk .diff-hatch {
+  stroke: var(--warn);
+  stroke-width: 1.2;
+  opacity: 0.55;
+}
+
+.trk .diff-hatch-ref {
+  stroke: var(--ref);
+}
+
+.trk .diff-label {
+  fill: var(--warn);
+  font-size: 10.5px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--bg-elev);
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 
 .trk .diff-label.diff-label-ref {
@@ -1241,16 +1275,9 @@ label,
   stroke-dasharray: none;
 }
 
-.trk .diff-line {
-  stroke: var(--warn);
-  stroke-width: 1;
-  stroke-dasharray: 2 2;
-}
-
-.trk .diff-label {
+/* Where AMAP moved an end of Bakta's call. */
+.trk .moved {
   fill: var(--warn);
-  font-size: 10.5px;
-  font-weight: 700;
 }
 
 .trk .edge {
@@ -1263,57 +1290,210 @@ label,
   font-size: 10px;
 }
 
-.trk .badge rect {
-  rx: 8;
-}
-
-.trk .badge text {
-  font-size: 10px;
-  font-weight: 750;
-  text-anchor: middle;
-  fill: var(--on-track);
-}
-
-.trk .b-case1 rect {
-  fill: var(--muted);
-}
-
-.trk .b-case2 rect,
-.trk .b-case3 rect {
-  fill: var(--ok);
-}
-
-.trk .b-case4 rect {
-  fill: var(--warn);
-}
-
-.trk .b-miss rect {
-  fill: var(--ref);
-}
-
+/* The bands from a call to the protein placed on it: green and solid-edged
+   where the two agree, orange with dashed slanted edges where they do not. */
 .trk .rib {
   stroke: none;
+}
+
+.trk .rib-g {
   transition: opacity 0.45s ease;
 }
 
 .trk .rib-agree {
-  fill: color-mix(in srgb, var(--ok) 13%, transparent);
+  fill: color-mix(in srgb, var(--ok) 28%, transparent);
 }
 
 .trk .rib-conflict {
-  fill: color-mix(in srgb, var(--warn) 22%, transparent);
+  fill: color-mix(in srgb, var(--warn) 36%, transparent);
 }
 
-.trk .hot {
-  transition: opacity 0.45s ease;
+.trk .rib-edge {
+  fill: none;
+  stroke-width: 1;
 }
 
-/* A call nothing aligns to, once the calls are compared. */
+.trk .rib-edge-agree {
+  stroke: var(--ok);
+}
+
+.trk .rib-edge-conflict {
+  stroke: var(--warn);
+  stroke-dasharray: 3 2;
+}
+
+/* In the light theme the warning orange is the darker of its two, so the
+   edge of a marked stretch still stands out from the orange band under it. */
+:root[data-theme="light"] .trk .diff {
+  stroke: color-mix(in srgb, var(--warn) 78%, #000);
+}
+
+:root[data-theme="light"] .trk .diff-ref {
+  stroke: color-mix(in srgb, var(--ref) 85%, #000);
+}
+
+/* A call nothing aligns to, once the calls are compared: dashed. Once AMAP
+   has kept what it keeps, the ones it dropped turn grey and faint. */
 [data-phase="3"] .c1-call .g,
 [data-phase="4"] .c1-call .g {
   stroke-dasharray: 3 2;
+}
+
+[data-phase="4"] .c1-call.ph-dim .g {
   stroke: var(--drop);
   fill: transparent;
+}
+
+/* Every gene is a target of at least 14 by 24 px, and one stop of a drawing
+   the keyboard moves through with the arrows. */
+.trk .hit {
+  fill: transparent;
+  stroke: none;
+}
+
+.trk .hot {
+  cursor: pointer;
+  transition: opacity 0.45s ease;
+}
+
+.trk .hot:hover .g,
+.trk .hot.on .g {
+  stroke-width: 2.6;
+}
+
+.trk .hot:focus {
+  outline: none;
+}
+
+.trk .hot:focus-visible .g {
+  stroke: var(--ink);
+  stroke-width: 3;
+  paint-order: stroke;
+}
+
+.trk .hot:focus-visible .hit {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 2;
+}
+
+/* Pointing at a count of the hero lights what it counts. */
+.trk[data-light] .hot,
+.trk[data-light] .rib-g {
+  opacity: 0.2;
+}
+
+.trk[data-light="agree"] [data-k="agree"],
+.trk[data-light="fixed"] [data-k="fixed"],
+.trk[data-light="drop"] [data-k="drop"] {
+  opacity: 1;
+}
+
+.trk[data-light="drop"] [data-k="drop"] .g {
+  stroke-width: 2.6;
+}
+
+/* Elements a step has just brought in, outlined for a moment. */
+@keyframes just-on {
+  from {
+    stroke: var(--accent);
+    stroke-width: 3.5;
+  }
+}
+
+.trk .just-on .g,
+.trk .just-on .diff,
+.trk .just-on .edge,
+.trk .just-on.rib-g .rib-edge {
+  animation: just-on 0.7s ease-out;
+}
+
+/* The tip: over the drawing, its caret on the gene, where there is a mouse
+   and room; a line of text under the drawing everywhere else. */
+.demo-tip {
+  position: absolute;
+  z-index: 5;
+  max-width: 290px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  pointer-events: none;
+}
+
+.demo-tip::after {
+  content: "";
+  position: absolute;
+  left: var(--caret, 50%);
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  background: var(--bg);
+  border: solid var(--line-strong);
+  border-width: 0 1px 1px 0;
+  transform: rotate(45deg);
+}
+
+.demo-tip.below::after {
+  bottom: auto;
+  top: -6px;
+  transform: rotate(225deg);
+}
+
+.demo-tip b {
+  color: var(--ink);
+}
+
+.demo-tip code {
+  font-size: 0.78rem;
+}
+
+.fig-readout {
+  display: none;
+}
+
+.tips-inline > .demo-tip {
+  display: none;
+}
+
+.tips-inline > .fig-readout {
+  display: block;
+  min-height: calc(3 * 1.4em + 14px);
+  margin: 8px 0 0;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+
+.fig-readout b {
+  color: var(--ink);
+}
+
+.fig-readout .say-hint {
+  color: var(--muted);
+}
+
+/* "Point at" where there is a pointer, "Tap" on a touch screen. */
+.say-touch {
+  display: none;
+}
+
+@media (hover: none) {
+  .say-hover {
+    display: none;
+  }
+
+  .say-touch {
+    display: inline;
+  }
 }
 
 /* ── The animated stretch of genome in the hero ── */
@@ -1349,37 +1529,119 @@ label,
   flex: none;
 }
 
+.demo-ctrl .mini-btn {
+  display: inline-grid;
+  justify-items: center;
+  min-width: 4.4em;
+}
+
+/* Play and Pause share one cell, so the button is as wide as Pause even
+   while it says Play, and the caption beside it never rewraps. */
+.demo-ctrl .mini-btn > span {
+  grid-area: 1 / 1;
+}
+
+.demo-ctrl .mini-btn > .say-2,
+.demo-ctrl .mini-btn.said-2 > .say-1 {
+  visibility: hidden;
+}
+
+.demo-ctrl .mini-btn.said-2 > .say-2 {
+  visibility: visible;
+}
+
+/* Four segments, one per phase: each fills while its phase plays, and takes
+   the drawing to its phase when pressed. The words may wrap, in room kept
+   for them. */
 .demo-step {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  min-height: 1.6em;
   color: var(--ink);
   font-weight: 650;
-  white-space: nowrap;
+}
+
+.hero-segs {
+  display: inline-flex;
+  gap: 4px;
+  flex: none;
+}
+
+.hero-seg {
+  position: relative;
+  width: 30px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+
+.hero-seg::before,
+.hero-seg i {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 10px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.hero-seg::before {
+  background: var(--line-strong);
+}
+
+.hero-seg:hover::before {
+  background: var(--muted);
+}
+
+.hero-seg i {
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.hero-seg.done i,
+.demo:not(.running) .hero-seg.now i {
+  transform: scaleX(1);
+}
+
+.demo.running .hero-seg.now i {
+  animation: hero-fill var(--dwell, 2s) linear forwards;
+}
+
+.demo.paused .hero-seg.now i {
+  animation-play-state: paused;
+}
+
+@keyframes hero-fill {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.hero-phase {
+  flex: 1 1 15em;
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .demo-step {
+    min-height: calc(24px + 2px + 1.55em);
+    font-size: 0.95rem;
+  }
 }
 
 .demo-stage {
   position: relative;
-}
-
-.demo-tip {
-  position: absolute;
-  z-index: 5;
-  max-width: 290px;
-  padding: 9px 11px;
-  border-radius: 9px;
-  background: var(--bg);
-  border: 1px solid var(--line-strong);
-  box-shadow: var(--shadow);
-  font-size: 0.82rem;
-  line-height: 1.4;
-  color: var(--ink-soft);
-  pointer-events: none;
-}
-
-.demo-tip b {
-  color: var(--ink);
-}
-
-.demo-tip code {
-  font-size: 0.78rem;
 }
 
 .legend {
@@ -1397,6 +1659,7 @@ label,
   gap: 6px;
 }
 
+/* The chips use the very fills of the drawing they explain. */
 .chip {
   width: 18px;
   height: 10px;
@@ -1416,9 +1679,27 @@ label,
   background: color-mix(in srgb, var(--ref) 26%, transparent);
 }
 
+.chip.ref.short {
+  border-right: 0;
+  border-radius: 3px 0 0 3px;
+  -webkit-mask-image: linear-gradient(90deg, #000 45%, rgba(0, 0, 0, 0.15));
+  mask-image: linear-gradient(90deg, #000 45%, rgba(0, 0, 0, 0.15));
+}
+
 .chip.amap {
   border-color: var(--amap);
   background: var(--amap);
+}
+
+.chip.amap.partial {
+  border-radius: 3px 0 0 3px;
+  clip-path: polygon(0 0, 100% 0, 78% 25%, 100% 50%, 78% 75%, 100% 100%, 0 100%);
+}
+
+.chip.c1 {
+  border-color: var(--bakta);
+  border-style: dashed;
+  background: color-mix(in srgb, var(--bakta) 26%, transparent);
 }
 
 .chip.drop {
@@ -1428,18 +1709,50 @@ label,
 }
 
 .chip.band-agree {
-  border: 0;
-  background: color-mix(in srgb, var(--ok) 30%, transparent);
+  border: solid var(--ok);
+  border-width: 0 1px;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--ok) 28%, transparent);
 }
 
 .chip.band-conflict {
-  border: 0;
-  background: color-mix(in srgb, var(--warn) 40%, transparent);
+  border: dashed var(--warn);
+  border-width: 0 1px;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--warn) 36%, transparent);
 }
 
 .chip.pseudo {
   border-color: var(--pseudo);
   background: repeating-linear-gradient(135deg, var(--pseudo) 0 2px, transparent 2px 5px);
+}
+
+.chip.diff {
+  border-color: var(--warn);
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--warn) 55%, transparent) 0 1.2px, transparent 1.2px 3.6px);
+}
+
+.chip.diff-ref {
+  border-color: var(--ref);
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ref) 55%, transparent) 0 1.2px, transparent 1.2px 3.6px);
+}
+
+/* The same darker edges as the marks they name, in the light theme. */
+:root[data-theme="light"] .chip.diff {
+  border-color: color-mix(in srgb, var(--warn) 78%, #000);
+}
+
+:root[data-theme="light"] .chip.diff-ref {
+  border-color: color-mix(in srgb, var(--ref) 85%, #000);
+}
+
+.chip.moved {
+  width: 9px;
+  height: 6px;
+  border: 0;
+  border-radius: 0;
+  background: var(--warn);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
 .tally {
@@ -1451,6 +1764,18 @@ label,
   border-top: 1px solid var(--line);
   font-size: 0.82rem;
   color: var(--muted);
+}
+
+.tally > div {
+  margin: -4px -6px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.tally > .lit {
+  background: var(--bg-subtle);
+  color: var(--ink-soft);
 }
 
 .tally b {
@@ -1482,12 +1807,14 @@ label,
   transition: color 0.4s ease;
 }
 
-/* The phases: each class reveals one more layer. */
+/* The phases: each class reveals one more layer. A hidden layer leaves the
+   pointer and the keyboard too: it fades out, then turns invisible. */
 [data-phase] .ph-ref,
 [data-phase] .ph-case,
 [data-phase] .ph-amap {
   opacity: 0;
-  transition: opacity 0.45s ease;
+  visibility: hidden;
+  transition: opacity 0.45s ease, visibility 0s linear 0.45s;
 }
 
 [data-phase="2"] .ph-ref,
@@ -1497,24 +1824,20 @@ label,
 [data-phase="4"] .ph-case,
 [data-phase="4"] .ph-amap {
   opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* The rows still to come show their names faintly. */
+[data-phase="1"] .fr-ref,
+[data-phase="1"] .fr-amap,
+[data-phase="2"] .fr-amap,
+[data-phase="3"] .fr-amap {
+  opacity: 0.25;
 }
 
 [data-phase="4"] .ph-dim {
-  opacity: 0.35;
-}
-
-.trk .hot {
-  cursor: pointer;
-}
-
-.trk .hot:hover .g,
-.trk .hot:focus .g,
-.trk .hot.on .g {
-  stroke-width: 2.6;
-}
-
-.trk .hot:focus {
-  outline: none;
+  opacity: 0.55;
 }
 
 /* ── Sections ── */
@@ -2097,21 +2420,52 @@ kbd {
 }
 
 /* On a narrow screen the map keeps its size and scrolls sideways, rather
-   than shrinking its names until they cannot be read. */
+   than shrinking its names until they cannot be read. A fade at an edge
+   says there is more of it that way. */
 .metro-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.metro-scroll.more-right {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 48px), transparent);
+}
+
+.metro-scroll.more-left {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 48px);
+  mask-image: linear-gradient(90deg, transparent, #000 48px);
+}
+
+.metro-scroll.more-left.more-right {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 48px, #000 calc(100% - 48px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 48px, #000 calc(100% - 48px), transparent);
+}
+
+/* The map's room, kept before the script draws it. */
+.metro-scroll:empty {
+  aspect-ratio: 1100 / 380;
 }
 
 @media (max-width: 860px) {
   .metro-scroll .metro {
     min-width: 1000px;
   }
+
+  .metro-scroll:empty {
+    aspect-ratio: auto;
+    height: 346px;
+  }
 }
 
 /* In a column of text the map is narrower than its names can bear. */
 .prose .metro-scroll .metro {
   min-width: 1000px;
+}
+
+.prose .metro-scroll:empty {
+  aspect-ratio: auto;
+  height: 346px;
 }
 
 .metro-hint {
@@ -2146,7 +2500,8 @@ kbd {
   transition: opacity 0.3s ease, stroke 0.3s ease;
 }
 
-.metro .ml-main {
+.metro .ml-main,
+.metro .ml-fn {
   stroke: var(--m-main);
 }
 
@@ -2192,6 +2547,14 @@ kbd {
   fill: var(--ink);
 }
 
+/* A halo of the card's colour, so a line that crosses a name never cuts it. */
+.metro .stn text {
+  paint-order: stroke;
+  stroke: var(--bg-elev);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
 .metro .stn text.name {
   fill: var(--ink);
   font-size: 13px;
@@ -2200,14 +2563,14 @@ kbd {
 
 .metro .stn text.proc {
   fill: var(--muted);
-  font-size: 9.5px;
+  font-size: 11px;
   font-family: var(--mono);
 }
 
+/* Picked: filled with the accent. Focused: a heavy ring of ink, so the two
+   never look alike. */
 .metro .stn:hover .dot,
 .metro .stn:hover .hub,
-.metro .stn:focus .dot,
-.metro .stn:focus .hub,
 .metro .stn.on .dot,
 .metro .stn.on .hub {
   fill: var(--accent);
@@ -2218,6 +2581,19 @@ kbd {
   outline: none;
 }
 
+.metro .stn:focus-visible .dot,
+.metro .stn:focus-visible .hub,
+.metro .stn:focus-visible .end {
+  stroke: var(--ink);
+  stroke-width: 4;
+}
+
+.metro .stn:focus-visible text.name {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
 .metro .stn.on text.name {
   fill: var(--accent);
 }
@@ -2226,6 +2602,7 @@ kbd {
   font-size: 10.5px;
   font-family: var(--mono);
   fill: var(--muted);
+  transition: opacity 0.3s ease;
 }
 
 .metro .exit-tick {
@@ -2280,8 +2657,14 @@ kbd {
   color: var(--ink-soft);
 }
 
+/* Kept tall for the longest station, the panel reads from its top. */
+.metro-info {
+  align-items: start;
+}
+
 .metro-info dl {
   margin: 0;
+  align-content: start;
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   gap: 4px 12px;
@@ -2327,6 +2710,12 @@ kbd {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  transition: opacity 0.3s ease;
+}
+
+/* A line the switches leave out, faded in the key as on the map. */
+.metro-lines .off {
+  opacity: 0.35;
 }
 
 .metro-lines i {
@@ -3710,6 +4099,16 @@ th.num {
   padding-bottom: 20px;
 }
 
+.how-hero .crumb {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.how-hero .crumb a {
+  color: var(--muted);
+}
+
 .how {
   padding: 8px 0 40px;
 }
@@ -3720,6 +4119,7 @@ th.num {
 
 .how-pick {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   margin-bottom: 22px;
 }
@@ -3729,13 +4129,32 @@ th.num {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--muted);
-  margin-bottom: 6px;
+  margin: 0 0 6px;
 }
 
-.how-group .seg button {
+/* The stories are links (#key), so each can be opened, copied or shared. */
+.how-group .seg a {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-elev);
+  color: var(--ink);
+  font: 600 0.88rem var(--font);
+  padding: 7px 12px;
+  border-radius: 9px;
+  text-decoration: none;
+}
+
+.how-group .seg a:hover {
+  border-color: var(--muted);
+  color: var(--ink);
+}
+
+.how-group .seg a[aria-current="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
 }
 
 .how-tag {
@@ -3745,8 +4164,40 @@ th.num {
   color: var(--muted);
 }
 
-.seg button[aria-pressed="true"] .how-tag {
+.seg a[aria-current="true"] .how-tag {
   color: inherit;
+}
+
+/* On a phone each group is one row of chips that slides sideways, so the
+   drawing still starts on the first screen. */
+@media (max-width: 600px) {
+  .how-pick {
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .how-group .seg {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scroll-padding: 0 16px;
+    /* Room inside the scroller for a focused chip's ring, which it would
+       otherwise clip. */
+    margin: -5px -16px -1px;
+    padding: 5px 16px;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  }
+
+  .how-group .seg::-webkit-scrollbar {
+    display: none;
+  }
+
+  .how-group .seg a {
+    flex: none;
+    scroll-snap-align: start;
+  }
 }
 
 .how-layout {
@@ -3839,19 +4290,48 @@ th.num {
   color: var(--on-accent);
 }
 
+/* A step that changes nothing in this story: hollow, dashed and quieter. */
+.how-steps button.same {
+  color: var(--muted);
+}
+
+.how-steps button.same .how-n {
+  border-style: dashed;
+}
+
+.how-steps button.same[aria-current="step"] .how-n {
+  background: transparent;
+  color: var(--accent);
+}
+
+.how-same {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .how-stage-card {
+  position: relative;
   background: var(--bg-elev);
   border: 1px solid var(--line);
   border-radius: 16px;
-  overflow: hidden;
   min-width: 0;
 }
 
+/* The card does not clip, so a tip can rise above the drawing; the bar
+   rounds its own corners instead. */
 .how-progress {
   height: 3px;
   background: var(--line);
+  border-radius: 15px 15px 0 0;
+  overflow: hidden;
 }
 
+/* While the story plays, the bar runs on to the next step in the time the
+   step is given (set by how.js). */
 .how-progress i {
   display: block;
   height: 100%;
@@ -3862,15 +4342,27 @@ th.num {
 
 .how-genome {
   margin: 14px 18px 0;
+  min-height: 1.3em;
   font-size: 0.82rem;
   font-weight: 650;
   color: var(--muted);
 }
 
+/* Room for the first story's drawing before the script draws it. */
 .how-stage {
   padding: 6px 18px 0;
   display: grid;
   gap: 8px;
+}
+
+.how-stage:empty {
+  min-height: 158px;
+}
+
+@media (hover: none), (max-width: 640px) {
+  .how-stage:empty {
+    min-height: 246px;
+  }
 }
 
 .how-panel-title {
@@ -3889,19 +4381,125 @@ th.num {
   margin-top: 4px;
 }
 
-.step-off {
-  opacity: 0 !important;
-  pointer-events: none;
+/* An element waits for its step hidden: it fades, then leaves the pointer
+   and the keyboard. */
+.trk [data-from] {
+  transition: opacity 0.4s ease, visibility 0s linear 0s;
 }
 
-.trk [data-from] {
-  transition: opacity 0.4s ease;
+.trk .step-off {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s ease, visibility 0s linear 0.4s;
+}
+
+/* The name of a row still to come, faintly. */
+.trk .ghost {
+  opacity: 0.25;
+}
+
+/* Back and Next sit right under the drawing, where the text under them
+   cannot move them. */
+.how-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+}
+
+.how-nav .btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.how-hint {
+  margin-right: auto;
+  font-size: 0.78rem;
+  color: var(--muted);
+  visibility: hidden;
+}
+
+.how-hint kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 4px;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  font-size: 0.74rem;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+.how-hint .k-genes {
+  display: none;
+}
+
+.how[data-keys] .how-hint {
+  visibility: visible;
+}
+
+.how[data-keys="genes"] .how-hint .k-steps {
+  display: none;
+}
+
+.how[data-keys="genes"] .how-hint .k-genes {
+  display: inline;
+}
+
+html:not(.js) .how-nav {
+  visibility: hidden;
+}
+
+@media (hover: none) {
+  .how-hint {
+    display: none;
+  }
+}
+
+/* Play and Next hold both of their words in one cell and show one, so each
+   is as wide as its longer word and a change of word moves nothing. */
+.how-nav .btn {
+  display: inline-grid;
+  justify-items: center;
+  white-space: nowrap;
+}
+
+.how-nav .btn > span {
+  grid-area: 1 / 1;
+}
+
+.how-nav .btn > .say-2,
+.how-nav .btn.said-2 > .say-1 {
+  visibility: hidden;
+}
+
+.how-nav .btn.said-2 > .say-2 {
+  visibility: visible;
+}
+
+@media (max-width: 600px) {
+  .how-nav {
+    gap: 8px;
+  }
+
+  .how-nav .btn {
+    flex: 1 1 auto;
+    padding-inline: 12px;
+  }
+}
+
+@media (max-width: 359px) {
+  .how-nav .btn {
+    white-space: normal;
+  }
 }
 
 .how-text {
-  padding: 16px 18px 4px;
-  border-top: 1px solid var(--line);
-  margin-top: 12px;
+  padding: 14px 18px 8px;
 }
 
 .how-kicker {
@@ -3920,7 +4518,6 @@ th.num {
 .how-text p[data-step-text] {
   color: var(--ink-soft);
   max-width: 60em;
-  min-height: 4.6em;
 }
 
 .how-out pre {
@@ -3933,18 +4530,6 @@ th.num {
   font: 0.78rem/1.6 var(--mono);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-}
-
-.how-nav {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  padding: 12px 18px 16px;
-}
-
-.how-nav .btn:disabled {
-  opacity: 0.45;
-  cursor: default;
 }
 
 .how-note {
@@ -4483,8 +5068,10 @@ th.num {
   color: var(--accent);
 }
 
+/* The arrow is drawn, not read: its alternative text is empty. */
 .oc-more::after {
   content: " \2192";
+  content: " \2192" / "";
 }
 
 .oc.oc-harder {
@@ -4978,6 +5565,36 @@ th.num {
   position: relative;
 }
 
+/* The room each network takes, kept before the script draws it: the same
+   proportions as netSvg in figures.js. */
+.dup-fig,
+.dup-side {
+  container-type: inline-size;
+}
+
+.dup-fig > .case-fig:empty {
+  height: 105cqw;
+}
+
+.dup-side > .case-fig:empty {
+  height: 92cqw;
+}
+
+@container (min-width: 520px) {
+  .dup-fig > .case-fig:empty {
+    height: min(420px, 62cqw);
+  }
+
+  .dup-side > .case-fig:empty {
+    height: min(380px, 56cqw);
+  }
+}
+
+.dup-head:empty,
+.dup-bridge:empty {
+  min-height: calc(1.55em + 14px);
+}
+
 .net {
   display: block;
   width: 100%;
@@ -5078,6 +5695,22 @@ th.num {
 
 .net-node {
   outline: none;
+}
+
+/* The ring a protein shows when the keyboard is on it, and only then. */
+.net-node circle.net-ring {
+  fill: none;
+  stroke: transparent;
+  stroke-dasharray: none;
+}
+
+.net-node:focus-visible circle.net-ring {
+  stroke: var(--ink);
+  stroke-width: 2px;
+}
+
+.net-link:focus-visible .net-hit {
+  stroke: color-mix(in srgb, var(--ink) 22%, transparent);
 }
 
 .net-name {
@@ -5235,5 +5868,45 @@ th.num {
   .metro .ml,
   .metro .stn {
     transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trk .step-off,
+  .trk [data-from],
+  .trk .rib-g,
+  .trk .row-frame,
+  .trk .hot,
+  .how-progress i,
+  .metro-lines span,
+  .metro .exit,
+  .tally b,
+  .tally > div {
+    transition: none;
+  }
+
+  .demo.running .hero-seg.now i {
+    animation: none;
+    transform: scaleX(1);
+  }
+}
+
+/* In forced colours (a high-contrast theme) the drawings keep their own
+   palette, which is what they mean and already reads in either theme, on
+   the card colour it was made for. */
+@media (forced-colors: active) {
+  .demo,
+  .fig,
+  .case-fig,
+  .how-stage-card,
+  .metro-wrap,
+  .net,
+  .legend .chip {
+    forced-color-adjust: none;
+  }
+
+  .case-fig,
+  .net {
+    background: var(--bg-elev);
   }
 }

@@ -36,65 +36,7 @@
 
   var STORIES = [
     {
-      key: "agree", group: "The four cases", label: "Agrees", tag: "Case 2",
-      panels: [{ key: "case2", from: 1960, to: 3300, tick: 500 }],
-      text: [
-        "Bakta calls dnaN from 2,052 to 3,260 on the plus strand.",
-        "miniprot aligns H37Rv's Rv0002, dnaN, onto CDC1551: the whole protein, from 2,052 to 3,260, stop codon included.",
-        "Same start, same end, same strand and the same length: case 2, a perfect match.",
-        "Nothing to settle. The call stays as Bakta made it, and is tied to Rv0002.",
-        "It ends in a stop codon: nothing to change.",
-        NOTHING[6],
-        "It keeps Bakta's locus tag and name, with Rv0002 in its Dbxref."
-      ],
-      out: [
-        "L4_CDC1551  AMAP  CDS  2052  3260  .  +  0  ID=L4_CDC1551_00002;Parent=gene-L4_CDC1551_00002;Name=dnaN;product=DNA polymerase III (beta chain) DnaN (DNA nucleotidyltransferase);Dbxref=AMAP_ids:Rv0002"
-      ]
-    },
-    {
-      key: "late-start", group: "The four cases", label: "Starts late", tag: "Case 4",
-      panels: [{ key: "case4-start", from: -60, to: 1640, tick: 500, marks: [{ s: 1, e: 33, rows: [0, 1], label: "33 bp", labelAt: "right", from: 3 }] }],
-      text: [
-        "Bakta calls dnaA from base 34 to 1,524.",
-        "H37Rv's Rv0001, dnaA, aligns end to end from base 1 to 1,524.",
-        "Same strand, same end, but a start 33 bp apart: case 4, a conflicting overlap. One call against one alignment.",
-        "With a single overlap the reference wins, unless the call is longer by more than 550 bp and the alignment is not complete in its frame. Here the alignment is the longer of the two: AMAP keeps 1 to 1,524.",
-        "It ends in a stop codon: nothing to change.",
-        NOTHING[6],
-        "No Bakta call has these coordinates, so it is written under the reference protein's name."
-      ],
-      out: ["L4_CDC1551  AMAP  CDS  1  1524  .  +  0  ID=L4_CDC1551_Rv0001;Parent=gene-L4_CDC1551_Rv0001;Name=;product=;Dbxref=AMAP_ids:Rv0001"]
-    },
-    {
-      key: "split", group: "The four cases", label: "One gene, two calls", tag: "Case 4",
-      panels: [{ key: "case4-split", from: 9850, to: 10950, tick: 250 }],
-      text: [
-        "Bakta calls two short genes, from 9,963 to 10,160 and from 10,523 to 10,828, both hypothetical proteins.",
-        "H37Rv's Rv0007 aligns end to end over both, from 9,914 to 10,828.",
-        "Both calls overlap the one alignment with other coordinates: case 4, with several calls on one alignment.",
-        "The call that overlaps the alignment most is weighed against it. The reference wins if it is at least as long, if the call is longer by less than 500 bp, if the alignment is complete in the call's frame, or if the call spans other reference genes too. Rv0007 is longer than either call: one gene goes in, 9,914 to 10,828.",
-        "It ends in a stop codon: nothing to change.",
-        NOTHING[6],
-        "Written under Rv0007, as no Bakta call has its coordinates."
-      ],
-      out: ["L4_CDC1551  AMAP  CDS  9914  10828  .  +  0  ID=L4_CDC1551_Rv0007;Parent=gene-L4_CDC1551_Rv0007;Name=;product=;Dbxref=AMAP_ids:Rv0007"]
-    },
-    {
-      key: "longer", group: "The four cases", label: "Much longer", tag: "Case 4",
-      panels: [{ key: "case4-longer", from: 2267500, to: 2272800, tick: 1000, marks: [{ s: 2267753, e: 2271055, rows: [0, 1], label: "3,303 bp", from: 3 }] }],
-      text: [
-        "Bakta calls a 4,821 bp site-specific DNA methyltransferase on the minus strand.",
-        "H37Rv's Rv2024c, 516 residues, aligns over 1,518 bp at one end of it: residues 1 to 506, short of the protein's end, with no stop codon.",
-        "One call against one alignment, with other coordinates: case 4.",
-        "A call longer by more than 550 bp wins over an alignment that is not complete in its frame: such an alignment stopped short, and dropping a whole gene for it would be the worse mistake. Bakta's call, 3,303 bp longer, is kept.",
-        "It ends in a stop codon: nothing to change.",
-        NOTHING[6],
-        "It keeps Bakta's locus tag and product, and takes Rv2024c's name in its Dbxref: no other gene carries it, and the alignment spans more than half of the protein."
-      ],
-      out: ["L4_CDC1551  AMAP  CDS  2267753  2272573  .  -  0  ID=L4_CDC1551_02139;Parent=gene-L4_CDC1551_02139;Name=;product=site-specific DNA-methyltransferase (adenine-specific);Dbxref=AMAP_ids:Rv2024c"]
-    },
-    {
-      key: "new", group: "The four cases", label: "Not in the reference", tag: "Case 1",
+      key: "new", group: "The five outcomes", label: "Not in the reference", tag: "Case 1",
       panels: [{ key: "case1-kept", from: 1979300, to: 1985800, tick: 2000 }],
       text: [
         "Bakta calls four genes in a row: a mannosyltransferase, a sulfite oxidase-like oxidoreductase, an MMPL transporter and a hypothetical protein.",
@@ -111,7 +53,7 @@
       ]
     },
     {
-      key: "false", group: "The four cases", label: "A known false call", tag: "Case 1",
+      key: "false", group: "The five outcomes", label: "A known false call", tag: "Case 1",
       panels: [{ key: "case1-dropped", from: 11330, to: 11620, tick: 100 }],
       text: [
         "Bakta calls a 108 bp hypothetical protein on the minus strand.",
@@ -125,7 +67,81 @@
       out: []
     },
     {
-      key: "missed", group: "The four cases", label: "Missed by Bakta", tag: "Missing",
+      key: "agree", group: "The five outcomes", label: "Agrees", tag: "Case 2",
+      panels: [{ key: "case2", from: 1960, to: 3300, tick: 500 }],
+      text: [
+        "Bakta calls dnaN from 2,052 to 3,260 on the plus strand.",
+        "miniprot aligns H37Rv's Rv0002, dnaN, onto CDC1551: the whole protein, from 2,052 to 3,260, stop codon included.",
+        "Same start, same end, same strand and the same length: case 2, a perfect match.",
+        "Nothing to settle. The call stays as Bakta made it, and is tied to Rv0002.",
+        "It ends in a stop codon: nothing to change.",
+        NOTHING[6],
+        "It keeps Bakta's locus tag and name, with Rv0002 in its Dbxref."
+      ],
+      out: [
+        "L4_CDC1551  AMAP  CDS  2052  3260  .  +  0  ID=L4_CDC1551_00002;Parent=gene-L4_CDC1551_00002;Name=dnaN;product=DNA polymerase III (beta chain) DnaN (DNA nucleotidyltransferase);Dbxref=AMAP_ids:Rv0002"
+      ]
+    },
+    {
+      key: "same-ends", group: "The five outcomes", label: "Same ends, other length", tag: "Case 3",
+      panels: [{ key: "case3", from: 23700, to: 25600, tick: 500 }],
+      text: [
+        "Bakta calls fhaA from 23,861 to 25,426 on the minus strand: 1,566 bp.",
+        "H37Rv's Rv0020c, fhaA, aligns over exactly the same stretch, the whole protein to its stop codon. Its protein is six residues longer: miniprot aligns 1,584 nt of it on these 1,566 bp, with a gap where CDC1551 lacks them.",
+        "Same start, same end, same strand, but not the same length: 1,566 bp called, 1,584 nt aligned. That is case 3, an imperfect match.",
+        "Nothing to settle. A case 3 call is reliable enough: it stays as Bakta made it, tied to Rv0020c.",
+        "It ends in a stop codon: nothing to change.",
+        NOTHING[6],
+        "It keeps Bakta's locus tag, name and product, with Rv0020c in its Dbxref."
+      ],
+      out: [
+        "L4_CDC1551  AMAP  CDS  23861  25426  .  -  0  ID=L4_CDC1551_00025;Parent=gene-L4_CDC1551_00025;Name=fhaA;product=Conserved protein with FHA domain%2C FhaA;Dbxref=AMAP_ids:Rv0020c"
+      ]
+    },
+    {
+      key: "late-start", group: "The five outcomes", label: "Starts late", tag: "Case 4",
+      panels: [{ key: "case4-start", from: -60, to: 1640, tick: 500, marks: [{ s: 1, e: 33, rows: [0, 1], label: "33 bp", labelAt: "right", from: 3 }] }],
+      text: [
+        "Bakta calls dnaA from base 34 to 1,524.",
+        "H37Rv's Rv0001, dnaA, aligns end to end from base 1 to 1,524.",
+        "Same strand, same end, but a start 33 bp apart: case 4, a conflicting overlap. One call against one alignment.",
+        "With a single overlap the reference wins, unless the call is longer by more than 550 bp and the alignment is not complete in its frame. Here the alignment is the longer of the two: AMAP keeps 1 to 1,524.",
+        "It ends in a stop codon: nothing to change.",
+        NOTHING[6],
+        "No Bakta call has these coordinates, so it is written under the reference protein's name."
+      ],
+      out: ["L4_CDC1551  AMAP  CDS  1  1524  .  +  0  ID=L4_CDC1551_Rv0001;Parent=gene-L4_CDC1551_Rv0001;Name=;product=;Dbxref=AMAP_ids:Rv0001"]
+    },
+    {
+      key: "split", group: "The five outcomes", label: "One gene, two calls", tag: "Case 4",
+      panels: [{ key: "case4-split", from: 9850, to: 10950, tick: 250 }],
+      text: [
+        "Bakta calls two short genes, from 9,963 to 10,160 and from 10,523 to 10,828, both hypothetical proteins.",
+        "H37Rv's Rv0007 aligns end to end over both, from 9,914 to 10,828.",
+        "Both calls overlap the one alignment with other coordinates: case 4, with several calls on one alignment.",
+        "The call that overlaps the alignment most is weighed against it. The reference wins if it is at least as long, if the call is longer by less than 500 bp, if the alignment is complete in the call's frame, or if the call spans other reference genes too. Rv0007 is longer than either call: one gene goes in, 9,914 to 10,828.",
+        "It ends in a stop codon: nothing to change.",
+        NOTHING[6],
+        "Written under Rv0007, as no Bakta call has its coordinates."
+      ],
+      out: ["L4_CDC1551  AMAP  CDS  9914  10828  .  +  0  ID=L4_CDC1551_Rv0007;Parent=gene-L4_CDC1551_Rv0007;Name=;product=;Dbxref=AMAP_ids:Rv0007"]
+    },
+    {
+      key: "longer", group: "The five outcomes", label: "Much longer", tag: "Case 4",
+      panels: [{ key: "case4-longer", from: 2267500, to: 2272800, tick: 1000, marks: [{ s: 2267753, e: 2271055, rows: [0, 1], label: "3,303 bp", from: 3 }] }],
+      text: [
+        "Bakta calls a 4,821 bp site-specific DNA methyltransferase on the minus strand.",
+        "H37Rv's Rv2024c, 516 residues, aligns over 1,518 bp at one end of it: residues 1 to 506, short of the protein's end, with no stop codon.",
+        "One call against one alignment, with other coordinates: case 4.",
+        "A call longer by more than 550 bp wins over an alignment that is not complete in its frame: such an alignment stopped short, and dropping a whole gene for it would be the worse mistake. Bakta's call, 3,303 bp longer, is kept.",
+        "It ends in a stop codon: nothing to change.",
+        NOTHING[6],
+        "It keeps Bakta's locus tag and product, and takes Rv2024c's name in its Dbxref: no other gene carries it, and the alignment spans more than half of the protein."
+      ],
+      out: ["L4_CDC1551  AMAP  CDS  2267753  2272573  .  -  0  ID=L4_CDC1551_02139;Parent=gene-L4_CDC1551_02139;Name=;product=site-specific DNA-methyltransferase (adenine-specific);Dbxref=AMAP_ids:Rv2024c"]
+    },
+    {
+      key: "missed", group: "The five outcomes", label: "Missed by Bakta", tag: "Missing",
       panels: [{ key: "missing", from: 33100, to: 34420, tick: 250, marks: [{ s: 33526, e: 33738, rows: [0, 1], label: "no call", kind: "ref", from: 3 }] }],
       text: [
         "Bakta calls a gene from 33,168 to 33,497 and bioF2 from 34,239, and nothing between them.",
@@ -175,8 +191,10 @@
     {
       key: "contig-end", group: "The harder ones", label: "Cut by a contig end", tag: "Partial",
       panels: [
-        { key: "contig-end", from: 100250, to: 102146, tick: 500, title: "The end of contig_10", edges: [{ at: 102146.5, label: "end of contig_10", side: "left", from: 1 }] },
-        { key: "contig-end-2", from: 3700, to: 4591, tick: 250, title: "The end of contig_9", edges: [{ at: 4591.5, label: "end of contig_9", side: "left", from: 1 }] }
+        { key: "contig-end", from: 100250, to: 102146, tick: 500, title: "The end of contig_10", edges: [{ at: 102146.5, label: "end of contig_10", side: "left", from: 1 }],
+          marks: [{ s: 102120, e: 102146, rows: [3, 3], label: "partial: 3′ end", labelAt: "left", from: 5 }] },
+        { key: "contig-end-2", from: 3700, to: 4591, tick: 250, title: "The end of contig_9", edges: [{ at: 4591.5, label: "end of contig_9", side: "left", from: 1 }],
+          marks: [{ s: 4565, e: 4591, rows: [3, 3], label: "partial: 5′ end", labelAt: "left", from: 5 }] }
       ],
       text: [
         "CDC1551 cut into 40 contigs. Near the end of contig_10 Bakta calls Rv1240's gene and two short genes on the minus strand, and nothing on the plus strand. At the end of contig_9 it calls sugC and a short hypothetical protein.",
@@ -247,6 +265,15 @@
     return Math.max(0, Math.min(a.e, b.e) - Math.max(a.s, b.s) + 1);
   }
 
+  function copyOf(g, name) {
+    var c = {};
+    Object.keys(g).forEach(function (k) {
+      c[k] = g[k];
+    });
+    c.name = name;
+    return c;
+  }
+
   function panelSpec(story, panel) {
     var parts = F.rowsFor(panel.key);
     var win = parts.win;
@@ -273,14 +300,46 @@
       }
     }
     if (parts.bad.length) rows.push({ label: "Known false\npositives", cls: "drop", genes: parts.bad, from: 2 });
-    var amap = parts.amap.map(function (g, i) {
-      if (story.labelIds) g.name = win.amap[i].id.replace(win.base + "_", "");
-      return g;
-    });
-    var changed = !sameGenes(parts.corrected, amap);
+    // With labelIds the genes go by their IDs. The copy's _2 comes from the
+    // step that sorts out copies, so until then it goes by the protein's
+    // name alone.
+    var idOf = function (id) {
+      return id.replace(win.base + "_", "");
+    };
+    var corrected = story.labelIds ? parts.corrected.map(function (g) {
+      return copyOf(g, idOf(g.id));
+    }) : parts.corrected;
+    var final = parts.amap;
+    var renamed = null;
+    if (story.labelIds) {
+      renamed = parts.amap.map(function (g, i) {
+        return copyOf(g, idOf(win.amap[i].id));
+      });
+      final = renamed.map(function (g, i) {
+        return copyOf(g, win.amap[i].rvs ? g.name.replace(/_\d+$/, "") : g.name);
+      });
+      if (renamed.map(function (g) {
+        return g.name;
+      }).join("|") === final.map(function (g) {
+        return g.name;
+      }).join("|")) renamed = null;
+    }
+    var changed = !sameGenes(corrected, final);
     var amapRow = rows.length;
-    rows.push({ label: "AMAP", cls: "amap", genes: parts.corrected, empty: parts.corrected.length ? null : "nothing kept", from: 4, until: changed ? 4 : null });
-    if (changed) rows.push({ label: "AMAP", cls: "amap", genes: amap, overlay: true, from: 5 });
+    var layers = [corrected];
+    if (changed) layers.push(final);
+    if (renamed) layers.push(renamed);
+    // Each layer of what AMAP keeps from its own step: the classification's
+    // genes at 4, the translated ones at 5, the copies named at 6.
+    var steps = [4, changed ? 5 : null, renamed ? 6 : null].filter(function (n) {
+      return n;
+    });
+    layers.forEach(function (genes, i) {
+      rows.push({
+        label: "AMAP", cls: "amap", genes: genes, overlay: i > 0, empty: i === 0 && !genes.length ? "nothing kept" : null,
+        from: steps[i], until: i + 1 < layers.length ? steps[i + 1] - 1 : null
+      });
+    });
     var ribbons = [];
     win.bakta.forEach(function (c, i) {
       win.ref.forEach(function (r, j) {
@@ -301,13 +360,53 @@
       });
       return copy;
     });
-    return {
+    return F.nameSubjects({
       from: panel.from, to: panel.to, labelW: 96, geneH: 18, rowGap: 24, top: 20,
       alt: story.label + ": " + story.text[0],
+      refName: reference, phased: true,
       rows: rows, ribbons: ribbons, marks: marks, edges: panel.edges || [],
       axis: true, tick: panel.tick,
       tickLabel: F.tickLabel(panel.to - panel.from)
+    });
+  }
+
+  // Which steps change the drawing of a story, or the lines it ends on: the
+  // others go by quicker when it plays, and say so in the list of steps.
+  function changesOf(story) {
+    var ch = [false, true, false, false, false, false, false, false];
+    var note = function (o) {
+      if (o.from) ch[o.from] = true;
+      if (o.until && o.until < 7) ch[o.until + 1] = true;
     };
+    story.panels.forEach(function (panel) {
+      var spec = panelSpec(story, panel);
+      spec.rows.forEach(note);
+      spec.ribbons.forEach(note);
+      spec.marks.forEach(note);
+      spec.edges.forEach(note);
+      spec.rows.forEach(function (row) {
+        row.genes.forEach(function (g) {
+          // Calls with nothing aligned are dashed at 3, and those dropped
+          // fade at 4.
+          if (/c1-call/.test(g.phaseCls || "")) ch[3] = true;
+          if (/ph-dim/.test(g.phaseCls || "")) ch[4] = true;
+        });
+      });
+    });
+    if (story.out.length) ch[7] = true;
+    return ch;
+  }
+
+  function words(text) {
+    return String(text).split(/\s+/).filter(Boolean).length;
+  }
+
+  // How long Play stays on a step: time to read it, between 3 and 22 s, and
+  // 2 s for a step that changes nothing.
+  function dwell(story, n, changes) {
+    var ch = changes || changesOf(story);
+    if (!ch[n]) return 2000;
+    return Math.max(3000, Math.min(22000, 1500 + 300 * words(story.text[n - 1])));
   }
 
   /* ── The page ── */
@@ -316,7 +415,9 @@
   if (!root) return;
   var picker = root.querySelector("[data-stories]");
   var stepList = root.querySelector("[data-steps]");
+  var card = root.querySelector(".how-stage-card");
   var stage = root.querySelector("[data-stage]");
+  var textBox = root.querySelector(".how-text");
   var kicker = root.querySelector("[data-kicker]");
   var title = root.querySelector("[data-step-title]");
   var text = root.querySelector("[data-step-text]");
@@ -325,44 +426,97 @@
   var prev = root.querySelector("[data-prev]");
   var next = root.querySelector("[data-next]");
   var playBtn = root.querySelector("[data-play]");
-  var genomeLabel = root.querySelector("[data-genome]");
 
-  var story = STORIES[0];
+  // Each button holds both of its words and shows one, so it keeps the size
+  // of the longer and nothing beside or under it moves when the word changes.
+  function say(btn, words, second) {
+    if (!btn.querySelector(".say-2")) {
+      btn.innerHTML = '<span class="say-1">' + F.esc(words[0]) + '</span><span class="say-2">' + F.esc(words[1]) + "</span>";
+    }
+    btn.classList.toggle("said-2", !!second);
+  }
+  var genomeLabel = root.querySelector("[data-genome]");
+  var legendBox = root.querySelector(".how-legend");
+
+  function find(key) {
+    return STORIES.filter(function (s) {
+      return s.key === key;
+    })[0];
+  }
+
+  // The story a page opens on, without a story in its address.
+  var story = find("agree") || STORIES[0];
   var step = 1;
   var timer = null;
-  var redraws = [];
+  var changes = changesOf(story);
 
-  // The pickers, one row per group.
-  var groups = {};
+  // The page carries the chips and the steps, so it does not move when this
+  // runs; a story the page lacks still gets a chip.
   STORIES.forEach(function (s) {
-    if (!groups[s.group]) {
+    if (picker.querySelector('[data-story="' + s.key + '"]')) return;
+    var group = null;
+    picker.querySelectorAll(".how-group").forEach(function (g) {
+      if (g.getAttribute("data-group") === s.group) group = g.querySelector(".seg");
+    });
+    if (!group) {
       var g = document.createElement("div");
       g.className = "how-group";
-      g.innerHTML = '<div class="q-title">' + F.esc(s.group) + '</div><div class="seg" role="group" aria-label="' + F.esc(s.group) + '"></div>';
+      g.setAttribute("data-group", s.group);
+      g.innerHTML = '<p class="q-title">' + F.esc(s.group) + '</p><div class="seg"></div>';
       picker.appendChild(g);
-      groups[s.group] = g.querySelector(".seg");
+      group = g.querySelector(".seg");
     }
-    var b = document.createElement("button");
-    b.type = "button";
-    b.setAttribute("data-story", s.key);
-    b.setAttribute("aria-pressed", "false");
-    b.innerHTML = F.esc(s.label) + ' <span class="how-tag">' + F.esc(s.tag) + "</span>";
-    groups[s.group].appendChild(b);
+    var a = document.createElement("a");
+    a.href = "how-it-works.html#" + s.key;
+    a.setAttribute("data-story", s.key);
+    a.innerHTML = F.esc(s.label) + ' <span class="how-tag">' + F.esc(s.tag) + "</span>";
+    group.appendChild(a);
   });
+  if (!stepList.querySelector("[data-step]")) {
+    STEPS.forEach(function (name, i) {
+      var li = document.createElement("li");
+      li.innerHTML = '<button type="button" data-step="' + (i + 1) + '"><span class="how-n">' + (i + 1) + "</span>" + F.esc(name) + "</button>";
+      stepList.appendChild(li);
+    });
+  }
 
-  STEPS.forEach(function (name, i) {
-    var li = document.createElement("li");
-    li.innerHTML = '<button type="button" data-step="' + (i + 1) + '"><span class="how-n">' + (i + 1) + "</span>" + F.esc(name) + "</button>";
-    stepList.appendChild(li);
-  });
+  function address() {
+    try {
+      history.replaceState(null, "", "#" + story.key + (step > 1 ? "/" + step : ""));
+    } catch (e) {
+      /* file:// in a strict browser */
+    }
+  }
 
-  function showStep() {
+  function flash(el) {
+    if (reduceMotion) return;
+    el.classList.remove("just-on");
+    void el.getBoundingClientRect();
+    el.classList.add("just-on");
+    setTimeout(function () {
+      el.classList.remove("just-on");
+    }, 750);
+  }
+
+  function showStep(moved) {
     stage.querySelectorAll("[data-from]").forEach(function (el) {
       var from = +el.getAttribute("data-from");
       var until = +el.getAttribute("data-until") || 99;
-      el.classList.toggle("step-off", step < from || step > until);
+      var off = step < from || step > until;
+      var was = el.classList.contains("step-off");
+      el.classList.toggle("step-off", off);
+      if (moved && was && !off) flash(el);
     });
-    stepList.querySelectorAll("button").forEach(function (b) {
+    stage.querySelectorAll("[data-ghost-from]").forEach(function (el) {
+      el.classList.toggle("ghost", step < +el.getAttribute("data-ghost-from"));
+    });
+    // The calls with nothing aligned are dashed once compared (3), and the
+    // ones dropped fade once the disagreements are settled (4).
+    stage.querySelectorAll("svg").forEach(function (svg) {
+      svg.setAttribute("data-phase", String(Math.min(step, 4)));
+      F.refocus(svg);
+    });
+    stepList.querySelectorAll("[data-step]").forEach(function (b) {
       var n = +b.getAttribute("data-step");
       b.setAttribute("aria-current", n === step ? "step" : "false");
       b.classList.toggle("done", n < step);
@@ -371,14 +525,45 @@
     title.textContent = STEPS[step - 1];
     text.textContent = story.text[step - 1];
     outBox.hidden = step < 7 || !story.out.length;
-    progress.style.width = (step / 7) * 100 + "%";
-    prev.disabled = step === 1;
-    next.textContent = step === 7 ? "Start again" : "Next";
+    if (!timer) {
+      progress.style.transition = "";
+      progress.style.width = (step / 7) * 100 + "%";
+    }
+    prev.setAttribute("aria-disabled", step === 1 ? "true" : "false");
+    say(next, ["Next", "Start again"], step === 7);
+  }
+
+  // The text under the drawing keeps the height of the story's longest step,
+  // so nothing below it moves while stepping.
+  function fitText() {
+    var w = textBox.offsetWidth;
+    if (!w) return;
+    var probe = textBox.cloneNode(true);
+    probe.removeAttribute("aria-live");
+    probe.setAttribute("aria-hidden", "true");
+    probe.style.cssText = "position:absolute;visibility:hidden;pointer-events:none;left:0;top:0;min-height:0;width:" + w + "px";
+    card.appendChild(probe);
+    var parts = ["[data-kicker]", "[data-step-title]", "[data-step-text]"].map(function (sel) {
+      return probe.querySelector(sel);
+    });
+    var out = probe.querySelector("[data-out]");
+    out.querySelector("pre").textContent = story.out.join("\n");
+    var tallest = 0;
+    for (var n = 1; n <= 7; n++) {
+      parts[0].textContent = "Step " + n + " of 7 · " + story.label;
+      parts[1].textContent = STEPS[n - 1];
+      parts[2].textContent = story.text[n - 1];
+      out.hidden = n < 7 || !story.out.length;
+      tallest = Math.max(tallest, probe.offsetHeight);
+    }
+    probe.remove();
+    textBox.style.minHeight = tallest + "px";
   }
 
   function drawStory() {
+    stop();
     stage.innerHTML = "";
-    redraws = [];
+    var used = {};
     story.panels.forEach(function (panel) {
       var box = document.createElement("div");
       box.className = "how-panel";
@@ -392,45 +577,107 @@
       holder.className = "how-draw";
       box.appendChild(holder);
       stage.appendChild(box);
-      redraws.push(F.render(holder, function () {
+      F.render(holder, function () {
         return panelSpec(story, panel);
-      }, showStep));
+      }, function (svg, spec) {
+        Object.keys(spec._used || {}).forEach(function (k) {
+          used[k] = 1;
+        });
+        showStep();
+      });
       F.attachTips(holder);
     });
     var win = DATA.windows[story.panels[0].key];
-    genomeLabel.textContent = win.genome + (/coli/.test(win.genome) ? ", against K-12" : ", against H37Rv");
+    // Species in italics, as everywhere else on the site.
+    genomeLabel.innerHTML = F.esc(win.genome).replace(/^([A-Z]\. [a-z]+)/, "<i>$1</i>") + (/coli/.test(win.genome) ? ", against K-12" : ", against H37Rv");
+    if (legendBox) legendBox.innerHTML = F.legend(used, /coli/.test(win.genome) ? "K-12" : "H37Rv");
     outBox.querySelector("pre").textContent = story.out.join("\n");
     picker.querySelectorAll("[data-story]").forEach(function (b) {
-      b.setAttribute("aria-pressed", b.getAttribute("data-story") === story.key ? "true" : "false");
+      if (b.getAttribute("data-story") === story.key) b.setAttribute("aria-current", "true");
+      else b.removeAttribute("aria-current");
+    });
+    // Steps that change nothing in this story show hollow.
+    changes = changesOf(story);
+    stepList.querySelectorAll("[data-step]").forEach(function (b) {
+      var n = +b.getAttribute("data-step");
+      var same = !changes[n];
+      b.classList.toggle("same", same);
+      var note = b.querySelector(".how-same");
+      if (same && !note) {
+        note = document.createElement("span");
+        note.className = "how-same";
+        note.textContent = ", no change in this story";
+        b.appendChild(note);
+      } else if (!same && note) {
+        note.remove();
+      }
+      if (same) b.title = "No change in this story";
+      else b.removeAttribute("title");
     });
     showStep();
+    fitText();
+    // The picked story's chip in view, in a row that scrolls sideways.
+    var chip = picker.querySelector('[data-story="' + story.key + '"]');
+    var row = chip && chip.parentNode;
+    if (row && row.scrollWidth > row.clientWidth + 2) {
+      row.scrollLeft = Math.max(0, chip.offsetLeft - row.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2);
+    }
+  }
+
+  // The drawing in view when a story is picked or opened by a link, when it
+  // is not already.
+  function reveal() {
+    var r = card.getBoundingClientRect();
+    if (r.top < 64 || r.top + Math.min(r.height, 320) > window.innerHeight) {
+      card.scrollIntoView({ block: "start", behavior: reduceMotion ? "auto" : "smooth" });
+    }
   }
 
   function stop() {
     clearTimeout(timer);
     timer = null;
-    playBtn.textContent = "Play all";
+    say(playBtn, ["Play", "Pause"], false);
+    card.classList.remove("playing");
+    progress.style.transition = "";
+    progress.style.width = (step / 7) * 100 + "%";
   }
 
   function go(n) {
+    var before = step;
     step = Math.max(1, Math.min(7, n));
-    showStep();
+    showStep(step !== before);
+    address();
+  }
+
+  // While it plays, the bar runs on to the next step in the time the step
+  // is given.
+  function tick() {
+    if (step >= 7) {
+      stop();
+      return;
+    }
+    var ms = dwell(story, step, changes);
+    progress.style.transition = "none";
+    progress.style.width = (step / 7) * 100 + "%";
+    void progress.offsetWidth;
+    progress.style.transition = "width " + ms + "ms linear";
+    progress.style.width = ((step + 1) / 7) * 100 + "%";
+    timer = setTimeout(function () {
+      go(step + 1);
+      tick();
+    }, ms);
   }
 
   picker.addEventListener("click", function (event) {
     var b = event.target.closest("[data-story]");
-    if (!b) return;
+    if (!b || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
     stop();
-    story = STORIES.filter(function (s) {
-      return s.key === b.getAttribute("data-story");
-    })[0];
+    story = find(b.getAttribute("data-story")) || story;
     step = 1;
     drawStory();
-    try {
-      history.replaceState(null, "", "#" + story.key);
-    } catch (e) {
-      /* file:// in a strict browser */
-    }
+    address();
+    reveal();
   });
   stepList.addEventListener("click", function (event) {
     var b = event.target.closest("[data-step]");
@@ -439,6 +686,7 @@
     go(+b.getAttribute("data-step"));
   });
   prev.addEventListener("click", function () {
+    if (step === 1) return;
     stop();
     go(step - 1);
   });
@@ -451,21 +699,15 @@
       stop();
       return;
     }
-    playBtn.textContent = "Pause";
     if (step === 7) go(1);
-    (function tick() {
-      timer = setTimeout(function () {
-        if (step >= 7) {
-          stop();
-          return;
-        }
-        go(step + 1);
-        tick();
-      }, reduceMotion ? 3500 : 3000);
-    })();
+    say(playBtn, ["Play", "Pause"], true);
+    card.classList.add("playing");
+    tick();
   });
   root.addEventListener("keydown", function (event) {
-    if (/input|textarea|select/i.test(event.target.tagName)) return;
+    if (/input|textarea|select/i.test(event.target.tagName) || event.altKey || event.ctrlKey || event.metaKey) return;
+    // Inside a drawing the arrows move from gene to gene.
+    if (event.target.closest && event.target.closest("svg")) return;
     if (event.key === "ArrowRight") {
       stop();
       go(step + 1);
@@ -474,26 +716,53 @@
       go(step - 1);
     }
   });
-
-  // A story named in the address opens first, so a link can point at one.
-  function fromHash() {
-    var wanted = (location.hash || "").slice(1);
-    var found = STORIES.filter(function (s) {
-      return s.key === wanted;
-    })[0];
-    if (found && found !== story) {
-      stop();
-      story = found;
-      step = 1;
-      return true;
-    }
-    return false;
+  // Which keys do what, while the keyboard is in the walk-through.
+  root.addEventListener("focusin", function (event) {
+    root.setAttribute("data-keys", event.target.closest && event.target.closest("svg") ? "genes" : "steps");
+  });
+  root.addEventListener("focusout", function (event) {
+    if (!event.relatedTarget || !root.contains(event.relatedTarget)) root.removeAttribute("data-keys");
+  });
+  if ("ResizeObserver" in window) {
+    var fitted = 0;
+    new ResizeObserver(function () {
+      if (Math.abs(textBox.offsetWidth - fitted) < 2) return;
+      fitted = textBox.offsetWidth;
+      fitText();
+    }).observe(textBox);
   }
-  fromHash();
+
+  // A story named in the address opens first, so a link can point at one,
+  // and #key/4 at its fourth step.
+  function wanted() {
+    var m = /^#([\w-]+)(?:\/([1-7]))?$/.exec(location.hash || "");
+    var found = m && find(m[1]);
+    return found ? { story: found, step: +(m[2] || 1) } : null;
+  }
+  var want = wanted();
+  if (want) {
+    story = want.story;
+    step = want.step;
+  }
   drawStory();
+  if (want) reveal();
   window.addEventListener("hashchange", function () {
-    if (fromHash()) drawStory();
+    var w = wanted();
+    if (!w || (w.story === story && w.step === step)) return;
+    stop();
+    var redraw = w.story !== story;
+    story = w.story;
+    step = w.step;
+    if (redraw) drawStory();
+    else showStep(true);
+    reveal();
   });
 
-  window.AMAPHow = { stories: STORIES, rules: RULES };
+  window.AMAPHow = {
+    stories: STORIES, rules: RULES,
+    dwell: function (key, n) {
+      var s = find(key);
+      return s ? dwell(s, n) : null;
+    }
+  };
 })();

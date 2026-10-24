@@ -1543,7 +1543,7 @@
       reads: "the corrected proteins and their functions", writes: "DUPLICATIONS/{sample}/", flags: "", doc: "how-it-works/duplications.html", exit: "DUPLICATIONS/", exitSide: "below", functional: true
     },
     GET_ALLDUP: {
-      name: "All genomes", proc: "GET_ALLDUP", x: 980, y: 250, label: "above", lineOnly: "dup",
+      name: "All genomes", proc: "GET_ALLDUP", x: 980, y: 250, label: "above", labelDx: 10, lineOnly: "dup",
       text: "All samples' duplicated genes against each other, as communities with network metrics.",
       reads: "every sample's duplicated genes", writes: "DUPLICATIONS/homologous_communities.tsv, .html", flags: "", doc: "how-it-works/duplications.html", functional: true
     },
@@ -1629,7 +1629,8 @@
       } else {
         out.push('<circle class="dot" cx="' + s.x + '" cy="' + s.y + '" r="8"/>');
       }
-      var lx = s.x;
+      // labelDx nudges a name clear of its neighbour's.
+      var lx = s.x + (s.labelDx || 0);
       var anchor = "middle";
       var ny;
       var py;

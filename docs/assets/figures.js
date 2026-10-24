@@ -1219,6 +1219,32 @@
       stepEl.appendChild(words);
     }
 
+    // The line keeps the height of its longest phase, so a phase whose words
+    // wrap at this width does not push the drawing down while it plays.
+    var stepWidth = 0;
+    function fitStep() {
+      if (!stepEl || !words) return;
+      var w = stepEl.offsetWidth;
+      if (!w || Math.abs(w - stepWidth) < 2) return;
+      stepWidth = w;
+      var probe = stepEl.cloneNode(true);
+      probe.removeAttribute("aria-live");
+      probe.removeAttribute("data-hero-step");
+      probe.setAttribute("aria-hidden", "true");
+      probe.style.cssText = "position:absolute;visibility:hidden;pointer-events:none;left:0;top:0;min-height:0;width:" + w + "px";
+      stepEl.parentNode.appendChild(probe);
+      var said = probe.querySelector(".hero-phase");
+      var tallest = 0;
+      PHASES.forEach(function (p, i) {
+        said.textContent = i + 1 + " of 4 · " + p.label;
+        tallest = Math.max(tallest, probe.offsetHeight);
+      });
+      probe.remove();
+      stepEl.style.minHeight = tallest + "px";
+    }
+    fitStep();
+    if (stepEl && "ResizeObserver" in window) new ResizeObserver(fitStep).observe(stepEl);
+
     var auto = false;
     var userPaused = false;
     var hover = false;

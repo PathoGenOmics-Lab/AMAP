@@ -1,8 +1,15 @@
-# The report
+# The full report: final_report.html
 
-Every run ends in one file, `results/final_report.html`. It is self-contained:
-all the figures, tables and JavaScript are embedded, so it opens with no
-network and survives being emailed to someone who has never heard of Nextflow.
+A run with the functional annotation ends in `results/final_report.html`, the
+whole analysis in one file, built after eggNOG, the duplications and the
+pangenome. Every run, with or without them, also writes
+[the report by question](amap-report.md), `results/amap_report.html`. So a run
+with `--skip_functional_annotation` has no `final_report.html`;
+`amap_report.html` is still written, without its eggNOG sections.
+
+It is self-contained: all the figures, tables and JavaScript are embedded, so
+it opens with no network and survives being emailed to someone who has never
+heard of Nextflow.
 
 To see what the sections look like before running anything, open the
 [example report](../examples/demo_report.html): a rendered report for twelve
@@ -86,7 +93,8 @@ without leaving the report.
   drop out.
 - **`--skip_mycobrowser`**: The Mycobrowser and PE/PPE sections are omitted. COG, KEGG, pangenome and
   duplications are unaffected. This is automatic for non-MTBC organisms.
-- **`--skip_functional_annotation`**: No report at all. The run stops after correction.
+- **`--skip_functional_annotation`**: The run stops after correction: no `final_report.html`;
+  `amap_report.html` is still written, without its eggNOG sections.
 
 ## Rendering it yourself
 

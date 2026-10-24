@@ -91,17 +91,23 @@
 <p class="crumb"><a href="../documentation.html">Docs</a> / Getting started</p>
 <h1 id="quickstart">Quickstart</h1>
 <p>This walks from an installed Nextflow to an open report. If Nextflow or a container engine is still missing, start at <a href="installation.html">installation</a>.</p>
-<h2 id="1-write-a-sample-sheet">1. Write a sample sheet<a class="anchor" href="#1-write-a-sample-sheet" aria-label="Link to this section">#</a></h2>
+<h2 id="1-check-the-plumbing">1. Check the plumbing<a class="anchor" href="#1-check-the-plumbing" aria-label="Link to this section">#</a></h2>
+<p>The test profile annotates the H37Rv genome that ships inside the image, so it needs no data of your own, and <code>--skip_functional_annotation</code> keeps it to the correction, with no eggNOG database to build:</p>
+<div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker,test \
+    --skip_functional_annotation --outdir amap-test</pre></div>
+<p>It writes <code>amap-test/</code> and <code>work/</code> where you run it, and ends with a <code>✓ COMPLETED</code> block. On an Apple M4 Pro, under emulation and with the image already pulled, it took 2 min 47 s; the first run also pulls the image, about 3.4 GB compressed and 12 GB on disk, once.</p>
+<h2 id="2-write-a-sample-sheet">2. Write a sample sheet<a class="anchor" href="#2-write-a-sample-sheet" aria-label="Link to this section">#</a></h2>
 <p>AMAP reads a tab-separated file with two columns, <code>sampleId</code> and <code>fasta</code>:</p>
 <div class="code" data-lang="tsv"><div class="code-title">samples.tsv</div><pre>sampleId	fasta
 G26689	/data/genomes/G26689.fasta
 G26690	/data/genomes/G26690.fasta</pre></div>
 <p>The separator must be a real tab. Paths can be absolute, or relative to where you launch Nextflow. See <a href="inputs.html">preparing inputs</a> for the details and the checks AMAP runs over them.</p>
-<h2 id="2-check-the-inputs">2. Check the inputs<a class="anchor" href="#2-check-the-inputs" aria-label="Link to this section">#</a></h2>
+<h2 id="3-check-the-inputs">3. Check the inputs<a class="anchor" href="#3-check-the-inputs" aria-label="Link to this section">#</a></h2>
 <p>Cheap, and it catches the mistakes that would otherwise surface twenty minutes into a run:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --validate_only</pre></div>
-<h2 id="3-run-it">3. Run it<a class="anchor" href="#3-run-it" aria-label="Link to this section">#</a></h2>
+<p>The verdict, and any warnings, are in <code>results/pipeline_info/validation.log</code>; the terminal only says whether the step ran.</p>
+<h2 id="4-run-it">4. Run it<a class="anchor" href="#4-run-it" aria-label="Link to this section">#</a></h2>
 <p>Pick what you have, and copy the command:</p>
 <figure class="fig builder-fig"><div class="builder" data-builder>
   <div>
@@ -134,18 +140,18 @@ G26690	/data/genomes/G26690.fasta</pre></div>
   </div>
 </div><figcaption>The command for your machine and your genomes, with what each option does. The same as on the <a href="../index.html#start">front page</a>.</figcaption></figure>
 <p>Or start from one of these:</p>
-<div class="tabset"><div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" aria-controls="tabs-getting-started-quickstart-md-37-0" id="tabs-getting-started-quickstart-md-37-0-tab">Docker</button><button class="tab" role="tab" aria-selected="false" aria-controls="tabs-getting-started-quickstart-md-37-1" id="tabs-getting-started-quickstart-md-37-1-tab">Singularity</button><button class="tab" role="tab" aria-selected="false" aria-controls="tabs-getting-started-quickstart-md-37-2" id="tabs-getting-started-quickstart-md-37-2-tab">SLURM cluster</button></div><div class="tabpanel" role="tabpanel" id="tabs-getting-started-quickstart-md-37-0" aria-labelledby="tabs-getting-started-quickstart-md-37-0-tab"><div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv</pre></div></div><div class="tabpanel" role="tabpanel" id="tabs-getting-started-quickstart-md-37-1" aria-labelledby="tabs-getting-started-quickstart-md-37-1-tab" hidden><div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv</pre></div></div><div class="tabpanel" role="tabpanel" id="tabs-getting-started-quickstart-md-37-2" aria-labelledby="tabs-getting-started-quickstart-md-37-2-tab" hidden><div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP \
+<div class="tabset"><div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" aria-controls="tabs-getting-started-quickstart-md-56-0" id="tabs-getting-started-quickstart-md-56-0-tab">Docker</button><button class="tab" role="tab" aria-selected="false" aria-controls="tabs-getting-started-quickstart-md-56-1" id="tabs-getting-started-quickstart-md-56-1-tab">Singularity</button><button class="tab" role="tab" aria-selected="false" aria-controls="tabs-getting-started-quickstart-md-56-2" id="tabs-getting-started-quickstart-md-56-2-tab">SLURM cluster</button></div><div class="tabpanel" role="tabpanel" id="tabs-getting-started-quickstart-md-56-0" aria-labelledby="tabs-getting-started-quickstart-md-56-0-tab"><div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv</pre></div></div><div class="tabpanel" role="tabpanel" id="tabs-getting-started-quickstart-md-56-1" aria-labelledby="tabs-getting-started-quickstart-md-56-1-tab" hidden><div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv</pre></div></div><div class="tabpanel" role="tabpanel" id="tabs-getting-started-quickstart-md-56-2" aria-labelledby="tabs-getting-started-quickstart-md-56-2-tab" hidden><div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP \
     -profile singularity,slurm --tsv samples.tsv</pre></div></div></div>
-<p>Without a scheduler profile every task is capped at the machine's CPUs and 16 GB, and with the scheduler profiles at 48 CPUs and 128 GB, whichever order the profiles come in; a larger request, such as the 50 GB the eggNOG annotation asks for, is lowered to the cap. Nextflow refuses to start a task asking for more memory than the machine has, so on a smaller machine, lower the ceiling:</p>
+<p>Without a scheduler profile every task is capped at the machine's CPUs and 16 GB, and with the scheduler profiles at 48 CPUs and 128 GB, whichever order the profiles come in; a larger request, such as the 50 GB the eggNOG annotation asks for, is lowered to the cap. Nextflow refuses to start a task asking for more memory than the machine has, so on a smaller machine, lower the ceiling to what <code>docker info</code> says your containers can have:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker \
-    --tsv samples.tsv --max_cpus 4 --max_memory 12.GB</pre></div>
+    --tsv samples.tsv --max_cpus 4 --max_memory 8.GB</pre></div>
 <p>The <a href="tutorial.html#the-machine">tutorial</a> has the per-step figures and what to do when the machine cannot reach them.</p>
-<h2 id="4-read-the-results">4. Read the results<a class="anchor" href="#4-read-the-results" aria-label="Link to this section">#</a></h2>
-<p>Everything lands under <code>results/</code> unless you set <code>--outdir</code>. The three things to open first:</p>
-<div class="table-wrap"><table><thead><tr><th>What</th><th>Where</th></tr></thead><tbody><tr><td>The full interactive report</td><td><code>results/final_report.html</code></td></tr><tr><td>Corrected annotation, per sample</td><td><code>results/AMAP/{sampleId}/*-AMAP.gff3</code></td></tr><tr><td>Protein sequences for downstream tools</td><td><code>results/AMAP/{sampleId}/*-AMAP.clean.faa</code></td></tr></tbody></table></div>
+<h2 id="5-read-the-results">5. Read the results<a class="anchor" href="#5-read-the-results" aria-label="Link to this section">#</a></h2>
+<p>Everything lands under <code>results/</code> unless you set <code>--outdir</code>. Each sample's folder is named <code>{lineage}_{sampleId}</code>: lineage typing puts the lineage in front, so <code>G26689</code> comes out as <code>L4_G26689</code>, and under <code>--skip_typing</code> it is the sample ID alone (<a href="../user-guide/outputs.html">outputs</a> has the details). The things to open first:</p>
+<div class="table-wrap"><table><thead><tr><th>What</th><th>Where</th></tr></thead><tbody><tr><td>Each genome and each gene, question by question, in every run</td><td><code>results/amap_report.html</code></td></tr><tr><td>The full report, after a run with eggNOG</td><td><code>results/final_report.html</code></td></tr><tr><td>Corrected annotation, per sample</td><td><code>results/AMAP/{lineage}_{sampleId}/*-AMAP.gff3</code></td></tr><tr><td>Protein sequences for downstream tools</td><td><code>results/AMAP/{lineage}_{sampleId}/*-AMAP.clean.faa</code></td></tr></tbody></table></div>
 <div class="callout callout-note"><p class="callout-title">Which protein file do I want?</p><p><code>*-AMAP.faa</code> holds every gene, pseudogenes included, so it mirrors the annotation exactly. <code>*-AMAP.clean.faa</code> drops pseudogenes and sequences with internal stop codons, which is what orthology, phylogenomics and dN/dS tools expect. Reach for the clean one unless you specifically need the complete set.</p></div>
 <p>The <a href="../user-guide/outputs.html">outputs page</a> covers every directory.</p>
-<h2 id="5-resume-an-interrupted-run">5. Resume an interrupted run<a class="anchor" href="#5-resume-an-interrupted-run" aria-label="Link to this section">#</a></h2>
+<h2 id="6-resume-an-interrupted-run">6. Resume an interrupted run<a class="anchor" href="#6-resume-an-interrupted-run" aria-label="Link to this section">#</a></h2>
 <p>Nextflow caches completed tasks. If a run dies, restart it with <code>-resume</code> and it picks up where it stopped:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv -resume</pre></div>
 <p>Keep the same parameters. Changing an input invalidates the cache for every task downstream of it, which is what you want, but it does mean the run redoes that work.</p>
@@ -157,7 +163,7 @@ G26690	/data/genomes/G26690.fasta</pre></div>
     --genus Escherichia --species &quot;Escherichia coli&quot; \
     --ref_annotation my_reference.gbk --ref_genome my_reference.fasta</pre></div>
 <p>See <a href="../user-guide/custom-reference.html">custom reference</a>.</p>
-<p><strong>Just the corrected genes.</strong> If you do not need functional annotation, duplications, the pangenome or the report, stop after the correction step. It is much faster, and leaves the corrected genes as a table with their proteins and sequences; the GFF3 and GenBank files come after eggNOG, so there are none:</p>
+<p><strong>Just the corrected genes.</strong> If you do not need functional annotation, duplications or the pangenome, stop after the correction step. It is much faster, and leaves the corrected genes as a table with their proteins and sequences; the GFF3 and GenBank files come after eggNOG, so there are none. There is no <code>final_report.html</code>; <code>amap_report.html</code> is still written, without its eggNOG sections:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --skip_functional_annotation</pre></div>
 <h2 id="next-steps">Next steps<a class="anchor" href="#next-steps" aria-label="Link to this section">#</a></h2>
@@ -165,7 +171,7 @@ G26690	/data/genomes/G26690.fasta</pre></div>
 <p class="edit"><a href="https://github.com/PathoGenOmics-Lab/AMAP/blob/main/docs/getting-started/quickstart.md"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Edit this page on GitHub</a></p>
 <nav class="pager" aria-label="Previous and next page"><a class="prev" href="../getting-started/installation.html"><span>Previous</span>Installation</a><a class="next" href="../getting-started/inputs.html"><span>Next</span>Preparing inputs</a></nav>
 </main>
-<aside class="docs-toc" aria-label="On this page"><p>On this page</p><ul><li class="toc-2"><a href="#1-write-a-sample-sheet">1. Write a sample sheet</a></li><li class="toc-2"><a href="#2-check-the-inputs">2. Check the inputs</a></li><li class="toc-2"><a href="#3-run-it">3. Run it</a></li><li class="toc-2"><a href="#4-read-the-results">4. Read the results</a></li><li class="toc-2"><a href="#5-resume-an-interrupted-run">5. Resume an interrupted run</a></li><li class="toc-2"><a href="#common-variations">Common variations</a></li><li class="toc-2"><a href="#next-steps">Next steps</a></li></ul></aside>
+<aside class="docs-toc" aria-label="On this page"><p>On this page</p><ul><li class="toc-2"><a href="#1-check-the-plumbing">1. Check the plumbing</a></li><li class="toc-2"><a href="#2-write-a-sample-sheet">2. Write a sample sheet</a></li><li class="toc-2"><a href="#3-check-the-inputs">3. Check the inputs</a></li><li class="toc-2"><a href="#4-run-it">4. Run it</a></li><li class="toc-2"><a href="#5-read-the-results">5. Read the results</a></li><li class="toc-2"><a href="#6-resume-an-interrupted-run">6. Resume an interrupted run</a></li><li class="toc-2"><a href="#common-variations">Common variations</a></li><li class="toc-2"><a href="#next-steps">Next steps</a></li></ul></aside>
 </div>
 <footer class="foot">
   <div class="wrap">

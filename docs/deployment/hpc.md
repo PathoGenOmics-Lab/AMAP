@@ -1,7 +1,7 @@
-# Running on a cluster
+# HPC clusters
 
-Past a couple of dozen genomes, a scheduler is worth the setup. Combine a
-container profile with an executor profile:
+Past about twenty genomes, a scheduler is worth the setup. Combine a container
+profile with an executor profile:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv
@@ -46,15 +46,24 @@ node constraints go.
 
 On SLURM, Bakta's jobs, the longest a run sends, also ask for `--qos=medium`.
 The `slurm` profile sets that for Bakta alone, and for Bakta it takes the place
-of `-process.clusterOptions`, so give Bakta your site's options in a config
-passed with `-c`:
+of `-process.clusterOptions`, so give Bakta your site's options in a config of
+your own, with `--qos=medium` if your cluster has that QoS and without it if
+not:
 
-```groovy
+```groovy title="bakta.config"
 process {
     withName: 'BAKTA_ANNOTATOR' {
         clusterOptions = '--qos=medium --account=mygroup'
     }
 }
+```
+
+Then pass it with `-c`, next to the options for every other job:
+
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
+    -c bakta.config --tsv samples.tsv \
+    -process.clusterOptions '--account=mygroup'
 ```
 
 ## Scratch
@@ -74,14 +83,19 @@ nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
 
 ## Where to put things
 
-**The Singularity cache.** Set it once, somewhere shared:
+**The Singularity cache.** The `singularity` profile keeps the converted image
+in `<outdir>/singularity_cache`, so every results folder gets a copy of its
+own, and that setting wins over `NXF_SINGULARITY_CACHEDIR`: the variable alone
+changes nothing. Keep one shared copy with a config passed with `-c`:
 
-```bash
-export NXF_SINGULARITY_CACHEDIR=/shared/singularity_cache
+```groovy title="shared.config"
+singularity.cacheDir = '/shared/singularity_cache'
 ```
 
-Otherwise the `singularity` profile caches under `--outdir`, and a large run can
-have many jobs converting the same image at once.
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
+    -c shared.config --tsv samples.tsv
+```
 
 **The eggNOG database.** Large, built once, reused forever. Point it at
 persistent shared storage rather than somewhere per-run:
@@ -116,10 +130,10 @@ its own:
 #SBATCH --output=amap_%j.log
 
 module load singularity
-export NXF_SINGULARITY_CACHEDIR=/shared/singularity_cache
 
 nextflow run PathoGenOmics-Lab/AMAP \
     -profile singularity,slurm \
+    -c shared.config \
     --tsv samples.tsv \
     --eggnog_db /shared/databases/eggnog \
     -work-dir /scratch/$USER/amap_work \

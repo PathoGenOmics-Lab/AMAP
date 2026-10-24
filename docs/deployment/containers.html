@@ -93,10 +93,10 @@
 <p>Every tool AMAP calls lives in one image, <code>paururo/amap</code>, published on <a href="https://hub.docker.com/r/paururo/amap">Docker Hub</a>. Both the <code>docker</code> and <code>singularity</code> profiles use it, so nothing needs installing beyond a container engine.</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv
 nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv</pre></div>
-<p>Nextflow pulls the image on first use and caches it. Singularity converts it to a <code>.sif</code> on the way, which takes a few minutes once.</p>
+<p>Nextflow pulls the image on first use and caches it. Singularity converts it to an image file of its own on the way, which takes a few minutes once per cache folder: see <a href="#singularity-on-a-cluster">Singularity on a cluster</a> for keeping one.</p>
 <h2 id="what-is-inside">What is inside<a class="anchor" href="#what-is-inside" aria-label="Link to this section">#</a></h2>
 <figure class="fig image-fig"><div class="img-grid"><div class="img-host"><p class="img-title">What you install</p><ul><li><b>Nextflow</b> 24.04 or newer, on Java 17 or newer</li><li><b>Docker</b>, or <b>Singularity</b> or <b>Apptainer</b> on a cluster</li></ul><p class="img-title img-later">What the first run builds</p><ul><li><b>The eggNOG database</b>, in the folder <code>--eggnog_db</code> names, kept for every run after</li></ul></div><div class="img-arrow" aria-hidden="true"><span>pulled once</span><i class="img-left">&#8592;</i><i class="img-up">&#8593;</i></div><div class="img-box"><p class="img-title"><code>paururo/amap</code><span>linux/amd64</span></p><div class="img-layer"><p>Tools</p><div><span class="img-pill"><b>Bakta</b> 1.12.0</span><span class="img-pill"><b>miniprot</b> 0.18</span><span class="img-pill"><b>Diamond</b> 2.1.24</span><span class="img-pill"><b>eggNOG-mapper</b> 2.1.13</span><span class="img-pill"><b>pangene</b> 1.1</span><span class="img-pill"><b>pathotypr</b> 1.0.0</span><span class="img-pill"><b>gfatools</b></span></div></div><div class="img-layer"><p>Runtimes</p><div><span class="img-pill"><b>Python</b> 3.9</span><span class="img-pill"><b>R</b> 4.4</span></div></div><div class="img-layer"><p>Data</p><div><span class="img-pill"><b>Bakta database</b> light</span><span class="img-pill img-note"><b><code>/reference/</code></b> 9 files: the H37Rv genome, proteome and GenBank, Bakta's false positives on it, Mycobrowser's table and the lineage markers</span></div></div></div></div><figcaption>Two things to install; everything AMAP runs comes in one image, its versions read off <code>docker/Dockerfile</code>. Only the eggNOG database stays outside: too large to ship, it is built on the first run that needs it.</figcaption></figure>
-<p><strong>Tools</strong>: Bakta 1.12.0, Miniprot 0.18, Diamond 2.1.24, eggNOG-mapper 2.1.13, pangene 1.1, pathotypr 1.0.0, gfatools.</p>
+<p><strong>Tools</strong>: Bakta 1.12.0, miniprot 0.18, Diamond 2.1.24, eggNOG-mapper 2.1.13, pangene 1.1, pathotypr 1.0.0, gfatools.</p>
 <p><strong>Runtimes</strong>: Python 3.9 with pandas, NumPy, Biopython, matplotlib, plotly, NetworkX, intervaltree, pyvis and python-louvain. R 4.4 with the report packages.</p>
 <p><strong>Bundled data</strong> under <code>/reference/</code>, so a standard MTBC run needs no downloads:</p>
 <div class="table-wrap"><table><thead><tr><th>File</th><th>What it is</th></tr></thead><tbody><tr><td><code>MTB_ancestor_reference.fasta</code></td><td>MTBC ancestral reference genome</td></tr><tr><td><code>aa_H37Rv.translated.fas</code></td><td>H37Rv reference proteome</td></tr><tr><td><code>bad.bakta.translated.fas</code></td><td>Curated Bakta false positives</td></tr><tr><td><code>new_refH37Rv.fasta</code></td><td>H37Rv reference genome</td></tr><tr><td><code>sequence.gb</code></td><td>H37Rv GenBank, for Bakta</td></tr><tr><td><code>Mycobacterium_tuberculosis_H37Rv_txt_v4.txt</code></td><td>Mycobrowser functional categories</td></tr><tr><td><code>snps_lineages.tsv</code></td><td>pathotypr lineage markers</td></tr></tbody></table></div>
@@ -105,10 +105,12 @@ nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv</pre>
 <h2 id="platform">Platform<a class="anchor" href="#platform" aria-label="Link to this section">#</a></h2>
 <p>The image is <code>linux/amd64</code> only, and every Dockerfile stage pins it. On Apple Silicon it runs under emulation, which works but is slow. For anything past a couple of genomes, use an amd64 machine or a cluster.</p>
 <h2 id="pinning-a-version">Pinning a version<a class="anchor" href="#pinning-a-version" aria-label="Link to this section">#</a></h2>
-<p><code>latest</code> tracks the newest release. For a reproducible analysis, pin the version in <code>nextflow.config</code> or on the command line:</p>
-<div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker \
-    --tsv samples.tsv \
-    -process.container &#x27;paururo/amap:1.0.1&#x27;</pre></div>
+<p>A tag can move: <code>latest</code> is whatever was pushed last. For a reproducible analysis, pin the image by its digest, and the pipeline's code with <code>-r</code>, since a pinned image under newer code is still a different run:</p>
+<div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP \
+    -r 947a99dee49d2a2429e014296ac35ba08e911108 \
+    -profile docker --tsv samples.tsv \
+    -process.container &#x27;paururo/amap@sha256:08bd17311ab323317ceecba6e5bc639a29f4c54c9d95f9a7c48ba80a9fc640ee&#x27;</pre></div>
+<p>That digest is the image behind the runs on these pages; <code>docker image inspect paururo/amap:latest --format &#x27;{{index .RepoDigests 0}}&#x27;</code> prints the one you have. <a href="../user-guide/running.html#pinning-the-pipeline">Pinning the pipeline</a> has the rest.</p>
 <p><code>results/pipeline_info/software_versions.yml</code> records the exact version of every tool a run used, which is what belongs in a methods section.</p>
 <h2 id="building-it-yourself">Building it yourself<a class="anchor" href="#building-it-yourself" aria-label="Link to this section">#</a></h2>
 <p>Only needed if you are changing what is in the image.</p>
@@ -121,9 +123,11 @@ docker build --platform linux/amd64 -f docker/Dockerfile -t amap:dev .</pre></di
 <p>Publishing is automated: the <code>Docker image</code> GitHub Actions workflow builds, smoke tests and pushes on a <code>v*</code> tag or on demand.</p>
 <div class="callout callout-warning"><p class="callout-title">Reference downloads can expire</p><p>Several reference files are fetched from Google Drive during the build. Those links have expired before. If a build fails on a <code>wget</code> in the data stage, that is why, and the URL needs replacing. The Zenodo-hosted files (<code>MTB_ancestor_reference.fasta</code>, the pathotypr markers) are not affected.</p></div>
 <h2 id="singularity-on-a-cluster">Singularity on a cluster<a class="anchor" href="#singularity-on-a-cluster" aria-label="Link to this section">#</a></h2>
-<p>Set a shared cache so every job reuses one converted image instead of each building its own:</p>
-<div class="code" data-lang="bash"><pre>export NXF_SINGULARITY_CACHEDIR=/shared/singularity_cache</pre></div>
-<p>Put it in your shell profile or the launch script. Without it, a large run can have dozens of jobs converting the same image at once.</p>
+<p>The <code>singularity</code> profile keeps the converted image in <code>&lt;outdir&gt;/singularity_cache</code>, so each results folder gets a copy of its own, and that setting wins over <code>NXF_SINGULARITY_CACHEDIR</code>: the variable alone changes nothing. To keep one copy for every run, set the folder in a config and pass it with <code>-c</code>:</p>
+<div class="code" data-lang="groovy"><div class="code-title">shared.config</div><pre>singularity.cacheDir = &#x27;/shared/singularity_cache&#x27;</pre></div>
+<div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
+    -c shared.config --tsv samples.tsv</pre></div>
+<p>With Nextflow 24.04 and 26.10 alike, <code>nextflow -c shared.config config -profile singularity</code> then shows <code>cacheDir = &#x27;/shared/singularity_cache&#x27;</code>, where without it the profile's <code>results/singularity_cache</code> stays, whatever the variable says.</p>
 <p>More cluster specifics in <a href="hpc.html">deployment on HPC</a>.</p>
 <h2 id="next-steps">Next steps<a class="anchor" href="#next-steps" aria-label="Link to this section">#</a></h2>
 <ul><li><a href="hpc.html">HPC deployment</a>: scratch, shared filesystems, schedulers</li><li><a href="troubleshooting.html">Troubleshooting</a>: when a run fails</li></ul>

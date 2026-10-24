@@ -90,46 +90,53 @@
 <main class="prose" id="content">
 <p class="crumb"><a href="../documentation.html">Docs</a> / User guide</p>
 <h1 id="outputs">Outputs</h1>
-<p>Everything lands under <code>--outdir</code>, <code>results/</code> by default, in one subdirectory per pipeline stage. <code>{sampleId}</code> below is the sample's name as lineage typing leaves it, <code>L4_G26689</code> for sample <code>G26689</code>, or the sample ID alone under <code>--skip_typing</code>.</p>
+<p>Everything lands under <code>--outdir</code>, <code>results/</code> by default, in one subdirectory per pipeline stage. <code>{lineage}_{sampleId}</code> below is the sample's name as lineage typing leaves it, <code>L4_G26689</code> for sample <code>G26689</code>, or the sample ID alone under <code>--skip_typing</code>.</p>
 <h2 id="where-to-look-first">Where to look first<a class="anchor" href="#where-to-look-first" aria-label="Link to this section">#</a></h2>
-<div class="table-wrap"><table><thead><tr><th>What you want</th><th>File</th></tr></thead><tbody><tr><td>The whole analysis, interactive</td><td><code>results/final_report.html</code></td></tr><tr><td>Each genome and each gene, question by question</td><td><code>results/amap_report.html</code></td></tr><tr><td>Corrected annotation for a sample</td><td><code>results/AMAP/{sampleId}/*-AMAP.gff3</code></td></tr><tr><td>Proteins for downstream tools</td><td><code>results/AMAP/{sampleId}/*-AMAP.clean.faa</code></td></tr><tr><td>Everything known about every gene</td><td><code>results/AMAP/{sampleId}/*-AMAPmastertable.tsv</code></td></tr><tr><td>Tool versions for your methods section</td><td><code>results/pipeline_info/software_versions.yml</code></td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>What you want</th><th>File</th></tr></thead><tbody><tr><td>The whole analysis, after a run with eggNOG (<a href="report.html">the full report</a>)</td><td><code>results/final_report.html</code></td></tr><tr><td>Each genome and each gene, question by question, in every run (<a href="amap-report.html">the report by question</a>)</td><td><code>results/amap_report.html</code></td></tr><tr><td>Corrected annotation for a sample</td><td><code>results/AMAP/{lineage}_{sampleId}/*-AMAP.gff3</code></td></tr><tr><td>Proteins for downstream tools</td><td><code>results/AMAP/{lineage}_{sampleId}/*-AMAP.clean.faa</code></td></tr><tr><td>Everything known about every gene</td><td><code>results/AMAP/{lineage}_{sampleId}/*-AMAPmastertable.tsv</code></td></tr><tr><td>Tool versions for your methods section</td><td><code>results/pipeline_info/software_versions.yml</code></td></tr></tbody></table></div>
 <h2 id="the-full-tree">The full tree<a class="anchor" href="#the-full-tree" aria-label="Link to this section">#</a></h2>
 <figure class="fig results-map"><div class="rm-row"><i class="rm-line rm-main"></i><code class="rm-folder">PATHOTYPR/</code><div class="rm-what"><span class="rm-by">PATHOTYPR</span><span class="rm-when">Left out with <code>--skip_typing</code>.</span></div></div><div class="rm-row"><i class="rm-line rm-main"></i><code class="rm-folder">BAKTA/</code><div class="rm-what"><span class="rm-by">BAKTA_ANNOTATOR</span><span class="rm-when">Always written.</span></div></div><div class="rm-row"><i class="rm-line rm-main"></i><code class="rm-folder">CDS_CASES/</code><div class="rm-what"><span class="rm-by">TYPE_CASES</span><span class="rm-when">Always written.</span></div></div><div class="rm-row"><i class="rm-line rm-main"></i><code class="rm-folder">AMAP/</code><div class="rm-what"><span class="rm-by">FIX_CDS, then GET_OUTPUTS and GET_COUNT</span><span class="rm-when">Left out with <code>--skip_functional_annotation</code> only FIX_CDS's <code>*.AMAP.tsv</code>, <code>.faa</code> and <code>.fna</code> are left.</span></div></div><div class="rm-row"><i class="rm-line rm-dup"></i><code class="rm-folder">DUPLICATIONS/</code><div class="rm-what"><span class="rm-by">GET_DUPLICATIONS, GET_ALLDUP</span><span class="rm-when">Left out with <code>--skip_functional_annotation</code>.</span></div></div><div class="rm-row"><i class="rm-line rm-pan"></i><code class="rm-folder">PANGENE/</code><div class="rm-what"><span class="rm-by">PANGENE</span><span class="rm-when">Left out with <code>--skip_functional_annotation</code>.</span></div></div><div class="rm-row"><i class="rm-line rm-main"></i><code class="rm-folder">final_report.html</code><div class="rm-what"><span class="rm-by">FINAL_REPORT</span><span class="rm-when">Left out with <code>--skip_functional_annotation</code>.</span></div></div><div class="rm-row"><i class="rm-line rm-none"></i><code class="rm-folder">pipeline_info/</code><div class="rm-what"><span class="rm-by">VALIDATE_INPUTS, SOFTWARE_VERSIONS, DUMP_PARAMS and Nextflow itself</span><span class="rm-when">Always written.</span></div></div><figcaption>Each folder under <code>results/</code>, the processes of the <a href="../how-it-works/workflow.html">metro map</a> that write it, and the options that leave it out. The colour is the metro line of its process.</figcaption></figure>
 <div class="code" data-lang="text"><pre>results/
 ├── AMAP/
-│   └── {sampleId}/
-│       ├── *-AMAP.faa                  # Corrected proteins, all genes including pseudogenes
+│   └── {lineage}_{sampleId}/
+│       ├── *.AMAP.tsv                  # Every run: the corrected genes, one row each
+│       ├── *.AMAP.faa                  # Every run: their proteins
+│       ├── *.AMAP.fna                  # Every run: their nucleotide sequences
+│       ├── *-AMAP.faa                  # Corrected proteins, pseudogenes included
 │       ├── *-AMAP.clean.faa            # No pseudogenes, no internal stops
 │       ├── *-AMAP.fna                  # Corrected nucleotide sequences
+│       ├── *-AMAP.tsv                  # The finished annotation, every feature
 │       ├── *-AMAP.gff3                 # Corrected annotation, GFF3
 │       ├── *-AMAP.gbk                  # Corrected annotation, GenBank
-│       ├── *-AMAP.qc.tsv               # Genome size, GC%, coding density, annotation rate
-│       ├── *-AMAPmastertable.tsv       # Coordinates plus eggNOG plus Mycobrowser, one row per gene
+│       ├── *-AMAP.qc.tsv               # Size, GC%, coding density, annotation rate
+│       ├── *-AMAPmastertable.tsv       # Every gene, with eggNOG and Mycobrowser
 │       ├── *-AMAP.COG.tsv              # COG category counts
-│       └── *-AMAP.MycoBrowser.tsv      # Mycobrowser category counts
+│       ├── *-AMAP.MycoBrowser.tsv      # Mycobrowser category counts
+│       └── *-AMAP.noRef.tsv            # The genes that name no reference gene
 │
 ├── BAKTA/
-│   └── {sampleId}/                     # The uncorrected Bakta annotation, for comparison
-│       ├── *.faa  *.gbff  *.gff3  *.tsv
+│   └── {lineage}_{sampleId}/           # Bakta&#x27;s own annotation, uncorrected
+│       ├── *.gff3  *.gbff  *.embl  *.tsv  *.json
+│       ├── *.faa  *.ffn  *.fna
 │       ├── *.hypotheticals.faa  *.hypotheticals.tsv
-│       ├── *.png                       # Genome map
-│       └── *.txt                       # Bakta summary statistics
+│       ├── *.inference.tsv
+│       ├── *.png  *.svg                # Genome map
+│       └── *.txt  *.log                # Bakta summary statistics and log
 │
 ├── CDS_CASES/
 │   ├── summary/
 │   │   └── *-summary.tsv               # Case counts, all samples
-│   └── {sampleId}/
+│   └── {lineage}_{sampleId}/
 │       ├── *-case[1-4].tsv             # One table per case
-│       ├── *-rvmissing.tsv             # Reference genes Bakta did not find
+│       ├── *-rvmissing.tsv             # Reference genes Bakta missed, put back
 │       ├── *.html                      # Interactive overlap plots
 │       └── *_corrected.tsv             # Final corrected coordinates
 │
 ├── DUPLICATIONS/
-│   ├── {sampleId}/
+│   ├── {lineage}_{sampleId}/
 │   │   ├── duplications*               # Raw Diamond output, within-genome
 │   │   ├── duplications_*_groups.tsv   # Duplicated genes grouped into families
 │   │   └── *.dup                       # Duplicated protein sequences
-│   ├── homologous_communities.tsv      # Communities across all samples, with network metrics
+│   ├── homologous_communities.tsv      # Communities across samples, with metrics
 │   └── homologous_communities.html     # Interactive network
 │
 ├── PANGENE/
@@ -152,8 +159,9 @@
 │   ├── validation.log                  # Pre-flight validation results
 │   └── run_summary.txt                 # Status, duration, sample counts
 │
-├── final_report.html                   # The full interactive report
-└── amap_report.html                    # The report by question, also without eggNOG</pre></div>
+├── final_report.html                   # The full report, after eggNOG
+└── amap_report.html                    # The report by question, in every run</pre></div>
+<p>The <code>.AMAP.</code> files, with a dot, are the correction's own output, written in every run, <code>--skip_functional_annotation</code> included. The <code>-AMAP.</code> files, with a hyphen, are the finished annotation, written after eggNOG. <code>*.AMAP.faa</code> and <code>*-AMAP.faa</code> hold the same proteins, and the two <code>.fna</code> files the same sequences.</p>
 <h2 id="the-key-files">The key files<a class="anchor" href="#the-key-files" aria-label="Link to this section">#</a></h2>
 <h3 id="-amapgff3-and--amapgbk"><code>*-AMAP.gff3</code> and <code>*-AMAP.gbk</code><a class="anchor" href="#-amapgff3-and--amapgbk" aria-label="Link to this section">#</a></h3>
 <p>The corrected annotation, which is the point of the pipeline. The GFF3 is spec-compliant: gene features parent their CDS features, attributes are URL-escaped, <code>##sequence-region</code> pragmas are emitted per contig, and eggNOG annotation rides along as <code>Ontology_term</code>, <code>eC_number</code>, <code>COG_category</code>, <code>KEGG_ko</code>, <code>KEGG_Pathway</code> and <code>PFAMs</code>. The sequences are appended after <code>##FASTA</code>.</p>
@@ -191,7 +199,7 @@ contig_10  AMAP  CDS  101478  102146  .  +  0  ID=L4_CDC1551d_Rv1239c_2;&hellip;
 <h3 id="final_reporthtml"><code>final_report.html</code><a class="anchor" href="#final_reporthtml" aria-label="Link to this section">#</a></h3>
 <p>Self-contained, so it travels by email. Covers per-sample quality, missing reference genes by lineage, PE/PPE family distribution, KEGG pathways, duplication communities and network topology, the pangenome (core, softcore, shell, cloud, frequency spectrum, presence/absence heatmaps), COG and Mycobrowser distributions, case statistics and the associated tests, plus a searchable master-table explorer.</p>
 <h3 id="amap_reporthtml"><code>amap_report.html</code><a class="anchor" href="#amap_reporthtml" aria-label="Link to this section">#</a></h3>
-<p>One self-contained file, organised by the questions a run raises: how each genome annotated, where genes are missing or broken on the reference, one gene in every genome, what the correction changed, the pseudogenes by lineage, what lies outside the reference, and the functional profile. Written with or without the functional annotation. <a href="amap-report.html">The interactive report</a> goes through it.</p>
+<p>One self-contained file, organised by the questions a run raises: how each genome annotated, where genes are missing or broken on the reference, one gene in every genome, what the correction changed, the pseudogenes by lineage, what lies outside the reference, and the functional profile. Written with or without the functional annotation. <a href="amap-report.html">The report by question</a> goes through it.</p>
 <h2 id="effect-of-the-skip-options">Effect of the skip options<a class="anchor" href="#effect-of-the-skip-options" aria-label="Link to this section">#</a></h2>
 <ul><li><strong><code>--skip_typing</code></strong>: No <code>PATHOTYPR/</code> directory. Samples keep their original IDs instead of being renamed by lineage.</li><li><strong><code>--skip_functional_annotation</code></strong>: The run stops after correction. No <code>DUPLICATIONS/</code>, <code>PANGENE/</code> or <code>final_report.html</code>, and <code>AMAP/</code> holds only the corrected table and sequences, <code>*.AMAP.tsv</code>, <code>*.AMAP.faa</code> and <code>*.AMAP.fna</code>, without the GFF3, the GenBank or the master table. You still get <code>BAKTA/</code> and <code>CDS_CASES/</code>, including <code>*_corrected.tsv</code> with the corrected coordinates, and <code>amap_report.html</code>, without its eggNOG sections.</li><li><strong><code>--skip_mycobrowser</code></strong>: <code>*-AMAP.MycoBrowser.tsv</code> is written empty and the Mycobrowser sections drop out of the report. Everything else is unaffected.</li></ul>
 <h2 id="next-steps">Next steps<a class="anchor" href="#next-steps" aria-label="Link to this section">#</a></h2>

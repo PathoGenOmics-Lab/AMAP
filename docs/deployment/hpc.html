@@ -89,8 +89,8 @@
 </aside>
 <main class="prose" id="content">
 <p class="crumb"><a href="../documentation.html">Docs</a> / Deployment</p>
-<h1 id="running-on-a-cluster">Running on a cluster</h1>
-<p>Past a couple of dozen genomes, a scheduler is worth the setup. Combine a container profile with an executor profile:</p>
+<h1 id="hpc-clusters">HPC clusters</h1>
+<p>Past about twenty genomes, a scheduler is worth the setup. Combine a container profile with an executor profile:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv</pre></div>
 <figure class="fig hpc-fig"><div class="hpc-flow"><div class="hpc-box hpc-launch"><p class="hpc-title">The launcher</p><p><code>nextflow run</code>, in <code>tmux</code> or as a small job of its own: 2 CPUs, 8 GB, 48 h. It submits, waits and resubmits.</p><p class="hpc-small">Runs here too: <code>VALIDATE_INPUTS</code>, <code>SOFTWARE_VERSIONS</code>, <code>DUMP_PARAMS</code></p></div><i class="hpc-arrow" aria-hidden="true"></i><div class="hpc-box hpc-queue"><p class="hpc-title">The scheduler</p><p>Up to <b>200</b> jobs at once, submitted at up to 100 a minute with <code>slurm</code> (20 a minute with <code>sge</code>, <code>pbs</code> and <code>lsf</code>).</p></div><i class="hpc-arrow" aria-hidden="true"></i><div class="hpc-box hpc-nodes"><p class="hpc-title">The compute nodes</p><p>One job per task, at most 48 CPUs and 128 GB each, in the AMAP image, working on the node's own disk and copying back only the results.</p><div class="hpc-tasks"><span>per sample: Bakta, miniprot, the correction, duplications, pangenome</span><span>once for all: eggNOG, the genomes compared, the report</span></div></div></div><div class="hpc-box hpc-shared"><p class="hpc-title">Shared storage</p><div class="hpc-places"><span><code class="hpc-key">-work-dir</code>every task's files, which <code>-resume</code> needs</span><span><code class="hpc-key">NXF_SINGULARITY_CACHEDIR</code>the image, converted once</span><span><code class="hpc-key">--eggnog_db</code>the eggNOG database, built once</span><span><code class="hpc-key">--outdir</code>the results</span></div></div><figcaption>A run on a cluster, with the settings of the <code>slurm</code> profile in <code>nextflow.config</code> and the launcher of the job script below.</figcaption></figure>
 <h2 id="the-executor-profiles">The executor profiles<a class="anchor" href="#the-executor-profiles" aria-label="Link to this section">#</a></h2>
@@ -107,21 +107,26 @@
     -process.queue long \
     -process.clusterOptions &#x27;--account=mygroup&#x27;</pre></div>
 <p><code>-process.queue</code> sets the partition or queue, and <code>-process.clusterOptions</code> passes anything else straight through, which is where accounting flags, QoS and node constraints go.</p>
-<p>On SLURM, Bakta's jobs, the longest a run sends, also ask for <code>--qos=medium</code>. The <code>slurm</code> profile sets that for Bakta alone, and for Bakta it takes the place of <code>-process.clusterOptions</code>, so give Bakta your site's options in a config passed with <code>-c</code>:</p>
-<div class="code" data-lang="groovy"><pre>process {
+<p>On SLURM, Bakta's jobs, the longest a run sends, also ask for <code>--qos=medium</code>. The <code>slurm</code> profile sets that for Bakta alone, and for Bakta it takes the place of <code>-process.clusterOptions</code>, so give Bakta your site's options in a config of your own, with <code>--qos=medium</code> if your cluster has that QoS and without it if not:</p>
+<div class="code" data-lang="groovy"><div class="code-title">bakta.config</div><pre>process {
     withName: &#x27;BAKTA_ANNOTATOR&#x27; {
         clusterOptions = &#x27;--qos=medium --account=mygroup&#x27;
     }
 }</pre></div>
+<p>Then pass it with <code>-c</code>, next to the options for every other job:</p>
+<div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
+    -c bakta.config --tsv samples.tsv \
+    -process.clusterOptions &#x27;--account=mygroup&#x27;</pre></div>
 <h2 id="scratch">Scratch<a class="anchor" href="#scratch" aria-label="Link to this section">#</a></h2>
 <p><code>--scratch</code> is on by default in every HPC profile, and it matters. Without it, every process reads and writes directly on the shared filesystem, and Bakta and eggNOG in particular generate enough metadata traffic to slow a cluster down for everyone. With it, work happens on node-local disk and only the results are copied back.</p>
 <p>Turn it off only if your nodes have no local disk:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
     --tsv samples.tsv --scratch false</pre></div>
 <h2 id="where-to-put-things">Where to put things<a class="anchor" href="#where-to-put-things" aria-label="Link to this section">#</a></h2>
-<p><strong>The Singularity cache.</strong> Set it once, somewhere shared:</p>
-<div class="code" data-lang="bash"><pre>export NXF_SINGULARITY_CACHEDIR=/shared/singularity_cache</pre></div>
-<p>Otherwise the <code>singularity</code> profile caches under <code>--outdir</code>, and a large run can have many jobs converting the same image at once.</p>
+<p><strong>The Singularity cache.</strong> The <code>singularity</code> profile keeps the converted image in <code>&lt;outdir&gt;/singularity_cache</code>, so every results folder gets a copy of its own, and that setting wins over <code>NXF_SINGULARITY_CACHEDIR</code>: the variable alone changes nothing. Keep one shared copy with a config passed with <code>-c</code>:</p>
+<div class="code" data-lang="groovy"><div class="code-title">shared.config</div><pre>singularity.cacheDir = &#x27;/shared/singularity_cache&#x27;</pre></div>
+<div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
+    -c shared.config --tsv samples.tsv</pre></div>
 <p><strong>The eggNOG database.</strong> Large, built once, reused forever. Point it at persistent shared storage rather than somewhere per-run:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
     --tsv samples.tsv --eggnog_db /shared/databases/eggnog</pre></div>
@@ -139,10 +144,10 @@
 #SBATCH --output=amap_%j.log
 
 module load singularity
-export NXF_SINGULARITY_CACHEDIR=/shared/singularity_cache
 
 nextflow run PathoGenOmics-Lab/AMAP \
     -profile singularity,slurm \
+    -c shared.config \
     --tsv samples.tsv \
     --eggnog_db /shared/databases/eggnog \
     -work-dir /scratch/$USER/amap_work \

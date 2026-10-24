@@ -4,7 +4,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Tutorial",
 "section": "",
 "url": "getting-started/tutorial.html",
-"text": "Every command spelled out, nothing assumed. It uses a real genome you can download in one line, so you can follow along and compare your numbers against the ones printed here. Those numbers come from actual runs of these commands, not from memory, made on 18 October 2026 with AMAP at commit 947a99d. The runs skipped eggNOG, with --skip_functional_annotation. None of the numbers depends on it, and the one table shown here that is written after it was made by hand from the same run, as the sample check explains. The genome is Mycobacterium tuberculosis CDC1551, corrected against the H37Rv refere"
+"text": "Every command spelled out, nothing assumed. It uses a real genome you can download in one line, so you can follow along and compare your numbers against the ones printed here. They come from actual runs of these commands, made on 18 October 2026 with AMAP at commit 947a99d. For exactly these numbers, add -r 947a99dee49d2a2429e014296ac35ba08e911108 to each nextflow run (pinning the pipeline says why the whole hash). The runs skipped eggNOG, with --skip_functional_annotation, and no number here depends on it. The one table eggNOG's step writes, in the sample check, was made by hand from the same"
 },
 {
 "page": "Tutorial",
@@ -16,13 +16,13 @@ window.AMAP_DOCS_INDEX = [
 "page": "Tutorial",
 "section": "The machine",
 "url": "getting-started/tutorial.html#the-machine",
-"text": "Worth checking before you start, because this is what stops a run rather than anything you will have got wrong. Disk goes first. The container is 12 GB unpacked. The eggNOG database is built on first use and cached: AMAP skips the 60 GB Diamond core that eggNOG-mapper would otherwise fetch and builds a bacteria-only index of about 3 GB instead, on top of the metadata it downloads. Nextflow keeps every intermediate under work/, which for one genome is a few GB and grows with the sample sheet. Memory decides whether the run finishes at all. Two steps are heavy: eggNOG annotation 24 50 GB eggNOG "
+"text": "Worth checking before you start, because this is what stops a run rather than anything you will have got wrong. Disk goes first. The container is 12 GB unpacked. The eggNOG database is built on first use and cached, and it is the largest thing a run keeps: eggnog.db alone unpacks to 41.4 GB from a 6.8 GB download. For its bacteria-only Diamond index AMAP also downloads the 9.5 GB eggNOG proteome, and deletes it once the index is built. Nextflow keeps every intermediate under work/, which came to 98 MB for the test in step 2 and 248 MB for all the runs of this page, none with eggNOG, and grows "
 },
 {
 "page": "Tutorial",
 "section": "2. Check the plumbing before touching real data",
 "url": "getting-started/tutorial.html#2-check-the-plumbing-before-touching-real-data",
-"text": "The test profile annotates the reference genome that ships inside the container, so it needs no data of your own: nextflow run PathoGenOmics-Lab/AMAP -profile docker,test The first run pulls the AMAP image. It is around 3.4 GB compressed and 12 GB on disk, because it carries the Bakta database and the H37Rv reference files. That is a one-off; later runs reuse it. If this finishes without an error, the whole chain works."
+"text": "The test profile annotates the H37Rv genome that ships inside the container, so it needs no data of your own, and --skip_functional_annotation keeps it to the correction, with no eggNOG database to build: nextflow run PathoGenOmics-Lab/AMAP -profile docker,test \\     --skip_functional_annotation --outdir amap-test The first run pulls the AMAP image. It is around 3.4 GB compressed and 12 GB on disk, because it carries the Bakta database and the H37Rv reference files. That is a one-off; later runs reuse it. With the image already pulled, the test took 2 min 47 s on the machine above, and wrote a"
 },
 {
 "page": "Tutorial",
@@ -46,19 +46,25 @@ window.AMAP_DOCS_INDEX = [
 "page": "Tutorial",
 "section": "6. Run it",
 "url": "getting-started/tutorial.html#6-run-it",
-"text": "nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv What happens, in order: lineage typing, Bakta annotation, alignment of the H37Rv proteome onto your genome, case classification, correction, eggNOG functional annotation, duplication analysis, pangenome, report. The first run also downloads and builds the eggNOG database, which is several gigabytes and dominates the wall clock. Point --eggnog_db at somewhere persistent so the next run reuses it: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv --eggnog_db ~/databases/eggnog If the run dies partway,"
+"text": "nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv What happens, in order: lineage typing, Bakta annotation, alignment of the H37Rv proteome onto your genome, case classification, correction, eggNOG functional annotation, duplication analysis, pangenome, the two reports. The first run also downloads and builds the eggNOG database, eggnog.db alone 41.4 GB, and that dominates the wall clock. Point --eggnog_db at somewhere persistent so the next run reuses it: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv --eggnog_db ~/databases/eggnog If the run d"
+},
+{
+"page": "Tutorial",
+"section": "How long it took",
+"url": "getting-started/tutorial.html#how-long-it-took",
+"text": "Without eggNOG, on the machine above, the CDC1551 run took 2 min 16 s from start to finish. Each step, from the run's execution trace in results/pipeline_info/, its realtime and peak_rss: PATHOTYPR, lineage typing 1.1 s 6.1 MB BAKTA_ANNOTATOR 1 min 46 s 3.5 GB MINIPROT 2 s 324 MB TYPE_CASES, the classification 14.2 s 219.2 MB FIX_CDS, the correction 3.7 s 165.2 MB AMAP_REPORT 944 ms 35.6 MB The run's other four tasks, which set up the reference and record the parameters, the versions and the validation, took under 4 s each. Bakta is the step to plan for: the E. coli run of step 9 took 5 min 47"
 },
 {
 "page": "Tutorial",
 "section": "7. Look at what came out",
 "url": "getting-started/tutorial.html#7-look-at-what-came-out",
-"text": "ls -F results/ AMAP/  BAKTA/  CDS_CASES/  DUPLICATIONS/  PANGENE/  PATHOTYPR/ amap_report.html  final_report.html  pipeline_info/ A run without eggNOG, like the ones behind this page, has no DUPLICATIONS/, PANGENE/ or final_report.html. Open results/final_report.html first. It is self-contained, so it travels by email. results/amap_report.html goes through the same run question by question, and a run without eggNOG still gets it."
+"text": "ls -1F results/ AMAP/ BAKTA/ CDS_CASES/ PATHOTYPR/ amap_report.html pipeline_info/ That is a run without eggNOG, like the ones behind this page. A full run adds DUPLICATIONS/, PANGENE/ and final_report.html. Open results/amap_report.html first: every run writes it, and it goes through the run question by question. After a full run, results/final_report.html has the whole analysis. Both are self-contained, so they travel by email."
 },
 {
 "page": "Tutorial",
 "section": "Did the correction do anything?",
 "url": "getting-started/tutorial.html#did-the-correction-do-anything",
-"text": "column -t -s$'\\t' results/CDS_CASES/summary/*-summary.tsv Type           Number case2          2813     coordinates matched the reference exactly case3            24     coordinates matched, alignment length differed case4          1100     overlapped the reference but disagreed, resolved case1_initial   141     Bakta called it, the reference has nothing t Read that as: of 4077 Bakta calls, 2813 already agreed with the reference, 1100 had to be adjudicated, and 97 reference genes Bakta had missed were rescued. Only 11 of the 141 apparently novel genes survived scrutiny, which is what you would"
+"text": "Every file of the sample carries its name as lineage typing leaves it, L4_CDC1551. The case summary's first two columns are the counts: cut -f1,2 results/CDS_CASES/summary/L4_CDC1551-summary.tsv | column -t Type           Number case2          2813 case3          24 case4          1100 case1_initial  141 rv_missing     97 total_cds      4077 case1_removed  130 case1_kept     11 The other three, Sequence, Lineage and Sample, say whose counts they are, which matters once the folder holds several samples. What each row means: case2 2813 Coordinates matched the reference exactly case3 24 Coordinat"
 },
 {
 "page": "Tutorial",
@@ -76,7 +82,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Tutorial",
 "section": "8. More than one genome",
 "url": "getting-started/tutorial.html#8-more-than-one-genome",
-"text": "Add rows. The pipeline parallelises across samples, and the pangenome and the cross-genome duplication analysis only become meaningful with several: sampleId\tfasta CDC1551\t/data/cdc1551.fna Erdman\t/data/erdman.fna Beijing_1\t/data/beijing_1.fna Past a couple of dozen, move to a cluster: nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \\     --tsv samples.tsv --eggnog_db /shared/databases/eggnog Deployment on HPC covers scratch, shared filesystems and where things should live."
+"text": "Add rows. The pipeline parallelises across samples, and the pangenome and the cross-genome duplication analysis only become meaningful with several: sampleId\tfasta CDC1551\t/data/cdc1551.fna Erdman\t/data/erdman.fna Beijing_1\t/data/beijing_1.fna Past about twenty genomes, move to a cluster: nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \\     --tsv samples.tsv --eggnog_db /shared/databases/eggnog Deployment on HPC covers scratch, shared filesystems and where things should live."
 },
 {
 "page": "Tutorial",
@@ -100,13 +106,13 @@ window.AMAP_DOCS_INDEX = [
 "page": "Installation",
 "section": "",
 "url": "getting-started/installation.html",
-"text": "AMAP needs two things on your machine: Nextflow, which runs the pipeline, and a container engine, which supplies every tool the pipeline calls. You do not install Bakta, Miniprot, eggNOG-mapper or any of the rest yourself; they all live inside the AMAP image. You also do not need to clone this repository. Nextflow pulls the pipeline straight from GitHub."
+"text": "AMAP needs two things on your machine: Nextflow, which runs the pipeline, and a container engine, which supplies every tool the pipeline calls. You do not install Bakta, miniprot, eggNOG-mapper or any of the rest yourself; they all live inside the AMAP image. You also do not need to clone this repository. Nextflow pulls the pipeline straight from GitHub."
 },
 {
 "page": "Installation",
 "section": "1. Nextflow",
 "url": "getting-started/installation.html#1-nextflow",
-"text": "Nextflow needs Java 17 or newer, and Conda brings both: conda create -n nextflow-env conda activate nextflow-env conda install -c bioconda nextflow If you do not have Conda, Miniconda is a lightweight installer. Any other Nextflow installation works equally well, see the Nextflow documentation. AMAP requires Nextflow 24.04 or newer, which is enforced by the pipeline manifest."
+"text": "Nextflow needs Java 17 or newer, and Conda brings both: conda create -n nextflow-env -c conda-forge -c bioconda nextflow conda activate nextflow-env If you do not have Conda, Miniforge is the one to install: it comes set up for conda-forge, the channel Bioconda builds on. Any other Nextflow installation works equally well, see the Nextflow documentation. AMAP requires Nextflow 24.04 or newer, which is enforced by the pipeline manifest."
 },
 {
 "page": "Installation",
@@ -118,19 +124,25 @@ window.AMAP_DOCS_INDEX = [
 "page": "Installation",
 "section": "3. Check the installation",
 "url": "getting-started/installation.html#3-check-the-installation",
-"text": "nextflow -version docker --version        # or: singularity --version"
+"text": "nextflow -version docker info --format 'Docker can give containers {{.NCPU}} CPUs and {{.MemTotal}} bytes' On a machine with Docker Desktop running, the second line prints something like this: Docker can give containers 14 CPUs and 8217014272 bytes Unlike docker --version, it fails when the Docker daemon is not running, and it prints the memory your containers can really have. Under 8 GB? Raise it in Docker Desktop, Settings, Resources. With Singularity or Apptainer, singularity --version is the check."
 },
 {
 "page": "Installation",
 "section": "4. Run the test profile",
 "url": "getting-started/installation.html#4-run-the-test-profile",
-"text": "Before pointing AMAP at real data, confirm the whole chain works. The test profile annotates the reference genome bundled in the container, so it needs no data of your own and nothing to download beyond the image: nextflow run PathoGenOmics-Lab/AMAP -profile docker,test The first run downloads the AMAP image, which is several gigabytes because it bundles the Bakta database and the H37Rv reference files. Expect that to take a while. Later runs reuse the cached image. Check inputs before a long run Once you have your own samples, --validate_only checks every FASTA and database path without execu"
+"text": "Before pointing AMAP at real data, confirm the whole chain works. The test profile annotates the H37Rv genome bundled in the image, so it needs no data of your own, and --skip_functional_annotation keeps it to the correction: nextflow run PathoGenOmics-Lab/AMAP -profile docker,test \\     --skip_functional_annotation --outdir amap-test It downloads nothing beyond the pipeline and its image, writes amap-test/ and Nextflow's work/ in the folder you run it from, and ends with a ✓ COMPLETED block. On an Apple M4 Pro, under emulation and with the image already pulled, it took 2 min 47 s. The first r"
+},
+{
+"page": "Installation",
+"section": "The eggNOG database",
+"url": "getting-started/installation.html#the-eggnog-database",
+"text": "Without --skip_functional_annotation, the test also builds the eggNOG database, the one thing the image does not hold. It is the largest thing AMAP keeps: eggnog.db alone unpacks to 41.4 GB from a 6.8 GB download, and the build also downloads the 9.5 GB eggNOG proteome, makes the bacteria-only Diamond index from it and deletes it. It is built once, in the folder --eggnog_db names, and every run after reuses it, so point that somewhere with room. Check inputs before a long run Once you have your own samples, --validate_only checks every FASTA and database path without executing anything: nextfl"
 },
 {
 "page": "Installation",
 "section": "Running without a container",
 "url": "getting-started/installation.html#running-without-a-container",
-"text": "Possible but not recommended: you take on installing Bakta, Miniprot, eggNOG-mapper, Diamond, pangene, pathotypr, R and the report packages yourself, and pointing AMAP at each reference file with the reference arguments. The repository ships an environment.yml that reproduces the software stack under Conda: conda env create -f environment.yml conda activate amap You will still need to supply the Bakta database and the reference files, which the container would otherwise provide. See containers for what the image contains."
+"text": "Possible but not recommended: you take on installing Bakta, miniprot, eggNOG-mapper, Diamond, pangene, pathotypr, R and the report packages yourself, and pointing AMAP at each reference file with the reference arguments. The repository ships an environment.yml that reproduces the software stack under Conda: conda env create -f environment.yml conda activate amap You will still need to supply the Bakta database and the reference files, which the container would otherwise provide. See containers for what the image contains."
 },
 {
 "page": "Installation",
@@ -146,39 +158,45 @@ window.AMAP_DOCS_INDEX = [
 },
 {
 "page": "Quickstart",
-"section": "1. Write a sample sheet",
-"url": "getting-started/quickstart.html#1-write-a-sample-sheet",
+"section": "1. Check the plumbing",
+"url": "getting-started/quickstart.html#1-check-the-plumbing",
+"text": "The test profile annotates the H37Rv genome that ships inside the image, so it needs no data of your own, and --skip_functional_annotation keeps it to the correction, with no eggNOG database to build: nextflow run PathoGenOmics-Lab/AMAP -profile docker,test \\     --skip_functional_annotation --outdir amap-test It writes amap-test/ and work/ where you run it, and ends with a ✓ COMPLETED block. On an Apple M4 Pro, under emulation and with the image already pulled, it took 2 min 47 s; the first run also pulls the image, about 3.4 GB compressed and 12 GB on disk, once."
+},
+{
+"page": "Quickstart",
+"section": "2. Write a sample sheet",
+"url": "getting-started/quickstart.html#2-write-a-sample-sheet",
 "text": "AMAP reads a tab-separated file with two columns, sampleId and fasta: sampleId\tfasta G26689\t/data/genomes/G26689.fasta G26690\t/data/genomes/G26690.fasta The separator must be a real tab. Paths can be absolute, or relative to where you launch Nextflow. See preparing inputs for the details and the checks AMAP runs over them."
 },
 {
 "page": "Quickstart",
-"section": "2. Check the inputs",
-"url": "getting-started/quickstart.html#2-check-the-inputs",
-"text": "Cheap, and it catches the mistakes that would otherwise surface twenty minutes into a run: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv --validate_only"
+"section": "3. Check the inputs",
+"url": "getting-started/quickstart.html#3-check-the-inputs",
+"text": "Cheap, and it catches the mistakes that would otherwise surface twenty minutes into a run: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv --validate_only The verdict, and any warnings, are in results/pipeline_info/validation.log; the terminal only says whether the step ran."
 },
 {
 "page": "Quickstart",
-"section": "3. Run it",
-"url": "getting-started/quickstart.html#3-run-it",
+"section": "4. Run it",
+"url": "getting-started/quickstart.html#4-run-it",
 "text": "Pick what you have, and copy the command: Or start from one of these: nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv Docker nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv Singularity nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm --tsv samples.tsv SLURM cluster Without a scheduler profile every task is capped at the machine's CPUs and 16 GB, and with the scheduler profiles at 48 CPUs and 128 GB, whichever order the profiles come in; a larger request, such as the 50 GB the eggNOG annotation asks for, is lowered to the cap."
 },
 {
 "page": "Quickstart",
-"section": "4. Read the results",
-"url": "getting-started/quickstart.html#4-read-the-results",
-"text": "Everything lands under results/ unless you set --outdir. The three things to open first: The full interactive report results/final_report.html Corrected annotation, per sample results/AMAP/{sampleId}/*-AMAP.gff3 Protein sequences for downstream tools results/AMAP/{sampleId}/*-AMAP.clean.faa Which protein file do I want? *-AMAP.faa holds every gene, pseudogenes included, so it mirrors the annotation exactly. *-AMAP.clean.faa drops pseudogenes and sequences with internal stop codons, which is what orthology, phylogenomics and dN/dS tools expect. Reach for the clean one unless you specifically ne"
+"section": "5. Read the results",
+"url": "getting-started/quickstart.html#5-read-the-results",
+"text": "Everything lands under results/ unless you set --outdir. Each sample's folder is named {lineage}_{sampleId}: lineage typing puts the lineage in front, so G26689 comes out as L4_G26689, and under --skip_typing it is the sample ID alone (outputs has the details). The things to open first: Each genome and each gene, question by question, in every run results/amap_report.html The full report, after a run with eggNOG results/final_report.html Corrected annotation, per sample results/AMAP/{lineage}_{sampleId}/*-AMAP.gff3 Protein sequences for downstream tools results/AMAP/{lineage}_{sampleId}/*-AMAP"
 },
 {
 "page": "Quickstart",
-"section": "5. Resume an interrupted run",
-"url": "getting-started/quickstart.html#5-resume-an-interrupted-run",
+"section": "6. Resume an interrupted run",
+"url": "getting-started/quickstart.html#6-resume-an-interrupted-run",
 "text": "Nextflow caches completed tasks. If a run dies, restart it with -resume and it picks up where it stopped: nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv -resume Keep the same parameters. Changing an input invalidates the cache for every task downstream of it, which is what you want, but it does mean the run redoes that work."
 },
 {
 "page": "Quickstart",
 "section": "Common variations",
 "url": "getting-started/quickstart.html#common-variations",
-"text": "A non-MTBC organism. Lineage typing and Mycobrowser are specific to tuberculosis, so turn them off and supply your own reference: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv \\     --skip_typing --skip_mycobrowser \\     --genus Escherichia --species \"Escherichia coli\" \\     --ref_annotation my_reference.gbk --ref_genome my_reference.fasta See custom reference. Just the corrected genes. If you do not need functional annotation, duplications, the pangenome or the report, stop after the correction step. It is much faster, and leaves the corrected genes as a table wi"
+"text": "A non-MTBC organism. Lineage typing and Mycobrowser are specific to tuberculosis, so turn them off and supply your own reference: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv \\     --skip_typing --skip_mycobrowser \\     --genus Escherichia --species \"Escherichia coli\" \\     --ref_annotation my_reference.gbk --ref_genome my_reference.fasta See custom reference. Just the corrected genes. If you do not need functional annotation, duplications or the pangenome, stop after the correction step. It is much faster, and leaves the corrected genes as a table with their pro"
 },
 {
 "page": "Quickstart",
@@ -220,7 +238,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Preparing inputs",
 "section": "Assembly quality",
 "url": "getting-started/inputs.html#assembly-quality",
-"text": "The correction compares your annotation against a reference proteome, so assembly quality propagates directly into the result. Contiguity matters. A gene broken across two contigs cannot be recovered. The more fragmented the assembly, the more reference genes turn up as missing rather than corrected. Ns break coding sequences. A run of Ns inside a gene stops it translating, so it is dropped or flagged as a pseudogene. The 1% warning is worth taking seriously. Contig names are kept AMAP runs Bakta with --keep-contig-headers, so the sequence names you supplied are the ones in BAKTA/ and in the c"
+"text": "The correction compares your annotation against a reference proteome, so assembly quality propagates directly into the result. Contiguity matters. A gene that a contig end cuts comes back in pieces, each under the gene's name and marked partial at its open end, the way NCBI marks it. A piece under 8 residues is too short to place: in CDC1551 cut into 40 contigs, 22 of the 25 smaller pieces were placed, and the other three were five or six codons long. The more fragmented the assembly, the more partial genes; pieces of cut genes has the rule. Ns break coding sequences. A run of Ns inside a gene"
 },
 {
 "page": "Preparing inputs",
@@ -244,13 +262,13 @@ window.AMAP_DOCS_INDEX = [
 "page": "Parameters",
 "section": "Input and output",
 "url": "user-guide/parameters.html#input-and-output",
-"text": "--tsv Sample sheet with sampleId and fasta columns, tab separated. Not needed with -profile test. file samples.tsv Yes --outdir Directory for results. string results No"
+"text": "--tsv Sample sheet with sampleId and fasta columns, tab separated. file samples.tsv Yes, except with -profile test --outdir Directory for results. string results No"
 },
 {
 "page": "Parameters",
 "section": "Skip options",
 "url": "user-guide/parameters.html#skip-options",
-"text": "--skip_typing Skip pathotypr lineage typing. Required for non-MTBC organisms. boolean false --skip_functional_annotation Stop after annotation correction. Skips eggNOG, duplications, pangenome and the report. boolean false --skip_mycobrowser Skip Mycobrowser functional categories. Auto-enabled when --genus is not Mycobacterium and a custom reference is set. boolean false Their effect on the output tree is covered under outputs."
+"text": "--skip_typing Skip pathotypr lineage typing. Required for non-MTBC organisms. boolean false --skip_functional_annotation Stop after the correction: no eggNOG, duplications, pangenome or final_report.html; amap_report.html is still written, without its eggNOG sections. boolean false --skip_mycobrowser Skip Mycobrowser functional categories. Auto-enabled when --genus is not Mycobacterium and a custom reference is set. boolean false Their effect on the output tree is covered under outputs."
 },
 {
 "page": "Parameters",
@@ -286,7 +304,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Parameters",
 "section": "Nextflow options worth knowing",
 "url": "user-guide/parameters.html#nextflow-options-worth-knowing",
-"text": "These belong to Nextflow rather than AMAP, so they take a single dash. -profile Selects execution profiles, comma separated: docker, singularity, slurm, sge, pbs, test. -resume Reuse cached results from the previous run. -work-dir Where intermediate files go. Defaults to ./work, and it gets large. -process.queue Override the scheduler queue or partition. -process.clusterOptions Extra flags passed to the scheduler, such as '--account=mygroup'. See running AMAP for how the profiles combine."
+"text": "These belong to Nextflow rather than AMAP, so they take a single dash. -profile Selects execution profiles, comma separated: docker, singularity, standard, slurm, sge, pbs, lsf, test, highmem. -resume Reuse cached results from the previous run. -r Run a given branch, tag or full commit hash of AMAP; see pinning the pipeline. -work-dir Where intermediate files go. Defaults to ./work, and it gets large. -process.queue Override the scheduler queue or partition. -process.clusterOptions Extra flags passed to the scheduler, such as '--account=mygroup'. See running AMAP for how the profiles combine."
 },
 {
 "page": "Running AMAP",
@@ -304,13 +322,13 @@ window.AMAP_DOCS_INDEX = [
 "page": "Running AMAP",
 "section": "On a laptop or workstation",
 "url": "user-guide/running.html#on-a-laptop-or-workstation",
-"text": "nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv CPUs are auto-detected and memory is capped at 16 GB. Raise both if the machine allows: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv --max_cpus 8 --max_memory 32.GB A handful of genomes is fine locally. Beyond about twenty, a cluster is worth the setup."
+"text": "nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv CPUs are auto-detected and memory is capped at 16 GB. Raise both if the machine allows: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv --max_cpus 8 --max_memory 32.GB A handful of genomes is fine locally. Past about twenty genomes, a cluster is worth the setup."
 },
 {
 "page": "Running AMAP",
 "section": "On an HPC cluster",
 "url": "user-guide/running.html#on-an-hpc-cluster",
-"text": "nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv Each process becomes its own scheduler job, with up to 200 running at once, so Bakta, Miniprot and eggNOG parallelise across all your samples. Defaults reach 48 CPUs and 128 GB per job, and every process carries a time limit so nothing sits in the queue forever. To match your site's queues and accounting: nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm \\     --tsv samples.tsv \\     --max_cpus 64 --max_memory 256.GB \\     -process.queue long \\     -process.clusterOptions '--account=mygroup' Dep"
+"text": "nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv Each process becomes its own scheduler job, with up to 200 running at once, so Bakta, miniprot and eggNOG parallelise across all your samples. Defaults reach 48 CPUs and 128 GB per job, and every process carries a time limit so nothing sits in the queue forever. To match your site's queues and accounting: nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm \\     --tsv samples.tsv \\     --max_cpus 64 --max_memory 256.GB \\     -process.queue long \\     -process.clusterOptions '--account=mygroup' Dep"
 },
 {
 "page": "Running AMAP",
@@ -328,7 +346,13 @@ window.AMAP_DOCS_INDEX = [
 "page": "Running AMAP",
 "section": "Running only part of the pipeline",
 "url": "user-guide/running.html#running-only-part-of-the-pipeline",
-"text": "--skip_functional_annotation stops after the correction step. You get the corrected genes as a table with their proteins and sequences (*.AMAP.tsv, .faa, .fna) and the case tables, and skip eggNOG, duplications, the pangenome and the report. The GFF3 and GenBank files are written after eggNOG, so they are skipped too. Much faster when the corrected genes are all you are after: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv --skip_functional_annotation"
+"text": "--skip_functional_annotation stops after the correction step. You get the corrected genes as a table with their proteins and sequences (*.AMAP.tsv, .faa, .fna) and the case tables, and skip eggNOG, the duplications and the pangenome: no final_report.html; amap_report.html is still written, without its eggNOG sections. The GFF3 and GenBank files are written after eggNOG, so they are skipped too. Much faster when the corrected genes are all you are after: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv --skip_functional_annotation"
+},
+{
+"page": "Running AMAP",
+"section": "Pinning the pipeline",
+"url": "user-guide/running.html#pinning-the-pipeline",
+"text": "These pages describe AMAP as it is on main, which moves. Without -r, Nextflow runs the copy of AMAP it downloaded first and keeps it until you update it, so two machines can run different code under the same command. For an analysis you will publish, pin both the code and the image: nextflow run PathoGenOmics-Lab/AMAP \\     -r 947a99dee49d2a2429e014296ac35ba08e911108 \\     -profile docker --tsv samples.tsv \\     -process.container 'paururo/amap@sha256:08bd17311ab323317ceecba6e5bc639a29f4c54c9d95f9a7c48ba80a9fc640ee' -r takes a branch, a tag or a commit. Give a commit as its full hash: Nextflow"
 },
 {
 "page": "Running AMAP",
@@ -346,19 +370,19 @@ window.AMAP_DOCS_INDEX = [
 "page": "Outputs",
 "section": "",
 "url": "user-guide/outputs.html",
-"text": "Everything lands under --outdir, results/ by default, in one subdirectory per pipeline stage. {sampleId} below is the sample's name as lineage typing leaves it, L4_G26689 for sample G26689, or the sample ID alone under --skip_typing."
+"text": "Everything lands under --outdir, results/ by default, in one subdirectory per pipeline stage. {lineage}_{sampleId} below is the sample's name as lineage typing leaves it, L4_G26689 for sample G26689, or the sample ID alone under --skip_typing."
 },
 {
 "page": "Outputs",
 "section": "Where to look first",
 "url": "user-guide/outputs.html#where-to-look-first",
-"text": "The whole analysis, interactive results/final_report.html Each genome and each gene, question by question results/amap_report.html Corrected annotation for a sample results/AMAP/{sampleId}/*-AMAP.gff3 Proteins for downstream tools results/AMAP/{sampleId}/*-AMAP.clean.faa Everything known about every gene results/AMAP/{sampleId}/*-AMAPmastertable.tsv Tool versions for your methods section results/pipeline_info/software_versions.yml"
+"text": "The whole analysis, after a run with eggNOG (the full report) results/final_report.html Each genome and each gene, question by question, in every run (the report by question) results/amap_report.html Corrected annotation for a sample results/AMAP/{lineage}_{sampleId}/*-AMAP.gff3 Proteins for downstream tools results/AMAP/{lineage}_{sampleId}/*-AMAP.clean.faa Everything known about every gene results/AMAP/{lineage}_{sampleId}/*-AMAPmastertable.tsv Tool versions for your methods section results/pipeline_info/software_versions.yml"
 },
 {
 "page": "Outputs",
 "section": "The full tree",
 "url": "user-guide/outputs.html#the-full-tree",
-"text": "results/ ├── AMAP/ │   └── {sampleId}/ │       ├── *-AMAP.faa                  # Corrected proteins, all genes including pseudogenes │       ├── *-AMAP.clean.faa            # No pseudogenes, no internal stops │       ├── *-AMAP.fna                  # Corrected nucleotide sequences │       ├── *-AMAP"
+"text": "results/ ├── AMAP/ │   └── {lineage}_{sampleId}/ │       ├── *.AMAP.tsv                  # Every run: the corrected genes, one row each │       ├── *.AMAP.faa                  # Every run: their proteins │       ├── *.AMAP.fna                  # Every run: their nucleotide sequences │       ├── *-AM The .AMAP. files, with a dot, are the correction's own output, written in every run, --skip_functional_annotation included. The -AMAP. files, with a hyphen, are the finished annotation, written after eggNOG. *.AMAP.faa and *-AMAP.faa hold the same proteins, and the two .fna files the same sequences"
 },
 {
 "page": "Outputs",
@@ -418,7 +442,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Outputs",
 "section": "amap_report.html",
 "url": "user-guide/outputs.html#amap_reporthtml",
-"text": "One self-contained file, organised by the questions a run raises: how each genome annotated, where genes are missing or broken on the reference, one gene in every genome, what the correction changed, the pseudogenes by lineage, what lies outside the reference, and the functional profile. Written with or without the functional annotation. The interactive report goes through it."
+"text": "One self-contained file, organised by the questions a run raises: how each genome annotated, where genes are missing or broken on the reference, one gene in every genome, what the correction changed, the pseudogenes by lineage, what lies outside the reference, and the functional profile. Written with or without the functional annotation. The report by question goes through it."
 },
 {
 "page": "Outputs",
@@ -436,7 +460,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The report",
 "section": "",
 "url": "user-guide/report.html",
-"text": "Every run ends in one file, results/final_report.html. It is self-contained: all the figures, tables and JavaScript are embedded, so it opens with no network and survives being emailed to someone who has never heard of Nextflow. To see what the sections look like before running anything, open the example report: a rendered report for twelve MTBC genomes across four lineages. The example uses generated data The twelve samples in it are synthetic. The distributions are drawn around a real M. tuberculosis CDC1551 run, so the shapes are representative, but no conclusion should be drawn from the nu"
+"text": "A run with the functional annotation ends in results/final_report.html, the whole analysis in one file, built after eggNOG, the duplications and the pangenome. Every run, with or without them, also writes the report by question, results/amap_report.html. So a run with --skip_functional_annotation has no final_report.html; amap_report.html is still written, without its eggNOG sections. It is self-contained: all the figures, tables and JavaScript are embedded, so it opens with no network and survives being emailed to someone who has never heard of Nextflow. To see what the sections look like bef"
 },
 {
 "page": "The report",
@@ -496,7 +520,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The report",
 "section": "What changes when steps are skipped",
 "url": "user-guide/report.html#what-changes-when-steps-are-skipped",
-"text": "--skip_typing: Everything still renders, but every sample is grouped under Untyped, so the per-lineage comparisons have a single group and the statistical tests drop out. --skip_mycobrowser: The Mycobrowser and PE/PPE sections are omitted. COG, KEGG, pangenome and duplications are unaffected. This is automatic for non-MTBC organisms. --skip_functional_annotation: No report at all. The run stops after correction."
+"text": "--skip_typing: Everything still renders, but every sample is grouped under Untyped, so the per-lineage comparisons have a single group and the statistical tests drop out. --skip_mycobrowser: The Mycobrowser and PE/PPE sections are omitted. COG, KEGG, pangenome and duplications are unaffected. This is automatic for non-MTBC organisms. --skip_functional_annotation: The run stops after correction: no final_report.html; amap_report.html is still written, without its eggNOG sections."
 },
 {
 "page": "The report",
@@ -508,13 +532,61 @@ window.AMAP_DOCS_INDEX = [
 "page": "The interactive report",
 "section": "",
 "url": "user-guide/amap-report.html",
-"text": "Next to final_report.html, every run now writes results/amap_report.html: one file that answers, section by section, the questions a run raises. Did each genome annotate well? Where on the reference are genes missing or broken? What happened to one gene in every genome? What did the correction change? Every table filters, sorts and saves as CSV, every figure saves as SVG, and a click on a genome or a gene opens it. It is written with or without the functional annotation. It needs only what the correction leaves, so a run with --skip_functional_annotation, which gets no final_report.html, still"
+"text": "Every run writes results/amap_report.html, next to the full report, final_report.html, when the run has one: one file that answers, section by section, the questions a run raises. Did each genome annotate well? Where on the reference are genes missing or broken? What happened to one gene in every genome? What did the correction change? Every table filters, sorts and saves as CSV, every figure saves as SVG, and a click on a genome or a gene opens it. It is written with or without the functional annotation. It needs only what the correction leaves, so a run with --skip_functional_annotation has "
 },
 {
 "page": "The interactive report",
 "section": "The sections",
 "url": "user-guide/amap-report.html#the-sections",
-"text": "1. Did each genome annotate well? One row per genome: lineage, genome size, contigs and N50, Bakta's calls and AMAP's genes, the share of the reference genes it has, and how many are missing, pseudogenes, partial, found more than once or outside the reference. A value far from those of comparable genomes is flagged (see How a value is flagged). A click on a genome opens it: its numbers, and its genes in each state, each list searchable and saved as CSV. 2. Where on the reference are genes missing or broken? Every reference gene at its place on the reference, one row per genome, the genomes gro"
+"text": ""
+},
+{
+"page": "The interactive report",
+"section": "1. Did each genome annotate well?",
+"url": "user-guide/amap-report.html#1-did-each-genome-annotate-well",
+"text": "One row per genome: lineage, genome size, contigs and N50, Bakta's calls and AMAP's genes, the share of the reference genes it has, and how many are missing, pseudogenes, partial, found more than once or outside the reference. A value far from those of comparable genomes is flagged (see How a value is flagged). A click on a genome opens it: its numbers, and its genes in each state, each list searchable and saved as CSV."
+},
+{
+"page": "The interactive report",
+"section": "2. Where on the reference are genes missing or broken?",
+"url": "user-guide/amap-report.html#2-where-on-the-reference-are-genes-missing-or-broken",
+"text": "Every reference gene at its place on the reference, one row per genome, the genomes grouped by lineage. A missing gene fills its row; a pseudogene is a band through the middle; a second copy a band on top. Deletions that genomes share show as blocks: with MTBC genomes, the regions of difference. Drag across the map to zoom into a region; its genes are then listed with how many genomes have each in each state. Below the map, Blocks of missing genes lists every run of two or more consecutive reference genes missing from a genome, grouped where genomes overlap, and says which lineages lack each b"
+},
+{
+"page": "The interactive report",
+"section": "3. What happened to one gene in every genome?",
+"url": "user-guide/amap-report.html#3-what-happened-to-one-gene-in-every-genome",
+"text": "Type a locus, a gene name or part of a product. The card gives the reference's own coordinates, length, product, functional category and, from Mycobrowser, whether the reference calls it a pseudogene and which drugs it has resistance mutations for. The table gives, for every genome, its state, locus tag, contig, coordinates, strand, length against the reference, the note of a pseudogene and how AMAP got the gene."
+},
+{
+"page": "The interactive report",
+"section": "4. What did AMAP change in Bakta's annotation?",
+"url": "user-guide/amap-report.html#4-what-did-amap-change-in-baktas-annotation",
+"text": "A waterfall from Bakta's calls to AMAP's genes: the case 1 calls the filter removed, the case 4 calls the reference replaced, then the genes placed from the reference over a call and those added where Bakta called nothing. For one genome a click on a bar lists its genes; for the calls AMAP did not keep, Bakta's coordinates next to those of the gene that took their place. The correction algorithm says what each case means."
+},
+{
+"page": "The interactive report",
+"section": "5. Which genes are broken, and in which lineages?",
+"url": "user-guide/amap-report.html#5-which-genes-are-broken-and-in-which-lineages",
+"text": "Every gene AMAP flags as a pseudogene in at least one genome, against the genomes, with the reason. First the genes broken in every genome of some lineages and in no other, then those broken in every genome, then those broken in all but one or two, then the rest. With Mycobrowser, each is compared with the reference's own pseudogenes."
+},
+{
+"page": "The interactive report",
+"section": "6. What do the genomes carry that the reference does not?",
+"url": "user-guide/amap-report.html#6-what-do-the-genomes-carry-that-the-reference-does-not",
+"text": "How many genomes carry each reference gene, with the genes some genomes lack; the genes that name no reference gene, grouped by product across genomes; the reference genes with more than one copy; and, when the run has them, the pangenome and the homologous communities."
+},
+{
+"page": "The interactive report",
+"section": "7. Do the lineages differ in function?",
+"url": "user-guide/amap-report.html#7-do-the-lineages-differ-in-function",
+"text": "The genes each lineage loses (missing or pseudogene) by Mycobrowser category, and with the functional annotation, genes by COG category and KEGG pathway. One line per category, a dot per lineage, the categories that differ most between lineages first."
+},
+{
+"page": "The interactive report",
+"section": "8. How was this made?",
+"url": "user-guide/amap-report.html#8-how-was-this-made",
+"text": "AMAP's version, the command, the reference, every parameter (pipeline_info/params.yml), every tool's version (pipeline_info/software_versions.tsv), and what each state means. The bar under the top one filters every section at once: a lineage's pill shows or hides it (Alt or Cmd and a click keeps that lineage alone), and the box keeps the genomes whose name contains what is typed."
 },
 {
 "page": "The interactive report",
@@ -610,13 +682,13 @@ window.AMAP_DOCS_INDEX = [
 "page": "Overview",
 "section": "The three inputs to a decision",
 "url": "how-it-works/index.html#the-three-inputs-to-a-decision",
-"text": "The Bakta annotation. Every CDS Bakta called on your genome, with coordinates and a locus tag. The Miniprot alignments. Every reference protein aligned onto your genome, with the coordinates where it landed. The reference proteins carry their own coordinates in their headers (Rv0001_1-1524), which lets a later step tell a real locus from a paralogous placement. The false-positive set. Proteins that a de novo annotator calls on the reference genome itself but that are not in the curated annotation. Bakta's characteristic mistakes, in other words. For MTBC this is a curated file; with a custom r"
+"text": "The Bakta annotation. Every CDS Bakta called on your genome, with coordinates and a locus tag. The miniprot alignments. Every reference protein aligned onto your genome, with the coordinates where it landed. The reference proteins carry their own coordinates in their headers (Rv0001_1-1524), which lets a later step tell a real locus from a paralogous placement. The false-positive set. Proteins that a de novo annotator calls on the reference genome itself but that are not in the curated annotation. Bakta's characteristic mistakes, in other words. For MTBC this is a curated file; with a custom r"
 },
 {
 "page": "Overview",
 "section": "The pipeline",
 "url": "how-it-works/index.html#the-pipeline",
-"text": "Ten steps, from genomes to report: eggNOG database setup, skipped if it is already built Lineage typing with pathotypr, MTBC only Annotation with Bakta Protein alignment with Miniprot Case classification: every CDS sorted by how it relates to the reference Correction: conflicts resolved, missing genes rescued, stop codons checked Functional annotation with eggNOG-mapper Duplication analysis: within and across genomes Pangenome with pangene Report The workflow page walks through each with its inputs and outputs."
+"text": "Eleven steps, from genomes to reports: eggNOG database setup, skipped if it is already built Lineage typing with pathotypr, MTBC only Annotation with Bakta Protein alignment with miniprot Case classification: every CDS sorted by how it relates to the reference Correction: conflicts resolved, missing genes rescued, stop codons checked Functional annotation with eggNOG-mapper Duplication analysis: within and across genomes Pangenome with pangene The full report, final_report.html, after eggNOG The report by question, amap_report.html, in every run The workflow page walks through each with its in"
 },
 {
 "page": "Overview",
@@ -628,7 +700,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Overview",
 "section": "In this section",
 "url": "how-it-works/index.html#in-this-section",
-"text": "The workflow: the ten steps in detail The correction algorithm: case classification, conflict resolution, quality control Duplication metrics: what the network numbers mean"
+"text": "The workflow: the eleven steps in detail The correction algorithm: case classification, conflict resolution, quality control Duplication metrics: what the network numbers mean"
 },
 {
 "page": "The workflow",
@@ -656,9 +728,9 @@ window.AMAP_DOCS_INDEX = [
 },
 {
 "page": "The workflow",
-"section": "4. Protein alignment with Miniprot",
+"section": "4. Protein alignment with miniprot",
 "url": "how-it-works/workflow.html#4-protein-alignment-with-miniprot",
-"text": "Miniprot aligns the reference proteome onto each genome, spliced and frameshift-aware. Two alignments are produced: the reference proteome, and the false-positive set that will filter novel-gene candidates. Output is PAF. Coordinates are converted from 0-based to 1-based on read, and for a protein hitting several positions, the best hit per position is kept so multi-copy families such as PE/PPE keep all their placements. In a draft assembly the genes a contig end cuts get a second pass. Miniprot places the larger piece of such a gene only, so what that placement lacks is aligned again as a pro"
+"text": "miniprot aligns the reference proteome onto each genome, spliced and frameshift-aware. Two alignments are produced: the reference proteome, and the false-positive set that will filter novel-gene candidates. Output is PAF. Coordinates are converted from 0-based to 1-based on read, and for a protein hitting several positions, the best hit per position is kept so multi-copy families such as PE/PPE keep all their placements. In a draft assembly the genes a contig end cuts get a second pass. miniprot places the larger piece of such a gene only, so what that placement lacks is aligned again as a pro"
 },
 {
 "page": "The workflow",
@@ -692,15 +764,15 @@ window.AMAP_DOCS_INDEX = [
 },
 {
 "page": "The workflow",
-"section": "10. Report",
-"url": "how-it-works/workflow.html#10-report",
-"text": "A single self-contained HTML file built from every output above. Sample quality, missing reference genes by lineage, PE/PPE families, KEGG pathways, duplication communities and topology, the pangenome, COG and Mycobrowser distributions, case statistics with the associated tests, and a searchable table of every gene. Alongside it, pipeline_info/ collects the Nextflow execution report, timeline, DAG and trace, plus software_versions.yml and params.yml for your methods section."
+"section": "10. The full report",
+"url": "how-it-works/workflow.html#10-the-full-report",
+"text": "final_report.html, a single self-contained HTML file built from every output above, so only a run with the functional annotation has it. Sample quality, missing reference genes by lineage, PE/PPE families, KEGG pathways, duplication communities and topology, the pangenome, COG and Mycobrowser distributions, case statistics with the associated tests, and a searchable table of every gene. Alongside it, pipeline_info/ collects the Nextflow execution report, timeline, DAG and trace, plus software_versions.yml and params.yml for your methods section."
 },
 {
 "page": "The workflow",
-"section": "11. Interactive report",
-"url": "how-it-works/workflow.html#11-interactive-report",
-"text": "amap_report.html, one self-contained file organised by question: how each genome annotated, where reference genes are missing or broken, one gene in every genome, what the correction changed and the pseudogenes by lineage. It reads the correction's outputs directly, so it is written with or without the functional annotation, and the functional steps add their sections when they run. The interactive report goes through it."
+"section": "11. The report by question",
+"url": "how-it-works/workflow.html#11-the-report-by-question",
+"text": "amap_report.html, one self-contained file organised by question, written in every run: how each genome annotated, where reference genes are missing or broken, one gene in every genome, what the correction changed and the pseudogenes by lineage. It reads the correction's outputs directly, so it is written with or without the functional annotation, and the functional steps add their sections when they run. The report by question goes through it."
 },
 {
 "page": "The workflow",
@@ -844,13 +916,13 @@ window.AMAP_DOCS_INDEX = [
 "page": "Containers",
 "section": "",
 "url": "deployment/containers.html",
-"text": "Every tool AMAP calls lives in one image, paururo/amap, published on Docker Hub. Both the docker and singularity profiles use it, so nothing needs installing beyond a container engine. nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv Nextflow pulls the image on first use and caches it. Singularity converts it to a .sif on the way, which takes a few minutes once."
+"text": "Every tool AMAP calls lives in one image, paururo/amap, published on Docker Hub. Both the docker and singularity profiles use it, so nothing needs installing beyond a container engine. nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv Nextflow pulls the image on first use and caches it. Singularity converts it to an image file of its own on the way, which takes a few minutes once per cache folder: see Singularity on a cluster for keeping one."
 },
 {
 "page": "Containers",
 "section": "What is inside",
 "url": "deployment/containers.html#what-is-inside",
-"text": "Tools: Bakta 1.12.0, Miniprot 0.18, Diamond 2.1.24, eggNOG-mapper 2.1.13, pangene 1.1, pathotypr 1.0.0, gfatools. Runtimes: Python 3.9 with pandas, NumPy, Biopython, matplotlib, plotly, NetworkX, intervaltree, pyvis and python-louvain. R 4.4 with the report packages. Bundled data under /reference/, so a standard MTBC run needs no downloads: MTB_ancestor_reference.fasta MTBC ancestral reference genome aa_H37Rv.translated.fas H37Rv reference proteome bad.bakta.translated.fas Curated Bakta false positives new_refH37Rv.fasta H37Rv reference genome sequence.gb H37Rv GenBank, for Bakta Mycobacterium"
+"text": "Tools: Bakta 1.12.0, miniprot 0.18, Diamond 2.1.24, eggNOG-mapper 2.1.13, pangene 1.1, pathotypr 1.0.0, gfatools. Runtimes: Python 3.9 with pandas, NumPy, Biopython, matplotlib, plotly, NetworkX, intervaltree, pyvis and python-louvain. R 4.4 with the report packages. Bundled data under /reference/, so a standard MTBC run needs no downloads: MTB_ancestor_reference.fasta MTBC ancestral reference genome aa_H37Rv.translated.fas H37Rv reference proteome bad.bakta.translated.fas Curated Bakta false positives new_refH37Rv.fasta H37Rv reference genome sequence.gb H37Rv GenBank, for Bakta Mycobacterium"
 },
 {
 "page": "Containers",
@@ -862,7 +934,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Containers",
 "section": "Pinning a version",
 "url": "deployment/containers.html#pinning-a-version",
-"text": "latest tracks the newest release. For a reproducible analysis, pin the version in nextflow.config or on the command line: nextflow run PathoGenOmics-Lab/AMAP -profile docker \\     --tsv samples.tsv \\     -process.container 'paururo/amap:1.0.1' results/pipeline_info/software_versions.yml records the exact version of every tool a run used, which is what belongs in a methods section."
+"text": "A tag can move: latest is whatever was pushed last. For a reproducible analysis, pin the image by its digest, and the pipeline's code with -r, since a pinned image under newer code is still a different run: nextflow run PathoGenOmics-Lab/AMAP \\     -r 947a99dee49d2a2429e014296ac35ba08e911108 \\     -profile docker --tsv samples.tsv \\     -process.container 'paururo/amap@sha256:08bd17311ab323317ceecba6e5bc639a29f4c54c9d95f9a7c48ba80a9fc640ee' That digest is the image behind the runs on these pages; docker image inspect paururo/amap:latest --format '{{index .RepoDigests 0}}' prints the one you ha"
 },
 {
 "page": "Containers",
@@ -874,7 +946,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Containers",
 "section": "Singularity on a cluster",
 "url": "deployment/containers.html#singularity-on-a-cluster",
-"text": "Set a shared cache so every job reuses one converted image instead of each building its own: export NXF_SINGULARITY_CACHEDIR=/shared/singularity_cache Put it in your shell profile or the launch script. Without it, a large run can have dozens of jobs converting the same image at once. More cluster specifics in deployment on HPC."
+"text": "The singularity profile keeps the converted image in <outdir>/singularity_cache, so each results folder gets a copy of its own, and that setting wins over NXF_SINGULARITY_CACHEDIR: the variable alone changes nothing. To keep one copy for every run, set the folder in a config and pass it with -c: singularity.cacheDir = '/shared/singularity_cache' nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \\     -c shared.config --tsv samples.tsv With Nextflow 24.04 and 26.10 alike, nextflow -c shared.config config -profile singularity then shows cacheDir = '/shared/singularity_cache', where "
 },
 {
 "page": "Containers",
@@ -886,7 +958,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "HPC clusters",
 "section": "",
 "url": "deployment/hpc.html",
-"text": "Past a couple of dozen genomes, a scheduler is worth the setup. Combine a container profile with an executor profile: nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv"
+"text": "Past about twenty genomes, a scheduler is worth the setup. Combine a container profile with an executor profile: nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv"
 },
 {
 "page": "HPC clusters",
@@ -910,13 +982,13 @@ window.AMAP_DOCS_INDEX = [
 "page": "HPC clusters",
 "section": "Where to put things",
 "url": "deployment/hpc.html#where-to-put-things",
-"text": "The Singularity cache. Set it once, somewhere shared: export NXF_SINGULARITY_CACHEDIR=/shared/singularity_cache Otherwise the singularity profile caches under --outdir, and a large run can have many jobs converting the same image at once. The eggNOG database. Large, built once, reused forever. Point it at persistent shared storage rather than somewhere per-run: nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \\     --tsv samples.tsv --eggnog_db /shared/databases/eggnog The work directory. It gets large, tens of gigabytes for a big run. Put it on a filesystem with room and a gener"
+"text": "The Singularity cache. The singularity profile keeps the converted image in <outdir>/singularity_cache, so every results folder gets a copy of its own, and that setting wins over NXF_SINGULARITY_CACHEDIR: the variable alone changes nothing. Keep one shared copy with a config passed with -c: singularity.cacheDir = '/shared/singularity_cache' nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \\     -c shared.config --tsv samples.tsv The eggNOG database. Large, built once, reused forever. Point it at persistent shared storage rather than somewhere per-run: nextflow run PathoGenOmics-L"
 },
 {
 "page": "HPC clusters",
 "section": "Launching",
 "url": "deployment/hpc.html#launching",
-"text": "Nextflow's own process must survive the whole run, which will outlive an SSH session. Either run it under tmux or screen, or submit it as a small job of its own: #!/bin/bash #SBATCH --job-name=amap #SBATCH --cpus-per-task=2 #SBATCH --mem=8G #SBATCH --time=48:00:00 #SBATCH --output=amap_%j.log  module load singularity export NXF_SINGULARITY_CACHEDIR=/shared/singularity_cache  nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm \\     --tsv sam The launcher itself needs very little: it submits and waits while the real work happens in the jobs it spawns. Give it plenty of wall tim"
+"text": "Nextflow's own process must survive the whole run, which will outlive an SSH session. Either run it under tmux or screen, or submit it as a small job of its own: #!/bin/bash #SBATCH --job-name=amap #SBATCH --cpus-per-task=2 #SBATCH --mem=8G #SBATCH --time=48:00:00 #SBATCH --output=amap_%j.log  module load singularity  nextflow run PathoGenOmics-Lab/AMAP \\     -profile singularity,slurm \\     -c shared.config \\     --tsv samples.tsv \\     --eggnog_db /shared/ The launcher itself needs very little: it submits and waits while the real work happens in the jobs it spawns. Give it plenty of wall tim"
 },
 {
 "page": "HPC clusters",
@@ -940,7 +1012,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Troubleshooting",
 "section": "",
 "url": "deployment/troubleshooting.html",
-"text": ""
+"text": "Each problem below is a heading, with the message the pipeline or the system prints in quotes where there is one, so you can search for what you see."
 },
 {
 "page": "Troubleshooting",
@@ -952,37 +1024,175 @@ window.AMAP_DOCS_INDEX = [
 "page": "Troubleshooting",
 "section": "Before the pipeline starts",
 "url": "deployment/troubleshooting.html#before-the-pipeline-starts",
-"text": "\"Unexpected input: '('\" in nextflow.config: Nextflow 25.10 and later read pipelines with a stricter parser, which older copies of AMAP do not pass. Nextflow keeps the copy it downloaded first, so fetch the current one with nextflow pull PathoGenOmics-Lab/AMAP and run again. To run an older AMAP release as it is, export NXF_SYNTAX_PARSER=v1 first. \"Input TSV file not found\": The path in --tsv is wrong, or relative to somewhere other than where you launched Nextflow. \"Invalid TSV format\": The header must be exactly sampleId and fasta, separated by a real tab. Spaces are the usual culprit. cat -t"
+"text": ""
+},
+{
+"page": "Troubleshooting",
+"section": "\"Unexpected input: '('\" in nextflow.config",
+"url": "deployment/troubleshooting.html#unexpected-input--in-nextflowconfig",
+"text": "Nextflow 25.10 and later read pipelines with a stricter parser, which older copies of AMAP do not pass. Nextflow keeps the copy it downloaded first, so fetch the current one with nextflow pull PathoGenOmics-Lab/AMAP and run again. To run an older AMAP release as it is, export NXF_SYNTAX_PARSER=v1 first."
+},
+{
+"page": "Troubleshooting",
+"section": "\"Input TSV file not found\"",
+"url": "deployment/troubleshooting.html#input-tsv-file-not-found",
+"text": "The path in --tsv is wrong, or relative to somewhere other than where you launched Nextflow."
+},
+{
+"page": "Troubleshooting",
+"section": "\"Invalid TSV format\"",
+"url": "deployment/troubleshooting.html#invalid-tsv-format",
+"text": "The header must be exactly sampleId and fasta, separated by a real tab. Spaces are the usual culprit. cat -t samples.tsv shows tabs as ^I, and works on both Linux and macOS."
+},
+{
+"page": "Troubleshooting",
+"section": "\"FASTA file not found\"",
+"url": "deployment/troubleshooting.html#fasta-file-not-found",
+"text": "A path in the sample sheet does not resolve. Absolute paths avoid the ambiguity."
+},
+{
+"page": "Troubleshooting",
+"section": "\"not found, neither on the host nor inside the container\"",
+"url": "deployment/troubleshooting.html#not-found-neither-on-the-host-nor-inside-the-container",
+"text": "A reference file the run reads is in neither place: a typo in its path, or one of the defaults, which ship in the container, on a run without one. Give the path to your own copy with its reference argument."
+},
+{
+"page": "Troubleshooting",
+"section": "Validation failures",
+"url": "deployment/troubleshooting.html#validation-failures",
+"text": "results/pipeline_info/validation.log says which check failed and for which sample; the terminal does not. Thresholds are in preparing inputs."
 },
 {
 "page": "Troubleshooting",
 "section": "Container problems",
 "url": "deployment/troubleshooting.html#container-problems",
-"text": "The image will not pull. Check network access from the compute nodes, which often differs from the login node. Pre-pulling on the login node and setting NXF_SINGULARITY_CACHEDIR sidesteps it: export NXF_SINGULARITY_CACHEDIR=/shared/singularity_cache singularity pull docker://paururo/amap:latest Slow on Apple Silicon. The image is amd64 only, so it emulates. Fine for the test profile, painful beyond that. Use an amd64 machine. Docker permission denied. Your user is not in the docker group. Either add it, or use Singularity."
+"text": ""
+},
+{
+"page": "Troubleshooting",
+"section": "\"Cannot connect to the Docker daemon\"",
+"url": "deployment/troubleshooting.html#cannot-connect-to-the-docker-daemon",
+"text": "Docker is installed but not running: start Docker Desktop, or the Docker service on Linux. docker info answers once it is up, where docker --version answers either way."
+},
+{
+"page": "Troubleshooting",
+"section": "\"permission denied while trying to connect to the Docker daemon socket\"",
+"url": "deployment/troubleshooting.html#permission-denied-while-trying-to-connect-to-the-docker-daemon-socket",
+"text": "Your user is not in the docker group. Either add it, or use Singularity."
+},
+{
+"page": "Troubleshooting",
+"section": "The image will not pull",
+"url": "deployment/troubleshooting.html#the-image-will-not-pull",
+"text": "Check network access from the compute nodes, which often differs from the login node. Pull the image once on the login node, into a folder every node sees, and have the runs look there. The singularity profile keeps its images in <outdir>/singularity_cache, and that setting wins over NXF_SINGULARITY_CACHEDIR, so the variable alone changes nothing; set the folder in a config passed with -c instead: singularity.cacheDir = '/shared/singularity_cache' singularity pull /shared/singularity_cache/paururo-amap-latest.img \\     docker://paururo/amap:latest nextflow run PathoGenOmics-Lab/AMAP -profile s"
+},
+{
+"page": "Troubleshooting",
+"section": "Slow on Apple Silicon",
+"url": "deployment/troubleshooting.html#slow-on-apple-silicon",
+"text": "The image is amd64 only, so it emulates. Fine for the test profile, painful beyond that. Use an amd64 machine."
 },
 {
 "page": "Troubleshooting",
 "section": "Memory",
 "url": "deployment/troubleshooting.html#memory",
-"text": "A process is killed with exit 137 or 140. Out of memory. AMAP retries with more, scaling by attempt, so a single occurrence in the log that later succeeds is normal. Persistent failures mean raising the ceiling: --max_memory 256.GB On a cluster, that is the whole answer. On a macOS or Windows laptop it is the wrong one: Docker Desktop runs containers inside a VM with its own memory ceiling, commonly 8 GB, and that ceiling is what killed the process. Nextflow sized the request against the host and never saw it. Raising --max_memory only makes the request larger than a limit it was already over."
+"text": ""
+},
+{
+"page": "Troubleshooting",
+"section": "Killed with exit 137, 140 or 143",
+"url": "deployment/troubleshooting.html#killed-with-exit-137-140-or-143",
+"text": "Exit 137 is the out-of-memory killer, 140 a time limit and 143 a SIGTERM, the way a scheduler usually ends a job at its limits. AMAP retries a task that exits with any of them, asking for more memory on each attempt, so a single occurrence in the log that later succeeds is normal. Persistent failures mean raising the ceiling, with --max_memory 256.GB for instance. On a cluster, that is the whole answer. On a macOS or Windows laptop it is the wrong one: Docker Desktop runs containers inside a VM with its own memory ceiling, commonly 8 GB, and that ceiling is what killed the process. Nextflow si"
+},
+{
+"page": "Troubleshooting",
+"section": "eggNOG runs out of memory",
+"url": "deployment/troubleshooting.html#eggnog-runs-out-of-memory",
+"text": "It is the hungriest step, requesting 50 GB, and it runs once over all samples together. On a machine that cannot reach that, --skip_functional_annotation drops it along with the pangenome, the duplication analysis and final_report.html, and still gives you the corrected genes and amap_report.html. On a cluster, use the highmem profile, or point it at a large-memory partition: nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm,highmem \\     --tsv samples.tsv"
 },
 {
 "page": "Troubleshooting",
 "section": "Filesystem",
 "url": "deployment/troubleshooting.html#filesystem",
-"text": "\"No space left on device\". Usually the work directory, which grows to tens of gigabytes. Move it somewhere with room: -work-dir /scratch/$USER/amap_work Also check your $TMPDIR quota, since Diamond and Bakta both use it heavily. Everything is slow on a shared filesystem. Confirm --scratch is on. It defaults to true in the HPC profiles, but a standard or docker profile on a cluster will not have it. Cache misses on resume. NFS timestamp drift across nodes invalidates Nextflow's cache. The slurm profile already sets process.cache = 'lenient' for this. If you are using a different executor, add i"
+"text": ""
+},
+{
+"page": "Troubleshooting",
+"section": "\"No space left on device\"",
+"url": "deployment/troubleshooting.html#no-space-left-on-device",
+"text": "Usually the work directory, which grows to tens of gigabytes on a large run. Move it somewhere with room by adding -work-dir /scratch/$USER/amap_work to the command. Also check your $TMPDIR quota, since Diamond and Bakta both use it heavily, and the folder --eggnog_db names: eggnog.db alone is 41.4 GB."
+},
+{
+"page": "Troubleshooting",
+"section": "Everything is slow on a shared filesystem",
+"url": "deployment/troubleshooting.html#everything-is-slow-on-a-shared-filesystem",
+"text": "Confirm --scratch is on. It defaults to true in the HPC profiles, but a standard or docker profile on a cluster will not have it."
+},
+{
+"page": "Troubleshooting",
+"section": "Cache misses on resume",
+"url": "deployment/troubleshooting.html#cache-misses-on-resume",
+"text": "NFS timestamp drift across nodes invalidates Nextflow's cache. The slurm profile already sets process.cache = 'lenient' for this. With another executor, add -process.cache lenient to the command."
 },
 {
 "page": "Troubleshooting",
 "section": "The eggNOG database",
 "url": "deployment/troubleshooting.html#the-eggnog-database",
-"text": "It downloads every run. --eggnog_db is pointing somewhere per-run. Give it persistent shared storage. It rebuilds itself unexpectedly. A bacteria.dmnd under 100 MB is treated as a truncated download and rebuilt. Usually means an earlier download was interrupted. \"has eggnog_db.ok, so EGGNOG_DB will not run again\". eggnog_db.ok tells Nextflow the database is built, so it never runs EGGNOG_DB again, but what it needs is not all there. Delete the files the message names and the next run builds it again."
+"text": ""
+},
+{
+"page": "Troubleshooting",
+"section": "It downloads every run",
+"url": "deployment/troubleshooting.html#it-downloads-every-run",
+"text": "--eggnog_db is pointing somewhere per-run. Give it persistent shared storage."
+},
+{
+"page": "Troubleshooting",
+"section": "It rebuilds itself unexpectedly",
+"url": "deployment/troubleshooting.html#it-rebuilds-itself-unexpectedly",
+"text": "A bacteria.dmnd under 100 MB is treated as a truncated download and rebuilt. Usually means an earlier download was interrupted."
+},
+{
+"page": "Troubleshooting",
+"section": "\"has eggnog_db.ok, so EGGNOG_DB will not run again\"",
+"url": "deployment/troubleshooting.html#has-eggnog_dbok-so-eggnog_db-will-not-run-again",
+"text": "eggnog_db.ok tells Nextflow the database is built, so it never runs EGGNOG_DB again, but what it needs is not all there. Delete the files the message names and the next run builds it again."
 },
 {
 "page": "Troubleshooting",
 "section": "Results that look wrong",
 "url": "deployment/troubleshooting.html#results-that-look-wrong",
-"text": "Far fewer genes than expected. Check the assembly. A fragmented assembly loses genes across contig boundaries, and they turn up in *-rvmissing.tsv rather than being corrected. *-AMAP.qc.tsv has the contig count and N50. \"Genes lost to (Start, End, Strand, Contig) collisions\" in the log. Two of the classification's sources listed a gene at exactly the same place, and one entry was kept. Genes on different contigs never collide, since the contig is part of the key. *-AMAP.clean.faa has fewer sequences than the GFF3 has genes. Expected. The clean proteome drops pseudogenes and internal-stop seque"
+"text": ""
+},
+{
+"page": "Troubleshooting",
+"section": "Far fewer genes than expected",
+"url": "deployment/troubleshooting.html#far-fewer-genes-than-expected",
+"text": "Check the assembly first: *-AMAP.qc.tsv has the contig count and the N50. A gene that a contig end cuts is not lost: it comes back in pieces, each under the gene's name and marked partial at its open end: partial in the master table, the Partial state in amap_report.html. Only a piece under 8 residues is too short to place: in CDC1551 cut into 40 contigs, 22 of the 25 smaller pieces were placed, and the other three were five or six codons long (pieces of cut genes). *-rvmissing.tsv is a different list: the reference genes Bakta missed and AMAP put back."
+},
+{
+"page": "Troubleshooting",
+"section": "\"genes lost to (Start, End, Strand, Contig) collisions\"",
+"url": "deployment/troubleshooting.html#genes-lost-to-start-end-strand-contig-collisions",
+"text": "Two of the classification's sources listed a gene at exactly the same place, and one entry was kept. Genes on different contigs never collide, since the contig is part of the key."
+},
+{
+"page": "Troubleshooting",
+"section": "The clean proteome has fewer sequences than the GFF3 has genes",
+"url": "deployment/troubleshooting.html#the-clean-proteome-has-fewer-sequences-than-the-gff3-has-genes",
+"text": "Expected. *-AMAP.clean.faa drops pseudogenes and internal-stop sequences. Use *-AMAP.faa if you need one protein per annotated gene."
+},
+{
+"page": "Troubleshooting",
+"section": "Almost everything is case 1",
+"url": "deployment/troubleshooting.html#almost-everything-is-case-1",
+"text": "Your samples are too far from the reference for the alignments to find anything, so there is nothing to correct against. Use a closer reference. See custom reference."
+},
+{
+"page": "Troubleshooting",
+"section": "The Mycobrowser sections are empty",
+"url": "deployment/troubleshooting.html#the-mycobrowser-sections-are-empty",
+"text": "Expected with --skip_mycobrowser, or when the Mycobrowser file is missing. The pipeline warns and continues."
 },
 {
 "page": "Troubleshooting",

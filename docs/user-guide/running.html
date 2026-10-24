@@ -103,10 +103,10 @@
 <p>CPUs are auto-detected and memory is capped at 16 GB. Raise both if the machine allows:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --max_cpus 8 --max_memory 32.GB</pre></div>
-<p>A handful of genomes is fine locally. Beyond about twenty, a cluster is worth the setup.</p>
+<p>A handful of genomes is fine locally. Past about twenty genomes, a cluster is worth the setup.</p>
 <h2 id="on-an-hpc-cluster">On an HPC cluster<a class="anchor" href="#on-an-hpc-cluster" aria-label="Link to this section">#</a></h2>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv</pre></div>
-<p>Each process becomes its own scheduler job, with up to 200 running at once, so Bakta, Miniprot and eggNOG parallelise across all your samples. Defaults reach 48 CPUs and 128 GB per job, and every process carries a time limit so nothing sits in the queue forever.</p>
+<p>Each process becomes its own scheduler job, with up to 200 running at once, so Bakta, miniprot and eggNOG parallelise across all your samples. Defaults reach 48 CPUs and 128 GB per job, and every process carries a time limit so nothing sits in the queue forever.</p>
 <p>To match your site's queues and accounting:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP \
     -profile singularity,slurm \
@@ -115,7 +115,7 @@
     -process.queue long \
     -process.clusterOptions &#x27;--account=mygroup&#x27;</pre></div>
 <p><a href="../deployment/hpc.html">Deployment on HPC</a> goes into the details that actually bite: shared filesystems, scratch, and where the eggNOG database should live.</p>
-<div class="callout callout-tip"><p class="callout-title">Large datasets</p><p>Past a hundred genomes, use a scheduler. The eggNOG step in particular runs once over all samples at a time rather than once per sample, precisely so a shared filesystem is not hammered by hundreds of jobs reading the same Diamond database.</p></div>
+<div class="callout callout-tip"><p class="callout-title">Large datasets</p><p>Past about twenty genomes, use a scheduler. The eggNOG step in particular runs once over all samples at a time rather than once per sample, precisely so a shared filesystem is not hammered by hundreds of jobs reading the same Diamond database.</p></div>
 <h2 id="non-mtbc-organisms">Non-MTBC organisms<a class="anchor" href="#non-mtbc-organisms" aria-label="Link to this section">#</a></h2>
 <p>Lineage typing and Mycobrowser categories are specific to tuberculosis. Turn them off and bring your own reference:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker \
@@ -130,9 +130,17 @@
     --tsv samples.tsv -resume</pre></div>
 <p>Keep the parameters identical. Changing an input invalidates that task and everything downstream, which is correct behaviour but does mean the work is redone. The cache lives in the work directory, so do not delete it between a run and its resume.</p>
 <h2 id="running-only-part-of-the-pipeline">Running only part of the pipeline<a class="anchor" href="#running-only-part-of-the-pipeline" aria-label="Link to this section">#</a></h2>
-<p><code>--skip_functional_annotation</code> stops after the correction step. You get the corrected genes as a table with their proteins and sequences (<code>*.AMAP.tsv</code>, <code>.faa</code>, <code>.fna</code>) and the case tables, and skip eggNOG, duplications, the pangenome and the report. The GFF3 and GenBank files are written after eggNOG, so they are skipped too. Much faster when the corrected genes are all you are after:</p>
+<p><code>--skip_functional_annotation</code> stops after the correction step. You get the corrected genes as a table with their proteins and sequences (<code>*.AMAP.tsv</code>, <code>.faa</code>, <code>.fna</code>) and the case tables, and skip eggNOG, the duplications and the pangenome: no <code>final_report.html</code>; <code>amap_report.html</code> is still written, without its eggNOG sections. The GFF3 and GenBank files are written after eggNOG, so they are skipped too. Much faster when the corrected genes are all you are after:</p>
 <div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --skip_functional_annotation</pre></div>
+<h2 id="pinning-the-pipeline">Pinning the pipeline<a class="anchor" href="#pinning-the-pipeline" aria-label="Link to this section">#</a></h2>
+<p>These pages describe AMAP as it is on <code>main</code>, which moves. Without <code>-r</code>, Nextflow runs the copy of AMAP it downloaded first and keeps it until you update it, so two machines can run different code under the same command. For an analysis you will publish, pin both the code and the image:</p>
+<div class="code" data-lang="bash"><pre>nextflow run PathoGenOmics-Lab/AMAP \
+    -r 947a99dee49d2a2429e014296ac35ba08e911108 \
+    -profile docker --tsv samples.tsv \
+    -process.container &#x27;paururo/amap@sha256:08bd17311ab323317ceecba6e5bc639a29f4c54c9d95f9a7c48ba80a9fc640ee&#x27;</pre></div>
+<p><code>-r</code> takes a branch, a tag or a commit. Give a commit as its full hash: Nextflow 26.10 refuses a short one, with "Remote does not have 947a99d available for fetch", where 24.04 takes it. The image is pinned by its digest, which never moves, where a tag such as <code>latest</code> can; this one is the image behind the runs on these pages, and <code>docker image inspect paururo/amap:latest --format &#x27;{{index .RepoDigests 0}}&#x27;</code> prints the one you have.</p>
+<p>To move to the newest code, <code>nextflow pull PathoGenOmics-Lab/AMAP</code>. To see which code a run used, open <code>pipeline_info/execution_report_*.html</code>: it names the revision and its commit hash, as in <code>revision main (commit hash 1a1b3959...)</code>.</p>
 <h2 id="what-a-run-produces">What a run produces<a class="anchor" href="#what-a-run-produces" aria-label="Link to this section">#</a></h2>
 <p>Beyond the results themselves, <code>results/pipeline_info/</code> holds the execution report, the timeline, the DAG, a trace with per-process resource usage, <code>software_versions.yml</code> with the exact version of every tool, and <code>params.yml</code> with the parameters used. Those last two are what you want when writing up methods.</p>
 <h2 id="next-steps">Next steps<a class="anchor" href="#next-steps" aria-label="Link to this section">#</a></h2>
@@ -140,7 +148,7 @@
 <p class="edit"><a href="https://github.com/PathoGenOmics-Lab/AMAP/blob/main/docs/user-guide/running.md"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Edit this page on GitHub</a></p>
 <nav class="pager" aria-label="Previous and next page"><a class="prev" href="../user-guide/parameters.html"><span>Previous</span>Parameters</a><a class="next" href="../user-guide/outputs.html"><span>Next</span>Outputs</a></nav>
 </main>
-<aside class="docs-toc" aria-label="On this page"><p>On this page</p><ul><li class="toc-2"><a href="#profiles">Profiles</a></li><li class="toc-2"><a href="#on-a-laptop-or-workstation">On a laptop or workstation</a></li><li class="toc-2"><a href="#on-an-hpc-cluster">On an HPC cluster</a></li><li class="toc-2"><a href="#non-mtbc-organisms">Non-MTBC organisms</a></li><li class="toc-2"><a href="#resuming">Resuming</a></li><li class="toc-2"><a href="#running-only-part-of-the-pipeline">Running only part of the pipeline</a></li><li class="toc-2"><a href="#what-a-run-produces">What a run produces</a></li><li class="toc-2"><a href="#next-steps">Next steps</a></li></ul></aside>
+<aside class="docs-toc" aria-label="On this page"><p>On this page</p><ul><li class="toc-2"><a href="#profiles">Profiles</a></li><li class="toc-2"><a href="#on-a-laptop-or-workstation">On a laptop or workstation</a></li><li class="toc-2"><a href="#on-an-hpc-cluster">On an HPC cluster</a></li><li class="toc-2"><a href="#non-mtbc-organisms">Non-MTBC organisms</a></li><li class="toc-2"><a href="#resuming">Resuming</a></li><li class="toc-2"><a href="#running-only-part-of-the-pipeline">Running only part of the pipeline</a></li><li class="toc-2"><a href="#pinning-the-pipeline">Pinning the pipeline</a></li><li class="toc-2"><a href="#what-a-run-produces">What a run produces</a></li><li class="toc-2"><a href="#next-steps">Next steps</a></li></ul></aside>
 </div>
 <footer class="foot">
   <div class="wrap">

@@ -88,9 +88,13 @@ so does most of the bacterial world.
 The correction compares your annotation against a reference proteome, so
 assembly quality propagates directly into the result.
 
-**Contiguity matters.** A gene broken across two contigs cannot be recovered.
-The more fragmented the assembly, the more reference genes turn up as missing
-rather than corrected.
+**Contiguity matters.** A gene that a contig end cuts comes back in pieces,
+each under the gene's name and marked partial at its open end, the way NCBI
+marks it. A piece under 8 residues is too short to place: in CDC1551 cut into
+40 contigs, 22 of the 25 smaller pieces were placed, and the other three were
+five or six codons long. The more fragmented the assembly, the more partial
+genes; [pieces of cut genes](../how-it-works/correction-algorithm.md#pieces-of-cut-genes)
+has the rule.
 
 **Ns break coding sequences.** A run of Ns inside a gene stops it translating,
 so it is dropped or flagged as a pseudogene. The 1% warning is worth taking

@@ -89,8 +89,9 @@
 </aside>
 <main class="prose" id="content">
 <p class="crumb"><a href="../documentation.html">Docs</a> / User guide</p>
-<h1 id="the-report">The report</h1>
-<p>Every run ends in one file, <code>results/final_report.html</code>. It is self-contained: all the figures, tables and JavaScript are embedded, so it opens with no network and survives being emailed to someone who has never heard of Nextflow.</p>
+<h1 id="the-full-report-final_reporthtml">The full report: final_report.html</h1>
+<p>A run with the functional annotation ends in <code>results/final_report.html</code>, the whole analysis in one file, built after eggNOG, the duplications and the pangenome. Every run, with or without them, also writes <a href="amap-report.html">the report by question</a>, <code>results/amap_report.html</code>. So a run with <code>--skip_functional_annotation</code> has no <code>final_report.html</code>; <code>amap_report.html</code> is still written, without its eggNOG sections.</p>
+<p>It is self-contained: all the figures, tables and JavaScript are embedded, so it opens with no network and survives being emailed to someone who has never heard of Nextflow.</p>
 <p>To see what the sections look like before running anything, open the <a href="../examples/demo_report.html">example report</a>: a rendered report for twelve MTBC genomes across four lineages.</p>
 <div class="callout callout-note"><p class="callout-title">The example uses generated data</p><p>The twelve samples in it are synthetic. The distributions are drawn around a real <em>M. tuberculosis</em> CDC1551 run, so the shapes are representative, but no conclusion should be drawn from the numbers themselves.</p>
 <p><code>bin/report/demo/make_demo.py</code> builds that dataset if you want to render the report yourself without waiting for a pipeline run.</p></div>
@@ -115,7 +116,7 @@
 <h3 id="master-table-explorer">Master table explorer<a class="anchor" href="#master-table-explorer" aria-label="Link to this section">#</a></h3>
 <p>Every gene of every sample in one searchable, sortable table, with the functional annotation attached. Useful for answering a specific question without leaving the report.</p>
 <h2 id="what-changes-when-steps-are-skipped">What changes when steps are skipped<a class="anchor" href="#what-changes-when-steps-are-skipped" aria-label="Link to this section">#</a></h2>
-<ul><li><strong><code>--skip_typing</code></strong>: Everything still renders, but every sample is grouped under <code>Untyped</code>, so the per-lineage comparisons have a single group and the statistical tests drop out.</li><li><strong><code>--skip_mycobrowser</code></strong>: The Mycobrowser and PE/PPE sections are omitted. COG, KEGG, pangenome and duplications are unaffected. This is automatic for non-MTBC organisms.</li><li><strong><code>--skip_functional_annotation</code></strong>: No report at all. The run stops after correction.</li></ul>
+<ul><li><strong><code>--skip_typing</code></strong>: Everything still renders, but every sample is grouped under <code>Untyped</code>, so the per-lineage comparisons have a single group and the statistical tests drop out.</li><li><strong><code>--skip_mycobrowser</code></strong>: The Mycobrowser and PE/PPE sections are omitted. COG, KEGG, pangenome and duplications are unaffected. This is automatic for non-MTBC organisms.</li><li><strong><code>--skip_functional_annotation</code></strong>: The run stops after correction: no <code>final_report.html</code>; <code>amap_report.html</code> is still written, without its eggNOG sections.</li></ul>
 <h2 id="rendering-it-yourself">Rendering it yourself<a class="anchor" href="#rendering-it-yourself" aria-label="Link to this section">#</a></h2>
 <p>The report is <code>bin/report/report_AMAP.Rmd</code>, rendered by the <code>FINAL_REPORT</code> process. To iterate on it without running the pipeline:</p>
 <div class="code" data-lang="bash"><pre>python3 bin/report/demo/make_demo.py demo_inputs

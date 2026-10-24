@@ -2,7 +2,7 @@
 """Check the website in docs/ against the pipeline it describes.
 
 The site is plain HTML with no build step, so nothing renders it and nothing
-fails when it drifts. This does, in ten parts:
+fails when it drifts. This does, in twelve parts:
 
   links       every internal link and #anchor resolves (the stories how.js
               opens and the sections of the example report included), no page
@@ -26,6 +26,11 @@ fails when it drifts. This does, in ten parts:
   benchmark   the front page's scores are tests/benchmark's expected results;
   metro       the metro map's stations are main.nf's processes, in the order
               its workflow runs them;
+  words       no page says --skip_functional_annotation leaves no report
+              (amap_report.html is always written), or that a gene a contig
+              end cuts is lost (it comes back in pieces);
+  install     the front page, the installation page and the tutorial install
+              Nextflow with the same command;
   report      the example report, and the Rmd every final_report.html comes
               from, load nothing from another host (MathJax included), and
               the example has lang="en" and alt text on every image;
@@ -916,6 +921,76 @@ def check_metro() -> list[str]:
     return problems
 
 
+# ── words ──
+#
+# Sentences the pages once got wrong about the pipeline, and the one command
+# every way in has to give the same.
+
+
+def doc_markdown() -> list[Path]:
+    """The markdown the documentation pages are built from."""
+    return [SITE / path for _section, path, _title, _line in build_docs.PAGES if path.endswith(".md")]
+
+
+def passages(text: str) -> list[str]:
+    """The paragraphs, list items and table rows of a page of markdown,
+    outside its code blocks, each on one line."""
+    text = re.sub(r"^\s*```.*?^\s*```", "", text, flags=re.S | re.M)
+    text = re.sub(r"^[ \t]*>[ \t]?", "", text, flags=re.M)
+    out = []
+    for block in re.split(r"\n\s*\n", text):
+        lines = block.splitlines()
+        if lines and all(line.lstrip().startswith("|") for line in lines):
+            out += lines
+        else:
+            out += re.split(r"\n(?=\s*(?:[-*]|\d+\.)\s)", block)
+    return [re.sub(r"\s+", " ", p).strip() for p in out if p.strip()]
+
+
+def check_words() -> list[str]:
+    problems = []
+    for path in doc_markdown():
+        for passage in passages(path.read_text(encoding="utf-8")):
+            where = passage[:90]
+            # AMAP_REPORT runs in every run, with or without eggNOG (main.nf),
+            # so a run that skips it still has a report: amap_report.html.
+            if re.search(r"no report at all", passage, re.I):
+                problems.append(f"{path}: says {where!r}, but every run writes amap_report.html")
+            elif "skip_functional_annotation" in passage and re.search(r"\b(the|no) report\b(?! by question)", passage, re.I):
+                problems.append(f"{path}: {where!r}: --skip_functional_annotation leaves amap_report.html; "
+                                "say final_report.html, not 'the report'")
+            # A gene a contig end cuts comes back in pieces (bin/classify/pieces.py).
+            if re.search(r"cannot be recovered|loses genes across contig", passage, re.I):
+                problems.append(f"{path}: {where!r}: a gene a contig end cuts comes back in pieces")
+    return problems
+
+
+def check_install(pages: dict[str, Page]) -> list[str]:
+    """The command that installs Nextflow is the same on the front page, the
+    installation page and the tutorial."""
+    found: dict[str, list[str]] = {}
+    if "index.html" in pages:
+        for tag, text in pages["index.html"].code_elems:
+            if tag == "pre":
+                for line in text.splitlines():
+                    line = line.strip().removeprefix("$ ")
+                    if line.startswith("conda create"):
+                        found.setdefault("index.html", []).append(line)
+    for page in ("getting-started/installation.md", "getting-started/tutorial.md"):
+        for block in re.findall(r"```[^\n]*\n(.*?)```", (SITE / page).read_text(encoding="utf-8"), re.S):
+            for line in block.splitlines():
+                if line.strip().startswith("conda create -n nextflow-env"):
+                    found.setdefault(page, []).append(line.strip())
+    problems = []
+    for page in ("index.html", "getting-started/installation.md", "getting-started/tutorial.md"):
+        if len(set(found.get(page, []))) != 1:
+            problems.append(f"{page}: has {len(set(found.get(page, [])))} commands that install Nextflow with conda, not one")
+    commands = {line for lines in found.values() for line in lines}
+    if len(commands) > 1:
+        problems.append("the pages install Nextflow differently: " + "; ".join(f"{page}: {lines[0]}" for page, lines in sorted(found.items())))
+    return problems
+
+
 # ── report ──
 #
 # The example report is the report's own output and is not checked as a page,
@@ -1050,6 +1125,8 @@ def main() -> int:
         ("thresholds", check_thresholds),
         ("benchmark", lambda: check_benchmark(pages)),
         ("metro", check_metro),
+        ("words", check_words),
+        ("install", lambda: check_install(pages)),
         ("report", check_report),
         ("readme", lambda: check_readme(pages)),
         ("dashes", check_dashes),

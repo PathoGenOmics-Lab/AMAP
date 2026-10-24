@@ -1,19 +1,19 @@
 # Outputs
 
 Everything lands under `--outdir`, `results/` by default, in one subdirectory
-per pipeline stage. `{sampleId}` below is the sample's name as lineage typing
-leaves it, `L4_G26689` for sample `G26689`, or the sample ID alone under
-`--skip_typing`.
+per pipeline stage. `{lineage}_{sampleId}` below is the sample's name as
+lineage typing leaves it, `L4_G26689` for sample `G26689`, or the sample ID
+alone under `--skip_typing`.
 
 ## Where to look first
 
 | What you want | File |
 | :--- | :--- |
-| The whole analysis, interactive | `results/final_report.html` |
-| Each genome and each gene, question by question | `results/amap_report.html` |
-| Corrected annotation for a sample | `results/AMAP/{sampleId}/*-AMAP.gff3` |
-| Proteins for downstream tools | `results/AMAP/{sampleId}/*-AMAP.clean.faa` |
-| Everything known about every gene | `results/AMAP/{sampleId}/*-AMAPmastertable.tsv` |
+| The whole analysis, after a run with eggNOG ([the full report](report.md)) | `results/final_report.html` |
+| Each genome and each gene, question by question, in every run ([the report by question](amap-report.md)) | `results/amap_report.html` |
+| Corrected annotation for a sample | `results/AMAP/{lineage}_{sampleId}/*-AMAP.gff3` |
+| Proteins for downstream tools | `results/AMAP/{lineage}_{sampleId}/*-AMAP.clean.faa` |
+| Everything known about every gene | `results/AMAP/{lineage}_{sampleId}/*-AMAPmastertable.tsv` |
 | Tool versions for your methods section | `results/pipeline_info/software_versions.yml` |
 
 ## The full tree
@@ -23,39 +23,46 @@ leaves it, `L4_G26689` for sample `G26689`, or the sample ID alone under
 ```text
 results/
 ├── AMAP/
-│   └── {sampleId}/
-│       ├── *-AMAP.faa                  # Corrected proteins, all genes including pseudogenes
+│   └── {lineage}_{sampleId}/
+│       ├── *.AMAP.tsv                  # Every run: the corrected genes, one row each
+│       ├── *.AMAP.faa                  # Every run: their proteins
+│       ├── *.AMAP.fna                  # Every run: their nucleotide sequences
+│       ├── *-AMAP.faa                  # Corrected proteins, pseudogenes included
 │       ├── *-AMAP.clean.faa            # No pseudogenes, no internal stops
 │       ├── *-AMAP.fna                  # Corrected nucleotide sequences
+│       ├── *-AMAP.tsv                  # The finished annotation, every feature
 │       ├── *-AMAP.gff3                 # Corrected annotation, GFF3
 │       ├── *-AMAP.gbk                  # Corrected annotation, GenBank
-│       ├── *-AMAP.qc.tsv               # Genome size, GC%, coding density, annotation rate
-│       ├── *-AMAPmastertable.tsv       # Coordinates plus eggNOG plus Mycobrowser, one row per gene
+│       ├── *-AMAP.qc.tsv               # Size, GC%, coding density, annotation rate
+│       ├── *-AMAPmastertable.tsv       # Every gene, with eggNOG and Mycobrowser
 │       ├── *-AMAP.COG.tsv              # COG category counts
-│       └── *-AMAP.MycoBrowser.tsv      # Mycobrowser category counts
+│       ├── *-AMAP.MycoBrowser.tsv      # Mycobrowser category counts
+│       └── *-AMAP.noRef.tsv            # The genes that name no reference gene
 │
 ├── BAKTA/
-│   └── {sampleId}/                     # The uncorrected Bakta annotation, for comparison
-│       ├── *.faa  *.gbff  *.gff3  *.tsv
+│   └── {lineage}_{sampleId}/           # Bakta's own annotation, uncorrected
+│       ├── *.gff3  *.gbff  *.embl  *.tsv  *.json
+│       ├── *.faa  *.ffn  *.fna
 │       ├── *.hypotheticals.faa  *.hypotheticals.tsv
-│       ├── *.png                       # Genome map
-│       └── *.txt                       # Bakta summary statistics
+│       ├── *.inference.tsv
+│       ├── *.png  *.svg                # Genome map
+│       └── *.txt  *.log                # Bakta summary statistics and log
 │
 ├── CDS_CASES/
 │   ├── summary/
 │   │   └── *-summary.tsv               # Case counts, all samples
-│   └── {sampleId}/
+│   └── {lineage}_{sampleId}/
 │       ├── *-case[1-4].tsv             # One table per case
-│       ├── *-rvmissing.tsv             # Reference genes Bakta did not find
+│       ├── *-rvmissing.tsv             # Reference genes Bakta missed, put back
 │       ├── *.html                      # Interactive overlap plots
 │       └── *_corrected.tsv             # Final corrected coordinates
 │
 ├── DUPLICATIONS/
-│   ├── {sampleId}/
+│   ├── {lineage}_{sampleId}/
 │   │   ├── duplications*               # Raw Diamond output, within-genome
 │   │   ├── duplications_*_groups.tsv   # Duplicated genes grouped into families
 │   │   └── *.dup                       # Duplicated protein sequences
-│   ├── homologous_communities.tsv      # Communities across all samples, with network metrics
+│   ├── homologous_communities.tsv      # Communities across samples, with metrics
 │   └── homologous_communities.html     # Interactive network
 │
 ├── PANGENE/
@@ -78,9 +85,15 @@ results/
 │   ├── validation.log                  # Pre-flight validation results
 │   └── run_summary.txt                 # Status, duration, sample counts
 │
-├── final_report.html                   # The full interactive report
-└── amap_report.html                    # The report by question, also without eggNOG
+├── final_report.html                   # The full report, after eggNOG
+└── amap_report.html                    # The report by question, in every run
 ```
+
+The `.AMAP.` files, with a dot, are the correction's own output, written in
+every run, `--skip_functional_annotation` included. The `-AMAP.` files, with a
+hyphen, are the finished annotation, written after eggNOG. `*.AMAP.faa` and
+`*-AMAP.faa` hold the same proteins, and the two `.fna` files the same
+sequences.
 
 ## The key files
 
@@ -213,7 +226,7 @@ One self-contained file, organised by the questions a run raises: how each
 genome annotated, where genes are missing or broken on the reference, one gene
 in every genome, what the correction changed, the pseudogenes by lineage, what
 lies outside the reference, and the functional profile. Written with or without
-the functional annotation. [The interactive report](amap-report.md) goes
+the functional annotation. [The report by question](amap-report.md) goes
 through it.
 
 ## Effect of the skip options

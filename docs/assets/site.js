@@ -216,6 +216,15 @@
     note.style.left = Math.round((above ? box.left : box.right + 10) + window.scrollX) + "px";
     note.style.top = Math.round(box.top + window.scrollY + (above ? -6 : box.height / 2)) + "px";
     document.body.appendChild(note);
+    // A note that would run past the window's edge (a long heading on a
+    // phone) sits above the line instead, inside the edge, so the page never
+    // widens under it.
+    var room = document.documentElement.clientWidth - 8;
+    if (note.getBoundingClientRect().right > room) {
+      note.classList.add("above");
+      note.style.left = Math.round(Math.max(8, room - note.offsetWidth) + window.scrollX) + "px";
+      note.style.top = Math.round(box.top + window.scrollY - 6) + "px";
+    }
     setTimeout(function () {
       note.remove();
     }, 1500);

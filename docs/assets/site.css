@@ -141,6 +141,14 @@
   --m-db: #f3a84a;
   --m-dup: #6fb6ff;
   --m-pan: #e889d8;
+  /* The graticule the pages sit on: minor lines every 16px, major every 80
+     (five squares), in the accent at a breath of alpha; a ruler's ticks in
+     the logo's slate; the corner marks of a plate in the accent. */
+  --grid-minor: rgba(104, 233, 212, 0.028);
+  --grid-major: rgba(104, 233, 212, 0.06);
+  --tick: rgba(143, 174, 183, 0.34);
+  --tick-major: rgba(143, 174, 183, 0.62);
+  --corner: color-mix(in srgb, var(--accent) 70%, transparent);
 
   /* The names the rest of this sheet uses, kept as aliases of the system. */
   --bg: var(--surface-0);
@@ -209,6 +217,11 @@
   --m-db: #b5650d;
   --m-dup: #1f68c4;
   --m-pan: #a6338f;
+  --grid-minor: rgba(8, 92, 80, 0.026);
+  --grid-major: rgba(8, 92, 80, 0.058);
+  --tick: rgba(40, 70, 66, 0.3);
+  --tick-major: rgba(40, 70, 66, 0.6);
+  --corner: color-mix(in srgb, var(--accent) 80%, transparent);
   color-scheme: light;
 }
 
@@ -232,6 +245,57 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-kerning: normal;
+}
+
+/* ── The graticule ──
+   The pages sit on a grid, the way a plot or an instrument's screen does:
+   minor lines every 16px, major ones every 80. It is one fixed layer behind
+   everything, painted once and never on scroll, so nothing that moves or
+   reflows moves it; cards, plates, code and tables cover it. Its major lines
+   fall on the column's left edge, at every width: the 24px margin, 16px on a
+   phone, and from 1216px the edge of the centred column (half the screen less
+   584px; a background's percentage is taken of the room left by its tile,
+   hence the two offsets). The docs keep only the major lines, quieter in the
+   light theme, so long reading stays calm; the sticky header and the
+   sidebar sit on its rows. */
+:root {
+  --grid-x-major: 24px;
+  --grid-x-minor: 8px;
+}
+
+@media (max-width: 600px) {
+  :root {
+    --grid-x-major: 16px;
+    --grid-x-minor: 0px;
+  }
+}
+
+@media (min-width: 1216px) {
+  :root {
+    --grid-x-major: calc(50% - 544px);
+    --grid-x-minor: calc(50% - 576px);
+  }
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px) var(--grid-x-major) 0 / 80px 80px,
+    linear-gradient(var(--grid-major) 1px, transparent 1px) 0 0 / 80px 80px,
+    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px) var(--grid-x-minor) 0 / 16px 16px,
+    linear-gradient(var(--grid-minor) 1px, transparent 1px) 0 0 / 16px 16px;
+}
+
+body.docs {
+  --grid-minor: transparent;
+}
+
+:root[data-theme="light"] body.docs {
+  --grid-major: rgba(8, 92, 80, 0.045);
 }
 
 /* Links: accent ink, a quiet underline that takes the full colour on hover. */
@@ -352,6 +416,35 @@ p {
 .report-frame {
   --halo: var(--surface-2);
   --control: var(--control-raised);
+  position: relative;
+}
+
+/* A plate registers its frame on the graticule: its four corners drawn in
+   the accent, over its own edge and bent with it (its border, redrawn, and
+   masked down to the corners). The panels inside the front page's plate of
+   cases are not plates, until a phone deals them out as cards. */
+:is(.demo, .cases, .case, .metro-wrap, .how-stage-card, .excerpt, .report-frame)::after {
+  --c: 22px;
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid var(--corner);
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) 0 0 / var(--c) var(--c) no-repeat,
+    linear-gradient(#000 0 0) 100% 0 / var(--c) var(--c) no-repeat,
+    linear-gradient(#000 0 0) 0 100% / var(--c) var(--c) no-repeat,
+    linear-gradient(#000 0 0) 100% 100% / var(--c) var(--c) no-repeat;
+  mask:
+    linear-gradient(#000 0 0) 0 0 / var(--c) var(--c) no-repeat,
+    linear-gradient(#000 0 0) 100% 0 / var(--c) var(--c) no-repeat,
+    linear-gradient(#000 0 0) 0 100% / var(--c) var(--c) no-repeat,
+    linear-gradient(#000 0 0) 100% 100% / var(--c) var(--c) no-repeat;
+}
+
+.cases > .case::after {
+  content: none;
 }
 
 /* Headings break into lines of even length rather than leave one word. */
@@ -462,12 +555,15 @@ mark.search-hit {
     --ink-3: #b4c0bd;
     --line-2: #56645f;
     --line-3: #7d8b87;
+    --grid-minor: transparent;
+    --grid-major: rgba(104, 233, 212, 0.05);
   }
 
   :root[data-theme="light"] {
     --ink-3: #3f4b48;
     --line-2: #93a09c;
     --line-3: #66736f;
+    --grid-minor: transparent;
   }
 }
 
@@ -481,6 +577,21 @@ mark.search-hit {
   -webkit-backdrop-filter: saturate(1.6) blur(14px);
   backdrop-filter: saturate(1.6) blur(14px);
   border-bottom: 1px solid var(--line-1);
+}
+
+/* Along the header's lower edge, a ruler on the graticule: a tick on every
+   minor line, a taller one on every major. */
+.top::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 7px;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, var(--tick-major) 1px, transparent 1px) var(--grid-x-major) 100% / 80px 7px repeat-x,
+    linear-gradient(90deg, var(--tick) 1px, transparent 1px) var(--grid-x-minor) 100% / 16px 3px repeat-x;
 }
 
 .top .wrap {
@@ -3651,6 +3762,15 @@ html:not(.js) .builder {
     scroll-snap-align: start;
   }
 
+  /* The strip is no plate; each card is, corners and all. */
+  .cases::after {
+    content: none;
+  }
+
+  .cases > .case::after {
+    content: "";
+  }
+
   .case-wide {
     grid-column: auto;
   }
@@ -4332,7 +4452,6 @@ html:not(.js) .builder {
 .report-frame {
   border: 1px solid var(--line-2);
   border-radius: var(--r-5);
-  overflow: hidden;
   box-shadow: var(--shadow);
   background: var(--surface-2);
 }
@@ -4405,11 +4524,13 @@ html:not(.js) .builder {
 /* Until the reader asks, the stage is a picture of the report's first
    screen (tools/pictures.mjs takes it): the report itself is 1.9 MB of
    scripts and plots. Once asked, it loads over the picture and fades in. */
+/* The frame's last row: its corners are the frame's, less its edge. */
 .report-stage {
   position: relative;
   height: 680px;
   background: var(--bg-subtle);
   overflow: hidden;
+  border-radius: 0 0 calc(var(--r-5) - 1px) calc(var(--r-5) - 1px);
 }
 
 .report-poster {
@@ -6012,6 +6133,25 @@ th.num {
 
 /* On paper: light colours, the text alone, and the address of every link
    that leaves the site. */
+/* On paper, and in a high-contrast theme, the graticule, its ruler and the
+   plates' corner marks step out: they are drawn for a screen, and a forced
+   palette would turn them into lines of text colour. */
+@media print {
+  body::before,
+  .top::after,
+  :is(.demo, .cases, .case, .metro-wrap, .how-stage-card, .excerpt, .report-frame)::after {
+    display: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  body::before,
+  .top::after,
+  :is(.demo, .cases, .case, .metro-wrap, .how-stage-card, .excerpt, .report-frame)::after {
+    display: none;
+  }
+}
+
 @media print {
   .docs {
     --surface-sunk: #f5f7f6;

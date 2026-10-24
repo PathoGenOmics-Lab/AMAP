@@ -106,17 +106,20 @@ You need [Nextflow](https://www.nextflow.io/) 24.04 or newer and a container
 engine. Nothing else: every tool lives in the AMAP image, and there is no need
 to clone this repository.
 
+Nextflow needs Java 17 or newer, and Conda brings both:
+
 ```bash
-conda create -n nextflow-env
+conda create -n nextflow-env -c conda-forge -c bioconda nextflow
 conda activate nextflow-env
-conda install -c bioconda nextflow
 ```
 
-Check the installation. This annotates the reference genome bundled in the
-container, so you need no data of your own:
+Check the installation. The test profile annotates the H37Rv genome bundled in
+the image, so you need no data of your own, and `--skip_functional_annotation`
+leaves out eggNOG, so you need no database either:
 
 ```bash
-nextflow run PathoGenOmics-Lab/AMAP -profile docker,test
+nextflow run PathoGenOmics-Lab/AMAP -profile docker,test \
+    --skip_functional_annotation --outdir amap-test
 ```
 
 Write a tab-separated sample sheet:

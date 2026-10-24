@@ -136,7 +136,7 @@ FIGURES = {
             f'<span class="oc-fig" data-fig-stage></span><span class="oc-text">{text}</span><span class="oc-more">{more}</span></a>'
             for key, tag, case, title, text, link, more in [
                 ("case2", "c2", "Case 2", "Perfect match", "Same start, end, strand and length as an aligned protein. Kept, tied to it.", "../how-it-works.html#agree", "Step through it"),
-                ("case3", "c3", "Case 3", "Imperfect match", "Same start, end and strand; the alignment's length differs. Kept, tied to the protein.", "correction-algorithm.html#1-classification", "The rule"),
+                ("case3", "c3", "Case 3", "Imperfect match", "Same start, end and strand; the alignment's length differs. Kept, tied to the protein.", "../how-it-works.html#same-ends", "Step through it"),
                 ("case4-start", "c4", "Case 4", "Conflicting overlap", "Overlaps an aligned protein with other coordinates. The reference's win, unless the call is much longer.", "../how-it-works.html#late-start", "Step through it"),
                 ("case1-kept", "c1", "Case 1", "Potentially novel", "Nothing aligns. Kept, unless Bakta is known to call it wrongly or the reference genome has its protein.", "../how-it-works.html#new", "Step through it"),
                 ("missing", "cm", "Missing", "Put back", "A reference protein aligns where Bakta called nothing. It goes in at the alignment.", "../how-it-works.html#missed", "Step through it"),
@@ -353,7 +353,9 @@ def strip_front_matter(lines: list[str]) -> list[str]:
 # does not wrap at all; a longer one wraps only at a space or after a /, _ or
 # ., so a path or a long option name comes apart where it reads in pieces.
 # Each piece is a span that does not wrap, with a <wbr> between pieces: the
-# browser's own rules would also break after a hyphen, '--|skip_typing'.
+# browser's own rules would also break after a hyphen, '--|skip_typing'. A
+# piece longer than LONG_TOKEN with nothing to break at, a commit hash, may
+# break anywhere, or it would run off a phone's screen.
 
 SHORT_CODE = 24
 
@@ -367,7 +369,7 @@ def code_pieces(text: str) -> str:
             out.append(token)
             continue
         pieces = re.findall(r"[^/_.]*[/_.]+|[^/_.]+", token)
-        out.append("<wbr>".join(f'<span class="nw">{html.escape(p)}</span>' for p in pieces))
+        out.append("<wbr>".join(f'<span class="{"nw" if len(p) <= LONG_TOKEN else "brk"}">{html.escape(p)}</span>' for p in pieces))
     return "".join(out)
 
 
@@ -1264,10 +1266,16 @@ def hpc_figure(_renderer: "Renderer", lines: list[str]) -> str:
         + '<div class="hpc-tasks"><span>per sample: Bakta, miniprot, the correction, duplications, pangenome</span>'
         "<span>once for all: eggNOG, the genomes compared, the report</span></div></div>"
     )
+    # The singularity profile keeps the image under --outdir, and that wins
+    # over NXF_SINGULARITY_CACHEDIR: one shared copy needs singularity.cacheDir
+    # in a config passed with -c, as deployment/hpc.md says.
+    cache = profile_settings("singularity").get("singularity.cacheDir", "")
+    if "params.outdir" not in cache:
+        raise SystemExit("tools/build_docs.py: the singularity profile no longer keeps its image under --outdir; update hpc_figure()")
     shared = (
         '<div class="hpc-box hpc-shared"><p class="hpc-title">Shared storage</p><div class="hpc-places">'
         '<span><code class="hpc-key">-work-dir</code>every task\'s files, which <code>-resume</code> needs</span>'
-        '<span><code class="hpc-key">NXF_SINGULARITY_CACHEDIR</code>the image, converted once</span>'
+        '<span><code class="hpc-key">singularity.cacheDir</code>the image, converted once, from a <code>-c</code> config</span>'
         '<span><code class="hpc-key">--eggnog_db</code>the eggNOG database, built once</span>'
         '<span><code class="hpc-key">--outdir</code>the results</span></div></div>'
     )
@@ -1399,7 +1407,9 @@ BENCHMARK_GENOMES = [
 def sheet_figure() -> str:
     head, *rows = SHEET
     tab = '<td class="sheet-tab" aria-label="a tab">&#8677;</td>'
-    body = "".join(f'<tr><td>{html.escape(a)}</td>{tab}<td class="sheet-path">{html.escape(b)}</td></tr>' for a, b in rows)
+    # A path comes apart only after a /, never inside a file name.
+    path = lambda b: "<wbr>".join(f'<span class="nw">{html.escape(p)}</span>' for p in re.findall(r"[^/]*/+|[^/]+", b))
+    body = "".join(f'<tr><td>{html.escape(a)}</td>{tab}<td class="sheet-path">{path(b)}</td></tr>' for a, b in rows)
     table = (
         '<table class="sheet-table"><thead><tr><th><span class="sheet-n">1</span>sampleId</th>'
         f'{tab}<th><span class="sheet-n">3</span>fasta</th></tr></thead><tbody>{body}</tbody></table>'
@@ -1994,6 +2004,74 @@ def story_entries() -> list[dict]:
     return out
 
 
+# The index goes out packed: each page's title and address once, each kind
+# once, and each entry as a row that points at them. The file unpacks itself
+# into the entries the search box reads, {page, section, url, text, code?,
+# kind}, as it loads; that keeps the whole of the docs under SEARCH_BUDGET.
+
+SEARCH_BUDGET = 230_000
+
+SEARCH_UNPACK = (
+    "window.AMAP_DOCS_INDEX = (function (d) {\n"
+    "  return d.rows.map(function (r) {\n"
+    "    var p = d.pages[r[0]];\n"
+    '    var e = { page: p[0], section: r[1], url: p[1] + (r[2] ? "#" + r[2] : ""), text: r[3] };\n'
+    "    if (r[5]) e.code = r[5];\n"
+    "    e.kind = d.kinds[r[4]];\n"
+    "    return e;\n"
+    "  });\n"
+    "})("
+)
+
+
+def pack_index(entries: list[dict]) -> dict:
+    pages: list[list[str]] = []
+    kinds: list[str] = []
+    rows = []
+    for e in entries:
+        base, _, fragment = e["url"].partition("#")
+        key = [e["page"], base]
+        if key not in pages:
+            pages.append(key)
+        if e["kind"] not in kinds:
+            kinds.append(e["kind"])
+        row = [pages.index(key), e["section"], fragment, e["text"], kinds.index(e["kind"])]
+        if e.get("code"):
+            row.append(e["code"])
+        rows.append(row)
+    return {"pages": pages, "kinds": kinds, "rows": rows}
+
+
+def unpack_index(packed: dict) -> list[dict]:
+    """What SEARCH_UNPACK makes of the packed index, for check_site.py."""
+    out = []
+    for r in packed["rows"]:
+        page, base = packed["pages"][r[0]]
+        e = {"page": page, "section": r[1], "url": base + ("#" + r[2] if r[2] else ""), "text": r[3]}
+        if len(r) > 5 and r[5]:
+            e["code"] = r[5]
+        e["kind"] = packed["kinds"][r[4]]
+        out.append(e)
+    return out
+
+
+def read_index(text: str) -> list[dict]:
+    """The entries of a search-index.js as build_docs.py writes it."""
+    return unpack_index(json.loads(text[text.index(SEARCH_UNPACK) + len(SEARCH_UNPACK):].rstrip().removesuffix(");")))
+
+
+def search_index_js(entries: list[dict]) -> str:
+    packed = pack_index(entries)
+    if unpack_index(packed) != entries:
+        raise SystemExit("tools/build_docs.py: the packed search index does not unpack to its entries")
+    return (
+        "/* Generated by tools/build_docs.py: the documentation, section by section, for the search box. */\n"
+        + SEARCH_UNPACK
+        + json.dumps(packed, ensure_ascii=False, separators=(",", ":"))
+        + ");\n"
+    )
+
+
 def build() -> dict[Path, str]:
     files: dict[Path, str] = {}
     entries: list[dict] = []
@@ -2008,10 +2086,7 @@ def build() -> dict[Path, str]:
     lost_path, lost_text = not_found_page()
     files[lost_path] = lost_text
     entries += front_page_entries() + story_entries()
-    files[SEARCH_INDEX] = (
-        "/* Generated by tools/build_docs.py: the documentation, section by section, for the search box. */\n"
-        "window.AMAP_DOCS_INDEX = " + json.dumps(entries, ensure_ascii=False, separators=(",", ":")) + ";\n"
-    )
+    files[SEARCH_INDEX] = search_index_js(entries)
     return files
 
 

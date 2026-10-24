@@ -2254,6 +2254,12 @@ code .nw {
   white-space: nowrap;
 }
 
+/* A long piece of a chip with nothing to break at, a commit hash, breaks
+   anywhere rather than run off a phone's screen. */
+code .brk {
+  overflow-wrap: anywhere;
+}
+
 /* Files, trees and program output keep their layout at every width, and
    scroll. The command a builder writes ([data-command]) wraps as on the front
    page. */
@@ -3526,20 +3532,6 @@ html:not(.js) .builder {
   font-weight: 600;
   font-size: 0.85rem;
   white-space: nowrap;
-}
-
-/* Text for a screen reader only, such as where a link opens. */
-.visually-hidden {
-  position: absolute !important;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
 }
 
 /* Says that what it sits next to was made from synthetic data. */
@@ -6377,6 +6369,10 @@ html:not(.js) .how-nav {
 
 .sheet-path {
   overflow-wrap: anywhere;
+}
+
+.sheet-path .nw {
+  white-space: nowrap;
 }
 
 .sheet-n {

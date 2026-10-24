@@ -2,7 +2,7 @@
 """Check the website in docs/ against the pipeline it describes.
 
 The site is plain HTML with no build step, so nothing renders it and nothing
-fails when it drifts. This does, in thirteen parts:
+fails when it drifts. This does, in seventeen parts:
 
   links       every internal link and #anchor resolves (the stories how.js
               opens and the sections of the example report included), no page
@@ -29,8 +29,8 @@ fails when it drifts. This does, in thirteen parts:
   words       no page says --skip_functional_annotation leaves no report
               (amap_report.html is always written), or that a gene a contig
               end cuts is lost (it comes back in pieces);
-  install     the front page, the installation page and the tutorial install
-              Nextflow with the same command;
+  install     the front page, the installation page, the tutorial and
+              README.md install Nextflow with the same command;
   citation    the citation page shows CITATION.cff as it is, and its APA line
               and BibTeX give the version and date CITATION.cff does;
   report      the example report, and the Rmd every final_report.html comes
@@ -39,6 +39,15 @@ fails when it drifts. This does, in thirteen parts:
   readme      README.md's links land on a page and an anchor that exist, its
               pictures are in the repository, and its scores are the
               benchmark's;
+  stories     the story chips written into how-it-works.html are how.js's
+              stories, and no drawing hides a tab stop inside an image;
+  figures     a page that loads figures.js has something for it to draw;
+  search      the search index has the shape the search box reads, every
+              option has an entry that lands on its row, and the index stays
+              under its size budget;
+  front       the pages the command builder links to exist, and the front
+              page's report frame and the picture standing in for it are
+              there, the picture light;
   dashes      no em-dashes.
 
 Run from the repository root, with what requirements-test.txt installs (the
@@ -1004,7 +1013,7 @@ def check_words() -> list[str]:
 
 def check_install(pages: dict[str, Page]) -> list[str]:
     """The command that installs Nextflow is the same on the front page, the
-    installation page and the tutorial."""
+    installation page, the tutorial and README.md."""
     found: dict[str, list[str]] = {}
     if "index.html" in pages:
         for tag, text in pages["index.html"].code_elems:
@@ -1013,13 +1022,18 @@ def check_install(pages: dict[str, Page]) -> list[str]:
                     line = line.strip().removeprefix("$ ")
                     if line.startswith("conda create"):
                         found.setdefault("index.html", []).append(line)
-    for page in ("getting-started/installation.md", "getting-started/tutorial.md"):
-        for block in re.findall(r"```[^\n]*\n(.*?)```", (SITE / page).read_text(encoding="utf-8"), re.S):
+    markdown = {
+        "getting-started/installation.md": SITE / "getting-started" / "installation.md",
+        "getting-started/tutorial.md": SITE / "getting-started" / "tutorial.md",
+        "README.md": README,
+    }
+    for page, path in markdown.items():
+        for block in re.findall(r"```[^\n]*\n(.*?)```", path.read_text(encoding="utf-8"), re.S):
             for line in block.splitlines():
                 if line.strip().startswith("conda create -n nextflow-env"):
                     found.setdefault(page, []).append(line.strip())
     problems = []
-    for page in ("index.html", "getting-started/installation.md", "getting-started/tutorial.md"):
+    for page in ["index.html", *markdown]:
         if len(set(found.get(page, []))) != 1:
             problems.append(f"{page}: has {len(set(found.get(page, [])))} commands that install Nextflow with conda, not one")
     commands = {line for lines in found.values() for line in lines}
@@ -1180,10 +1194,7 @@ def check_front(pages: dict[str, Page]) -> list[str]:
     return problems
 
 
-# ── dashes ──
-
-
-EM_DASH = "\u2014"
+# ── stories ──
 
 
 def check_stories(pages: dict[str, Page]) -> list[str]:
@@ -1215,6 +1226,9 @@ def check_stories(pages: dict[str, Page]) -> list[str]:
     return problems
 
 
+# ── figures ──
+
+
 def check_figure_scripts(pages: dict[str, Page]) -> list[str]:
     """A page that loads figures.js gives it something to draw: an element it
     mounts a drawing on (the hooks are read off figures.js), or a script of
@@ -1235,19 +1249,26 @@ def check_figure_scripts(pages: dict[str, Page]) -> list[str]:
     return problems
 
 
+# ── search ──
+
+
 SEARCH_INDEX = SITE / "assets" / "search-index.js"
 SEARCH_KINDS = {"page", "section", "option", "faq", "story", "changelog"}
 
 
 def check_search_index() -> list[str]:
-    """The search index has the shape the search box reads, and every option
-    of the parameters page has an entry of its own that lands on its row."""
+    """The search index has the shape the search box reads, every option of
+    the parameters page has an entry of its own that lands on its row, and the
+    file stays under its budget: it loads the first time a reader searches."""
     text = SEARCH_INDEX.read_text(encoding="utf-8")
     try:
-        entries = json.loads(text[text.index("=") + 1:].strip().rstrip(";"))
-    except ValueError as error:
-        return [f"{SEARCH_INDEX}: not the JSON build_docs.py writes ({error})"]
+        entries = build_docs.read_index(text)
+    except (ValueError, KeyError, IndexError, TypeError) as error:
+        return [f"{SEARCH_INDEX}: not the packed index build_docs.py writes ({error})"]
     problems = []
+    size = len(text.encode("utf-8"))
+    if size > build_docs.SEARCH_BUDGET:
+        problems.append(f"{SEARCH_INDEX}: {size:,} bytes, over the {build_docs.SEARCH_BUDGET:,} it may weigh")
     for k, entry in enumerate(entries):
         missing = {"page", "section", "url", "text", "kind"} - set(entry)
         if missing:
@@ -1261,6 +1282,12 @@ def check_search_index() -> list[str]:
         if options.get(flag) != want:
             problems.append(f"{SEARCH_INDEX}: {flag} has no search entry landing on {want}")
     return problems
+
+
+# ── dashes ──
+
+
+EM_DASH = "\u2014"
 
 
 def check_dashes() -> list[str]:

@@ -100,7 +100,7 @@
             <div class="code"><pre><span class="ln"><span class="p">$ </span><span class="t">conda</span> <span class="t">create</span> <span class="f">-n</span> <span class="v">nextflow-env</span> <span class="f">-c</span> <span class="v">conda-forge</span> <span class="f">-c</span> <span class="v">bioconda</span> <span class="t">nextflow</span>
 </span><span class="ln"><span class="p">$ </span><span class="t">conda</span> <span class="t">activate</span> <span class="t">nextflow-env</span>
 </span><span class="ln"><span class="p">$ </span><span class="t">docker</span> <span class="t">info</span> <span class="f">--format</span> <span class="v">'Docker</span> <span class="v">can</span> <span class="v">give</span> <span class="v">containers</span> <span class="v">{{.NCPU}}</span> <span class="v">CPUs</span> <span class="v">and</span> <span class="v">{{.MemTotal}}</span> <span class="v">bytes'</span></span></pre></div>
-            <p class="note">The last line fails if Docker is not running, and says what a container may use; Docker Desktop's 8 GB prints as 8217014272 bytes. Under 8 GB? Raise it in Docker Desktop, Settings, Resources. On Apple Silicon the image runs under emulation, as in every time on this page. <a href="getting-started/installation.html">Installation, in full</a>.</p>
+            <p class="note">The last line fails if Docker is not running, and says what a container may use; Docker Desktop's 8 GB prints as 8217014272 bytes. Under 8 GB? Raise it in Docker Desktop, Settings, Resources. On Apple Silicon the image runs emulated, as it did for every time here. <a href="getting-started/installation.html">Installation, in full</a>.</p>
           </div>
         </li>
         <li>
@@ -169,7 +169,7 @@ Erdman<span class="tsv-tab">	</span>/data/erdman.fna</pre><button class="copy" t
 </span><span class="ln">    <span class="f">-profile</span> <span class="v">docker</span> \
 </span><span class="ln">    <span class="f">--tsv</span> <span class="v">samples.tsv</span> \
 </span><span class="ln">    <span class="f">--validate_only</span></span></pre><button class="copy" type="button" data-copy-from="[data-check]">Copy</button></div>
-                <p class="note">Seconds per genome. Warnings never stop it and Nextflow does not print them: the verdict is in <code>results/pipeline_info/validation.log</code>, here for the tutorial's genome:</p>
+                <p class="note">Seconds per genome. Warnings do not stop it and Nextflow does not print them: the verdict is in <code>results/pipeline_info/validation.log</code>, here for the tutorial's genome:</p>
                 <div class="out">Results: 1 OK, 0 warnings, 0 failed
 Total: 0 error(s), 0 warning(s)</div>
                 <p class="cmd-head">Then run it</p>
@@ -187,7 +187,7 @@ Total: 0 error(s), 0 warning(s)</div>
           <span class="step-num" aria-hidden="true">4</span>
           <div class="step-body">
             <h3>Open what came out</h3>
-            <p>Open <code>results/amap_report.html</code> first: every run writes it, the test of step 2 included, and it answers the first questions genome by genome. A full run, with eggNOG, also writes <code>results/final_report.html</code>, the whole run on one page. The corrected files are listed <a href="#outputs">under What you get</a>.</p>
+            <p>Open <code>results/amap_report.html</code> first: every run writes it (the test of step 2, in <code>amap-test/</code>), and it answers the first questions genome by genome. A full run, with eggNOG, also writes <code>results/final_report.html</code>, the whole run on one page. The corrected files are listed <a href="#outputs">under What you get</a>.</p>
           </div>
         </li>
       </ol>
@@ -308,7 +308,7 @@ Total: 0 error(s), 0 warning(s)</div>
       <div class="section-head">
         <p class="kicker">What you get</p>
         <h2>Files you can open, and the reasons behind them</h2>
-        <p>Everything lands under <code>results/</code>, one folder per step. Typing puts the lineage in front of each sample: CDC1551 becomes L4_CDC1551. These answer most questions; <a href="user-guide/outputs.html">Outputs</a> has every file.</p>
+        <p>Everything lands under <code>results/</code>, one folder per step. Typing puts the lineage in front of each sample, so CDC1551 becomes L4_CDC1551; <code>--skip_typing</code> leaves it out. <a href="user-guide/outputs.html">Outputs</a> lists every file.</p>
       </div>
       <div class="files">
         <div class="file full-run">

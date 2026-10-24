@@ -249,7 +249,7 @@
       }
       if (choice.engine !== "docker") {
         out.push(
-          "The singularity profile keeps the 12 GB image in <code>singularity_cache/</code> under <code>--outdir</code>, " +
+          "The singularity profile keeps the converted image in <code>singularity_cache/</code> under <code>--outdir</code>, " +
             "and that wins over <code>NXF_SINGULARITY_CACHEDIR</code>. To keep one shared copy, put " +
             "<code>singularity.cacheDir = '/shared/singularity_cache'</code> in a config passed with <code>-c</code>."
         );

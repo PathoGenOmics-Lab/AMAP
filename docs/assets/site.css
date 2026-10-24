@@ -152,12 +152,15 @@ pre {
   font-size: 0.88em;
 }
 
+/* A chip of code never splits inside a word: short ones (.nw) do not wrap at
+   all, and the docs builder lets a long one wrap only after a /, _ or .
+   (see the Code section). */
 :not(pre) > code {
   background: var(--bg-subtle);
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 0.08em 0.38em;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
 }
 
 h1,
@@ -2006,6 +2009,13 @@ label,
   color: var(--code-ink);
   border-radius: var(--radius-sm);
   border: 1px solid var(--code-border);
+  /* The colour a block's sideways scroll shadow covers with, and the shadow. */
+  --cover: var(--code-bg);
+  --shade: rgba(255, 255, 255, 0.18);
+}
+
+:root[data-theme="light"] .code {
+  --shade: rgba(16, 27, 24, 0.2);
 }
 
 .code pre {
@@ -2015,22 +2025,61 @@ label,
   line-height: 1.6;
   font-size: 0.86rem;
   tab-size: 8;
+  /* The block's own corners, so its background does not square them off. */
+  border-radius: calc(var(--radius-sm) - 1px);
+  /* A block wider than its box shades the edge it continues past. The covers
+     scroll with the text and the shadows stay put, so a shadow shows only
+     where there is more to see. */
+  background:
+    linear-gradient(to right, var(--cover) 40%, transparent) left / 28px 100% no-repeat local,
+    linear-gradient(to left, var(--cover) 40%, transparent) right / 28px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, var(--shade), transparent) left / 12px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, var(--shade), transparent) right / 12px 100% no-repeat scroll;
 }
 
-/* On a phone every block wraps rather than run under the copy button; what
-   is copied is the text, not the wrapping. */
+/* On the front page a block wraps on a phone rather than run under the copy
+   button; the docs' blocks keep their layout (see below). */
 @media (max-width: 600px) {
   .code pre {
     white-space: pre-wrap;
-    overflow-wrap: anywhere;
   }
 }
 
-/* A one-line command that would hide under the copy button wraps instead;
-   what is copied is the text, not the wrapping. */
+/* A command wraps at the spaces between its words and never inside one, and
+   a line that wraps hangs the rest of itself four characters further in than
+   it starts (--i is the line's own indent). What is copied is the text, not
+   the wrapping. */
+.code.cmd pre,
 .code.one-line pre {
   white-space: pre-wrap;
-  overflow-wrap: anywhere;
+}
+
+.code .ln {
+  display: block;
+  padding-left: calc((var(--i, 0) + 4) * 1ch);
+  text-indent: calc((var(--i, 0) + 4) * -1ch);
+}
+
+.code :is(.t, .f, .v, .kv),
+code.nw,
+code .nw {
+  white-space: nowrap;
+}
+
+/* A path too long for a phone's line comes apart only after a /. */
+.code :is(.t, .f, .v).path {
+  white-space: inherit;
+}
+
+.code .path .nw {
+  white-space: nowrap;
+}
+
+/* Files, trees and program output keep their layout at every width, and
+   scroll. The command a builder writes ([data-command]) wraps as on the front
+   page. */
+.prose .code:not(.cmd) pre:not([data-command]) {
+  white-space: pre;
 }
 
 .code .p {
@@ -2048,6 +2097,31 @@ label,
 
 .code .v {
   color: var(--code-value);
+}
+
+/* A tab of a tab-separated file, drawn as the sample sheet drawing draws it;
+   the character underneath is a real tab, which is what Copy takes. */
+.code .tsv-tab {
+  position: relative;
+}
+
+.code .tsv-tab::before {
+  content: "\21E5";
+  position: absolute;
+  left: 0.2em;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0 0.35em;
+  border-radius: 4px;
+  font-size: 0.85em;
+  line-height: 1.35;
+  color: var(--code-value);
+  background: color-mix(in srgb, var(--code-value) 14%, transparent);
+  pointer-events: none;
+}
+
+.code.tsv pre {
+  tab-size: 6;
 }
 
 .copy {
@@ -2072,16 +2146,91 @@ label,
   border-color: currentColor;
 }
 
+/* A block's head: what it is (a terminal, a file, a command's output), with
+   Copy at its right. A file name is written as it is spelled. */
 .code-title {
-  font: 600 0.75rem var(--font);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 128px 0 18px;
+  border-bottom: 1px solid var(--code-border);
+  font: 600 0.76rem var(--font);
+  letter-spacing: 0.02em;
   color: var(--code-muted);
-  padding: 10px 18px 0;
+}
+
+.code-title.fname {
+  font: 600 0.8rem var(--mono);
+  letter-spacing: 0;
+  color: var(--code-ink);
 }
 
 .code-title + pre {
-  padding-top: 8px;
+  padding-top: 12px;
+  padding-right: 18px;
+}
+
+.code-title ~ .copy {
+  top: 4px;
+  right: 6px;
+  padding: 4px 10px;
+}
+
+/* A tab-separated file says what Copy keeps. */
+.code.tsv .copy::after {
+  content: " with tabs";
+}
+
+/* What a command prints: the front page's dashed frame, and nothing to copy. */
+.code.out {
+  --cover: var(--bg-subtle);
+  margin-top: 0;
+  padding: 0;
+  background: var(--bg-subtle);
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-soft);
+  white-space: normal;
+}
+
+.code.out pre {
+  color: var(--ink-soft);
+}
+
+.code.out .code-title {
+  border-bottom: 1px dashed var(--line-strong);
+  color: var(--muted);
+}
+
+.code.out .copy {
+  display: none;
+}
+
+/* A command and what it prints read as one. */
+.prose .code.cmd + .code.out {
+  margin-top: -0.5em;
+}
+
+/* On a phone a block with no head keeps a strip above its text for Copy,
+   instead of a margin down the right of every line. */
+@media (max-width: 600px) {
+  .prose .code.bare {
+    padding-top: 30px;
+  }
+
+  .prose .code.bare .copy {
+    top: 3px;
+    right: 6px;
+    padding: 3px 10px;
+  }
+
+  .prose .code pre:not([data-command]) {
+    padding-right: 16px;
+    padding-left: 14px;
+  }
+
+  .code-title {
+    padding-left: 14px;
+  }
 }
 
 kbd {
@@ -3062,6 +3211,11 @@ kbd {
   color: var(--muted);
 }
 
+/* A footer that ends in the bottom row needs less room under it. */
+.foot:has(> .foot-base) {
+  padding-bottom: 28px;
+}
+
 .foot .wrap {
   display: grid;
   grid-template-columns: 1.4fr 1fr 1fr;
@@ -3084,6 +3238,17 @@ kbd {
   gap: 6px;
 }
 
+/* Quiet links: the footer is a list of ways out, not a paragraph. */
+.foot a {
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.foot a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 .foot blockquote {
   margin: 0;
   color: var(--ink-soft);
@@ -3091,6 +3256,22 @@ kbd {
 
 .foot .doi {
   margin: 10px 0 0;
+}
+
+/* The bottom row, under a hairline: who makes it, its licence, its version. */
+.foot .wrap.foot-base {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin-top: 30px;
+  font-size: 0.8rem;
+}
+
+.foot .wrap.foot-base::before {
+  content: "";
+  flex: 1 0 100%;
+  border-top: 1px solid var(--line);
+  margin-bottom: 14px;
 }
 
 @media (max-width: 760px) {
@@ -3119,14 +3300,31 @@ kbd {
 }
 
 .ref-section {
-  padding: 48px 0 8px;
+  padding: 56px 0 72px;
 }
 
+.ref-section .note + .deep {
+  margin-top: 18px;
+}
+
+/* A table wider than its box scrolls, and shades the edge it continues past
+   (the same covers and shadows as a block of code). */
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--bg-elev);
+  --cover: var(--bg-elev);
+  --shade: rgba(255, 255, 255, 0.16);
+  background:
+    linear-gradient(to right, var(--cover) 40%, transparent) left / 28px 100% no-repeat local,
+    linear-gradient(to left, var(--cover) 40%, transparent) right / 28px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, var(--shade), transparent) left / 12px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, var(--shade), transparent) right / 12px 100% no-repeat scroll,
+    var(--bg-elev);
+}
+
+:root[data-theme="light"] .table-wrap {
+  --shade: rgba(16, 27, 24, 0.16);
 }
 
 table {
@@ -3202,21 +3400,29 @@ th.num {
 
 /* ── Documentation pages ── */
 
+/* The docs take a wider frame than the front page, so the text column keeps
+   its width next to the page list and the contents; header, columns and
+   footer share its edges. Running text keeps a reading measure inside the
+   column, while code, tables and drawings use all of it. */
+.docs .wrap {
+  max-width: 1380px;
+}
+
 .docs-layout {
   display: grid;
-  grid-template-columns: 230px minmax(0, 1fr) 210px;
-  gap: 44px;
+  grid-template-columns: 220px minmax(0, 1fr) 200px;
+  column-gap: 40px;
   padding-top: 32px;
   padding-bottom: 72px;
 }
 
-.docs-home {
-  grid-template-columns: 230px minmax(0, 1fr);
+.wrap.docs-home {
+  grid-template-columns: 220px minmax(0, 1fr);
 }
 
-@media (max-width: 1180px) {
-  .docs-layout {
-    grid-template-columns: 210px minmax(0, 1fr);
+@media (max-width: 1279px) {
+  .wrap.docs-layout {
+    grid-template-columns: 220px minmax(0, 1fr);
   }
 
   .docs-toc {
@@ -3225,8 +3431,8 @@ th.num {
 }
 
 @media (max-width: 860px) {
-  .docs-layout,
-  .docs-home {
+  .wrap.docs-layout,
+  .wrap.docs-home {
     grid-template-columns: minmax(0, 1fr);
     gap: 18px;
     padding-top: 18px;
@@ -3502,10 +3708,11 @@ th.num {
 .docs-section {
   font-size: 0.75rem;
   font-weight: 700;
+  line-height: 1.3;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--muted);
-  margin: 16px 0 6px;
+  margin: 10px 0 2px;
 }
 
 .docs-nav ul,
@@ -3515,9 +3722,11 @@ th.num {
   padding: 0;
 }
 
+/* Rows of about 28 px, so the whole list fits a laptop's screen. */
 .docs-nav li a {
   display: block;
-  padding: 5px 10px;
+  padding: 3px 10px;
+  line-height: 1.45;
   border-radius: 7px;
   color: var(--ink-soft);
   text-decoration: none;
@@ -3566,28 +3775,120 @@ th.num {
   color: var(--ink);
 }
 
-/* Long-form text. */
+/* The contents where the contents column does not show: folded under the
+   h1, its sections only. */
+.toc-inline {
+  display: none;
+}
+
+@media (max-width: 1279px) {
+  .prose .toc-inline {
+    display: block;
+    max-width: 68ch;
+    margin: 0 0 1.6em;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg-elev);
+    font-size: 0.92rem;
+  }
+}
+
+.toc-inline summary {
+  cursor: pointer;
+  padding: 9px 0;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.prose .toc-inline ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 10px;
+}
+
+.prose .toc-inline li {
+  margin: 0;
+}
+
+.toc-inline a {
+  display: block;
+  padding: 4px 0 4px 10px;
+  border-left: 2px solid var(--line);
+  color: var(--ink-soft);
+  text-decoration: none;
+  line-height: 1.35;
+}
+
+.toc-inline a:hover,
+.toc-inline a.active {
+  border-left-color: var(--accent);
+  color: var(--ink);
+}
+
+/* Long-form text: headings, bold and table heads in full ink, the rest a
+   step softer, so a page of text does not glare. */
 
 .prose {
   min-width: 0;
-  max-width: 780px;
+  max-width: 820px;
+  color: var(--ink-soft);
+  line-height: 1.62;
 }
 
-.prose .crumb {
+.prose :is(h1, h2, h3, h4, h5, h6, strong, b, th) {
+  color: var(--ink);
+}
+
+/* A reading measure for running text; code, tables and drawings take the
+   whole column. */
+.prose > :is(p, ul, ol, blockquote),
+.prose .callout {
+  max-width: 68ch;
+}
+
+.prose :is(p, li) {
+  text-wrap: pretty;
+}
+
+.prose .crumb-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 2px 18px;
+  margin-bottom: 8px;
   font-size: 0.85rem;
   color: var(--muted);
-  margin-bottom: 8px;
 }
 
-.prose .crumb a {
+.prose .crumb-row p {
+  margin: 0;
+}
+
+.prose .crumb-row a {
   color: var(--muted);
+}
+
+.prose .crumb-row a:hover {
+  color: var(--accent);
+}
+
+.prose .ver {
+  font-size: 0.8rem;
 }
 
 .prose h1 {
   font-size: clamp(2rem, 4vw, 2.6rem);
   font-weight: 800;
   letter-spacing: -0.03em;
+  margin-bottom: 10px;
+}
+
+.prose .doc-meta {
   margin-bottom: 18px;
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .prose h2 {
@@ -3607,28 +3908,76 @@ th.num {
   margin: 1.5em 0 0.5em;
 }
 
+/* A heading and its # link: the link sits in the gutter to the left of the
+   heading, and on a narrow screen just after its text. The heading's margins
+   move to the pair, sized as the heading's. Anchored headings land under the
+   sticky header through html's scroll-padding-top alone. */
+.prose .hx {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 0.35em;
+}
+
+.prose .hx-2 {
+  font-size: 1.5rem;
+  margin: 2.2em 0 0.7em;
+}
+
+.prose .hx-3 {
+  font-size: 1.15rem;
+  margin: 1.8em 0 0.6em;
+}
+
+.prose :is(.hx-4, .hx-5, .hx-6) {
+  font-size: 1rem;
+  margin: 1.5em 0 0.5em;
+}
+
+.prose .hx > :is(h2, h3, h4, h5, h6) {
+  min-width: 0;
+  margin: 0;
+}
+
 .prose h1,
 .prose h2,
 .prose h3,
 .prose h4 {
-  scroll-margin-top: 80px;
   /* Headings that are file names have no spaces to break at. */
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .prose .anchor {
-  margin-left: 8px;
-  color: var(--line-strong);
+  flex: none;
+  color: var(--muted);
   text-decoration: none;
-  opacity: 0;
   font-weight: 500;
+  line-height: 1.15;
+  opacity: 0;
 }
 
-.prose h2:hover .anchor,
-.prose h3:hover .anchor,
-.prose h4:hover .anchor,
-.prose .anchor:focus {
+.prose .hx:hover .anchor,
+.prose .anchor:focus-visible {
   opacity: 1;
+}
+
+.prose .anchor:hover {
+  color: var(--accent);
+}
+
+@media (min-width: 861px) {
+  .prose .hx .anchor {
+    position: absolute;
+    left: -1.1em;
+    top: 0;
+  }
+}
+
+/* On a touch screen there is no hover to show it. */
+@media (hover: none) {
+  .prose .anchor {
+    opacity: 1;
+  }
 }
 
 .prose p,
@@ -3683,8 +4032,120 @@ th.num {
   font-size: 0.9rem;
 }
 
-.prose td code {
-  white-space: normal;
+/* A type is a word to read, not a chip of code. */
+.prose td.type {
+  color: var(--muted);
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+/* An option's row, opened from a link to it. */
+.prose tr:target {
+  background: var(--accent-soft);
+}
+
+.prose tr:target > td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* A chip naming an option links to its row of the parameters page. */
+.prose a.opt-link {
+  text-decoration: none;
+}
+
+.prose a.opt-link code {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+}
+
+.prose a.opt-link:hover code {
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
+@media (max-width: 600px) {
+  .prose th,
+  .prose td {
+    padding: 10px;
+  }
+
+  .prose th {
+    letter-spacing: 0.03em;
+  }
+
+  /* A table of four columns or more becomes one card per row: the first
+     cell as its title, the second as its text, the rest on one muted line,
+     each with its column's name. */
+  .prose .table-wrap.cards-wrap {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  .prose table.cards,
+  .prose table.cards tbody,
+  .prose table.cards tr,
+  .prose table.cards td {
+    display: block;
+  }
+
+  .prose table.cards thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .prose table.cards tr {
+    margin-bottom: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg-elev);
+  }
+
+  .prose table.cards tr:target {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+
+  .prose table.cards td {
+    padding: 0;
+    border: 0;
+  }
+
+  .prose table.cards td:first-child {
+    margin-bottom: 4px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .prose table.cards tr:target > td:first-child {
+    box-shadow: none;
+  }
+
+  .prose table.cards td:nth-child(2) {
+    margin-bottom: 6px;
+  }
+
+  .prose table.cards td:nth-child(n + 3) {
+    display: inline;
+    margin-right: 14px;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+
+  .prose table.cards td:nth-child(n + 3):empty {
+    display: none;
+  }
+
+  .prose table.cards td:nth-child(n + 3)::before {
+    content: attr(data-label) ": ";
+    font-weight: 600;
+  }
 }
 
 .prose .figure img {
@@ -3704,9 +4165,18 @@ th.num {
   display: none;
 }
 
+.prose .to-top {
+  margin-top: 2em;
+  font-size: 0.9rem;
+}
+
 .prose .edit {
   margin-top: 2.5em;
   font-size: 0.9rem;
+}
+
+.prose .to-top + .edit {
+  margin-top: 0.6em;
 }
 
 .prose .edit a {
@@ -3720,11 +4190,12 @@ th.num {
   height: 16px;
 }
 
-/* GitHub's alerts (> [!WARNING]) as callouts. */
+/* GitHub's alerts (> [!WARNING]) as callouts, which say their kind in words
+   as well as in colour. */
 .callout {
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--c) 30%, var(--line));
   border-left: 4px solid var(--c);
-  background: color-mix(in srgb, var(--c) 8%, var(--bg-elev));
+  background: color-mix(in srgb, var(--c) 5%, var(--bg-elev));
   border-radius: 0 10px 10px 0;
   padding: 12px 16px 2px;
   --c: var(--info);
@@ -3752,33 +4223,159 @@ th.num {
   margin-bottom: 6px !important;
 }
 
+.callout-kind {
+  display: block;
+  margin-bottom: 1px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c);
+}
+
 .callout > p:last-child,
 .callout > .code:last-child {
   margin-bottom: 12px;
 }
 
-/* Commands wrap in a column of text rather than run under the copy button;
-   files and trees keep their layout and show the button on hover. */
-.prose .code[data-lang="bash"] pre,
-.prose .code[data-lang="sh"] pre,
-.prose .code[data-lang="console"] pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+/* A block with no head row shows Copy when pointed at; with a head row, or
+   on a touch screen, it is always there. */
+@media (hover: hover) and (pointer: fine) {
+  .prose .code.bare .copy {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .prose .code.bare:hover .copy,
+  .prose .code .copy:focus-visible,
+  .prose .code .copy.done {
+    opacity: 1;
+  }
 }
 
-.prose .code:not([data-lang="bash"]):not([data-lang="sh"]):not([data-lang="console"]) .copy {
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
-.prose .code:hover .copy,
-.prose .code .copy:focus,
-.prose .code .copy.done {
-  opacity: 1 !important;
+@media (hover: none) {
+  .prose .code .copy {
+    opacity: 1;
+  }
 }
 
 .tabset .tabs {
   margin-bottom: 8px;
+}
+
+/* The Docs tab: the questions people come with, before the list of pages. */
+.prose .hub-tasks {
+  margin: 20px 0 6px;
+}
+
+.prose .hub-label {
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.prose .hub-tasks ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prose .hub-tasks li {
+  margin: 0;
+}
+
+.prose .hub-tasks a {
+  display: inline-block;
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-elev);
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.prose .hub-tasks a:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* On paper: light colours, the text alone, and the address of every link
+   that leaves the site. */
+@media print {
+  .docs {
+    --bg: #ffffff;
+    --bg-elev: #ffffff;
+    --bg-subtle: #f3f5f4;
+    --ink: #111816;
+    --ink-soft: #242e2b;
+    --muted: #4f5b58;
+    --line: #d5dcda;
+    --line-strong: #b9c3c0;
+    --accent: #055c4d;
+    --accent-soft: #e2f3ef;
+    --code-bg: #f5f7f6;
+    --code-border: #d5dcda;
+    --code-ink: #111816;
+    --code-muted: #4f5b58;
+    --code-flag: #055c4d;
+    --code-value: #7a3f00;
+    color-scheme: light;
+    background: #ffffff;
+    color: var(--ink);
+  }
+
+  .docs :is(.top, .docs-nav, .docs-toc, .toc-inline, .copy, .docs-pager, .edit, .to-top, .foot, .skip, .crumb-row, .anchor) {
+    display: none !important;
+  }
+
+  .wrap.docs-layout {
+    display: block;
+    max-width: none;
+    padding: 0;
+  }
+
+  .prose,
+  .prose > :is(p, ul, ol, blockquote),
+  .prose .callout {
+    max-width: none;
+  }
+
+  .prose .code pre,
+  .prose .code:not(.cmd) pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    overflow: visible;
+    background: none;
+    padding-right: 14px;
+  }
+
+  .table-wrap {
+    overflow: visible;
+    background: none;
+  }
+
+  .prose :is(.code, .fig, figure, .callout, tr, .tabset) {
+    break-inside: avoid;
+  }
+
+  .prose :is(.hx, h2, h3, h4) {
+    break-after: avoid;
+  }
+
+  .prose a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
 }
 
 /* A drawing in a page of text. */
@@ -5550,6 +6147,37 @@ html:not(.js) .how-nav {
   margin-top: 6px;
   font-size: 0.84rem;
   color: var(--muted);
+}
+
+/* The drawing keeps a size at which its words read (at least 9 px) and
+   scrolls sideways on a phone instead of shrinking. */
+.lost-scroll {
+  overflow-x: auto;
+}
+
+.lost-scroll svg {
+  display: block;
+  width: 100%;
+  min-width: 520px;
+}
+
+.lost-hero {
+  padding-bottom: 72px;
+}
+
+.lost-hero .nearest {
+  margin-top: 18px;
+  font-size: 1.1rem;
+  color: var(--ink-soft);
+}
+
+.lost-hero .nearest a {
+  font-weight: 650;
+}
+
+.lost-search {
+  max-width: 420px;
+  margin-top: 18px;
 }
 
 /* ── Duplications: a family and a pair of communities, as networks ── */

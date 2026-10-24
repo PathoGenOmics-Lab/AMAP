@@ -2168,9 +2168,14 @@ kbd {
 
 .foot {
   border-top: 1px solid var(--line);
-  padding: 40px 0 28px;
+  padding: 40px 0 56px;
   font-size: 0.9rem;
   color: var(--muted);
+}
+
+/* A footer that ends in the bottom row needs less room under it. */
+.foot:has(> .foot-base) {
+  padding-bottom: 28px;
 }
 
 .foot .wrap {

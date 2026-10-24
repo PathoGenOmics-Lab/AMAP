@@ -16,7 +16,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Bakta calls the genes. AMAP checks every one: real genes of M. tuberculosis CDC1551, corrected against H37Rv.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#0b0f0e">
+<meta name="theme-color" content="#0a0e0d">
 <link rel="apple-touch-icon" href="../assets/touch-icon.png">
 <link rel="stylesheet" href="../assets/site.css">
 <script>document.documentElement.classList.add("js"); try { document.documentElement.dataset.theme = localStorage.getItem("amap.theme") === "light" ? "light" : "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; }</script>
@@ -117,7 +117,7 @@
   named wrong: 0
   AMAP genes that are no GenBank CDS: 0</pre></div>
 <p>The first run spends a couple of minutes on Bakta and miniprot and keeps their output under <code class="nw">selftest_h37rv/</code>. After that it only runs <code class="nw">classify_cases.py</code>, <code class="nw">check_cds.py</code> and <code class="nw">deduplicate_rvs.py</code>, in seconds, and exits non-zero with the offending genes listed if anything is missing, misplaced or misnamed.</p>
-<p>H37Rv is one genome, and the one the defaults were tuned on. The accuracy benchmark in <code class="nw">tests/benchmark/</code> scores six more whose right answer is known: another H37Rv assembly, CDC1551 complete and cut into 40 contigs, M. bovis, and E. coli K-12 and Sakai against K-12 as a custom reference. Give a run a name, and the next one lists every gene that changed:</p>
+<p>H37Rv is one genome, and the one the defaults were tuned on. The accuracy benchmark in <code class="nw">tests/benchmark/</code> scores six more whose right answer is known: another H37Rv assembly, CDC1551 complete and cut into 40 contigs, <em>M. bovis</em>, and <em>E. coli</em> K-12 and Sakai against K-12 as a custom reference. Give a run a name, and the next one lists every gene that changed:</p>
 <div class="code cmd" data-lang="bash"><div class="code-title">Terminal</div><pre><span class="ln"><span class="p">$ </span><span class="t">docker</span> <span class="t">run</span> <span class="f">--rm</span> <span class="kv"><span class="f">--platform</span> <span class="v">linux/amd64</span></span> <span class="f">-v</span> <span class="t">&quot;$PWD:/amap&quot;</span> <span class="f">-w</span> <span class="nw"><span class="t">/amap</span> <span class="t">\</span></span>
 </span><span class="ln" style="--i:4"><span class="nw">    <span class="t">paururo/amap:latest</span></span> <span class="t">bash</span> <span class="t path"><span class="nw">tests/</span><wbr><span class="nw">benchmark/</span><wbr><span class="nw">benchmark.sh</span></span> <span class="t">benchmark_work</span> <span class="t">before</span>
 </span><span class="ln"><span class="c"># change the algorithm, then</span>

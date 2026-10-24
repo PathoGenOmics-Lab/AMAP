@@ -102,7 +102,7 @@ placement is then dropped when all of these hold:
   simply neighbours that overlap
 
 What this removes is a protein sitting on someone else's locus: Rv1945 on
-Rv1148c, the mce3 genes M. bovis has lost (RD7) on their mce1 paralogs, or the
+Rv1148c, the mce3 genes *M. bovis* has lost (RD7) on their mce1 paralogs, or the
 sixteen other IS6110 names on each IS6110 copy. What it leaves alone is a copy
 at a locus no protein claims, such as an IS6110 insertion at a site the
 reference lacks or a duplication in the sample, and genes that genuinely
@@ -324,7 +324,7 @@ protein: that completes an alignment that stopped short. A frame that runs on
 further has lost its stop or shifted, and the C-terminus it would add is not
 the gene's; the gene keeps its extent and is flagged as a pseudogene, with the
 reason, as PGAP and Bakta treat a frameshift. Often that frame runs on into the
-next gene, whose stop is then the next one (in M. bovis Rv0590 into Rv0590A and
+next gene, whose stop is then the next one (in *M. bovis* Rv0590 into Rv0590A and
 Rv3373 into Rv3374), and extending would annotate that gene twice.
 
 <!-- figure: frameshift -->

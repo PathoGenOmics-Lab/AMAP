@@ -61,8 +61,8 @@ the offending genes listed if anything is missing, misplaced or misnamed.
 
 H37Rv is one genome, and the one the defaults were tuned on. The accuracy
 benchmark in `tests/benchmark/` scores six more whose right answer is known:
-another H37Rv assembly, CDC1551 complete and cut into 40 contigs, M. bovis, and
-E. coli K-12 and Sakai against K-12 as a custom reference. Give a run a name,
+another H37Rv assembly, CDC1551 complete and cut into 40 contigs, *M. bovis*, and
+*E. coli* K-12 and Sakai against K-12 as a custom reference. Give a run a name,
 and the next one lists every gene that changed:
 
 ```bash

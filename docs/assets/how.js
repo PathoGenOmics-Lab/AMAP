@@ -397,6 +397,21 @@
     return ch;
   }
 
+  // A step's text, with the species named in italics as everywhere else.
+  function setText(el, text) {
+    el.textContent = "";
+    String(text).split(/\b([A-Z]\. (?:tuberculosis|bovis|coli))\b/).forEach(function (part, i) {
+      if (!part) return;
+      if (i % 2) {
+        var em = document.createElement("i");
+        em.textContent = part.replace(" ", "\u00a0");
+        el.appendChild(em);
+      } else {
+        el.appendChild(document.createTextNode(part));
+      }
+    });
+  }
+
   function words(text) {
     return String(text).split(/\s+/).filter(Boolean).length;
   }
@@ -527,7 +542,7 @@
     });
     kicker.textContent = "Step " + step + " of 7 · " + story.label;
     title.textContent = STEPS[step - 1];
-    text.textContent = story.text[step - 1];
+    setText(text, story.text[step - 1]);
     outBox.hidden = step < 7 || !story.out.length;
     if (!timer) {
       progress.style.transition = "";
@@ -556,7 +571,7 @@
     for (var n = 1; n <= 7; n++) {
       parts[0].textContent = "Step " + n + " of 7 · " + story.label;
       parts[1].textContent = STEPS[n - 1];
-      parts[2].textContent = story.text[n - 1];
+      setText(parts[2], story.text[n - 1]);
       out.hidden = n < 7 || !story.out.length;
       tallest = Math.max(tallest, probe.offsetHeight);
     }

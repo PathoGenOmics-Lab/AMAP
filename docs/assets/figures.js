@@ -107,8 +107,23 @@
     var id = "f" + ++figureCount;
     var used = {};
     // Drawn at the width it is shown at, so its text is always the page's size.
-    var W = Math.max(280, Math.round(width || spec.w || 640));
+    var W = Math.round(width || spec.w || 640);
     var labelW = spec.labelW == null ? 104 : spec.labelW;
+    // On a phone the row names take only the room they need and the genes
+    // the rest, rather than the whole drawing shrinking under its words.
+    if (W < 280) {
+      if (labelW > 0) {
+        var need = 0;
+        spec.rows.forEach(function (row) {
+          if (row.overlay) return;
+          String(row.label).split("\n").forEach(function (line) {
+            need = Math.max(need, textWidth(line, 11));
+          });
+        });
+        labelW = Math.min(labelW, Math.ceil(need) + 12);
+      }
+      W = Math.max(200, W);
+    }
     var x0 = labelW;
     var x1 = W - (spec.padRight == null ? 8 : spec.padRight);
     var geneH = spec.geneH || 16;
@@ -230,6 +245,20 @@
       }
       out.push("</g>");
     });
+
+    // Every gene's box, so a name set beside a gene can keep off the others.
+    var boxes = [];
+    spec.rows.forEach(function (row, i) {
+      row.genes.forEach(function (g, k) {
+        boxes.push({ r: i, k: k, x1: X(Math.max(g.s, spec.from) - 0.5), x2: X(Math.min(g.e, spec.to) + 0.5), y1: gy0(i, k), y2: gy0(i, k) + geneH });
+      });
+    });
+    function clear(x1, x2, y1, y2, r, k) {
+      if (x1 < x0 || x2 > W - 2 || y1 < 0) return false;
+      return boxes.every(function (b) {
+        return (b.r === r && b.k === k) || b.x2 <= x1 || b.x1 >= x2 || b.y2 <= y1 || b.y1 >= y2;
+      });
+    }
 
     var tabStop = !live;
     spec.rows.forEach(function (row, i) {
@@ -353,13 +382,25 @@
               nx = gpx2 - gx1 > gx2 - gpx2 ? (gx1 + gpx2) / 2 : (gpx2 + gx2) / 2;
             }
             out.push(
-              '<text class="gname' + (cls === "amap" ? " gname-on" : "") + '" x="' + nx.toFixed(1) + '" y="' + (gy + geneH / 2 + 4) + '" text-anchor="middle">' + esc(g.name) + "</text>"
+              '<text class="gname' + (cls === "amap" ? " gname-on" : cls === "pseudo" ? " gname-hatch" : "") + '" x="' + nx.toFixed(1) + '" y="' + (gy + geneH / 2 + 4) + '" text-anchor="middle">' + esc(g.name) + "</text>"
             );
           } else if (g.nameAbove) {
             // Too narrow for its name, and the gene the figure is about: the
-            // name goes over it, kept inside the drawing.
-            var ax = Math.max(x0 + tw / 2, Math.min(W - 2 - tw / 2, (gx1 + gx2) / 2));
-            out.push('<text class="gname gname-above" x="' + ax.toFixed(1) + '" y="' + (gy - 5) + '" text-anchor="middle">' + esc(g.name) + "</text>");
+            // name goes over it, kept inside the drawing, or beside it where
+            // over it would cross another gene. Where neither has room, the
+            // tip names it.
+            var aw = textWidth(g.name, 10.5);
+            var ax = Math.max(x0 + aw / 2, Math.min(W - 2 - aw / 2, (gx1 + gx2) / 2));
+            var spots = [
+              [ax, gy - 5, "middle", ax - aw / 2, ax + aw / 2, gy - 15, gy - 2],
+              [gx2 + 4, gy + geneH / 2 + 4, "start", gx2 + 2, gx2 + 6 + aw, gy + 1, gy + geneH - 1],
+              [gx1 - 4, gy + geneH / 2 + 4, "end", gx1 - 6 - aw, gx1 - 2, gy + 1, gy + geneH - 1]
+            ].filter(function (o) {
+              return clear(o[3], o[4], o[5], o[6], i, k);
+            });
+            if (spots.length) {
+              out.push('<text class="gname gname-above" x="' + spots[0][0].toFixed(1) + '" y="' + spots[0][1] + '" text-anchor="' + spots[0][2] + '">' + esc(g.name) + "</text>");
+            }
           }
         }
         out.push("</g>");
@@ -1605,7 +1646,7 @@
       reads: "", writes: "the folder --eggnog_db points at", flags: "--eggnog_db; skipped with --skip_functional_annotation", doc: "how-it-works/workflow.html#1-eggnog-database-setup", functional: true
     },
     ANNOT_EGGNOGMAP_BATCH: {
-      name: "eggNOG-mapper", proc: "ANNOT_EGGNOGMAP_BATCH", x: 735, y: 170, label: "below", hub: true, hubUp: 9, hubDown: 27,
+      name: "eggNOG-mapper", proc: "ANNOT_EGGNOGMAP_BATCH", x: 735, y: 170, label: "below", labelDx: -10, hub: true, hubUp: 9, hubDown: 27,
       text: "eggNOG-mapper annotates the corrected proteins of all samples in one go: COG, KEGG, GO, EC, PFAM, CAZy.",
       reads: "every sample's corrected proteins", writes: "nothing published: the annotations go on", flags: "--skip_functional_annotation stops before this", doc: "how-it-works/workflow.html#7-functional-annotation", functional: true
     },
@@ -1620,12 +1661,12 @@
       reads: "the master table", writes: "AMAP/: *-AMAP.COG.tsv, *-AMAP.MycoBrowser.tsv", flags: "", doc: "user-guide/outputs.html#the-full-tree", functional: true
     },
     GET_DUPLICATIONS: {
-      name: "Duplications", proc: "GET_DUPLICATIONS", x: 890, y: 250, label: "above", lineOnly: "dup",
+      name: "Duplications", proc: "GET_DUPLICATIONS", x: 890, y: 250, label: "below", labelDx: -6, lineOnly: "dup",
       text: "Each proteome against itself with Diamond: duplicated genes grouped into families.",
       reads: "the corrected proteins and their functions", writes: "DUPLICATIONS/{sample}/", flags: "", doc: "how-it-works/duplications.html", exit: "DUPLICATIONS/", exitSide: "below", functional: true
     },
     GET_ALLDUP: {
-      name: "All genomes", proc: "GET_ALLDUP", x: 980, y: 250, label: "above", labelDx: 10, lineOnly: "dup",
+      name: "All genomes", proc: "GET_ALLDUP", x: 980, y: 250, label: "below", labelDx: 10, lineOnly: "dup",
       text: "All samples' duplicated genes against each other, as communities with network metrics.",
       reads: "every sample's duplicated genes", writes: "DUPLICATIONS/homologous_communities.tsv, .html", flags: "", doc: "how-it-works/duplications.html", functional: true
     },
@@ -1635,7 +1676,7 @@
       reads: "the reference proteome, the corrected genes, and every genome: as PATHOTYPR renamed it, or with --skip_typing as the sample sheet gives it, under its sample ID", writes: "PANGENE/pangenome.gfa, .bubbles.txt, .Rtab, .stat", flags: "", doc: "how-it-works/workflow.html#9-pangenome", exit: "PANGENE/", exitSide: "right", functional: true
     },
     FINAL_REPORT: {
-      name: "Report", proc: "FINAL_REPORT", x: 1050, y: 170, kind: "hub-end", label: "above",
+      name: "Report", proc: "FINAL_REPORT", x: 1050, y: 170, kind: "hub-end", label: "above", labelDx: -16,
       text: "One self-contained HTML file from everything above: quality, cases, missing genes, functions, duplications, pangenome.",
       reads: "every summary (REPORT_INPUTS gathers them)", writes: "final_report.html", flags: "", doc: "user-guide/report.html", exit: "final_report.html", exitSide: "below", functional: true
     },
@@ -1673,7 +1714,7 @@
     // The interactive report reads the correction's outputs directly, and the
     // functional steps' when they run (the dashed stretch).
     { key: "rep", d: "M625,152 V118 Q625,100 643,100 H1050" },
-    { key: "rep-feed", d: "M1050,158 V114", dash: true }
+    { key: "rep-feed", d: "M1062,170 Q1080,170 1080,152 V118 Q1080,100 1062,100", dash: true }
   ];
 
   // The map is drawn once; the switches and the selection then only change
@@ -2031,6 +2072,11 @@
 
   var DUP = window.AMAP_DUP_DATA || null;
 
+  // A genome's name, its species in italics.
+  function speciesHtml(label) {
+    return esc(label).replace(/^([A-Z])\. ([a-z]+)(?= |$)/, "<i>$1.\u00a0$2</i>");
+  }
+
   function pct(x) {
     return (Math.round(x * 10) / 10).toFixed(1) + "%";
   }
@@ -2110,15 +2156,79 @@
           '<text class="net-pct" x="' + (spot.x + lw / 2).toFixed(1) + '" y="' + (spot.y + 11.5).toFixed(1) + '" text-anchor="middle">' + esc(l.label) + "</text></g>"
       );
     });
+    // Each name takes the place round its node that crosses the fewest
+    // lines (a solid link counts double), never another node, a label or the
+    // frame's edge; on a tie, the first of: under, over, right, left, the
+    // corners under it, then under and over to either side.
+    var segs = o.links.map(function (l) {
+      return [X(o.nodes[l.a].x), Y(o.nodes[l.a].y), X(o.nodes[l.b].x), Y(o.nodes[l.b].y), l.cls === "kept" ? 2 : 1];
+    });
+    var crossings = function (b) {
+      var n = 0;
+      segs.forEach(function (s) {
+        var len = Math.hypot(s[2] - s[0], s[3] - s[1]);
+        for (var d = 0; d <= len; d += 2) {
+          var px = s[0] + ((s[2] - s[0]) * d) / (len || 1);
+          var py = s[1] + ((s[3] - s[1]) * d) / (len || 1);
+          if (px > b.x - 3 && px < b.x + b.w + 3 && py > b.y - 3 && py < b.y + b.h + 3) {
+            n += s[4];
+            return;
+          }
+        }
+      });
+      return n;
+    };
+    var taken = boxes.filter(function (b) {
+      return b.h === 16;
+    });
+    var cost = function (b, self) {
+      if (b.x < 2 || b.y < 2 || b.x + b.w > W - 2 || b.y + b.h > H - 2) return Infinity;
+      var hitsNode = o.nodes.some(function (m, j) {
+        if (j === self) return false;
+        var mx = X(m.x);
+        var my = Y(m.y);
+        var dx = Math.max(b.x - mx, 0, mx - (b.x + b.w));
+        var dy = Math.max(b.y - my, 0, my - (b.y + b.h));
+        return Math.hypot(dx, dy) < m.r + 3;
+      });
+      var hitsLabel = !taken.every(function (c) {
+        return b.x + b.w < c.x || c.x + c.w < b.x || b.y + b.h < c.y || c.y + c.h < b.y;
+      });
+      return hitsNode || hitsLabel ? Infinity : crossings(b);
+    };
     o.nodes.forEach(function (n, i) {
       var cx = X(n.x);
       var cy = Y(n.y);
-      // The name goes under the node, or over it at the bottom of the frame.
-      var below = cy + n.r + 14 < H - 2;
+      var tw = textWidth(n.label, 11.5) * 1.05;
+      var under = { x: cx - tw / 2, y: cy + n.r + 2, w: tw, h: 14, tx: cx, ty: cy + n.r + 13, a: "middle" };
+      var over = { x: cx - tw / 2, y: cy - n.r - 17, w: tw, h: 14, tx: cx, ty: cy - n.r - 6, a: "middle" };
+      var spots = [
+        under,
+        over,
+        { x: cx + n.r + 4, y: cy - 7, w: tw, h: 14, tx: cx + n.r + 5, ty: cy + 4, a: "start" },
+        { x: cx - n.r - 4 - tw, y: cy - 7, w: tw, h: 14, tx: cx - n.r - 5, ty: cy + 4, a: "end" },
+        { x: cx + n.r * 0.7 + 2, y: cy + n.r * 0.7, w: tw, h: 14, tx: cx + n.r * 0.7 + 3, ty: cy + n.r * 0.7 + 11, a: "start" },
+        { x: cx - n.r * 0.7 - 2 - tw, y: cy + n.r * 0.7, w: tw, h: 14, tx: cx - n.r * 0.7 - 3, ty: cy + n.r * 0.7 + 11, a: "end" },
+        { x: cx + 2, y: cy + n.r + 2, w: tw, h: 14, tx: cx + 2, ty: cy + n.r + 13, a: "start" },
+        { x: cx - 2 - tw, y: cy + n.r + 2, w: tw, h: 14, tx: cx - 2, ty: cy + n.r + 13, a: "end" },
+        { x: cx + 2, y: cy - n.r - 17, w: tw, h: 14, tx: cx + 2, ty: cy - n.r - 6, a: "start" },
+        { x: cx - 2 - tw, y: cy - n.r - 17, w: tw, h: 14, tx: cx - 2, ty: cy - n.r - 6, a: "end" }
+      ];
+      var spot = null;
+      var best = Infinity;
+      spots.forEach(function (b) {
+        var c = cost(b, i);
+        if (c < best) {
+          best = c;
+          spot = b;
+        }
+      });
+      if (!spot) spot = cy + n.r + 14 < H - 2 ? under : over;
+      taken.push(spot);
       out.push('<g class="hot net-node ' + n.cls + '"' + item(n.tip).replace('tabindex="-1"', 'tabindex="' + (i ? -1 : 0) + '"') + ">");
       out.push('<circle class="net-ring" cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + (n.r + 4).toFixed(1) + '"/>');
       out.push('<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + n.r.toFixed(1) + '"/>');
-      out.push('<text class="net-name" x="' + cx.toFixed(1) + '" y="' + (below ? cy + n.r + 13 : cy - n.r - 6).toFixed(1) + '" text-anchor="middle">' + esc(n.label) + "</text>");
+      out.push('<text class="net-name" x="' + spot.tx.toFixed(1) + '" y="' + spot.ty.toFixed(1) + '" text-anchor="' + spot.a + '">' + esc(n.label) + "</text>");
       out.push("</g>");
     });
     out.push("</svg>");
@@ -2173,7 +2283,7 @@
 
   function proteinTip(n, genome) {
     return "<b>" + esc(n.id) + "</b>" + (n.gene ? " (" + esc(n.gene) + ")" : "") + (n.product ? ", " + esc(n.product.charAt(0).toLowerCase() + n.product.slice(1)) : "") +
-      "<br>" + fmt(n.aa) + " residues" + (genome ? ", " + esc(genome) : "");
+      "<br>" + fmt(n.aa) + " residues" + (genome ? ", " + speciesHtml(genome) : "");
   }
 
   function mountDupFamily(el) {
@@ -2258,7 +2368,7 @@
       var other = sides[1 - k];
       var stage = panel.querySelector("[data-fig-stage]");
       var head = panel.querySelector("[data-net-head]");
-      if (head) head.innerHTML = "<b>" + esc(side.label) + "</b><span>" + esc(side.community) + ", " + side.nodes.length + " proteins, " + side.edges.length + " links</span>";
+      if (head) head.innerHTML = "<b>" + speciesHtml(side.label) + "</b><span>" + esc(side.community) + ", " + side.nodes.length + " proteins, " + side.edges.length + " links</span>";
       var byTwin = {};
       side.nodes.forEach(function (n, i) {
         byTwin[n.twin] = i;
@@ -2267,7 +2377,7 @@
         return { x: n.x, y: n.y, r: radius(n.aa, longest), label: n.id, cls: "in", tip: proteinTip(n, side.label) };
       });
       var links = side.edges.map(function (e) {
-        return { a: e[0], b: e[1], cls: "kept", label: "", tip: "<b>" + esc(side.nodes[e[0]].id) + " and " + esc(side.nodes[e[1]].id) + "</b><br>A link in " + esc(side.label) + "." };
+        return { a: e[0], b: e[1], cls: "kept", label: "", tip: "<b>" + esc(side.nodes[e[0]].id) + " and " + esc(side.nodes[e[1]].id) + "</b><br>A link in " + speciesHtml(side.label) + "." };
       });
       other.edges.forEach(function (e) {
         var key = keyOf(other, e);
@@ -2275,7 +2385,7 @@
         var a = byTwin[other.nodes[e[0]].twin];
         var b = byTwin[other.nodes[e[1]].twin];
         if (a == null || b == null) return;
-        links.unshift({ a: a, b: b, cls: "ghost", label: "", tip: "<b>" + esc(side.nodes[a].id) + " and " + esc(side.nodes[b].id) + "</b><br>A link in " + esc(other.label) + ", not in " + esc(side.label) + "." });
+        links.unshift({ a: a, b: b, cls: "ghost", label: "", tip: "<b>" + esc(side.nodes[a].id) + " and " + esc(side.nodes[b].id) + "</b><br>A link in " + speciesHtml(other.label) + ", not in " + speciesHtml(side.label) + "." });
       });
       var hull = hullOf(nodes);
       onWidth(stage, function (w) {

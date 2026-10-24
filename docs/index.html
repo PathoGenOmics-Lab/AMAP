@@ -16,7 +16,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Bakta calls the genes. AMAP checks every one: real genes of M. tuberculosis CDC1551, corrected against H37Rv.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#0b0f0e">
+<meta name="theme-color" content="#0a0e0d">
 <link rel="apple-touch-icon" href="assets/touch-icon.png">
 <link rel="stylesheet" href="assets/site.css">
 <script>try { document.documentElement.dataset.theme = localStorage.getItem("amap.theme") === "light" ? "light" : "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; } document.documentElement.classList.add("js");</script>
@@ -69,6 +69,13 @@
           <span class="demo-ctrl"><button class="mini-btn" type="button" data-hero-replay>Replay</button></span>
         </div>
         <div class="demo-stage" data-hero-stage></div>
+        <div class="legend">
+          <span><i class="chip bakta"></i>Bakta's call</span>
+          <span><i class="chip ref"></i>H37Rv protein, aligned</span>
+          <span><i class="chip amap"></i>what AMAP keeps</span>
+          <span><i class="chip band-agree"></i>same coordinates</span>
+          <span><i class="chip band-conflict"></i>coordinates differ</span>
+        </div>
         <div class="tally">
           <div class="t-agree"><b data-tally="agree">4</b>calls agree with the reference</div>
           <div class="t-fixed"><b data-tally="fixed">4</b>genes get the reference's coordinates</div>
@@ -76,13 +83,6 @@
         </div>
         <figcaption class="demo-cap">
           <p><b>The first 12.4 kb of <i>M.&nbsp;tuberculosis</i> CDC1551, against H37Rv.</b> Twelve calls by Bakta, the eight H37Rv proteins aligned there, and the eight genes AMAP keeps. <span class="when-hover">Point at a gene.</span><span class="when-touch">Tap a gene.</span></p>
-          <div class="legend">
-            <span><i class="chip bakta"></i>Bakta's call</span>
-            <span><i class="chip ref"></i>H37Rv protein, aligned</span>
-            <span><i class="chip amap"></i>what AMAP keeps</span>
-            <span><i class="chip band-agree"></i>same coordinates</span>
-            <span><i class="chip band-conflict"></i>coordinates differ</span>
-          </div>
         </figcaption>
       </figure>
     </div>
@@ -548,10 +548,10 @@ case1_kept     11</pre>
         <li><a href="https://github.com/PathoGenOmics-Lab/AMAP">GitHub</a></li>
         <li><a href="https://github.com/PathoGenOmics-Lab/AMAP/issues">Report a bug</a></li>
         <li><a href="https://hub.docker.com/r/paururo/amap">Docker image</a></li>
-        <li>GPL-3.0 &middot; PathoGenOmics Lab</li>
       </ul>
     </div>
   </div>
+  <div class="wrap foot-base"><span>PathoGenOmics Lab</span><span>GPL-3.0</span><span>AMAP 1.0.1</span></div>
 </footer>
 
 <script src="assets/site.js"></script>

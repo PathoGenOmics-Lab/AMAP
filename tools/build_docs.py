@@ -172,8 +172,8 @@ FIGURES = {
         '<div class="table-wrap"><table class="dup-metrics" data-net-metrics></table></div>'
         '<div class="legend"><span><i class="chip link-kept"></i>a link in this genome</span>'
         '<span><i class="chip link-ghost"></i>a link only the other genome has</span></div>'
-        "<figcaption>The same family in GET_ALLDUP, pooled with M. bovis AF2122/97's families: one community in each genome, "
-        "joined by their hits, and the row of <code>homologous_communities.tsv</code> they make. Each protein of M. bovis sits "
+        "<figcaption>The same family in GET_ALLDUP, pooled with <i>M.&nbsp;bovis</i> AF2122/97's families: one community in each genome, "
+        "joined by their hits, and the row of <code>homologous_communities.tsv</code> they make. Each protein of <i>M.&nbsp;bovis</i> sits "
         "where its closest match in CDC1551 does.</figcaption></figure>"
     ),
     "metro": (
@@ -1786,7 +1786,7 @@ def social(root: str, title: str, description: str, path: str) -> str:
         '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n'
         '<meta property="og:image:alt" content="Bakta calls the genes. AMAP checks every one: real genes of M. tuberculosis CDC1551, corrected against H37Rv.">\n'
         '<meta name="twitter:card" content="summary_large_image">\n'
-        '<meta name="theme-color" content="#0b0f0e">\n'
+        '<meta name="theme-color" content="#0a0e0d">\n'
         f'<link rel="apple-touch-icon" href="{root}assets/touch-icon.png">\n'
     )
 

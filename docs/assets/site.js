@@ -39,7 +39,7 @@
   // theme: pressed when light is on, and its icon shows what a press gives you.
   // The browser's own bar (theme-color) follows the page.
   var THEME_KEY = "amap.theme";
-  var THEME_COLOR = { dark: "#0b0f0e", light: "#fbfcfb" };
+  var THEME_COLOR = { dark: "#0a0e0d", light: "#f5f7f6" };
   var MOON =
     '<svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M20.4 14.6A8.5 8.5 0 0 1 9.4 3.6a8.5 8.5 0 1 0 11 11z"/></svg>';

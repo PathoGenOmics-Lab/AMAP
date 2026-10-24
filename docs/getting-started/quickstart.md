@@ -3,7 +3,23 @@
 This walks from an installed Nextflow to an open report. If Nextflow or a
 container engine is still missing, start at [installation](installation.md).
 
-## 1. Write a sample sheet
+## 1. Check the plumbing
+
+The test profile annotates the H37Rv genome that ships inside the image, so it
+needs no data of your own, and `--skip_functional_annotation` keeps it to the
+correction, with no eggNOG database to build:
+
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile docker,test \
+    --skip_functional_annotation --outdir amap-test
+```
+
+It writes `amap-test/` and `work/` where you run it, and ends with a
+`✓ COMPLETED` block. On an Apple M4 Pro, under emulation and with the image
+already pulled, it took 2 min 47 s; the first run also pulls the image, about
+3.4 GB compressed and 12 GB on disk, once.
+
+## 2. Write a sample sheet
 
 AMAP reads a tab-separated file with two columns, `sampleId` and `fasta`:
 
@@ -17,7 +33,7 @@ The separator must be a real tab. Paths can be absolute, or relative to where
 you launch Nextflow. See [preparing inputs](inputs.md) for the details and the
 checks AMAP runs over them.
 
-## 2. Check the inputs
+## 3. Check the inputs
 
 Cheap, and it catches the mistakes that would otherwise surface twenty minutes
 into a run:
@@ -27,7 +43,10 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --validate_only
 ```
 
-## 3. Run it
+The verdict, and any warnings, are in `results/pipeline_info/validation.log`;
+the terminal only says whether the step ran.
+
+## 4. Run it
 
 Pick what you have, and copy the command:
 
@@ -58,26 +77,31 @@ Without a scheduler profile every task is capped at the machine's CPUs and
 16 GB, and with the scheduler profiles at 48 CPUs and 128 GB, whichever order
 the profiles come in; a larger request, such as the 50 GB the eggNOG annotation
 asks for, is lowered to the cap. Nextflow refuses to start a task asking for
-more memory than the machine has, so on a smaller machine, lower the ceiling:
+more memory than the machine has, so on a smaller machine, lower the ceiling to
+what `docker info` says your containers can have:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \
-    --tsv samples.tsv --max_cpus 4 --max_memory 12.GB
+    --tsv samples.tsv --max_cpus 4 --max_memory 8.GB
 ```
 
 The [tutorial](tutorial.md#the-machine) has the per-step figures and what to do
 when the machine cannot reach them.
 
-## 4. Read the results
+## 5. Read the results
 
-Everything lands under `results/` unless you set `--outdir`. The three things to
-open first:
+Everything lands under `results/` unless you set `--outdir`. Each sample's
+folder is named `{lineage}_{sampleId}`: lineage typing puts the lineage in
+front, so `G26689` comes out as `L4_G26689`, and under `--skip_typing` it is the
+sample ID alone ([outputs](../user-guide/outputs.md) has the details). The
+things to open first:
 
 | What | Where |
 | :--- | :--- |
-| The full interactive report | `results/final_report.html` |
-| Corrected annotation, per sample | `results/AMAP/{sampleId}/*-AMAP.gff3` |
-| Protein sequences for downstream tools | `results/AMAP/{sampleId}/*-AMAP.clean.faa` |
+| Each genome and each gene, question by question, in every run | `results/amap_report.html` |
+| The full report, after a run with eggNOG | `results/final_report.html` |
+| Corrected annotation, per sample | `results/AMAP/{lineage}_{sampleId}/*-AMAP.gff3` |
+| Protein sequences for downstream tools | `results/AMAP/{lineage}_{sampleId}/*-AMAP.clean.faa` |
 
 > [!NOTE]
 > **Which protein file do I want?**
@@ -90,7 +114,7 @@ open first:
 
 The [outputs page](../user-guide/outputs.md) covers every directory.
 
-## 5. Resume an interrupted run
+## 6. Resume an interrupted run
 
 Nextflow caches completed tasks. If a run dies, restart it with `-resume` and it
 picks up where it stopped:
@@ -119,9 +143,11 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
 See [custom reference](../user-guide/custom-reference.md).
 
 **Just the corrected genes.** If you do not need functional annotation,
-duplications, the pangenome or the report, stop after the correction step. It is
-much faster, and leaves the corrected genes as a table with their proteins and
-sequences; the GFF3 and GenBank files come after eggNOG, so there are none:
+duplications or the pangenome, stop after the correction step. It is much
+faster, and leaves the corrected genes as a table with their proteins and
+sequences; the GFF3 and GenBank files come after eggNOG, so there are none. There
+is no `final_report.html`; `amap_report.html` is still written, without its
+eggNOG sections:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \

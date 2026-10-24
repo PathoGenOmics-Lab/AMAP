@@ -51,8 +51,8 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --max_cpus 8 --max_memory 32.GB
 ```
 
-A handful of genomes is fine locally. Beyond about twenty, a cluster is worth
-the setup.
+A handful of genomes is fine locally. Past about twenty genomes, a cluster is
+worth the setup.
 
 ## On an HPC cluster
 
@@ -61,7 +61,7 @@ nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv
 ```
 
 Each process becomes its own scheduler job, with up to 200 running at once, so
-Bakta, Miniprot and eggNOG parallelise across all your samples. Defaults reach
+Bakta, miniprot and eggNOG parallelise across all your samples. Defaults reach
 48 CPUs and 128 GB per job, and every process carries a time limit so nothing
 sits in the queue forever.
 
@@ -82,9 +82,9 @@ bite: shared filesystems, scratch, and where the eggNOG database should live.
 > [!TIP]
 > **Large datasets**
 >
-> Past a hundred genomes, use a scheduler. The eggNOG step in particular runs
-> once over all samples at a time rather than once per sample, precisely so a
-> shared filesystem is not hammered by hundreds of jobs reading the same
+> Past about twenty genomes, use a scheduler. The eggNOG step in particular
+> runs once over all samples at a time rather than once per sample, precisely
+> so a shared filesystem is not hammered by hundreds of jobs reading the same
 > Diamond database.
 
 ## Non-MTBC organisms
@@ -121,15 +121,42 @@ and its resume.
 
 `--skip_functional_annotation` stops after the correction step. You get the
 corrected genes as a table with their proteins and sequences (`*.AMAP.tsv`,
-`.faa`, `.fna`) and the case tables, and skip eggNOG, duplications, the
-pangenome and the report. The GFF3 and GenBank files are written after eggNOG,
-so they are skipped too. Much faster when the corrected genes are all you are
+`.faa`, `.fna`) and the case tables, and skip eggNOG, the duplications and the
+pangenome: no `final_report.html`; `amap_report.html` is still written, without
+its eggNOG sections. The GFF3 and GenBank files are written after eggNOG, so
+they are skipped too. Much faster when the corrected genes are all you are
 after:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --skip_functional_annotation
 ```
+
+## Pinning the pipeline
+
+These pages describe AMAP as it is on `main`, which moves. Without `-r`,
+Nextflow runs the copy of AMAP it downloaded first and keeps it until you
+update it, so two machines can run different code under the same command. For
+an analysis you will publish, pin both the code and the image:
+
+```bash
+nextflow run PathoGenOmics-Lab/AMAP \
+    -r 947a99dee49d2a2429e014296ac35ba08e911108 \
+    -profile docker --tsv samples.tsv \
+    -process.container 'paururo/amap@sha256:08bd17311ab323317ceecba6e5bc639a29f4c54c9d95f9a7c48ba80a9fc640ee'
+```
+
+`-r` takes a branch, a tag or a commit. Give a commit as its full hash:
+Nextflow 26.10 refuses a short one, with "Remote does not have 947a99d
+available for fetch", where 24.04 takes it. The image is pinned by its digest,
+which never moves, where a tag such as `latest` can; this one is the image
+behind the runs on these pages, and
+`docker image inspect paururo/amap:latest --format '{{index .RepoDigests 0}}'`
+prints the one you have.
+
+To move to the newest code, `nextflow pull PathoGenOmics-Lab/AMAP`. To see
+which code a run used, open `pipeline_info/execution_report_*.html`: it names
+the revision and its commit hash, as in `revision main (commit hash 1a1b3959...)`.
 
 ## What a run produces
 

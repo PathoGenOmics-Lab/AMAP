@@ -10,7 +10,7 @@ Pipeline parameters take two dashes (`--tsv`). Nextflow's own options take one
 
 | Parameter | Description | Type | Default | Required |
 | :--- | :--- | :--- | :--- | :--- |
-| `--tsv` | Sample sheet with `sampleId` and `fasta` columns, tab separated. Not needed with `-profile test`. | `file` | `samples.tsv` | **Yes** |
+| `--tsv` | Sample sheet with `sampleId` and `fasta` columns, tab separated. | `file` | `samples.tsv` | Yes, except with `-profile test` |
 | `--outdir` | Directory for results. | `string` | `results` | No |
 
 ## Skip options
@@ -18,7 +18,7 @@ Pipeline parameters take two dashes (`--tsv`). Nextflow's own options take one
 | Parameter | Description | Type | Default |
 | :--- | :--- | :--- | :--- |
 | `--skip_typing` | Skip pathotypr lineage typing. Required for non-MTBC organisms. | `boolean` | `false` |
-| `--skip_functional_annotation` | Stop after annotation correction. Skips eggNOG, duplications, pangenome and the report. | `boolean` | `false` |
+| `--skip_functional_annotation` | Stop after the correction: no eggNOG, duplications, pangenome or `final_report.html`; `amap_report.html` is still written, without its eggNOG sections. | `boolean` | `false` |
 | `--skip_mycobrowser` | Skip Mycobrowser functional categories. Auto-enabled when `--genus` is not Mycobacterium and a custom reference is set. | `boolean` | `false` |
 
 Their effect on the output tree is covered under
@@ -117,8 +117,9 @@ These belong to Nextflow rather than AMAP, so they take a single dash.
 
 | Option | What it does |
 | :--- | :--- |
-| `-profile` | Selects execution profiles, comma separated: `docker`, `singularity`, `slurm`, `sge`, `pbs`, `test`. |
+| `-profile` | Selects execution profiles, comma separated: `docker`, `singularity`, `standard`, `slurm`, `sge`, `pbs`, `lsf`, `test`, `highmem`. |
 | `-resume` | Reuse cached results from the previous run. |
+| `-r` | Run a given branch, tag or full commit hash of AMAP; see [pinning the pipeline](running.md#pinning-the-pipeline). |
 | `-work-dir` | Where intermediate files go. Defaults to `./work`, and it gets large. |
 | `-process.queue` | Override the scheduler queue or partition. |
 | `-process.clusterOptions` | Extra flags passed to the scheduler, such as `'--account=mygroup'`. |

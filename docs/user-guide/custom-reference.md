@@ -1,4 +1,4 @@
-# Using your own reference
+# Custom reference
 
 AMAP corrects an annotation by refereeing it against a trusted one. For MTBC
 that trusted annotation is H37Rv, bundled in the image. Point
@@ -37,23 +37,29 @@ things.
 
 **1. Extracts the reference proteome.** Every CDS becomes a protein, headed
 `GENE_ID_START-END contig=SEQUENCE`, `SEQUENCE` being the name `--ref_genome`
-gives the sequence the gene is on. Those embedded coordinates are not
-decoration: the paralog step reads them back to predict where each protein
-belongs in the sample, which tells its own locus from a paralog's, so the
-header format matters. A CDS across the origin of a circular sequence ends past
-the sequence's last base, the way GFF3 writes it: tagA on plasmid pO157
-(92721 bp) of *E. coli* O157:H7 Sakai, `join(92527..92721,1..2502)` in its
-GenBank record, is `pO157p01_92527-95223`. From GenBank the existing
-`/translation` qualifier is used when present, otherwise the sequence is
-extracted and translated. From GFF3 the lines of each CDS are joined first, as
-GenBank's `join()` is, and translated with the bacterial code, reading
-`transl_except` (a selenocysteine) where it is given; on E. coli K-12 the two
-formats give the same 4318 proteins, and on Sakai the same 5155. A GFF3
-protein under 8 amino acids is left out.
+gives the sequence the gene is on.
 
-The gene ID comes from `locus_tag`, then `gene`, then `protein_id` for GenBank;
-`locus_tag`, `ID`, `gene`, then `Name` for GFF3. A CDS with none of these is
-skipped.
+- **The header matters.** The paralog step reads its coordinates back to
+  predict where each protein belongs in the sample, which tells its own locus
+  from a paralog's.
+- **From GenBank**, the existing `/translation` qualifier is used when present;
+  otherwise the sequence is extracted and translated.
+- **From GFF3**, the lines of each CDS are joined first, as GenBank's `join()`
+  is, and translated with the bacterial code, reading `transl_except` (a
+  selenocysteine) where it is given. A GFF3 protein under 8 amino acids is left
+  out.
+- **The gene ID** comes from `locus_tag`, then `gene`, then `protein_id` for
+  GenBank; `locus_tag`, `ID`, `gene`, then `Name` for GFF3. A CDS with none of
+  these is skipped.
+
+> [!NOTE]
+> **Details**
+>
+> A CDS across the origin of a circular sequence ends past the sequence's last
+> base, the way GFF3 writes it: tagA on plasmid pO157 (92721 bp) of *E. coli*
+> O157:H7 Sakai, `join(92527..92721,1..2502)` in its GenBank record, is
+> `pO157p01_92527-95223`. On *E. coli* K-12 the two formats give the same 4318
+> proteins, and on Sakai the same 5155.
 
 **2. Annotates the reference genome with Bakta.** The same Bakta that will
 annotate your samples, run on a genome whose true annotation is known, keeping
@@ -145,8 +151,10 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
 > Coordinates from the annotation are used directly against the FASTA. An
 > annotation from a different assembly of the same organism produces
 > nonsense: extracted proteins will not translate, and the reference proteome
-> will be mostly empty. `PREPARE_REFERENCE` prints the count of extracted
-> proteins, so check it looks like a genome's worth.
+> will be mostly empty. `PREPARE_REFERENCE` writes the count of extracted
+> proteins into its work directory, where
+> `grep -h 'Curated proteins' work/*/*/.command.out` finds it, so check it
+> looks like a genome's worth.
 
 > [!WARNING]
 > **Reference genes need identifiers**

@@ -92,11 +92,11 @@
 </div>
 <main class="prose" id="content">
 <div class="crumb-row"><p class="crumb"><a href="../documentation.html">Docs</a> / <a href="../documentation.html#deployment">Deployment</a></p><p class="ver">Describes AMAP on main, ahead of 1.0.1: <a href="../about/changelog.html#unreleased">what changed</a></p></div>
-<h1 id="running-on-a-cluster">Running on a cluster</h1>
-<p class="doc-meta">2 min read</p>
+<h1 id="hpc-clusters">HPC clusters</h1>
+<p class="doc-meta">3 min read</p>
 <details class="toc-inline"><summary>On this page</summary><ul><li><a href="#the-executor-profiles">The executor profiles</a></li><li><a href="#fitting-your-site">Fitting your site</a></li><li><a href="#scratch">Scratch</a></li><li><a href="#where-to-put-things">Where to put things</a></li><li><a href="#launching">Launching</a></li><li><a href="#memory-and-retries">Memory and retries</a></li><li><a href="#watching-a-run">Watching a run</a></li><li><a href="#next-steps">Next steps</a></li></ul></details>
 
-<p>Past a couple of dozen genomes, a scheduler is worth the setup. Combine a container profile with an executor profile:</p>
+<p>Past about twenty genomes, a scheduler is worth the setup. Combine a container profile with an executor profile:</p>
 <div class="code cmd" data-lang="bash"><div class="code-title">Terminal</div><pre><span class="ln"><span class="p">$ </span><span class="t">nextflow</span> <span class="t">run</span> <span class="t">PathoGenOmics-Lab/AMAP</span> <span class="kv"><span class="f">-profile</span> <span class="v">singularity,slurm</span></span> <span class="kv"><span class="f">--tsv</span> <span class="v">samples.tsv</span></span></span></pre></div>
 <figure class="fig hpc-fig"><div class="hpc-flow"><div class="hpc-box hpc-launch"><p class="hpc-title">The launcher</p><p><code class="nw">nextflow run</code>, in <code class="nw">tmux</code> or as a small job of its own: 2 CPUs, 8 GB, 48 h. It submits, waits and resubmits.</p><p class="hpc-small">Runs here too: <code class="nw">VALIDATE_INPUTS</code>, <code class="nw">SOFTWARE_VERSIONS</code>, <code class="nw">DUMP_PARAMS</code></p></div><i class="hpc-arrow" aria-hidden="true"></i><div class="hpc-box hpc-queue"><p class="hpc-title">The scheduler</p><p>Up to <b>200</b> jobs at once, submitted at up to 100 a minute with <code class="nw">slurm</code> (20 a minute with <code class="nw">sge</code>, <code class="nw">pbs</code> and <code class="nw">lsf</code>).</p></div><i class="hpc-arrow" aria-hidden="true"></i><div class="hpc-box hpc-nodes"><p class="hpc-title">The compute nodes</p><p>One job per task, at most 48 CPUs and 128 GB each, in the AMAP image, working on the node's own disk and copying back only the results.</p><div class="hpc-tasks"><span>per sample: Bakta, miniprot, the correction, duplications, pangenome</span><span>once for all: eggNOG, the genomes compared, the report</span></div></div></div><div class="hpc-box hpc-shared"><p class="hpc-title">Shared storage</p><div class="hpc-places"><span><code class="hpc-key">-work-dir</code>every task's files, which <code class="nw">-resume</code> needs</span><span><code class="hpc-key">NXF_SINGULARITY_CACHEDIR</code>the image, converted once</span><span><code class="hpc-key">--eggnog_db</code>the eggNOG database, built once</span><span><code class="hpc-key">--outdir</code>the results</span></div></div><figcaption>A run on a cluster, with the settings of the <code class="nw">slurm</code> profile in <code class="nw">nextflow.config</code> and the launcher of the job script below.</figcaption></figure>
 <div class="hx hx-2"><h2 id="the-executor-profiles">The executor profiles</h2><a class="anchor" href="#the-executor-profiles" aria-label="Link to: The executor profiles">#</a></div>
@@ -113,21 +113,26 @@
 </span><span class="ln" style="--i:4">    <span class="kv"><span class="f">-process.queue</span> <span class="v">long</span></span> <span class="t">\</span>
 </span><span class="ln" style="--i:4">    <span class="f">-process.clusterOptions</span> <span class="v">&#x27;--account=mygroup&#x27;</span></span></pre></div>
 <p><code class="nw">-process.queue</code> sets the partition or queue, and <code class="nw">-process.clusterOptions</code> passes anything else straight through, which is where accounting flags, QoS and node constraints go.</p>
-<p>On SLURM, Bakta's jobs, the longest a run sends, also ask for <code class="nw">--qos=medium</code>. The <code class="nw">slurm</code> profile sets that for Bakta alone, and for Bakta it takes the place of <code class="nw">-process.clusterOptions</code>, so give Bakta your site's options in a config passed with <code class="nw">-c</code>:</p>
-<div class="code bare" data-lang="groovy"><pre>process {
+<p>On SLURM, Bakta's jobs, the longest a run sends, also ask for <code class="nw">--qos=medium</code>. The <code class="nw">slurm</code> profile sets that for Bakta alone, and for Bakta it takes the place of <code class="nw">-process.clusterOptions</code>, so give Bakta your site's options in a config of your own, with <code class="nw">--qos=medium</code> if your cluster has that QoS and without it if not:</p>
+<div class="code" data-lang="groovy"><div class="code-title fname">bakta.config</div><pre>process {
     withName: &#x27;BAKTA_ANNOTATOR&#x27; {
         clusterOptions = &#x27;--qos=medium --account=mygroup&#x27;
     }
 }</pre></div>
+<p>Then pass it with <code class="nw">-c</code>, next to the options for every other job:</p>
+<div class="code cmd" data-lang="bash"><div class="code-title">Terminal</div><pre><span class="ln"><span class="p">$ </span><span class="t">nextflow</span> <span class="t">run</span> <span class="t">PathoGenOmics-Lab/AMAP</span> <span class="kv"><span class="f">-profile</span> <span class="v">singularity,slurm</span></span> <span class="t">\</span>
+</span><span class="ln" style="--i:4">    <span class="kv"><span class="f">-c</span> <span class="v">bakta.config</span></span> <span class="kv"><span class="f">--tsv</span> <span class="v">samples.tsv</span></span> <span class="t">\</span>
+</span><span class="ln" style="--i:4">    <span class="f">-process.clusterOptions</span> <span class="v">&#x27;--account=mygroup&#x27;</span></span></pre></div>
 <div class="hx hx-2"><h2 id="scratch">Scratch</h2><a class="anchor" href="#scratch" aria-label="Link to: Scratch">#</a></div>
 <p><a class="opt-link" href="../user-guide/parameters.html#opt-scratch"><code class="nw">--scratch</code></a> is on by default in every HPC profile, and it matters. Without it, every process reads and writes directly on the shared filesystem, and Bakta and eggNOG in particular generate enough metadata traffic to slow a cluster down for everyone. With it, work happens on node-local disk and only the results are copied back.</p>
 <p>Turn it off only if your nodes have no local disk:</p>
 <div class="code cmd" data-lang="bash"><div class="code-title">Terminal</div><pre><span class="ln"><span class="p">$ </span><span class="t">nextflow</span> <span class="t">run</span> <span class="t">PathoGenOmics-Lab/AMAP</span> <span class="kv"><span class="f">-profile</span> <span class="v">singularity,slurm</span></span> <span class="t">\</span>
 </span><span class="ln" style="--i:4">    <span class="kv"><span class="f">--tsv</span> <span class="v">samples.tsv</span></span> <span class="f">--scratch</span> <span class="t">false</span></span></pre></div>
 <div class="hx hx-2"><h2 id="where-to-put-things">Where to put things</h2><a class="anchor" href="#where-to-put-things" aria-label="Link to: Where to put things">#</a></div>
-<p><strong>The Singularity cache.</strong> Set it once, somewhere shared:</p>
-<div class="code cmd" data-lang="bash"><div class="code-title">Terminal</div><pre><span class="ln"><span class="p">$ </span><span class="t">export</span> <span class="t path"><span class="nw">NXF_SINGULARITY_CACHEDIR=/</span><wbr><span class="nw">shared/</span><wbr><span class="nw">singularity_cache</span></span></span></pre></div>
-<p>Otherwise the <code class="nw">singularity</code> profile caches under <a class="opt-link" href="../user-guide/parameters.html#opt-outdir"><code class="nw">--outdir</code></a>, and a large run can have many jobs converting the same image at once.</p>
+<p><strong>The Singularity cache.</strong> The <code class="nw">singularity</code> profile keeps the converted image in <code><span class="nw">&lt;outdir&gt;/</span><wbr><span class="nw">singularity_</span><wbr><span class="nw">cache</span></code>, so every results folder gets a copy of its own, and that setting wins over <code class="nw">NXF_SINGULARITY_CACHEDIR</code>: the variable alone changes nothing. Keep one shared copy with a config passed with <code class="nw">-c</code>:</p>
+<div class="code" data-lang="groovy"><div class="code-title fname">shared.config</div><pre>singularity.cacheDir = &#x27;/shared/singularity_cache&#x27;</pre></div>
+<div class="code cmd" data-lang="bash"><div class="code-title">Terminal</div><pre><span class="ln"><span class="p">$ </span><span class="t">nextflow</span> <span class="t">run</span> <span class="t">PathoGenOmics-Lab/AMAP</span> <span class="kv"><span class="f">-profile</span> <span class="v">singularity,slurm</span></span> <span class="t">\</span>
+</span><span class="ln" style="--i:4">    <span class="kv"><span class="f">-c</span> <span class="v">shared.config</span></span> <span class="kv"><span class="f">--tsv</span> <span class="v">samples.tsv</span></span></span></pre></div>
 <p><strong>The eggNOG database.</strong> Large, built once, reused forever. Point it at persistent shared storage rather than somewhere per-run:</p>
 <div class="code cmd" data-lang="bash"><div class="code-title">Terminal</div><pre><span class="ln"><span class="p">$ </span><span class="t">nextflow</span> <span class="t">run</span> <span class="t">PathoGenOmics-Lab/AMAP</span> <span class="kv"><span class="f">-profile</span> <span class="v">singularity,slurm</span></span> <span class="t">\</span>
 </span><span class="ln" style="--i:4">    <span class="kv"><span class="f">--tsv</span> <span class="v">samples.tsv</span></span> <span class="f">--eggnog_db</span> <span class="v">/shared/databases/eggnog</span></span></pre></div>
@@ -145,10 +150,10 @@
 </span><span class="ln"><span class="c">#SBATCH --output=amap_%j.log</span>
 </span><span class="ln">
 </span><span class="ln"><span class="t">module</span> <span class="t">load</span> <span class="t">singularity</span>
-</span><span class="ln"><span class="t">export</span> <span class="t path"><span class="nw">NXF_SINGULARITY_CACHEDIR=/</span><wbr><span class="nw">shared/</span><wbr><span class="nw">singularity_cache</span></span>
 </span><span class="ln">
 </span><span class="ln"><span class="t">nextflow</span> <span class="t">run</span> <span class="t">PathoGenOmics-Lab/AMAP</span> <span class="t">\</span>
 </span><span class="ln" style="--i:4">    <span class="kv"><span class="f">-profile</span> <span class="v">singularity,slurm</span></span> <span class="t">\</span>
+</span><span class="ln" style="--i:4">    <span class="kv"><span class="f">-c</span> <span class="v">shared.config</span></span> <span class="t">\</span>
 </span><span class="ln" style="--i:4">    <span class="kv"><span class="f">--tsv</span> <span class="v">samples.tsv</span></span> <span class="t">\</span>
 </span><span class="ln" style="--i:4">    <span class="f">--eggnog_db</span> <span class="v">/shared/databases/eggnog</span> <span class="t">\</span>
 </span><span class="ln" style="--i:4">    <span class="f">-work-dir</span> <span class="v">/scratch/$USER/amap_work</span> <span class="t">\</span>

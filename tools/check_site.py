@@ -2,7 +2,7 @@
 """Check the website in docs/ against the pipeline it describes.
 
 The site is plain HTML with no build step, so nothing renders it and nothing
-fails when it drifts. This does, in nine parts:
+fails when it drifts. This does, in thirteen parts:
 
   links       every internal link and #anchor resolves (the stories how.js
               opens and the sections of the example report included), no page
@@ -26,6 +26,16 @@ fails when it drifts. This does, in nine parts:
   benchmark   the front page's scores are tests/benchmark's expected results;
   metro       the metro map's stations are main.nf's processes, in the order
               its workflow runs them;
+  words       no page says --skip_functional_annotation leaves no report
+              (amap_report.html is always written), or that a gene a contig
+              end cuts is lost (it comes back in pieces);
+  install     the front page, the installation page and the tutorial install
+              Nextflow with the same command;
+  citation    the citation page shows CITATION.cff as it is, and its APA line
+              and BibTeX give the version and date CITATION.cff does;
+  report      the example report, and the Rmd every final_report.html comes
+              from, load nothing from another host (MathJax included), and
+              the example has lang="en" and alt text on every image;
   readme      README.md's links land on a page and an anchor that exist, its
               pictures are in the repository, and its scores are the
               benchmark's;
@@ -913,6 +923,153 @@ def check_metro() -> list[str]:
     return problems
 
 
+# ── words ──
+#
+# Sentences the pages once got wrong about the pipeline, and the one command
+# every way in has to give the same.
+
+
+def doc_markdown() -> list[Path]:
+    """The markdown the documentation pages are built from."""
+    return [SITE / path for _section, path, _title, _line in build_docs.PAGES if path.endswith(".md")]
+
+
+def passages(text: str) -> list[str]:
+    """The paragraphs, list items and table rows of a page of markdown,
+    outside its code blocks, each on one line."""
+    text = re.sub(r"^\s*```.*?^\s*```", "", text, flags=re.S | re.M)
+    text = re.sub(r"^[ \t]*>[ \t]?", "", text, flags=re.M)
+    out = []
+    for block in re.split(r"\n\s*\n", text):
+        lines = block.splitlines()
+        if lines and all(line.lstrip().startswith("|") for line in lines):
+            out += lines
+        else:
+            out += re.split(r"\n(?=\s*(?:[-*]|\d+\.)\s)", block)
+    return [re.sub(r"\s+", " ", p).strip() for p in out if p.strip()]
+
+
+def check_words() -> list[str]:
+    problems = []
+    for path in doc_markdown():
+        for passage in passages(path.read_text(encoding="utf-8")):
+            where = passage[:90]
+            # AMAP_REPORT runs in every run, with or without eggNOG (main.nf),
+            # so a run that skips it still has a report: amap_report.html.
+            if re.search(r"no report at all", passage, re.I):
+                problems.append(f"{path}: says {where!r}, but every run writes amap_report.html")
+            elif "skip_functional_annotation" in passage and re.search(r"\b(the|no) report\b(?! by question)", passage, re.I):
+                problems.append(f"{path}: {where!r}: --skip_functional_annotation leaves amap_report.html; "
+                                "say final_report.html, not 'the report'")
+            # A gene a contig end cuts comes back in pieces (bin/classify/pieces.py).
+            if re.search(r"cannot be recovered|loses genes across contig", passage, re.I):
+                problems.append(f"{path}: {where!r}: a gene a contig end cuts comes back in pieces")
+    return problems
+
+
+def check_install(pages: dict[str, Page]) -> list[str]:
+    """The command that installs Nextflow is the same on the front page, the
+    installation page and the tutorial."""
+    found: dict[str, list[str]] = {}
+    if "index.html" in pages:
+        for tag, text in pages["index.html"].code_elems:
+            if tag == "pre":
+                for line in text.splitlines():
+                    line = line.strip().removeprefix("$ ")
+                    if line.startswith("conda create"):
+                        found.setdefault("index.html", []).append(line)
+    for page in ("getting-started/installation.md", "getting-started/tutorial.md"):
+        for block in re.findall(r"```[^\n]*\n(.*?)```", (SITE / page).read_text(encoding="utf-8"), re.S):
+            for line in block.splitlines():
+                if line.strip().startswith("conda create -n nextflow-env"):
+                    found.setdefault(page, []).append(line.strip())
+    problems = []
+    for page in ("index.html", "getting-started/installation.md", "getting-started/tutorial.md"):
+        if len(set(found.get(page, []))) != 1:
+            problems.append(f"{page}: has {len(set(found.get(page, [])))} commands that install Nextflow with conda, not one")
+    commands = {line for lines in found.values() for line in lines}
+    if len(commands) > 1:
+        problems.append("the pages install Nextflow differently: " + "; ".join(f"{page}: {lines[0]}" for page, lines in sorted(found.items())))
+    return problems
+
+
+CITATION_CFF = Path("CITATION.cff")
+MONTHS = "jan feb mar apr may jun jul aug sep oct nov dec".split()
+
+
+def check_citation() -> list[str]:
+    """The citation page shows CITATION.cff as it is, and its APA line and
+    BibTeX give the version, year and month CITATION.cff does."""
+    page = SITE / "about" / "citation.md"
+    text = page.read_text(encoding="utf-8")
+    cff = CITATION_CFF.read_text(encoding="utf-8")
+    problems = []
+    shown = re.search(r"^\*\*CITATION\.cff\*\*\s*```yaml\n(.*?)```", text, re.S | re.M)
+    body = "\n".join(line for line in cff.splitlines() if not line.startswith("#")).strip()
+    if not shown or shown.group(1).strip() != body:
+        problems.append(f"{page}: its CITATION.cff tab is not {CITATION_CFF} as it is")
+    version = re.search(r"^version: ([\d.]+)", cff, re.M).group(1)
+    year, month = re.search(r"^date-released: '(\d{4})-(\d{2})", cff, re.M).groups()
+    bib = re.search(r"^@software\{.*?^```", text, re.S | re.M)
+    bib = bib.group(0) if bib else ""
+    for key, value in (("version", version), ("year", year), ("month", MONTHS[int(month) - 1])):
+        if not re.search(rf"^\s*{key} = \{{?{re.escape(value)}\}}?,?\s*\}}?$", bib, re.M):
+            problems.append(f"{page}: the BibTeX's {key} is not {value}, as in {CITATION_CFF}")
+    if f"({year}). AMAP (Version {version})" not in text:
+        problems.append(f"{page}: the APA line does not say ({year}) and Version {version}, as {CITATION_CFF} does")
+    return problems
+
+
+# ── report ──
+#
+# The example report is the report's own output and is not checked as a page,
+# but it has to open with no network, as every final_report.html has to.
+
+DEMO_REPORT = SITE / "examples" / "demo_report.html"
+REPORT_DIR = Path("bin/report")
+# What makes a browser fetch from another host: a script or stylesheet tag, a
+# script that sets a src, or an import.
+REMOTE_LOAD = re.compile(
+    r"<script\b[^>]*\bsrc\s*=\s*[\"']?(?:https?:)?//"
+    r"|<link\b[^>]*\bhref\s*=\s*[\"']?(?:https?:)?//"
+    r"|\.src\s*=\s*[\"'](?:https?:)?//"
+    r"|\b(?:importScripts|import)\s*\(\s*[\"'](?:https?:)?//"
+    r"|@import\s+(?:url\()?[\"']?(?:https?:)?//",
+    re.I,
+)
+
+
+def check_report() -> list[str]:
+    problems = []
+    demo = DEMO_REPORT.read_text(encoding="utf-8")
+    name = DEMO_REPORT.relative_to(SITE).as_posix()
+    if "mathjax.rstudio.com" in demo:
+        problems.append(f"{name}: loads MathJax from mathjax.rstudio.com; render it again from bin/report/report_AMAP.Rmd")
+    for m in REMOTE_LOAD.finditer(demo):
+        problems.append(f"{name}: loads from another host: {m.group(0)[:80]!r}")
+    if not re.search(r"<html\b[^>]*\blang=\"en\"", demo):
+        problems.append(f"{name}: <html> has no lang=\"en\"")
+    # The images of the page, not the "<img>" strings of the libraries it carries.
+    markup = re.sub(r"<script\b.*?</script>", "", demo, flags=re.S | re.I)
+    unnamed = [img for img in re.findall(r"<img\b[^>]*>", markup) if not re.search(r"\balt\b", img)]
+    if unnamed:
+        problems.append(f"{name}: {len(unnamed)} images without alt text")
+    # What every final_report.html is rendered from.
+    rmd = (REPORT_DIR / "report_AMAP.Rmd").read_text(encoding="utf-8")
+    front = rmd.split("\n---", 1)[0]
+    if not re.search(r"^    mathjax: null$", front, re.M):
+        problems.append("bin/report/report_AMAP.Rmd: html_document has no 'mathjax: null', so every report loads MathJax from the internet")
+    if not re.search(r"^lang: en$", front, re.M):
+        problems.append("bin/report/report_AMAP.Rmd: no 'lang: en' in its YAML")
+    for path in (REPORT_DIR / "header.html", REPORT_DIR / "styles.css", REPORT_DIR / "report_AMAP.Rmd"):
+        text = path.read_text(encoding="utf-8")
+        # A link the reader follows is not a load; the Rmd ends with one.
+        text = re.sub(r"\[[^\]]*\]\(https?://[^)\s]*\)", "", text)
+        for url in re.findall(r"https?://[^\s\"')<>]+", text):
+            problems.append(f"{path}: points at {url}; nothing in the report may come from another host")
+    return problems
+
+
 # ── readme ──
 
 
@@ -1074,6 +1231,10 @@ def main() -> int:
         ("thresholds", check_thresholds),
         ("benchmark", lambda: check_benchmark(pages)),
         ("metro", check_metro),
+        ("words", check_words),
+        ("install", lambda: check_install(pages)),
+        ("citation", check_citation),
+        ("report", check_report),
         ("readme", lambda: check_readme(pages)),
         ("stories", lambda: check_stories(pages)),
         ("figures", lambda: check_figure_scripts(pages)),

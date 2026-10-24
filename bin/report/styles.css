@@ -99,10 +99,11 @@ body #TOC .amap-toc-title{
   background:var(--amap-teal-dark);
   border-radius:7px 7px 0 0;
 }
+/* White on the darker teal: 5.3:1, where the lighter one gave 3.3:1. */
 body #TOC .tocify-item.active,
 body #TOC .list-group-item.active{
-  background:var(--amap-teal)!important;
-  border-color:var(--amap-teal)!important;
+  background:var(--amap-teal-dark)!important;
+  border-color:var(--amap-teal-dark)!important;
   color:#fff!important;
 }
 body #TOC .list-group-item:hover{

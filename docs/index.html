@@ -45,21 +45,25 @@
 <main>
   <section class="hero">
     <div class="wrap">
-      <div>
+      <div class="hero-text">
         <div class="eyebrow"><span class="dot"></span>A Nextflow pipeline for bacterial genomes</div>
         <h1>Bakta calls the genes. <span class="grad">AMAP checks every one.</span></h1>
-        <p class="lead">AMAP annotates assembled genomes with Bakta, aligns a trusted reference proteome onto them with miniprot, and settles every disagreement between the two: late starts, genes split in two, calls that are not genes, genes Bakta missed. Built for the <i>Mycobacterium tuberculosis</i> complex, where it changes about 30% of the genes, and for any species you have a reference for.</p>
+        <p class="lead">AMAP annotates assembled genomes with Bakta, aligns a trusted reference proteome onto them with miniprot, and settles every disagreement: late starts, split genes, calls that are not genes, genes Bakta missed. Built for the <i>M.&nbsp;tuberculosis</i> complex, and for any species with a reference.</p>
         <div class="actions">
           <a class="btn btn-primary" href="#start">Start here</a>
           <a class="btn btn-ghost" href="getting-started/tutorial.html">Read the tutorial</a>
-          <a class="btn btn-ghost" href="https://github.com/PathoGenOmics-Lab/AMAP"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+          <a class="btn btn-ghost btn-gh" href="https://github.com/PathoGenOmics-Lab/AMAP"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
         </div>
-        <p class="reads">Reads <b>assembled genomes</b>. Writes, for each one, a <b>corrected GFF3, GenBank and proteome</b> with <b>the tables behind every decision</b>, and one <b>report</b> for the whole run.</p>
+        <p class="hero-proof">On <i>M.&nbsp;tuberculosis</i> CDC1551, of Bakta's <b>4,077</b> calls AMAP settles the <b>1,100</b> that disagree with the reference, drops <b>130</b> that are not genes and puts back <b>97</b> genes Bakta missed. <a href="#cases">See each case</a></p>
+        <dl class="spec">
+          <div><dt>In</dt><dd>assembled genomes (FASTA)</dd></div>
+          <div><dt>Out</dt><dd>corrected GFF3, GenBank and proteome, the tables behind every decision, and a report of the whole run</dd></div>
+        </dl>
       </div>
 
       <figure class="demo" data-hero aria-label="Twelve Bakta calls at the start of the CDC1551 genome, the eight H37Rv proteins aligned there, and the eight genes AMAP keeps.">
         <div class="demo-head">
-          <span><b><i>M. tuberculosis</i> CDC1551</b>, its first 12.4 kb, against H37Rv. Point at a gene.</span>
+          <span><b><i>M.&nbsp;tuberculosis</i> CDC1551</b>, its first 12.4 kb, against H37Rv. <span class="when-hover">Point at a gene.</span><span class="when-touch">Tap a gene.</span></span>
           <span class="demo-ctrl"><button class="mini-btn" type="button" data-hero-replay>Replay</button></span>
         </div>
         <p class="demo-step" data-hero-step aria-live="polite">What AMAP keeps</p>
@@ -195,8 +199,9 @@ Total: 0 error(s), 0 warning(s)</div>
       <div class="section-head">
         <p class="kicker">What AMAP decides</p>
         <h2>Each call, held up against the reference</h2>
-        <p>Every Bakta call is compared with where the reference proteins align, on the same strand of the same contig. That puts it in one of four cases, and a reference gene with no call at all is a fifth. These are real genes of CDC1551: point at one for its coordinates.</p>
+        <p>Every Bakta call is compared with where the reference proteins align, on its strand and contig. That puts it in one of four cases, numbered as the code numbers them: 2 and 3 agree, 4 conflicts, 1 has no reference. A reference gene with no call at all is a fifth. These are real genes of CDC1551: <span class="when-hover">point at</span><span class="when-touch">tap</span> one for its coordinates.</p>
       </div>
+      <p class="cases-hint">Five cards: swipe for the next.</p>
       <div class="cases">
         <article class="case" data-fig="case2">
           <div class="case-head"><span class="case-tag c2">Case 2</span><h3>Perfect match</h3></div>
@@ -217,11 +222,13 @@ Total: 0 error(s), 0 warning(s)</div>
             <button type="button" data-show="case4-split" aria-pressed="false">One gene, two calls</button>
             <button type="button" data-show="case4-longer" aria-pressed="false">A much longer call</button>
           </div>
-          <p data-fig-caption data-for="case4-start">Bakta's dnaA starts 33 bp after the aligned protein does. Where the two disagree, the reference wins by default.</p>
-          <p data-for="case4-split" hidden>Bakta calls two short genes where H37Rv's Rv0007 aligns end to end. The reference is longer than either call, so it wins.</p>
-          <p data-for="case4-longer" hidden>Bakta's call is 3,303 bp longer than the alignment, which stops before the end of its protein. A call longer by more than 550 bp wins over an alignment that is not complete.</p>
+          <div class="case-caps">
+            <p data-fig-caption data-for="case4-start">Bakta's dnaA starts 33 bp after the aligned protein does. Where the two disagree, the reference wins by default.</p>
+            <p data-for="case4-split" hidden>Bakta calls two short genes where H37Rv's Rv0007 aligns end to end. The reference is longer than either call, so it wins.</p>
+            <p data-for="case4-longer" hidden>Bakta's call is 3,303 bp longer than the alignment, which stops before the end of its protein. A call longer by more than 550 bp wins over an alignment that is not complete.</p>
+          </div>
           <div class="case-fig" data-fig-stage></div>
-          <p class="keeps"><b>AMAP keeps</b><span data-for="case4-start">the reference's coordinates, 1 to 1,524.</span><span data-for="case4-split" hidden>one gene, 9,914 to 10,828.</span><span data-for="case4-longer" hidden>Bakta's call, 2,267,753 to 2,272,573, named Rv2024c.</span></p>
+          <p class="keeps"><b>AMAP keeps</b><span class="case-caps"><span data-for="case4-start">the reference's coordinates, 1 to 1,524.</span><span data-for="case4-split" hidden>one gene, 9,914 to 10,828.</span><span data-for="case4-longer" hidden>Bakta's call, 2,267,753 to 2,272,573, named Rv2024c.</span></span></p>
         </article>
         <article class="case" data-fig="case1-kept">
           <div class="case-head"><span class="case-tag c1">Case 1</span><h3>Potentially novel</h3></div>
@@ -229,10 +236,12 @@ Total: 0 error(s), 0 warning(s)</div>
             <button type="button" data-show="case1-kept" aria-pressed="true">Kept</button>
             <button type="button" data-show="case1-dropped" aria-pressed="false">Dropped</button>
           </div>
-          <p data-fig-caption data-for="case1-kept">Nothing from H37Rv aligns to these four calls: a stretch CDC1551 has and H37Rv lacks. None is a call Bakta is known to make wrongly, and none matches the H37Rv genome at 80% identity.</p>
-          <p data-for="case1-dropped" hidden>Nothing aligns here either, but the call is covered end to end by one that Bakta makes on H37Rv itself and that the curated annotation does not have.</p>
+          <div class="case-caps">
+            <p data-fig-caption data-for="case1-kept">Nothing from H37Rv aligns to these four calls: a stretch CDC1551 has and H37Rv lacks. None is a call Bakta is known to make wrongly, and none matches the H37Rv genome at 80% identity.</p>
+            <p data-for="case1-dropped" hidden>Nothing aligns here either, but the call is covered end to end by one that Bakta makes on H37Rv itself and that the curated annotation does not have.</p>
+          </div>
           <div class="case-fig" data-fig-stage></div>
-          <p class="keeps"><b>AMAP keeps</b><span data-for="case1-kept">all four, under Bakta's locus tags.</span><span data-for="case1-dropped" hidden>nothing: the call is dropped.</span></p>
+          <p class="keeps"><b>AMAP keeps</b><span class="case-caps"><span data-for="case1-kept">all four, under Bakta's locus tags.</span><span data-for="case1-dropped" hidden>nothing: the call is dropped.</span></span></p>
         </article>
         <article class="case" data-fig="missing">
           <div class="case-head"><span class="case-tag cm">Missing</span><h3>A reference gene Bakta missed</h3></div>
@@ -299,40 +308,47 @@ Total: 0 error(s), 0 warning(s)</div>
       <div class="section-head">
         <p class="kicker">What you get</p>
         <h2>Files you can open, and the reasons behind them</h2>
-        <p>Everything lands under <code>results/</code>, one folder per step. These answer most questions; <a href="user-guide/outputs.html">Outputs</a> has every file.</p>
+        <p>Everything lands under <code>results/</code>, one folder per step. Typing puts the lineage in front of each sample: CDC1551 becomes L4_CDC1551. These answer most questions; <a href="user-guide/outputs.html">Outputs</a> has every file.</p>
       </div>
       <div class="files">
-        <div class="file">
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7h12l4 5-4 5H3z"/></svg></span>
-          <code>AMAP/{sample}/<wbr>*-AMAP.gff3 &middot; .gbk</code>
+        <div class="file full-run">
+          <span class="lane" aria-hidden="true"></span>
+          <code>AMAP/{lineage}_{sample}/<wbr><span>*-AMAP.gff3 &middot; .gbk</span></code>
           <p>The corrected annotation. Pseudogenes and genes a contig end cut are marked the way NCBI marks them.</p>
+          <small class="when">after a full run</small>
         </div>
-        <div class="file">
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
-          <code>AMAP/{sample}/<wbr>*-AMAP.clean.faa</code>
+        <div class="file full-run">
+          <span class="lane" aria-hidden="true"></span>
+          <code>AMAP/{lineage}_{sample}/<wbr><span>*-AMAP.clean.faa</span></code>
           <p>The proteins without pseudogenes or internal stops: what orthology, phylogenomics and dN/dS tools expect.</p>
+          <small class="when">after a full run</small>
         </div>
-        <div class="file">
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
-          <code>AMAP/{sample}/<wbr>*-AMAPmastertable.tsv</code>
+        <div class="file full-run">
+          <span class="lane" aria-hidden="true"></span>
+          <code>AMAP/{lineage}_{sample}/<wbr><span>*-AMAPmastertable.tsv</span></code>
           <p>One row per gene: coordinates, Bakta, eggNOG and, for the tuberculosis complex, Mycobrowser.</p>
+          <small class="when">after a full run</small>
         </div>
         <div class="file">
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2h9"/></svg></span>
-          <code>CDS_CASES/{sample}/</code>
+          <span class="lane" aria-hidden="true"></span>
+          <code>CDS_CASES/{lineage}_{sample}/</code>
           <p>Every decision: a table per case, the reference genes Bakta missed, and the counts of each.</p>
+          <small class="when">after every run</small>
         </div>
         <div class="file">
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg></span>
-          <code>final_report.html</code>
-          <p>The whole run in one page that opens offline and travels by email.</p>
+          <span class="lane" aria-hidden="true"></span>
+          <code><span>amap_report.html &middot;</span> <span>final_report.html</span></code>
+          <p>The run by question, from every run; and the whole run on one page, from a full one. Both open offline and travel by email.</p>
+          <small class="when">after every run, and a full one</small>
         </div>
         <div class="file">
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg></span>
+          <span class="lane" aria-hidden="true"></span>
           <code>pipeline_info/</code>
-          <p>The exact tool versions and parameters of the run, for your methods section.</p>
+          <p>The check's verdict, and the exact tool versions and parameters of the run, for your methods section.</p>
+          <small class="when">after every run</small>
         </div>
       </div>
+      <p class="note files-key">The bars take the colours of the pipeline's lines: the sample's alone for what every run writes, joined by eggNOG's for what only a full run writes.</p>
 
       <div class="excerpt">
         <div class="excerpt-head">
@@ -363,16 +379,32 @@ contig_10  AMAP  CDS  101478  102146  .  +  0  ID=L4_CDC1551d_Rv1239c_2;&hellip;
           <div class="key"><span><mark>/pseudo</mark> no <code>/translation</code>, and the reason in <code>/note</code></span><span><mark class="part">&gt;102146</mark> the 3' end runs off the contig (<code>&lt;</code> marks a cut 5' end)</span></div>
         </div>
         <div class="tabpanel" role="tabpanel" id="ex-cases" aria-labelledby="ex-cases-tab" hidden>
-<pre>$ column -t -s$'\t' results/CDS_CASES/summary/*-summary.tsv
-case2           2813   coordinates matched the reference exactly
-case3             24   coordinates matched, alignment length differed
-case4           1100   overlapped the reference but disagreed, resolved
-case1_initial    141   Bakta called it, the reference has nothing there
-rv_missing        97   the reference has a gene there, Bakta missed it
-total_cds       4077   what Bakta called before correction
-case1_removed    130   "novel" genes that were not really novel
-case1_kept        11   kept as genuinely absent from H37Rv</pre>
-          <div class="key"><span>The tutorial's run on the whole CDC1551 genome. <a href="getting-started/tutorial.html#did-the-correction-do-anything">How to read it</a>.</span></div>
+          <div class="counts">
+<pre class="counts-term"><span class="ln"><span class="p">$ </span><span class="t">cut</span> <span class="f">-f1,2</span> <span class="v">results/CDS_CASES/summary/L4_CDC1551-summary.tsv</span> | <span class="t">column</span> <span class="f">-t</span>
+</span>Type           Number
+case2          2813
+case3          24
+case4          1100
+case1_initial  141
+rv_missing     97
+total_cds      4077
+case1_removed  130
+case1_kept     11</pre>
+            <div class="gloss">
+              <p class="gloss-head">What it means</p>
+              <dl>
+                <div><dt>case2</dt><dd>coordinates matched the reference exactly</dd></div>
+                <div><dt>case3</dt><dd>coordinates matched, alignment length differed</dd></div>
+                <div><dt>case4</dt><dd>overlapped the reference but disagreed, resolved</dd></div>
+                <div><dt>case1_initial</dt><dd>Bakta called it, the reference has nothing there</dd></div>
+                <div><dt>rv_missing</dt><dd>the reference has a gene there, Bakta missed it</dd></div>
+                <div><dt>total_cds</dt><dd>what Bakta called before correction</dd></div>
+                <div><dt>case1_removed</dt><dd>"novel" genes that were not really novel</dd></div>
+                <div><dt>case1_kept</dt><dd>kept as genuinely absent from H37Rv</dd></div>
+              </dl>
+            </div>
+          </div>
+          <div class="key"><span>The tutorial's run on the whole CDC1551 genome; the file has three more columns, the sample's name and lineage. <a href="getting-started/tutorial.html#did-the-correction-do-anything">How to read it</a>.</span></div>
         </div>
       </div>
     </div>
@@ -410,6 +442,19 @@ case1_kept        11   kept as genuinely absent from H37Rv</pre>
       </div>
       <div class="faq">
         <details>
+          <summary><span>How long does a run take?</span></summary>
+          <div class="ans">
+            <p>Minutes for a genome, without eggNOG. Measured on a MacBook Pro with an M4 Pro, 14 cores, Docker Desktop given 8 GB, the image under emulation and already pulled:</p>
+            <ul class="times">
+              <li><span>The check of step 3, one genome</span><b>9 s</b></li>
+              <li><span>The test of step 2</span><b>3 min</b></li>
+              <li><span><i>M.&nbsp;tuberculosis</i> CDC1551 without eggNOG, the tutorial's run</span><b>2 min 16 s</b></li>
+              <li><span><i>E.&nbsp;coli</i> Sakai against K-12, your own reference, without eggNOG</span><b>5 min 47 s</b></li>
+            </ul>
+            <p>Bakta takes most of a run: 1 min 47 s of the CDC1551 one. With your own reference it runs on the reference too, 2 min 38 s for K-12. The eggNOG steps are not timed here: they ask for 45 and 50 GB of memory, more than a laptop gives Docker. The database is built once, on the first full run, and kept where <code>--eggnog_db</code> points. <a href="getting-started/tutorial.html#the-machine">What each step needs</a>.</p>
+          </div>
+        </details>
+        <details>
           <summary><span>The sample sheet is rejected</span></summary>
           <div class="ans"><p>It has to be separated by a real tab: spaces will not do, and this is the most common reason. Check with <code>cat -t samples.tsv</code>, where real tabs show up as <code>^I</code>. Keep sample IDs to letters, digits and underscores.</p></div>
         </details>
@@ -419,7 +464,7 @@ case1_kept        11   kept as genuinely absent from H37Rv</pre>
         </details>
         <details>
           <summary><span>A task dies with exit code 137</span></summary>
-          <div class="ans"><p>On macOS and Windows, Docker runs inside a virtual machine with a memory limit of its own, often 8 GB. Raise it in Docker Desktop under Settings, Resources, Memory, and keep <code>--max_memory</code> at or below it. <a href="getting-started/tutorial.html#the-machine">What each step needs</a>.</p></div>
+          <div class="ans"><p>On macOS and Windows, Docker runs inside a virtual machine with a memory limit of its own, often 8 GB; <code>docker info</code>, from step 1, prints it. Raise it in Docker Desktop under Settings, Resources, Memory, and keep <code>--max_memory</code> at or below it. <a href="getting-started/tutorial.html#the-machine">What each step needs</a>.</p></div>
         </details>
         <details>
           <summary><span>The first run seems stuck</span></summary>
@@ -469,7 +514,7 @@ case1_kept        11   kept as genuinely absent from H37Rv</pre>
         <li><a href="documentation.html">Documentation</a></li>
         <li><a href="how-it-works.html">How it works</a></li>
         <li><a href="user-guide/parameters.html">Parameters</a></li>
-        <li><a href="https://github.com/PathoGenOmics-Lab/AMAP/blob/main/CHANGELOG.md">Changelog</a></li>
+        <li><a href="about/changelog.html">Changelog</a></li>
       </ul>
     </div>
     <div>

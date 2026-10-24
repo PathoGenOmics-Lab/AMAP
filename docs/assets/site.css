@@ -408,10 +408,12 @@ p {
   padding: 60px 0 44px;
 }
 
+/* The drawing keeps the width at which every gene of the hero is named
+   (542 px of the 1,072 at 1280); the headline takes the rest. */
 .hero .wrap {
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.1fr);
-  gap: 44px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+  gap: 40px;
   align-items: center;
 }
 
@@ -444,11 +446,17 @@ p {
   flex: none;
 }
 
+/* One sentence per line: the second, in the gradient, starts its own. */
 .hero h1 {
-  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.04;
+  text-wrap: balance;
+}
+
+.hero h1 .grad {
+  display: block;
 }
 
 .grad {
@@ -472,16 +480,100 @@ p {
   margin-top: 28px;
 }
 
-.reads {
+/* The case against Bakta alone, in the numbers of a real run. */
+.hero-proof {
   margin-top: 22px;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: var(--muted);
-  max-width: 36em;
+  max-width: 34em;
 }
 
-.reads b {
-  color: var(--ink-soft);
+.hero-proof b {
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-proof a {
   font-weight: 600;
+  white-space: nowrap;
+}
+
+/* What goes in and what comes out, as a spec rather than a sentence. */
+.spec {
+  display: grid;
+  gap: 4px;
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 0.88rem;
+  max-width: 34em;
+}
+
+.spec div {
+  display: grid;
+  grid-template-columns: 3.4em minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+
+.spec dt {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.spec dd {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+/* On a phone the drawing comes into the first screen: a shorter lead, no
+   second GitHub button (the header has one), and the spec after the
+   drawing rather than before it. */
+@media (max-width: 600px) {
+  .hero .wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .eyebrow {
+    align-self: start;
+  }
+
+  .hero .actions {
+    margin-top: 24px;
+  }
+
+  .hero-proof {
+    margin-top: 18px;
+  }
+
+  .hero-text {
+    display: contents;
+  }
+
+  .hero .demo {
+    order: 1;
+    margin-top: 28px;
+  }
+
+  .hero .spec {
+    order: 2;
+    margin-top: 18px;
+  }
+
+  .lead {
+    font-size: 17px;
+  }
+
+  .hero .btn-gh {
+    display: none;
+  }
 }
 
 /* ── Gene tracks: the drawings ── */
@@ -882,13 +974,27 @@ p {
 
 @media (max-width: 600px) {
   .section {
-    padding: 52px 0;
+    padding: 44px 0;
   }
+}
+
+/* Two widths on the front page: running text ends at one reading measure, and
+   everything else (cards, drawings, the benchmark, the report) spans the
+   whole column. The measure is an edge, not a width, so text that starts
+   further in (a step's, after its number) ends where the rest does: 42rem is
+   36em of step text once the number's column is taken off. */
+.section {
+  --measure: 42rem;
 }
 
 .section-head {
   margin-bottom: 30px;
-  max-width: 780px;
+}
+
+@media (max-width: 600px) {
+  .section-head {
+    margin-bottom: 22px;
+  }
 }
 
 .kicker {
@@ -900,10 +1006,13 @@ p {
   margin-bottom: 10px;
 }
 
-.section-head p {
+/* Not the kicker: a paragraph of the head would otherwise outrank it and turn
+   it grey and full size. */
+.section-head p:not(.kicker) {
   color: var(--muted);
   font-size: 1.04rem;
   margin-top: 10px;
+  max-width: var(--measure);
 }
 
 .cols-2 {
@@ -936,6 +1045,7 @@ p {
 
 .note {
   font-size: 0.9rem;
+  line-height: 1.5;
   color: var(--muted);
   margin-top: 12px;
 }
@@ -1082,6 +1192,13 @@ p {
   .steps > li::before {
     left: 16px;
     top: 36px;
+  }
+
+  /* What a run prints, smaller: it is there to be recognised, not read. */
+  .step-body .out {
+    font-size: 0.74rem;
+    line-height: 1.45;
+    padding: 10px 12px;
   }
 }
 
@@ -1249,13 +1366,6 @@ kbd {
 @media (max-width: 900px) {
   .builder {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  /* What a run prints, smaller: it is there to be recognised, not read. */
-  .step-body .out {
-    font-size: 0.74rem;
-    line-height: 1.45;
-    padding: 10px 12px;
   }
 }
 
@@ -1510,9 +1620,25 @@ html:not(.js) .builder {
   font-size: 1.12rem;
 }
 
-.case > p {
+.case > p,
+.case-caps > p {
   color: var(--ink-soft);
   font-size: 0.95rem;
+}
+
+/* The captions a switcher chooses between share one cell, so the tallest
+   sets the card's height and a switch does not move the page. */
+.case-caps {
+  display: grid;
+}
+
+.case-caps > * {
+  grid-area: 1 / 1;
+}
+
+.case-caps > [hidden] {
+  display: block;
+  visibility: hidden;
 }
 
 .case .keeps {
@@ -1544,6 +1670,42 @@ html:not(.js) .builder {
 .case-fig {
   position: relative;
   min-height: 60px;
+}
+
+.cases-hint {
+  display: none;
+  margin: -14px 0 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* On a phone the five cards are a strip to swipe, the next one showing at
+   the edge, rather than two thousand pixels to scroll past. */
+@media (max-width: 600px) {
+  .cases-hint {
+    display: block;
+  }
+
+  .cases {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 86%;
+    gap: 12px;
+    margin: 0 -16px;
+    padding: 0 16px 10px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 16px;
+  }
+
+  .case {
+    scroll-snap-align: start;
+  }
+
+  .case-wide {
+    grid-column: auto;
+  }
 }
 
 /* ── The metro map ── */
@@ -1847,6 +2009,7 @@ html:not(.js) .builder {
 @media (max-width: 520px) {
   .files {
     grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
   }
 }
 
@@ -1860,24 +2023,26 @@ html:not(.js) .builder {
   gap: 8px;
 }
 
-.file .ico {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  display: grid;
-  place-items: center;
-  background: var(--accent-soft);
-  color: var(--accent);
+/* A short stretch of the metro line of the step that writes the file: the
+   sample's alone for what every run writes, joined by the eggNOG
+   database's for what only a full run writes. */
+.file .lane {
+  display: block;
+  flex: none;
+  width: 44px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--m-main);
 }
 
-.file .ico svg {
-  width: 19px;
-  height: 19px;
+.file.full-run .lane {
+  background: linear-gradient(90deg, var(--m-main) 0 50%, var(--m-db) 50% 100%);
 }
 
+/* A path breaks where it has a <wbr>, after its folder, before anywhere else. */
 .file code {
   font-size: 0.8rem;
-  word-break: break-all;
+  overflow-wrap: anywhere;
   background: none;
   border: none;
   padding: 0;
@@ -1885,10 +2050,51 @@ html:not(.js) .builder {
   font-weight: 650;
 }
 
+.file code span {
+  white-space: nowrap;
+}
+
 .file p {
   font-size: 0.9rem;
   color: var(--muted);
   line-height: 1.45;
+}
+
+.file .when {
+  margin-top: auto;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* On a phone a card is a row: the line down its side, then the file, what
+   it is and when it is written. */
+@media (max-width: 520px) {
+  .file {
+    display: grid;
+    grid-template-columns: 6px minmax(0, 1fr);
+    gap: 2px 12px;
+    padding: 10px 12px;
+  }
+
+  .file .lane {
+    grid-row: 1 / span 3;
+    width: 6px;
+    height: auto;
+  }
+
+  .file.full-run .lane {
+    background: linear-gradient(180deg, var(--m-main) 0 50%, var(--m-db) 50% 100%);
+  }
+
+  .file p {
+    font-size: 0.84rem;
+    line-height: 1.4;
+  }
+
+  /* Each card says when it is written; the colour key can go. */
+  .files-key {
+    display: none;
+  }
 }
 
 /* Real lines of a real run, with the marks AMAP writes picked out. */
@@ -1931,6 +2137,19 @@ html:not(.js) .builder {
   overflow-x: auto;
 }
 
+/* On a phone a GFF3 or GenBank line wrapped into ten is no longer a line:
+   they keep their shape and scroll. */
+@media (max-width: 600px) {
+  .excerpt {
+    padding: 12px;
+  }
+
+  .excerpt pre {
+    white-space: pre;
+    overflow-wrap: normal;
+  }
+}
+
 .excerpt mark {
   background: color-mix(in srgb, var(--pseudo) 22%, transparent);
   color: inherit;
@@ -1959,6 +2178,114 @@ html:not(.js) .builder {
   font-family: var(--mono);
   font-size: 0.78rem;
   color: var(--ink);
+}
+
+/* The case counts: the terminal prints what the command prints, and what
+   each row means sits outside it, in a column of its own. */
+.counts {
+  display: grid;
+  gap: 12px;
+}
+
+.excerpt .counts-term {
+  white-space: pre-wrap;
+  overflow-wrap: normal;
+}
+
+.counts-term .ln {
+  display: block;
+  padding-left: 4ch;
+  text-indent: -4ch;
+}
+
+.counts-term :is(.t, .f, .v) {
+  white-space: nowrap;
+}
+
+.counts-term .p {
+  color: var(--code-muted);
+  user-select: none;
+}
+
+.counts-term .f {
+  color: var(--code-flag);
+}
+
+.counts-term .v {
+  color: var(--code-value);
+}
+
+.gloss {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.gloss-head {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.gloss dl {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+
+.gloss dl div {
+  display: grid;
+  grid-template-columns: 9.5em minmax(0, 1fr);
+  gap: 10px;
+}
+
+.gloss dt {
+  font-family: var(--mono);
+  color: var(--ink-soft);
+}
+
+.gloss dd {
+  margin: 0;
+}
+
+/* Wide enough for both: each meaning on the line of the row it explains. The
+   gloss starts a line down, past the command, and keeps the terminal's
+   line height; the row names are already in the terminal. */
+@media (min-width: 1060px) {
+  .counts {
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 0 20px;
+    align-items: start;
+  }
+
+  .gloss {
+    --line-h: calc(0.8rem * 1.6);
+    padding-top: calc(15px + var(--line-h));
+    line-height: var(--line-h);
+  }
+
+  .gloss-head {
+    margin: 0;
+    line-height: var(--line-h);
+  }
+
+  .gloss dl {
+    gap: 0;
+  }
+
+  .gloss dl div {
+    display: block;
+    white-space: nowrap;
+  }
+
+  .gloss dt {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
 }
 
 /* ── Report preview ── */
@@ -2203,7 +2530,7 @@ html:not(.js) .builder {
 .faq {
   display: grid;
   gap: 10px;
-  max-width: 860px;
+  max-width: var(--measure, 42rem);
 }
 
 .faq details {
@@ -2231,8 +2558,11 @@ html:not(.js) .builder {
   display: none;
 }
 
+/* Drawn, not read: the empty alternative text keeps "+" out of the question's
+   name (a browser without it keeps the first declaration). */
 .faq summary::after {
   content: "+";
+  content: "+" / "";
   color: var(--muted);
   font-weight: 500;
   font-size: 1.2rem;
@@ -2241,6 +2571,13 @@ html:not(.js) .builder {
 
 .faq details[open] summary::after {
   content: "\2212";
+  content: "\2212" / "";
+}
+
+@media (max-width: 600px) {
+  .faq summary {
+    padding: 11px 0;
+  }
 }
 
 .faq .ans {
@@ -2249,6 +2586,28 @@ html:not(.js) .builder {
   font-size: 0.95rem;
   display: grid;
   gap: 10px;
+}
+
+/* Measured times, each with what was run. */
+.faq .times {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.faq .times li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+.faq .times b {
+  flex: none;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Footer ── */
@@ -3767,6 +4126,7 @@ th.num {
 .prose .builder-fig .builder {
   grid-template-columns: minmax(0, 1fr);
   gap: 14px;
+  margin-top: 0;
 }
 
 /* The command is the point of the builder: its button always shows. */
@@ -3979,7 +4339,6 @@ th.num {
 .sheet {
   display: grid;
   gap: 14px;
-  margin-top: 0;
 }
 
 .sheet-file {

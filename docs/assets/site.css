@@ -1297,6 +1297,14 @@ label,
   margin-top: var(--sp-8);
 }
 
+/* The header has GitHub; the hero's own button goes first when room runs
+   short, so the other two stay on one line. */
+@media (max-width: 1100px) {
+  .hero .btn-gh {
+    display: none;
+  }
+}
+
 /* One column: the words, the way in, the drawing, then the spec. */
 @media (max-width: 940px) {
   .hero {
@@ -1314,6 +1322,10 @@ label,
 
   .hero .actions {
     grid-area: actions;
+  }
+
+  .hero .hero-side .actions {
+    margin-top: var(--sp-7);
   }
 
   .hero .spec {
@@ -1446,7 +1458,7 @@ label,
     letter-spacing: 0.06em;
   }
 
-  .hero .actions {
+  .hero .hero-side .actions {
     margin-top: var(--sp-5);
   }
 
@@ -1634,6 +1646,14 @@ label,
 .trk .row-line {
   stroke: var(--line-strong);
   stroke-width: 1;
+}
+
+/* The dots that lead a row's name to its row. */
+.trk .row-lead {
+  stroke: var(--line-3);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-dasharray: 0 3.5;
 }
 
 .trk .row-frame {
@@ -2161,8 +2181,9 @@ label,
   margin-top: 0;
 }
 
-/* Narrower, the counts go under the drawing, three in a row. */
-@media (max-width: 760px) {
+/* Narrower, the counts go under the drawing, three in a row, so the drawing
+   keeps the width at which its genes are named. */
+@media (max-width: 1100px) {
   .demo {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "head" "stage" "tally" "cap";
@@ -2368,7 +2389,7 @@ label,
 }
 
 /* Under the drawing, three in a row, each figure over what it counts. */
-@media (max-width: 760px) {
+@media (max-width: 1100px) {
   .tally {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--sp-3);
@@ -2420,9 +2441,9 @@ label,
   font-weight: var(--fw-medium);
 }
 
-[data-phase="1"] :is(.fr-ref, .fr-amap) .row-line,
-[data-phase="2"] .fr-amap .row-line,
-[data-phase="3"] .fr-amap .row-line {
+[data-phase="1"] :is(.fr-ref, .fr-amap) :is(.row-line, .row-lead),
+[data-phase="2"] .fr-amap :is(.row-line, .row-lead),
+[data-phase="3"] .fr-amap :is(.row-line, .row-lead) {
   opacity: 0.35;
 }
 
@@ -6421,14 +6442,25 @@ th.num {
   }
 }
 
+/* The crumbs as the docs set them: a caps label in the accent. */
 .how-hero .crumb {
-  font-size: var(--fs-n2);
-  color: var(--ink-3);
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+  letter-spacing: var(--tr-caps);
+  text-transform: uppercase;
+  color: var(--accent);
   margin-bottom: var(--sp-4);
 }
 
 .how-hero .crumb a {
-  color: var(--muted);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.how-hero .crumb a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
 }
 
 .how {
@@ -6757,7 +6789,7 @@ th.num {
   font-weight: var(--fw-medium);
 }
 
-.trk .ghost .row-line {
+.trk .ghost :is(.row-line, .row-lead) {
   opacity: 0.35;
 }
 

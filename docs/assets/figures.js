@@ -240,11 +240,19 @@
       out.push('<g class="row-frame' + (row.phase ? " fr-" + row.phase : "") + '"' + (row.from ? ' data-ghost-from="' + row.from + '"' : "") + ">");
       if (labelW > 0 && !row.overlay) {
         var lines = String(row.label).split("\n");
+        var widest = 0;
         lines.forEach(function (line, k) {
+          widest = Math.max(widest, textWidth(line, 11));
           out.push(
             '<text class="row-label" x="0" y="' + (gy + geneH / 2 + 4 + (k - (lines.length - 1) / 2) * 12).toFixed(1) + '">' + esc(line) + "</text>"
           );
         });
+        // A dotted leader from the name to where its row starts, where
+        // there is room for one.
+        var lead1 = widest + 6;
+        if (x0 - 2 - lead1 >= 8) {
+          out.push('<line class="row-lead" x1="' + lead1.toFixed(1) + '" x2="' + (x0 - 2) + '" y1="' + (gy + geneH / 2) + '" y2="' + (gy + geneH / 2) + '"/>');
+        }
       }
       if (!row.overlay) {
         out.push('<line class="row-line" x1="' + x0 + '" x2="' + x1 + '" y1="' + (gy + geneH / 2) + '" y2="' + (gy + geneH / 2) + '"/>');

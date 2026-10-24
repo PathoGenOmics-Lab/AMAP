@@ -9,7 +9,8 @@ name, start, end, strand, status. Only rows with status "ok" are scored.
                   alignment, kept only where their sequence is identical
   truth-curated   add the curated H37Rv entries written in CP110619 coordinates
   draft           cut a complete genome into contigs, with a map back
-  score           how many truth genes an AMAP table has exactly, with the name
+  score           how many truth genes an AMAP table has exactly, with the name,
+                  and Bakta's own calls by the same rules (--bakta)
   compare         the genes of one run that another run does not have
 
 Everything here is independent of the algorithm being measured: the truth comes
@@ -234,6 +235,27 @@ def _load_amap(path):
     return a
 
 
+BAKTA_COLUMNS = ["id", "strand", "start", "end", "rvs", "pseudogene", "contig", "partial"]
+
+
+def _load_bakta(path):
+    """Bakta's own calls, the CDS rows of its TSV, in the shape of an AMAP
+    table, so they are scored by the same rules. A call is labelled with the
+    reference's name only where Bakta annotated it from the reference proteins
+    it was given with --proteins: its DbXrefs then hold UserProtein:NAME."""
+    rows = []
+    with open(path) as fh:
+        for line in fh:
+            if line.startswith("#") or not line.strip():
+                continue
+            f = (line.rstrip("\n").split("\t") + [""] * 9)[:9]
+            if f[1] != "cds":
+                continue
+            names = [x.strip()[len("UserProtein:"):] for x in f[8].split(",") if x.strip().startswith("UserProtein:")]
+            rows.append((f[5], f[4], int(f[2]), int(f[3]), ",".join(names), "no", f[0], ""))
+    return pd.DataFrame(rows, columns=BAKTA_COLUMNS)
+
+
 def _frame(start, end, strand):
     return (end if strand == "-" else start) % 3
 
@@ -256,29 +278,17 @@ def _doubles(df, contig_col):
     return n
 
 
-def score(args):
-    """Truth genes found at exactly their coordinates and strand, labelled with
-    their own name; plus the ORFs the table annotates twice.
-
-    A reference can give one gene several proteins from alternative start
-    codons, all ending at its stop (K-12 has cheA, infB, clpB and five more).
-    They are one gene, which AMAP annotates once, so they are scored as one
-    locus that counts as found if any of them is.
-    """
-    truth = pd.read_csv(args.truth, sep="\t")
-    changed = truth[truth.status == "changed"]
-    truth = truth[truth.status == "ok"]
-    amap = _load_amap(args.amap)
-    on_contigs = args.contig_map is not None
+def _exact(truth, table, on_contigs):
+    """Each truth locus as exact, wrong label or not exact in a table: the
+    names of each outcome, and how many loci there are."""
     if on_contigs:
-        truth = _truth_on_contigs(truth, args.contig_map)
         key = lambda r: (r.contig, int(r.start), int(r.end), r.strand)
         locus = lambda r: (r.name, r.contig, r.strand, r.start if r.strand == "-" else r.end)
     else:
         key = lambda r: (int(r.start), int(r.end), r.strand)
         locus = lambda r: (r.name, r.strand, r.start if r.strand == "-" else r.end)
     names = defaultdict(set)
-    for r in amap.itertuples():
+    for r in table.itertuples():
         names[key(r)] |= {_base(x.strip()) for x in r.rvs.split(",") if x.strip()}
     outcome = {}
     rank = {"exact": 2, "wrong label": 1, "not exact": 0}
@@ -296,7 +306,29 @@ def score(args):
     res = defaultdict(list)
     for got, name in outcome.values():
         res[got].append(name)
-    n = len(outcome)
+    return res, len(outcome)
+
+
+def score(args):
+    """Truth genes found at exactly their coordinates and strand, labelled with
+    their own name; plus the ORFs the table annotates twice.
+
+    A reference can give one gene several proteins from alternative start
+    codons, all ending at its stop (K-12 has cheA, infB, clpB and five more).
+    They are one gene, which AMAP annotates once, so they are scored as one
+    locus that counts as found if any of them is.
+
+    With --bakta, Bakta's own calls for the genome are scored by the same rules,
+    so the gain over Bakta alone is measured on the same truth.
+    """
+    truth = pd.read_csv(args.truth, sep="\t")
+    changed = truth[truth.status == "changed"]
+    truth = truth[truth.status == "ok"]
+    amap = _load_amap(args.amap)
+    on_contigs = args.contig_map is not None
+    if on_contigs:
+        truth = _truth_on_contigs(truth, args.contig_map)
+    res, n = _exact(truth, amap, on_contigs)
     isoforms = len(truth) - n
     doubles = _doubles(amap, "contig")
     line = {"genome": args.label, "truth": n, "exact": len(res["exact"]),
@@ -309,6 +341,16 @@ def score(args):
         line.update(_own_contig(amap, args.fasta, args.faa))
     if on_contigs:
         line.update(_cut_genes(args.truth, args.contig_map, amap))
+    # Last, so the columns before them keep their place in scores.tsv.
+    bakta_line = ""
+    if args.bakta:
+        bakta = _load_bakta(args.bakta)
+        bakta_res, _ = _exact(truth, bakta, on_contigs)
+        line["bakta_exact"] = len(bakta_res["exact"])
+        bakta_line = f"    Bakta alone: exact {line['bakta_exact']}/{n} ({100 * line['bakta_exact'] / max(n, 1):.2f}%)"
+        if "changed" in line:
+            line["bakta_changed_found"] = _changed_found(changed, bakta)["changed_found"]
+            bakta_line += f"  | changed genes found with their name {line['bakta_changed_found']}/{line['changed']}"
     print(f"{args.label:<14} exact {len(res['exact'])}/{n} ({100 * len(res['exact']) / max(n, 1):.2f}%)"
           f"  wrong label {len(res['wrong label'])}  not exact {len(res['not exact'])}"
           + (f" ({isoforms} isoforms counted with their gene)" if isoforms else "")
@@ -320,6 +362,8 @@ def score(args):
           + (f"  | genes cut by a contig end {line['cut']}: pieces with their name {line['cut_pieces_named']}"
              f" of {line['cut_pieces']}, {line['cut_pieces_partial']} of them marked partial"
              if "cut" in line else ""))
+    if bakta_line:
+        print(bakta_line)
     res["changed, not found"] = line.pop("changed_missed", [])
     for k in ("wrong label", "not exact", "changed, not found"):
         if res[k]:
@@ -468,6 +512,7 @@ def main():
     s.add_argument("--contig-map", help="score a draft: truth of the complete genome and its contig map")
     s.add_argument("--fasta", help="draft genome, to check each protein against its own contig")
     s.add_argument("--faa", help="the run's .AMAP.faa")
+    s.add_argument("--bakta", help="Bakta's TSV of the same genome, to score Bakta alone against the same truth")
     s.add_argument("--tsv", help="append the scores to this table")
     s.set_defaults(func=score)
 

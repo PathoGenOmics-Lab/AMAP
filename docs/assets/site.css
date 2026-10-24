@@ -4067,17 +4067,22 @@ th.num {
 
 /* ── The benchmark, on the front page ── */
 
+/* A table for everyone: its rows and cells carry their ARIA roles, and the
+   bars only draw what the numbers in them say. Each bar is AMAP; the part
+   of it Bakta finds on its own, scored by the same rules, is shaded up to a
+   line, and its number is printed under the bar. */
 .proof {
   display: grid;
   gap: 8px;
-  max-width: 980px;
+  max-width: none;
+  font-variant-numeric: tabular-nums;
 }
 
 .pf-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.25fr);
   gap: 16px;
-  align-items: center;
+  align-items: start;
   padding: 10px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -4089,11 +4094,9 @@ th.num {
   background: none;
   padding-top: 0;
   padding-bottom: 0;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.85rem;
+  font-weight: 650;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .pf-name {
@@ -4112,6 +4115,12 @@ th.num {
 }
 
 .pf-bar {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pf-track {
   position: relative;
   display: block;
   height: 26px;
@@ -4120,44 +4129,66 @@ th.num {
   overflow: hidden;
 }
 
-.pf-bar i {
+.pf-track > i {
   position: absolute;
   inset: 0 auto 0 0;
+}
+
+.pf-fill {
   background: color-mix(in srgb, var(--amap) 55%, transparent);
 }
 
-.pf-changed i {
+.pf-changed .pf-fill {
   background: color-mix(in srgb, var(--ref) 50%, transparent);
 }
 
-.pf-bar b,
-.pf-bar span {
+/* Bakta alone: a shade over the part of the bar it reaches, ended by a line,
+   so the stretch only AMAP finds stays bright. */
+.pf-ghost {
+  background: color-mix(in srgb, var(--bg) 52%, transparent);
+  box-shadow: inset -2px 0 0 var(--ink-soft);
+}
+
+:root[data-theme="light"] .pf-ghost {
+  background: color-mix(in srgb, var(--bg-elev) 58%, transparent);
+}
+
+.pf-track b {
   position: relative;
   display: block;
   padding: 0 10px;
-  line-height: 26px;
   font: 650 0.8rem/26px var(--mono);
   color: var(--ink);
 }
 
-.pf-none {
-  background: none;
-  border: 1px dashed var(--line);
+.pf-bar small {
+  padding-left: 2px;
+  font-size: 0.78rem;
+  color: var(--muted);
 }
 
-.pf-none span {
-  font-family: var(--font);
-  font-weight: 500;
+.pf-none .pf-track {
+  background: none;
+  border: 1px dashed var(--line);
+  padding: 0 10px;
+  line-height: 24px;
+  font-size: 0.8rem;
   color: var(--muted);
 }
 
 @media (max-width: 760px) {
   .pf-row {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px 12px;
+    padding: 8px 12px;
   }
 
   .pf-name {
     grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0 8px;
+    align-items: baseline;
   }
 
   .pf-headrow span:first-child {

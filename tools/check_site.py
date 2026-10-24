@@ -845,25 +845,60 @@ BENCHMARK = Path("tests/benchmark/README.md")
 
 
 def check_benchmark(pages: dict[str, Page]) -> list[str]:
-    """The front page's scores are the benchmark's expected results, row by row."""
+    """The front page's scores are the benchmark's expected results, row by row:
+    AMAP's bars, and Bakta alone drawn behind each of them, with the numbers
+    and the lengths the page shows."""
     text = BENCHMARK.read_text(encoding="utf-8")
     table = text[text.index("## Expected results"):]
     expected = []
+    header: list[str] = []
     for line in table.splitlines():
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if len(cells) == 5 and re.match(r"\d+ / \d+", cells[1]):
+        if not header and cells and cells[0] == "Genome":
+            header = cells
+        if len(cells) >= 5 and re.match(r"\d+ / \d+", cells[1]):
             pair = lambda c: tuple(int(n) for n in c.split(" / ")) if c else None
-            expected.append((cells[0], pair(cells[1]), pair(cells[2])))
+            row = dict(zip(header, cells))
+            alone = lambda name: int(row[name]) if row.get(name) else None
+            expected.append((cells[0], pair(cells[1]), pair(cells[2]),
+                             alone("Bakta alone: exact"), alone("Bakta alone: changed genes found")))
+    if "Bakta alone: exact" not in header:
+        return [f"{BENCHMARK}: the expected results have no 'Bakta alone: exact' column"]
     front = (SITE / "index.html").read_text(encoding="utf-8")
-    rows = re.findall(r'<div class="pf-row"><span class="pf-name"><b>([^<]+)</b>.*?</div>', front, re.S)
-    bars = re.findall(r'<div class="pf-row"><span class="pf-name">.*?</div>', front, re.S)
+    bars = re.findall(r'<div class="pf-row"[^>]*>\s*<span class="pf-name"[^>]*>.*?</div>', front, re.S)
     problems = []
     if len(bars) != len(expected):
         return [f"index.html: shows {len(bars)} genomes of the benchmark, {BENCHMARK} has {len(expected)}"]
-    for (genome, exact, changed), row, label in zip(expected, bars, rows):
-        got = {cls: (int(f), int(n)) for cls, f, n in re.findall(r'class="pf-bar (pf-\w+)" data-found="(\d+)" data-total="(\d+)"', row)}
+    for (genome, exact, changed, alone_exact, alone_changed), row in zip(expected, bars):
+        label = re.sub(r"<[^>]+>", "", re.search(r"<b>(.*?)</b>", row, re.S).group(1)).replace("&nbsp;", " ")
+        got, alone = {}, {}
+        for cls, attrs, inner in re.findall(r'<span class="pf-bar (pf-\w+)"([^>]*)>(.*?)</span>(?=\s*<span class="pf-bar|\s*</div>)', row, re.S):
+            if cls == "pf-none" or "pf-none" in attrs:
+                continue
+            found, total = (int(re.search(rf'data-{k}="(\d+)"', attrs).group(1)) for k in ("found", "total"))
+            got[cls] = (found, total)
+            # What the bar draws and prints is what its data says.
+            fill = re.search(r'class="pf-fill" style="width:([\d.]+)%"', inner)
+            shown = re.search(r"<b>([\d,]+) / ([\d,]+)</b>", inner)
+            if not fill or float(fill.group(1)) != round(100 * found / total, 2):
+                problems.append(f"index.html: {label}: the {cls} bar is not drawn at {100 * found / total:.2f}%")
+            if not shown or (shown.group(1), shown.group(2)) != (f"{found:,}", f"{total:,}"):
+                problems.append(f"index.html: {label}: the {cls} bar does not print {found:,} / {total:,}")
+            b = re.search(r'data-bakta="(\d+)"', attrs)
+            alone[cls] = int(b.group(1)) if b else None
+            if b:
+                n = int(b.group(1))
+                ghost = re.search(r'class="pf-ghost" style="width:([\d.]+)%"', inner)
+                said = re.search(r"Bakta alone: ([\d,]+)<", inner)
+                if not ghost or float(ghost.group(1)) != round(100 * n / total, 2):
+                    problems.append(f"index.html: {label}: Bakta alone is not drawn at {100 * n / total:.2f}% of the {cls} bar")
+                if not said or said.group(1) != f"{n:,}":
+                    problems.append(f"index.html: {label}: the {cls} bar does not print Bakta alone: {n:,}")
         if got.get("pf-exact") != exact or got.get("pf-changed") != changed:
             problems.append(f"index.html: {label} shows {got}, {BENCHMARK} expects exact {exact} and changed {changed} ({genome})")
+        if alone.get("pf-exact") != alone_exact or alone.get("pf-changed") != alone_changed:
+            problems.append(f"index.html: {label} shows Bakta alone {alone}, {BENCHMARK} expects exact {alone_exact} "
+                            f"and changed {alone_changed} ({genome})")
     return problems
 
 
@@ -946,7 +981,7 @@ def check_readme(pages: dict[str, Page]) -> list[str]:
     expected = [
         (pair(cells[1]), pair(cells[2]))
         for cells in ([c.strip() for c in line.strip().strip("|").split("|")] for line in bench[bench.index("## Expected results"):].splitlines())
-        if len(cells) == 5 and re.match(r"\d+ / \d+", cells[1])
+        if len(cells) >= 5 and re.match(r"\d+ / \d+", cells[1])
     ]
     shown = [
         (pair(cells[1]), pair(cells[2]))

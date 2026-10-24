@@ -2598,6 +2598,13 @@ main {
   }
 }
 
+/* A head of number and title alone (the questions) keeps its list close. */
+@media (min-width: 941px) {
+  .section-head:not(:has(> p:not(.kicker))) {
+    margin-bottom: var(--sp-6);
+  }
+}
+
 @media (max-width: 940px) {
   .section-head {
     margin-bottom: var(--sp-7);

@@ -1055,10 +1055,12 @@ label,
   padding: 60px 0 44px;
 }
 
+/* The drawing keeps the width at which every gene of the hero is named
+   (542 px of the 1,072 at 1280); the headline takes the rest. */
 .hero .wrap {
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.1fr);
-  gap: 44px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+  gap: 40px;
   align-items: center;
 }
 
@@ -1091,11 +1093,17 @@ label,
   flex: none;
 }
 
+/* One sentence per line: the second, in the gradient, starts its own. */
 .hero h1 {
-  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.04;
+  text-wrap: balance;
+}
+
+.hero h1 .grad {
+  display: block;
 }
 
 .grad {
@@ -1119,16 +1127,100 @@ label,
   margin-top: 28px;
 }
 
-.reads {
+/* The case against Bakta alone, in the numbers of a real run. */
+.hero-proof {
   margin-top: 22px;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: var(--muted);
-  max-width: 36em;
+  max-width: 34em;
 }
 
-.reads b {
-  color: var(--ink-soft);
+.hero-proof b {
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-proof a {
   font-weight: 600;
+  white-space: nowrap;
+}
+
+/* What goes in and what comes out, as a spec rather than a sentence. */
+.spec {
+  display: grid;
+  gap: 4px;
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 0.88rem;
+  max-width: 34em;
+}
+
+.spec div {
+  display: grid;
+  grid-template-columns: 3.4em minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+
+.spec dt {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.spec dd {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+/* On a phone the drawing comes into the first screen: a shorter lead, no
+   second GitHub button (the header has one), and the spec after the
+   drawing rather than before it. */
+@media (max-width: 600px) {
+  .hero .wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .eyebrow {
+    align-self: start;
+  }
+
+  .hero .actions {
+    margin-top: 24px;
+  }
+
+  .hero-proof {
+    margin-top: 18px;
+  }
+
+  .hero-text {
+    display: contents;
+  }
+
+  .hero .demo {
+    order: 1;
+    margin-top: 28px;
+  }
+
+  .hero .spec {
+    order: 2;
+    margin-top: 18px;
+  }
+
+  .lead {
+    font-size: 17px;
+  }
+
+  .hero .btn-gh {
+    display: none;
+  }
 }
 
 /* ── Gene tracks: the drawings ── */
@@ -1852,13 +1944,27 @@ label,
 
 @media (max-width: 600px) {
   .section {
-    padding: 52px 0;
+    padding: 44px 0;
   }
+}
+
+/* Two widths on the front page: running text ends at one reading measure, and
+   everything else (cards, drawings, the benchmark, the report) spans the
+   whole column. The measure is an edge, not a width, so text that starts
+   further in (a step's, after its number) ends where the rest does: 42rem is
+   36em of step text once the number's column is taken off. */
+.section {
+  --measure: 42rem;
 }
 
 .section-head {
   margin-bottom: 30px;
-  max-width: 780px;
+}
+
+@media (max-width: 600px) {
+  .section-head {
+    margin-bottom: 22px;
+  }
 }
 
 .kicker {
@@ -1870,10 +1976,13 @@ label,
   margin-bottom: 10px;
 }
 
-.section-head p {
+/* Not the kicker: a paragraph of the head would otherwise outrank it and turn
+   it grey and full size. */
+.section-head p:not(.kicker) {
   color: var(--muted);
   font-size: 1.04rem;
   margin-top: 10px;
+  max-width: var(--measure);
 }
 
 .cols-2 {
@@ -1906,11 +2015,28 @@ label,
 
 .note {
   font-size: 0.9rem;
+  line-height: 1.5;
   color: var(--muted);
   margin-top: 12px;
 }
 
-/* ── Start here: three steps ── */
+/* Words for the pointer the reader has: "point at" with a mouse, "tap" on a
+   touch screen. */
+.when-touch {
+  display: none;
+}
+
+@media (hover: none) {
+  .when-hover {
+    display: none;
+  }
+
+  .when-touch {
+    display: inline;
+  }
+}
+
+/* ── Start here: four steps ── */
 
 .steps {
   list-style: none;
@@ -1920,11 +2046,16 @@ label,
   gap: 0;
 }
 
+.steps {
+  --step-num: 44px;
+  --step-gap: 18px;
+}
+
 .steps > li {
   position: relative;
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 0 18px;
+  grid-template-columns: var(--step-num) minmax(0, 1fr);
+  gap: 0 var(--step-gap);
   padding-bottom: 40px;
 }
 
@@ -1971,7 +2102,7 @@ label,
 .step-body > p {
   color: var(--ink-soft);
   margin-bottom: 14px;
-  max-width: 46em;
+  max-width: calc(var(--measure, 42rem) - var(--step-num) - var(--step-gap));
 }
 
 .step-body > .code + .code,
@@ -1983,10 +2114,51 @@ label,
   align-items: start;
 }
 
+/* What the end of a good run looks like, said before it is shown. */
+.step-body > .out-head {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.step-body > .out-head + .out {
+  margin-top: 8px;
+}
+
+/* The sample sheet, and what its columns take. */
+.sheet {
+  display: grid;
+  grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+  gap: 10px 20px;
+  align-items: center;
+}
+
+.sheet > .note {
+  margin: 0;
+}
+
+/* Tab stops every six columns: each row's tab ends at the same column, wide
+   enough for the mark the Code section draws on it. Copy sits in the title
+   row, so the rows can run to the right edge and stay whole on a phone. */
+.sheet .code pre {
+  tab-size: 6;
+  padding-right: 18px;
+}
+
+@media (max-width: 820px) {
+  .sheet {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 600px) {
+  .steps {
+    --step-num: 34px;
+    --step-gap: 12px;
+  }
+
   .steps > li {
-    grid-template-columns: 34px minmax(0, 1fr);
-    gap: 0 12px;
+    padding-bottom: 30px;
   }
 
   .step-num {
@@ -1998,6 +2170,13 @@ label,
   .steps > li::before {
     left: 16px;
     top: 36px;
+  }
+
+  /* What a run prints, smaller: it is there to be recognised, not read. */
+  .step-body .out {
+    font-size: 0.74rem;
+    line-height: 1.45;
+    padding: 10px 12px;
   }
 }
 
@@ -2319,6 +2498,16 @@ kbd {
   }
 }
 
+/* Without JavaScript the choices do nothing, so they are not shown: the
+   commands for Docker, written into the page, are. */
+html:not(.js) .builder-qs {
+  display: none;
+}
+
+html:not(.js) .builder {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .q {
   margin-bottom: 18px;
 }
@@ -2345,7 +2534,8 @@ kbd {
   cursor: pointer;
 }
 
-.seg button[aria-pressed="true"] {
+/* A one-of-many choice (role=radio) or a switch between drawings. */
+.seg button:is([aria-pressed="true"], [aria-checked="true"]) {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);
@@ -2387,31 +2577,102 @@ kbd {
   line-height: 1.4;
 }
 
+/* An option that does not apply to the choices above, such as a laptop's
+   ceilings on a cluster. */
+.opt:has(input:disabled) {
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.opt:has(input:disabled) b {
+  color: var(--muted);
+}
+
+/* The two commands: the check, then the run. */
+.cmd-head {
+  margin: 0 0 8px;
+  font-size: 0.93rem;
+  font-weight: 700;
+}
+
+.cmd-head ~ .cmd-head {
+  margin-top: 20px;
+}
+
+.cmd-head code {
+  white-space: nowrap;
+}
+
+.builder-out > .note {
+  margin-top: 10px;
+}
+
+.builder-out > .out {
+  margin-top: 8px;
+}
+
+.builder-notes p + p {
+  margin-top: 6px;
+}
+
+/* What each line does. Every flag shares one column, as wide as the
+   longest one needs. */
 .explain {
   margin: 12px 0 0;
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 6px;
+  grid-template-columns: fit-content(15em) minmax(0, 1fr);
+  gap: 6px 14px;
   font-size: 0.87rem;
 }
 
 .explain li {
+  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(150px, max-content) 1fr;
-  gap: 12px;
+  grid-template-columns: subgrid;
+  align-items: baseline;
   color: var(--ink-soft);
+}
+
+@supports not (grid-template-columns: subgrid) {
+  .explain li {
+    grid-template-columns: minmax(150px, max-content) minmax(0, 1fr);
+    column-gap: 12px;
+  }
+}
+
+.explain .flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-self: start;
 }
 
 .explain code {
   white-space: nowrap;
-  justify-self: start;
 }
 
 @media (max-width: 560px) {
-  .explain li {
+  .q {
+    margin-bottom: 14px;
+  }
+
+  .opt {
+    padding: 8px 10px;
+    margin-bottom: 6px;
+  }
+
+  .opt small {
+    font-size: 0.8rem;
+  }
+
+  .explain {
     grid-template-columns: minmax(0, 1fr);
-    gap: 2px;
+  }
+
+  .explain li {
+    row-gap: 2px;
   }
 }
 
@@ -2488,9 +2749,25 @@ kbd {
   font-size: 1.12rem;
 }
 
-.case > p {
+.case > p,
+.case-caps > p {
   color: var(--ink-soft);
   font-size: 0.95rem;
+}
+
+/* The captions a switcher chooses between share one cell, so the tallest
+   sets the card's height and a switch does not move the page. */
+.case-caps {
+  display: grid;
+}
+
+.case-caps > * {
+  grid-area: 1 / 1;
+}
+
+.case-caps > [hidden] {
+  display: block;
+  visibility: hidden;
 }
 
 .case .keeps {
@@ -2522,6 +2799,42 @@ kbd {
 .case-fig {
   position: relative;
   min-height: 60px;
+}
+
+.cases-hint {
+  display: none;
+  margin: -14px 0 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* On a phone the five cards are a strip to swipe, the next one showing at
+   the edge, rather than two thousand pixels to scroll past. */
+@media (max-width: 600px) {
+  .cases-hint {
+    display: block;
+  }
+
+  .cases {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 86%;
+    gap: 12px;
+    margin: 0 -16px;
+    padding: 0 16px 10px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 16px;
+  }
+
+  .case {
+    scroll-snap-align: start;
+  }
+
+  .case-wide {
+    grid-column: auto;
+  }
 }
 
 /* ── The metro map ── */
@@ -2891,6 +3204,7 @@ kbd {
 @media (max-width: 520px) {
   .files {
     grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
   }
 }
 
@@ -2904,24 +3218,26 @@ kbd {
   gap: 8px;
 }
 
-.file .ico {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  display: grid;
-  place-items: center;
-  background: var(--accent-soft);
-  color: var(--accent);
+/* A short stretch of the metro line of the step that writes the file: the
+   sample's alone for what every run writes, joined by the eggNOG
+   database's for what only a full run writes. */
+.file .lane {
+  display: block;
+  flex: none;
+  width: 44px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--m-main);
 }
 
-.file .ico svg {
-  width: 19px;
-  height: 19px;
+.file.full-run .lane {
+  background: linear-gradient(90deg, var(--m-main) 0 50%, var(--m-db) 50% 100%);
 }
 
+/* A path breaks where it has a <wbr>, after its folder, before anywhere else. */
 .file code {
   font-size: 0.8rem;
-  word-break: break-all;
+  overflow-wrap: anywhere;
   background: none;
   border: none;
   padding: 0;
@@ -2929,10 +3245,51 @@ kbd {
   font-weight: 650;
 }
 
+.file code span {
+  white-space: nowrap;
+}
+
 .file p {
   font-size: 0.9rem;
   color: var(--muted);
   line-height: 1.45;
+}
+
+.file .when {
+  margin-top: auto;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* On a phone a card is a row: the line down its side, then the file, what
+   it is and when it is written. */
+@media (max-width: 520px) {
+  .file {
+    display: grid;
+    grid-template-columns: 6px minmax(0, 1fr);
+    gap: 2px 12px;
+    padding: 10px 12px;
+  }
+
+  .file .lane {
+    grid-row: 1 / span 3;
+    width: 6px;
+    height: auto;
+  }
+
+  .file.full-run .lane {
+    background: linear-gradient(180deg, var(--m-main) 0 50%, var(--m-db) 50% 100%);
+  }
+
+  .file p {
+    font-size: 0.84rem;
+    line-height: 1.4;
+  }
+
+  /* Each card says when it is written; the colour key can go. */
+  .files-key {
+    display: none;
+  }
 }
 
 /* Real lines of a real run, with the marks AMAP writes picked out. */
@@ -2975,6 +3332,19 @@ kbd {
   overflow-x: auto;
 }
 
+/* On a phone a GFF3 or GenBank line wrapped into ten is no longer a line:
+   they keep their shape and scroll. */
+@media (max-width: 600px) {
+  .excerpt {
+    padding: 12px;
+  }
+
+  .excerpt pre {
+    white-space: pre;
+    overflow-wrap: normal;
+  }
+}
+
 .excerpt mark {
   background: color-mix(in srgb, var(--pseudo) 22%, transparent);
   color: inherit;
@@ -3005,6 +3375,119 @@ kbd {
   color: var(--ink);
 }
 
+/* The case counts: the terminal prints what the command prints, and what
+   each row means sits outside it, in a column of its own. */
+.counts {
+  display: grid;
+  gap: 12px;
+}
+
+.excerpt .counts-term {
+  white-space: pre-wrap;
+  overflow-wrap: normal;
+}
+
+.counts-term .ln {
+  display: block;
+  padding-left: 4ch;
+  text-indent: -4ch;
+}
+
+.counts-term :is(.t, .f, .v) {
+  white-space: nowrap;
+}
+
+/* A path longer than a phone breaks after one of its folders. */
+.counts-term .path {
+  white-space: normal;
+}
+
+.counts-term .p {
+  color: var(--code-muted);
+  user-select: none;
+}
+
+.counts-term .f {
+  color: var(--code-flag);
+}
+
+.counts-term .v {
+  color: var(--code-value);
+}
+
+.gloss {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.gloss-head {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.gloss dl {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+
+.gloss dl div {
+  display: grid;
+  grid-template-columns: 9.5em minmax(0, 1fr);
+  gap: 10px;
+}
+
+.gloss dt {
+  font-family: var(--mono);
+  color: var(--ink-soft);
+}
+
+.gloss dd {
+  margin: 0;
+}
+
+/* Wide enough for both: each meaning on the line of the row it explains. The
+   gloss starts a line down, past the command, and keeps the terminal's
+   line height; the row names are already in the terminal. */
+@media (min-width: 1060px) {
+  .counts {
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 0 20px;
+    align-items: start;
+  }
+
+  .gloss {
+    --line-h: calc(0.8rem * 1.6);
+    padding-top: calc(15px + var(--line-h));
+    line-height: var(--line-h);
+  }
+
+  .gloss-head {
+    margin: 0;
+    line-height: var(--line-h);
+  }
+
+  .gloss dl {
+    gap: 0;
+  }
+
+  .gloss dl div {
+    display: block;
+    white-space: nowrap;
+  }
+
+  .gloss dt {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
 /* ── Report preview ── */
 
 .report-frame {
@@ -3033,7 +3516,7 @@ kbd {
   display: inline-block;
 }
 
-.report-bar span {
+.report-bar > span {
   margin-left: 6px;
   font-family: var(--mono);
 }
@@ -3043,6 +3526,20 @@ kbd {
   font-weight: 600;
   font-size: 0.85rem;
   white-space: nowrap;
+}
+
+/* Text for a screen reader only, such as where a link opens. */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Says that what it sits next to was made from synthetic data. */
@@ -3060,12 +3557,48 @@ kbd {
   white-space: nowrap;
 }
 
+/* Until the reader asks, the stage is a picture of the report's first
+   screen (tools/pictures.mjs takes it): the report itself is 1.9 MB of
+   scripts and plots. Once asked, it loads over the picture and fades in. */
 .report-stage {
   position: relative;
+  height: 680px;
+  background: var(--bg-subtle);
+  overflow: hidden;
+}
+
+.report-poster {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: left top;
+}
+
+.report-frame iframe {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.report-stage.loaded iframe {
+  opacity: 1;
 }
 
 .report-stage:not(.live) iframe {
   pointer-events: none;
+}
+
+/* In the dark theme the white report would be the brightest thing on the
+   page: dimmed until it is opened. */
+:root:not([data-theme="light"]) .report-stage:not(.live) :is(.report-poster, iframe) {
+  filter: brightness(0.78) saturate(0.9);
 }
 
 .report-cover {
@@ -3073,14 +3606,30 @@ kbd {
   inset: 0;
   display: grid;
   place-items: end center;
-  padding-bottom: 28px;
+  padding: 0 16px 28px;
   border: 0;
-  background: linear-gradient(to bottom, transparent 60%, color-mix(in srgb, var(--bg) 65%, transparent));
+  background: none;
+  color: inherit;
   cursor: pointer;
   font: inherit;
 }
 
+/* A frosted band behind the button, so it never sits on the report's text. */
+.report-cover::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 104px;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-elev) 90%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
 .report-cover span {
+  position: relative;
   background: var(--accent);
   color: var(--on-accent);
   padding: 11px 18px;
@@ -3089,8 +3638,39 @@ kbd {
   box-shadow: var(--shadow);
 }
 
+.report-cover:hover span {
+  background: var(--accent-hover);
+}
+
+.report-cover:focus-visible {
+  outline-offset: -6px;
+}
+
 .report-stage.live .report-cover {
   display: none;
+}
+
+/* On a touch screen nothing leaves the report the way a mouse does: Done
+   gives the page its swipes back. */
+.report-done {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: none;
+  padding: 8px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--bg-elev);
+  color: var(--ink);
+  font: 650 0.88rem var(--font);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+@media (hover: none) {
+  .report-stage.live .report-done:not([hidden]) {
+    display: block;
+  }
 }
 
 .report-mobile {
@@ -3100,17 +3680,13 @@ kbd {
   color: var(--ink-soft);
 }
 
-.report-frame iframe {
-  display: block;
-  width: 100%;
-  height: 680px;
-  border: 0;
-  background: #fff;
-}
-
 @media (max-width: 700px) {
   .report-stage {
     display: none;
+  }
+
+  .report-mobile {
+    padding: 24px 16px;
   }
 
   .report-bar .tag-synthetic {
@@ -3119,7 +3695,7 @@ kbd {
 
   .report-mobile {
     display: grid;
-    gap: 14px;
+    gap: 12px;
     justify-items: center;
   }
 }
@@ -3154,7 +3730,7 @@ kbd {
 .faq {
   display: grid;
   gap: 10px;
-  max-width: 860px;
+  max-width: var(--measure, 42rem);
 }
 
 .faq details {
@@ -3182,8 +3758,11 @@ kbd {
   display: none;
 }
 
+/* Drawn, not read: the empty alternative text keeps "+" out of the question's
+   name (a browser without it keeps the first declaration). */
 .faq summary::after {
   content: "+";
+  content: "+" / "";
   color: var(--muted);
   font-weight: 500;
   font-size: 1.2rem;
@@ -3192,6 +3771,13 @@ kbd {
 
 .faq details[open] summary::after {
   content: "\2212";
+  content: "\2212" / "";
+}
+
+@media (max-width: 600px) {
+  .faq summary {
+    padding: 11px 0;
+  }
 }
 
 .faq .ans {
@@ -3200,6 +3786,28 @@ kbd {
   font-size: 0.95rem;
   display: grid;
   gap: 10px;
+}
+
+/* Measured times, each with what was run. */
+.faq .times {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.faq .times li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+.faq .times b {
+  flex: none;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Footer ── */
@@ -5496,6 +6104,7 @@ html:not(.js) .how-nav {
 .prose .builder-fig .builder {
   grid-template-columns: minmax(0, 1fr);
   gap: 14px;
+  margin-top: 0;
 }
 
 /* The command is the point of the builder: its button always shows. */
@@ -5504,8 +6113,15 @@ html:not(.js) .how-nav {
 }
 
 .prose .builder-fig .explain code {
-  align-self: start;
   line-height: 1.4;
+}
+
+.prose .builder-fig .cmd-head {
+  margin: 0 0 8px;
+}
+
+.prose .builder-fig .cmd-head ~ .cmd-head {
+  margin-top: 20px;
 }
 
 /* ── When a task fails ── */
@@ -6034,17 +6650,22 @@ html:not(.js) .how-nav {
 
 /* ── The benchmark, on the front page ── */
 
+/* A table for everyone: its rows and cells carry their ARIA roles, and the
+   bars only draw what the numbers in them say. Each bar is AMAP; the part
+   of it Bakta finds on its own, scored by the same rules, is shaded up to a
+   line, and its number is printed under the bar. */
 .proof {
   display: grid;
   gap: 8px;
-  max-width: 980px;
+  max-width: none;
+  font-variant-numeric: tabular-nums;
 }
 
 .pf-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.25fr);
   gap: 16px;
-  align-items: center;
+  align-items: start;
   padding: 10px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -6056,11 +6677,9 @@ html:not(.js) .how-nav {
   background: none;
   padding-top: 0;
   padding-bottom: 0;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.85rem;
+  font-weight: 650;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .pf-name {
@@ -6079,6 +6698,12 @@ html:not(.js) .how-nav {
 }
 
 .pf-bar {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pf-track {
   position: relative;
   display: block;
   height: 26px;
@@ -6087,44 +6712,66 @@ html:not(.js) .how-nav {
   overflow: hidden;
 }
 
-.pf-bar i {
+.pf-track > i {
   position: absolute;
   inset: 0 auto 0 0;
+}
+
+.pf-fill {
   background: color-mix(in srgb, var(--amap) 55%, transparent);
 }
 
-.pf-changed i {
+.pf-changed .pf-fill {
   background: color-mix(in srgb, var(--ref) 50%, transparent);
 }
 
-.pf-bar b,
-.pf-bar span {
+/* Bakta alone: a shade over the part of the bar it reaches, ended by a line,
+   so the stretch only AMAP finds stays bright. */
+.pf-ghost {
+  background: color-mix(in srgb, var(--bg) 52%, transparent);
+  box-shadow: inset -2px 0 0 var(--ink-soft);
+}
+
+:root[data-theme="light"] .pf-ghost {
+  background: color-mix(in srgb, var(--bg-elev) 58%, transparent);
+}
+
+.pf-track b {
   position: relative;
   display: block;
   padding: 0 10px;
-  line-height: 26px;
   font: 650 0.8rem/26px var(--mono);
   color: var(--ink);
 }
 
-.pf-none {
-  background: none;
-  border: 1px dashed var(--line);
+.pf-bar small {
+  padding-left: 2px;
+  font-size: 0.78rem;
+  color: var(--muted);
 }
 
-.pf-none span {
-  font-family: var(--font);
-  font-weight: 500;
+.pf-none .pf-track {
+  background: none;
+  border: 1px dashed var(--line);
+  padding: 0 10px;
+  line-height: 24px;
+  font-size: 0.8rem;
   color: var(--muted);
 }
 
 @media (max-width: 760px) {
   .pf-row {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px 12px;
+    padding: 8px 12px;
   }
 
   .pf-name {
     grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0 8px;
+    align-items: baseline;
   }
 
   .pf-headrow span:first-child {

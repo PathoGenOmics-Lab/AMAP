@@ -1,16 +1,23 @@
 // The website's pictures: the sections of the example report, for the report
-// page, and the card a link to the site shows where it is shared.
+// page, its first screen, for the front page, and the card a link to the site
+// shows where it is shared.
 //
-// Opens docs/examples/demo_report.html in headless Chrome, scrolls to each
-// top-level section and keeps the top of its column as a small WebP in
-// docs/assets/report/. Then draws the card, 1200 by 630, from the front
-// page's own drawing, into docs/assets/social-card.png, the icon a phone
-// keeps on its home screen into docs/assets/touch-icon.png, and the README's
-// pictures, light and dark, into docs/assets/readme/: the front page's drawing
-// as it plays, the metro map and the five outcomes, as the site draws them.
-// Run it after the example report, a drawing or the logo changes:
+// Opens docs/examples/demo_report.html in headless Chrome and keeps its first
+// screen, as the front page's frame shows it (1070 by 680), as
+// docs/assets/report/poster.webp: the front page shows that picture until the
+// reader opens the report itself. Then scrolls to each top-level section and
+// keeps the top of its column as a small WebP in docs/assets/report/. Then
+// draws the card, 1200 by 630, from the front page's own drawing, into
+// docs/assets/social-card.png, the icon a phone keeps on its home screen into
+// docs/assets/touch-icon.png, and the README's pictures, light and dark, into
+// docs/assets/readme/: the front page's drawing as it plays, the metro map and
+// the five outcomes, as the site draws them. Run it after the example report,
+// a drawing or the logo changes:
 //
-//   node tools/pictures.mjs
+//   node tools/pictures.mjs                  every picture
+//   node tools/pictures.mjs poster sections  only those parts
+//
+// The parts are poster, sections, card, readme, hero and icon.
 //
 // Needs Node 22 or newer (for its WebSocket), Google Chrome, and python3 with
 // Pillow for tools/gif.py; CHROME points at another Chrome or Chromium binary,
@@ -28,6 +35,18 @@ const OUT = join(ROOT, 'docs', 'assets', 'report')
 export const SECTIONS = ['overview', 'amap-annotation-results', 'functional-annotation', 'gene-duplications', 'pangenome-analysis', 'amap-cds-stats', 'master-table-explorer']
 const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+// The size of the front page's report frame, and the most its picture may
+// weigh: it stands in for 1.9 MB, so it has to cost next to nothing.
+const POSTER = { width: 1070, height: 680, maxBytes: 80000 }
+const PARTS = ['poster', 'sections', 'card', 'readme', 'hero', 'icon']
+const asked = process.argv.slice(2)
+for (const part of asked) {
+  if (!PARTS.includes(part)) {
+    console.error(`no part called ${part}; the parts are ${PARTS.join(', ')}`)
+    process.exit(2)
+  }
+}
+const want = (part) => !asked.length || asked.includes(part)
 
 const profile = mkdtempSync(join(tmpdir(), 'amap-shots-'))
 const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--hide-scrollbars',
@@ -62,40 +81,63 @@ try {
   const { targetId } = await send('Target.createTarget', { url: 'about:blank' })
   const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true })
   const page = (method, params) => send(method, params, sessionId)
-  await page('Emulation.setDeviceMetricsOverride', { width: 1200, height: 900, deviceScaleFactor: 1, mobile: false })
-  await page('Page.navigate', { url: pathToFileURL(REPORT).href })
-  await sleep(5000)
-  // The report's header (two logos on a white band, body::before) stays at the
-  // top of the window; it would cover the title of every section, so it is
-  // hidden for the pictures.
-  await page('Runtime.evaluate', {
-    expression: `document.querySelectorAll('body *').forEach((el) => {
+  mkdirSync(OUT, { recursive: true })
+  // The report's first screen, header and all, as the front page's frame
+  // shows it; WebP, at the best quality that keeps it under its weight.
+  if (want('poster')) {
+    await page('Emulation.setDeviceMetricsOverride', { width: POSTER.width, height: POSTER.height, deviceScaleFactor: 1, mobile: false })
+    await page('Page.navigate', { url: pathToFileURL(REPORT).href })
+    await sleep(5000)
+    let kept = null
+    for (const quality of [80, 72, 64, 56, 48]) {
+      const { data } = await page('Page.captureScreenshot', {
+        format: 'webp', quality, clip: { x: 0, y: 0, width: POSTER.width, height: POSTER.height, scale: 1 },
+      })
+      const bytes = Buffer.from(data, 'base64')
+      if (bytes.length <= POSTER.maxBytes) {
+        kept = { bytes, quality }
+        break
+      }
+    }
+    if (!kept) throw new Error(`the report's first screen does not fit in ${POSTER.maxBytes} bytes`)
+    writeFileSync(join(OUT, 'poster.webp'), kept.bytes)
+    console.log(`docs/assets/report/poster.webp (quality ${kept.quality}, ${kept.bytes.length} bytes)`)
+  }
+  if (want('sections')) {
+    await page('Emulation.setDeviceMetricsOverride', { width: 1200, height: 900, deviceScaleFactor: 1, mobile: false })
+    await page('Page.navigate', { url: pathToFileURL(REPORT).href })
+    await sleep(5000)
+    // The report's header (two logos on a white band, body::before) stays at the
+    // top of the window; it would cover the title of every section, so it is
+    // hidden for the pictures.
+    await page('Runtime.evaluate', {
+      expression: `document.querySelectorAll('body *').forEach((el) => {
       const cs = getComputedStyle(el)
       if ((cs.position === 'fixed' || cs.position === 'sticky') && el.getBoundingClientRect().top < 20) el.style.visibility = 'hidden'
     })
     document.head.insertAdjacentHTML('beforeend', '<style>body::before { display: none !important; }</style>')`,
-  })
-  mkdirSync(OUT, { recursive: true })
-  for (const section of SECTIONS) {
-    const { result } = await page('Runtime.evaluate', {
-      returnByValue: true,
-      expression: `(() => {
+    })
+    for (const section of SECTIONS) {
+      const { result } = await page('Runtime.evaluate', {
+        returnByValue: true,
+        expression: `(() => {
         const el = document.getElementById(${JSON.stringify(section)})
         if (!el) return null
         el.scrollIntoView({ block: 'start' })
         const r = el.getBoundingClientRect()
         return { x: r.left + scrollX, y: r.top + scrollY, w: r.width }
       })()`,
-    })
-    if (!result.value) throw new Error(`the example report has no section #${section}`)
-    await sleep(1500)
-    const box = result.value
-    const { data } = await page('Page.captureScreenshot', {
-      format: 'webp', quality: 72, captureBeyondViewport: true,
-      clip: { x: box.x - 12, y: box.y - 12, width: box.w + 24, height: 400, scale: 0.8 },
-    })
-    writeFileSync(join(OUT, `${section}.webp`), Buffer.from(data, 'base64'))
-    console.log(`docs/assets/report/${section}.webp`)
+      })
+      if (!result.value) throw new Error(`the example report has no section #${section}`)
+      await sleep(1500)
+      const box = result.value
+      const { data } = await page('Page.captureScreenshot', {
+        format: 'webp', quality: 72, captureBeyondViewport: true,
+        clip: { x: box.x - 12, y: box.y - 12, width: box.w + 24, height: 400, scale: 0.8 },
+      })
+      writeFileSync(join(OUT, `${section}.webp`), Buffer.from(data, 'base64'))
+      console.log(`docs/assets/report/${section}.webp`)
+    }
   }
 
   // The card and the icon: small pages of their own, on the site's stylesheet
@@ -115,7 +157,8 @@ try {
       rmSync(tmp, { force: true })
     }
   }
-  await shoot('social-card', `<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8">
+  if (want('card')) {
+    await shoot('social-card', `<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8">
 <link rel="stylesheet" href="assets/site.css"><style>
 body { margin: 0; width: 1200px; height: 630px; overflow: hidden;
   background: radial-gradient(900px 420px at 85% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%), var(--bg); }
@@ -134,30 +177,33 @@ h1 { font-size: 62px; line-height: 1.04; letter-spacing: -0.025em; margin: 26px 
 </div><script src="assets/figure-data.js"></script><script src="assets/figures.js"></script><script>
 AMAPFigures.render(document.querySelector('[data-card]'), function () { return AMAPFigures.windowSpec('hero') }, function (svg) { svg.setAttribute('data-phase', '4') })
 </script></body></html>`, 1200, 630, 'social-card.png')
-  // The README's pictures: drawings of the site, in either theme, at twice
-  // the size for sharp screens.
-  const README = join(DOCS, 'assets', 'readme')
-  mkdirSync(README, { recursive: true })
-  const element = async (url, selector, file, theme, width) => {
-    await page('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 2, mobile: false })
-    await page('Page.navigate', { url: pathToFileURL(join(DOCS, url)).href })
-    await sleep(2500)
-    // The theme is all in the stylesheet, so it can change once the page is in.
-    const { result } = await page('Runtime.evaluate', {
-      returnByValue: true,
-      expression: `(() => { document.documentElement.dataset.theme = '${theme}'; const el = document.querySelector(${JSON.stringify(selector)}); el.scrollIntoView({ block: 'center' }); const r = el.getBoundingClientRect(); return { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height } })()`,
-    })
-    await sleep(800)
-    const b = result.value
-    const { data } = await page('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip: { x: b.x, y: b.y, width: b.w, height: b.h, scale: 1 } })
-    writeFileSync(join(README, file), Buffer.from(data, 'base64'))
-    console.log(`docs/assets/readme/${file}`)
   }
-  // The five outcomes, as the overview page draws them, laid out wider.
-  const overview = (await import('node:fs')).readFileSync(join(DOCS, 'how-it-works', 'index.html'), 'utf8')
-  const gallery = overview.match(/<figure class="fig outcomes"[\s\S]*?<\/figure>/)[0].replace(/<figcaption>[\s\S]*?<\/figcaption>/, '')
-  const wide = join(DOCS, 'how-it-works', '.readme-outcomes.html')
-  writeFileSync(wide, `<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8">
+
+  if (want('readme')) {
+    // The README's pictures: drawings of the site, in either theme, at twice
+    // the size for sharp screens.
+    const README = join(DOCS, 'assets', 'readme')
+    mkdirSync(README, { recursive: true })
+    const element = async (url, selector, file, theme, width) => {
+      await page('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 2, mobile: false })
+      await page('Page.navigate', { url: pathToFileURL(join(DOCS, url)).href })
+      await sleep(2500)
+      // The theme is all in the stylesheet, so it can change once the page is in.
+      const { result } = await page('Runtime.evaluate', {
+        returnByValue: true,
+        expression: `(() => { document.documentElement.dataset.theme = '${theme}'; const el = document.querySelector(${JSON.stringify(selector)}); el.scrollIntoView({ block: 'center' }); const r = el.getBoundingClientRect(); return { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height } })()`,
+      })
+      await sleep(800)
+      const b = result.value
+      const { data } = await page('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip: { x: b.x, y: b.y, width: b.w, height: b.h, scale: 1 } })
+      writeFileSync(join(README, file), Buffer.from(data, 'base64'))
+      console.log(`docs/assets/readme/${file}`)
+    }
+    // The five outcomes, as the overview page draws them, laid out wider.
+    const overview = (await import('node:fs')).readFileSync(join(DOCS, 'how-it-works', 'index.html'), 'utf8')
+    const gallery = overview.match(/<figure class="fig outcomes"[\s\S]*?<\/figure>/)[0].replace(/<figcaption>[\s\S]*?<\/figcaption>/, '')
+    const wide = join(DOCS, 'how-it-works', '.readme-outcomes.html')
+    writeFileSync(wide, `<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8">
 <link rel="stylesheet" href="../assets/site.css"><style>
 body { margin: 0; padding: 16px; width: 1100px; }
 .prose { max-width: none; }
@@ -168,30 +214,32 @@ body { margin: 0; padding: 16px; width: 1100px; }
 .prose .oc-harder a { color: var(--ink-soft); text-decoration: none; }
 </style></head><body><main class="prose">${gallery}</main>
 <script src="../assets/figure-data.js"></script><script src="../assets/figures.js"></script></body></html>`)
-  try {
-    for (const theme of ['light', 'dark']) {
-      await element('index.html', '#pipeline [data-metro-stage]', `metro-${theme}.png`, theme, 1240)
-      await element('how-it-works/.readme-outcomes.html', '.fig.outcomes', `outcomes-${theme}.png`, theme, 1140)
+    try {
+      for (const theme of ['light', 'dark']) {
+        await element('index.html', '#pipeline [data-metro-stage]', `metro-${theme}.png`, theme, 1240)
+        await element('how-it-works/.readme-outcomes.html', '.fig.outcomes', `outcomes-${theme}.png`, theme, 1140)
+      }
+    } finally {
+      rmSync(wide, { force: true })
     }
-  } finally {
-    rmSync(wide, { force: true })
   }
 
-  // The front page's drawing, for the top of the README, playing as it plays
-  // there: Bakta's calls, the H37Rv proteins aligned, the two compared and
-  // what AMAP keeps. It is the front page's own figure, run by figures.js, so
-  // the steps, their labels and the counts are the site's; only the Replay
-  // button (hidden, as figures.js wires it up) and the invitation to point at a
-  // gene go, since a picture has neither. Each step is kept once its fade has
-  // ended, and tools/gif.py joins them.
-  const hero = readFileSync(join(DOCS, 'index.html'), 'utf8')
-    .match(/<figure class="demo" data-hero[\s\S]*?<\/figure>/)[0]
-    .replace(' Point at a gene.', '')
-  const frames = mkdtempSync(join(tmpdir(), 'amap-hero-'))
-  const playing = join(DOCS, '.readme-hero.html')
-  try {
-    for (const theme of ['light', 'dark']) {
-      writeFileSync(playing, `<!doctype html><html lang="en" data-theme="${theme}"><head><meta charset="utf-8">
+  if (want('hero')) {
+    // The front page's drawing, for the top of the README, playing as it plays
+    // there: Bakta's calls, the H37Rv proteins aligned, the two compared and
+    // what AMAP keeps. It is the front page's own figure, run by figures.js, so
+    // the steps, their labels and the counts are the site's; only the Replay
+    // button (hidden, as figures.js wires it up) and the invitation to point at a
+    // gene go, since a picture has neither. Each step is kept once its fade has
+    // ended, and tools/gif.py joins them.
+    const hero = readFileSync(join(DOCS, 'index.html'), 'utf8')
+      .match(/<figure class="demo" data-hero[\s\S]*?<\/figure>/)[0]
+      .replace(/ <span class="when-hover">.*?<\/span><span class="when-touch">.*?<\/span>/, '')
+    const frames = mkdtempSync(join(tmpdir(), 'amap-hero-'))
+    const playing = join(DOCS, '.readme-hero.html')
+    try {
+      for (const theme of ['light', 'dark']) {
+        writeFileSync(playing, `<!doctype html><html lang="en" data-theme="${theme}"><head><meta charset="utf-8">
 <link rel="stylesheet" href="assets/site.css"><style>
 body { margin: 0; width: 1200px;
   background: radial-gradient(900px 420px at 85% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%), var(--bg); }
@@ -203,44 +251,48 @@ h1 .grad { display: block; }
 <h1>Bakta calls the genes. <span class="grad">AMAP checks every one.</span></h1>
 ${hero}
 </div><script src="assets/figure-data.js"></script><script src="assets/figures.js"></script></body></html>`)
-      await page('Emulation.setDeviceMetricsOverride', { width: 1200, height: 1000, deviceScaleFactor: 1, mobile: false })
-      await page('Page.navigate', { url: pathToFileURL(playing).href })
-      const steps = []
-      for (let n = 1; n <= 4; n++) {
-        // figures.js moves on every 2.1 s: wait for the step, then for its fade.
-        for (let waited = 0; ; waited += 50) {
+        await page('Emulation.setDeviceMetricsOverride', { width: 1200, height: 1000, deviceScaleFactor: 1, mobile: false })
+        await page('Page.navigate', { url: pathToFileURL(playing).href })
+        const steps = []
+        for (let n = 1; n <= 4; n++) {
+          // figures.js moves on every 2.1 s: wait for the step, then for its fade.
+          for (let waited = 0; ; waited += 50) {
+            const { result } = await page('Runtime.evaluate', {
+              returnByValue: true, expression: `document.querySelector('[data-hero] svg')?.getAttribute('data-phase')`,
+            })
+            if (result.value === String(n)) break
+            if (waited > 15000) throw new Error(`the front page's drawing never reached step ${n}`)
+            await sleep(50)
+          }
+          await sleep(700)
           const { result } = await page('Runtime.evaluate', {
-            returnByValue: true, expression: `document.querySelector('[data-hero] svg')?.getAttribute('data-phase')`,
+            returnByValue: true, expression: `(() => { const r = document.querySelector('.card').getBoundingClientRect(); return { w: r.width, h: Math.ceil(r.height) } })()`,
           })
-          if (result.value === String(n)) break
-          if (waited > 15000) throw new Error(`the front page's drawing never reached step ${n}`)
-          await sleep(50)
+          const { data } = await page('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: result.value.w, height: result.value.h, scale: 1 } })
+          const file = join(frames, `${theme}-${n}.png`)
+          writeFileSync(file, Buffer.from(data, 'base64'))
+          // As long as the site shows each step, and the last one twice as long.
+          steps.push(`${file}:${n === 4 ? 4200 : 2100}`)
         }
-        await sleep(700)
-        const { result } = await page('Runtime.evaluate', {
-          returnByValue: true, expression: `(() => { const r = document.querySelector('.card').getBoundingClientRect(); return { w: r.width, h: Math.ceil(r.height) } })()`,
-        })
-        const { data } = await page('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: result.value.w, height: result.value.h, scale: 1 } })
-        const file = join(frames, `${theme}-${n}.png`)
-        writeFileSync(file, Buffer.from(data, 'base64'))
-        // As long as the site shows each step, and the last one twice as long.
-        steps.push(`${file}:${n === 4 ? 4200 : 2100}`)
+        const out = join(README, `hero-${theme}.gif`)
+        const joined = spawnSync(process.env.PYTHON || 'python3', [join(ROOT, 'tools', 'gif.py'), out, ...steps], { stdio: 'inherit' })
+        if (joined.status !== 0) throw new Error('tools/gif.py failed')
+        console.log(`docs/assets/readme/hero-${theme}.gif`)
       }
-      const out = join(README, `hero-${theme}.gif`)
-      const joined = spawnSync(process.env.PYTHON || 'python3', [join(ROOT, 'tools', 'gif.py'), out, ...steps], { stdio: 'inherit' })
-      if (joined.status !== 0) throw new Error('tools/gif.py failed')
-      console.log(`docs/assets/readme/hero-${theme}.gif`)
+    } finally {
+      rmSync(playing, { force: true })
+      rmSync(frames, { recursive: true, force: true })
     }
-  } finally {
-    rmSync(playing, { force: true })
-    rmSync(frames, { recursive: true, force: true })
   }
 
-  await shoot('touch-icon', `<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8">
+  if (want('icon')) {
+    await shoot('touch-icon', `<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8">
 <link rel="stylesheet" href="assets/site.css"><style>
 body { margin: 0; width: 180px; height: 180px; display: grid; place-items: center; background: var(--bg); }
 img { width: 140px; height: auto; }
 </style></head><body><img src="assets/amap-logo.png" alt=""></body></html>`, 180, 180, 'touch-icon.png')
+  }
+
 } finally {
   // Chrome writes to its profile until it has exited, so wait for that.
   const exited = new Promise((ok) => chrome.once('exit', ok))

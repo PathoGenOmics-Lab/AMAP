@@ -116,33 +116,44 @@ G26690<span class="tsv-tab">	</span>/data/genomes/G26690.fasta</pre></div>
 <div class="hx hx-2"><h2 id="4-run-it">4. Run it</h2><a class="anchor" href="#4-run-it" aria-label="Link to: 4. Run it">#</a></div>
 <p>Pick what you have, and copy the command:</p>
 <figure class="fig builder-fig"><div class="builder" data-builder>
-  <div>
+  <div class="builder-qs">
     <div class="q">
       <div class="q-title" id="q-engine">Where will it run?</div>
-      <div class="seg" role="group" aria-labelledby="q-engine" data-choice="engine">
-        <button type="button" data-value="docker" aria-pressed="true">Docker</button>
-        <button type="button" data-value="singularity" aria-pressed="false">Singularity</button>
-        <button type="button" data-value="slurm" aria-pressed="false">A SLURM cluster</button>
+      <div class="seg" role="radiogroup" aria-labelledby="q-engine" data-choice="engine">
+        <button type="button" role="radio" data-value="docker" aria-checked="true" tabindex="0">Docker</button>
+        <button type="button" role="radio" data-value="singularity" aria-checked="false" tabindex="-1">Singularity</button>
+        <button type="button" role="radio" data-value="slurm" aria-checked="false" tabindex="-1">A SLURM cluster</button>
       </div>
     </div>
     <div class="q">
       <div class="q-title" id="q-organism">Which genomes?</div>
-      <div class="seg" role="group" aria-labelledby="q-organism" data-choice="organism">
-        <button type="button" data-value="mtbc" aria-pressed="true"><i>M. tuberculosis</i> complex</button>
-        <button type="button" data-value="other" aria-pressed="false">Another species</button>
+      <div class="seg" role="radiogroup" aria-labelledby="q-organism" data-choice="organism">
+        <button type="button" role="radio" data-value="mtbc" aria-checked="true" tabindex="0"><i>M.&nbsp;tuberculosis</i> complex</button>
+        <button type="button" role="radio" data-value="other" aria-checked="false" tabindex="-1">Another species</button>
       </div>
     </div>
     <div class="q">
       <div class="q-title">Anything else?</div>
-      <label class="opt"><input type="checkbox" data-opt="small"><b>A laptop or a small machine</b><small>Caps every task at 4 CPUs and 12 GB.</small></label>
+      <label class="opt"><input type="checkbox" data-opt="small"><b>A laptop or a small machine</b><small>Caps every task at 4 CPUs and 8 GB.</small></label>
       <label class="opt"><input type="checkbox" data-opt="only"><b>Only the corrected genes</b><small>Much faster: stops after the correction.</small></label>
       <label class="opt"><input type="checkbox" data-opt="db"><b>Keep the eggNOG database</b><small>Built on the first run, reused on every run after.</small></label>
     </div>
   </div>
-  <div>
-    <div class="code"><pre data-command></pre><button class="copy" type="button" data-copy-from="[data-command]">Copy</button></div>
-    <ul class="explain" data-explain></ul>
-    <p class="note" data-builder-note hidden></p>
+  <div class="builder-out">
+    <p class="cmd-head">Check it first: the same command, with <code class="nw">--validate_only</code></p>
+    <div class="code"><pre data-check><span class="ln"><span class="p">$ </span><span class="t">nextflow</span> <span class="t">run</span> <span class="t">PathoGenOmics-Lab/AMAP</span> \
+</span><span class="ln">    <span class="f">-profile</span> <span class="v">docker</span> \
+</span><span class="ln">    <span class="f">--tsv</span> <span class="v">samples.tsv</span> \
+</span><span class="ln">    <span class="f">--validate_only</span></span></pre><button class="copy" type="button" data-copy-from="[data-check]">Copy</button></div>
+    <p class="note">Seconds per genome. Warnings do not stop it and Nextflow does not print them: the verdict is in <code><span class="nw">results/</span><wbr><span class="nw">pipeline_</span><wbr><span class="nw">info/</span><wbr><span class="nw">validation.</span><wbr><span class="nw">log</span></code>, here for the tutorial's genome:</p>
+    <div class="out">Results: 1 OK, 0 warnings, 0 failed
+Total: 0 error(s), 0 warning(s)</div>
+    <p class="cmd-head">Then run it</p>
+    <div class="code"><pre data-command><span class="ln"><span class="p">$ </span><span class="t">nextflow</span> <span class="t">run</span> <span class="t">PathoGenOmics-Lab/AMAP</span> \
+</span><span class="ln">    <span class="f">-profile</span> <span class="v">docker</span> \
+</span><span class="ln">    <span class="f">--tsv</span> <span class="v">samples.tsv</span></span></pre><button class="copy" type="button" data-copy-from="[data-command]">Copy</button></div>
+    <ul class="explain" data-explain><li><span class="flags"><code class="nw">-profile</code></span><span>Every tool runs inside the AMAP image, through Docker.</span></li><li><span class="flags"><code class="nw">--tsv</code></span><span>Your sample sheet: sampleId and fasta, tab separated.</span></li></ul>
+    <div class="note builder-notes" data-builder-note hidden></div>
   </div>
 </div><figcaption>The command for your machine and your genomes, with what each option does. The same as on the <a href="../index.html#start">front page</a>.</figcaption></figure>
 <p>Or start from one of these:</p>

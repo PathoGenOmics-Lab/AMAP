@@ -1076,6 +1076,15 @@ p {
   background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ref) 55%, transparent) 0 1.2px, transparent 1.2px 3.6px);
 }
 
+/* The same darker edges as the marks they name, in the light theme. */
+:root[data-theme="light"] .chip.diff {
+  border-color: color-mix(in srgb, var(--warn) 78%, #000);
+}
+
+:root[data-theme="light"] .chip.diff-ref {
+  border-color: color-mix(in srgb, var(--ref) 85%, #000);
+}
+
 .chip.moved {
   width: 9px;
   height: 6px;
@@ -3649,10 +3658,41 @@ html:not(.js) .how-nav {
   }
 }
 
+/* Play and Next hold both of their words in one cell and show one, so each
+   is as wide as its longer word and a change of word moves nothing. */
+.how-nav .btn {
+  display: inline-grid;
+  justify-items: center;
+  white-space: nowrap;
+}
+
+.how-nav .btn > span {
+  grid-area: 1 / 1;
+}
+
+.how-nav .btn > .say-2,
+.how-nav .btn.said-2 > .say-1 {
+  visibility: hidden;
+}
+
+.how-nav .btn.said-2 > .say-2 {
+  visibility: visible;
+}
+
 @media (max-width: 600px) {
+  .how-nav {
+    gap: 8px;
+  }
+
   .how-nav .btn {
-    flex: 1 1 0;
-    justify-content: center;
+    flex: 1 1 auto;
+    padding-inline: 12px;
+  }
+}
+
+@media (max-width: 359px) {
+  .how-nav .btn {
+    white-space: normal;
   }
 }
 

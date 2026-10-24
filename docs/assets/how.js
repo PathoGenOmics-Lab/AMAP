@@ -426,6 +426,15 @@
   var prev = root.querySelector("[data-prev]");
   var next = root.querySelector("[data-next]");
   var playBtn = root.querySelector("[data-play]");
+
+  // Each button holds both of its words and shows one, so it keeps the size
+  // of the longer and nothing beside or under it moves when the word changes.
+  function say(btn, words, second) {
+    if (!btn.querySelector(".say-2")) {
+      btn.innerHTML = '<span class="say-1">' + F.esc(words[0]) + '</span><span class="say-2">' + F.esc(words[1]) + "</span>";
+    }
+    btn.classList.toggle("said-2", !!second);
+  }
   var genomeLabel = root.querySelector("[data-genome]");
   var legendBox = root.querySelector(".how-legend");
 
@@ -521,7 +530,7 @@
       progress.style.width = (step / 7) * 100 + "%";
     }
     prev.setAttribute("aria-disabled", step === 1 ? "true" : "false");
-    next.textContent = step === 7 ? "Start again" : "Next";
+    say(next, ["Next", "Start again"], step === 7);
   }
 
   // The text under the drawing keeps the height of the story's longest step,
@@ -627,7 +636,7 @@
   function stop() {
     clearTimeout(timer);
     timer = null;
-    playBtn.textContent = "Play";
+    say(playBtn, ["Play", "Pause"], false);
     card.classList.remove("playing");
     progress.style.transition = "";
     progress.style.width = (step / 7) * 100 + "%";
@@ -691,7 +700,7 @@
       return;
     }
     if (step === 7) go(1);
-    playBtn.textContent = "Pause";
+    say(playBtn, ["Play", "Pause"], true);
     card.classList.add("playing");
     tick();
   });

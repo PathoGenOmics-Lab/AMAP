@@ -1328,7 +1328,10 @@
     function label() {
       if (!button) return;
       var playing = auto && !userPaused;
-      button.textContent = playing ? "Pause" : "Play";
+      // Both words stay in the button and one shows, so it keeps the width
+      // of the longer and the line beside it never rewraps.
+      if (!button.querySelector(".say-2")) button.innerHTML = '<span class="say-1">Play</span><span class="say-2">Pause</span>';
+      button.classList.toggle("said-2", playing);
       button.setAttribute("aria-label", playing ? "Pause the drawing" : "Play the drawing");
     }
 

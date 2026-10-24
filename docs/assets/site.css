@@ -886,7 +886,24 @@ p {
 }
 
 .demo-ctrl .mini-btn {
+  display: inline-grid;
+  justify-items: center;
   min-width: 4.4em;
+}
+
+/* Play and Pause share one cell, so the button is as wide as Pause even
+   while it says Play, and the caption beside it never rewraps. */
+.demo-ctrl .mini-btn > span {
+  grid-area: 1 / 1;
+}
+
+.demo-ctrl .mini-btn > .say-2,
+.demo-ctrl .mini-btn.said-2 > .say-1 {
+  visibility: hidden;
+}
+
+.demo-ctrl .mini-btn.said-2 > .say-2 {
+  visibility: visible;
 }
 
 /* Four segments, one per phase: each fills while its phase plays, and takes

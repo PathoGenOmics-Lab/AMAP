@@ -34,6 +34,7 @@
   --lh-heading: 1.2;
   --lh-ui: 1.45;
   --lh-body: 1.6;
+  --fw-light: 300;
   --fw-regular: 400;
   --fw-medium: 500;
   --fw-semibold: 600;
@@ -62,6 +63,11 @@
   --r-4: 12px;
   --r-5: 16px;
   --r-pill: 999px;
+  /* Layout: the front page's column, and the margin column beside its main
+     one, where the numbers of chapters and steps hang. */
+  --wrap: 1216px;
+  --col-margin: 13.5rem;
+  --col-gap: var(--sp-9);
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
@@ -166,8 +172,8 @@
   --line-1: #e2e8e6;
   --line-2: #d0d9d6;
   --line-3: #7c8985;
-  --accent: #07725f;
-  --accent-hover: #055c4d;
+  --accent: #076d5c;
+  --accent-hover: #05584a;
   --accent-wash: #e6f1ef;
   --accent-line: #8cc5ba;
   --on-accent: #ffffff;
@@ -176,12 +182,12 @@
   --grad-c: #4f7682;
   --shadow-2: 0 1px 2px rgba(16, 27, 24, 0.06), 0 16px 36px -18px rgba(16, 27, 24, 0.22);
   --shadow-3: 0 1px 3px rgba(16, 27, 24, 0.08), 0 24px 56px -16px rgba(16, 27, 24, 0.24);
-  --glow: 0 1px 2px rgba(7, 114, 95, 0.25), 0 6px 18px -8px rgba(7, 114, 95, 0.6);
+  --glow: 0 1px 2px rgba(7, 109, 92, 0.25), 0 6px 18px -8px rgba(7, 109, 92, 0.6);
   --control-raised: #ffffff;
   --overlay: #ffffff;
   --code-ink: #1a2422;
   --code-muted: #616e6a;
-  --code-flag: #07725f;
+  --code-flag: #076d5c;
   --code-value: #8f4a00;
   --copy-border: rgba(16, 27, 24, 0.16);
   --copy-bg: rgba(255, 255, 255, 0.85);
@@ -195,7 +201,7 @@
   --pseudo: #c0244a;
   --ok: #0f7a52;
   --note: #b7791f;
-  --warn: #9a5808;
+  --warn: #9b5806;
   --danger: #c0244a;
   --info: #1f68c4;
   --m-main: #0b8a75;
@@ -315,7 +321,7 @@ p {
 }
 
 .wrap {
-  max-width: 1120px;
+  max-width: var(--wrap);
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -333,6 +339,7 @@ p {
    below the page. Inside a plate, controls rise one more level and the
    drawings' halos take the plate's colour. */
 .demo,
+.cases,
 .case,
 .metro-wrap,
 .how-stage-card,
@@ -1223,12 +1230,14 @@ label,
 
 /* ── Hero ── */
 
-/* The statement spans the column; under it the words take the left and the
-   drawing the right, at the width at which every gene of the hero is named
-   (542 px; 563 at 1280). A faint wash of the accent sits behind the drawing. */
+/* The statement spans the column; under it the words take the left and what
+   goes in, what comes out and the way in take the right. Then the drawing,
+   the whole width of the column: Figure 1, every gene of it named, its
+   counts read out beside it. On a 1280 by 800 laptop all of it is in the
+   first screen. A faint wash of the accent sits behind the drawing. */
 .hero {
   position: relative;
-  padding: var(--sp-11) 0 var(--sp-12);
+  padding: var(--sp-10) 0 var(--sp-11);
   overflow: clip;
 }
 
@@ -1237,29 +1246,25 @@ label,
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(42% 60% at 78% 62%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
+    radial-gradient(48% 46% at 72% 78%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
     radial-gradient(30% 40% at 8% 0%, color-mix(in srgb, var(--brand-slate) 6%, transparent), transparent 70%);
   pointer-events: none;
 }
 
 :root[data-theme="light"] .hero::before {
-  background: radial-gradient(42% 60% at 78% 62%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%);
+  background: radial-gradient(48% 46% at 72% 78%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%);
 }
 
 .hero .wrap {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   grid-template-areas:
     "eyebrow eyebrow"
     "title   title"
-    "lead    demo"
-    "actions demo"
-    "proof   demo"
-    "spec    demo"
-    ".       demo";
-  grid-template-rows: auto auto auto auto auto auto 1fr;
-  column-gap: var(--sp-9);
+    "lead    side"
+    "demo    demo";
+  column-gap: var(--sp-10);
   align-items: start;
 }
 
@@ -1279,24 +1284,20 @@ label,
   grid-area: lead;
 }
 
-.hero .actions {
-  grid-area: actions;
-}
-
-.hero-proof {
-  grid-area: proof;
-}
-
-.hero .spec {
-  grid-area: spec;
+.hero-side {
+  grid-area: side;
+  display: grid;
+  gap: var(--sp-6);
+  align-content: start;
+  padding-top: var(--sp-1);
 }
 
 .hero .demo {
   grid-area: demo;
-  margin-top: var(--sp-2);
+  margin-top: var(--sp-8);
 }
 
-/* One column: the words, the drawing, then the spec. */
+/* One column: the words, the way in, the drawing, then the spec. */
 @media (max-width: 940px) {
   .hero {
     padding: var(--sp-9) 0 var(--sp-10);
@@ -1304,12 +1305,20 @@ label,
 
   .hero .wrap {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "eyebrow" "title" "lead" "actions" "proof" "demo" "spec";
-    grid-template-rows: none;
+    grid-template-areas: "eyebrow" "title" "lead" "actions" "demo" "spec";
   }
 
-  .hero .demo {
-    margin-top: var(--sp-8);
+  .hero-side {
+    display: contents;
+  }
+
+  .hero .actions {
+    grid-area: actions;
+  }
+
+  .hero .spec {
+    grid-area: spec;
+    margin-top: var(--sp-7);
   }
 }
 
@@ -1353,6 +1362,18 @@ label,
   padding-bottom: 0.06em;
 }
 
+/* On a laptop's short screen the statement steps down, so the drawing's
+   three rows still come into the first screen. */
+@media (min-width: 941px) and (max-height: 860px) {
+  .hero {
+    padding-top: var(--sp-9);
+  }
+
+  .hero h1 {
+    font-size: min(var(--fs-hero), 7.4vh);
+  }
+}
+
 .grad {
   background: linear-gradient(100deg, var(--grad-a) 0%, var(--grad-b) 55%, var(--grad-c) 100%);
   -webkit-background-clip: text;
@@ -1364,7 +1385,7 @@ label,
   font-size: var(--fs-1);
   line-height: 1.55;
   color: var(--ink-2);
-  max-width: 34em;
+  max-width: 36em;
 }
 
 .actions {
@@ -1374,33 +1395,15 @@ label,
   margin-top: var(--sp-7);
 }
 
-/* The case against Bakta alone, in the numbers of a real run. */
-.hero-proof {
-  margin-top: var(--sp-7);
-  padding-top: var(--sp-5);
-  border-top: 1px solid var(--line-1);
-  font-size: var(--fs-n1);
-  line-height: var(--lh-body);
-  color: var(--ink-3);
-  max-width: 34em;
-}
-
-.hero-proof b {
-  color: var(--ink-1);
-  font-weight: var(--fw-bold);
-  font-variant-numeric: tabular-nums;
-}
-
-.hero-proof a {
-  font-weight: var(--fw-semibold);
-  white-space: nowrap;
+.hero-side .actions {
+  margin-top: 0;
 }
 
 /* What goes in and what comes out, as a spec rather than a sentence. */
 .spec {
   display: grid;
   gap: var(--sp-2);
-  margin: var(--sp-5) 0 0;
+  margin: 0;
   font-size: var(--fs-n1);
   line-height: var(--lh-ui);
   max-width: 34em;
@@ -1447,11 +1450,6 @@ label,
     margin-top: var(--sp-5);
   }
 
-  .hero-proof {
-    margin-top: var(--sp-5);
-    padding-top: var(--sp-4);
-  }
-
   .hero .demo {
     margin-top: var(--sp-6);
   }
@@ -1466,6 +1464,146 @@ label,
 
   .hero .btn-gh {
     display: none;
+  }
+}
+
+/* ── Across the whole genome: the run's four numbers ── */
+
+/* The counts of the whole CDC1551 run, set as figures and coloured by what
+   they count, as the drawings colour it: Bakta's amber for the calls that
+   disagree, grey for what is dropped, the reference's violet for the genes
+   put back. A label in the margin column says they are the genome's, not
+   the 12.4 kb of Figure 1. */
+.numbers {
+  padding: 0 0 var(--sp-11);
+}
+
+.numbers .wrap {
+  display: grid;
+  grid-template-columns: var(--col-margin) minmax(0, 1fr);
+  column-gap: var(--col-gap);
+  align-items: start;
+}
+
+.numbers-head {
+  display: grid;
+  gap: var(--sp-1);
+  padding-top: var(--sp-2);
+  font-size: var(--fs-n1);
+  line-height: var(--lh-ui);
+  color: var(--ink-2);
+}
+
+.numbers-head .numbers-label {
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+  letter-spacing: var(--tr-caps);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: var(--sp-1);
+}
+
+.numbers-head a {
+  justify-self: start;
+  margin-top: var(--sp-2);
+  font-weight: var(--fw-semibold);
+}
+
+.numbers-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  font-size: var(--fs-n1);
+  line-height: var(--lh-ui);
+  color: var(--ink-3);
+}
+
+.numbers-list li {
+  padding: 0 var(--sp-6);
+  border-left: 1px solid var(--line-1);
+}
+
+.numbers-list li:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.numbers-list b {
+  display: block;
+  margin-bottom: var(--sp-2);
+  font-size: var(--fs-10);
+  font-weight: var(--fw-light);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-1);
+}
+
+.numbers-list .n-settled b {
+  color: var(--bakta);
+}
+
+.numbers-list .n-dropped b {
+  color: var(--ink-3);
+}
+
+.numbers-list .n-back b {
+  color: var(--ref);
+}
+
+@media (max-width: 1100px) {
+  .numbers-list b {
+    font-size: var(--fs-7);
+  }
+}
+
+@media (max-width: 940px) {
+  .numbers .wrap {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--sp-6);
+  }
+
+  .numbers-head {
+    grid-template-columns: auto auto;
+    justify-content: start;
+    align-items: baseline;
+    column-gap: var(--sp-4);
+    padding-top: 0;
+  }
+
+  .numbers-head .numbers-label {
+    grid-column: 1 / -1;
+  }
+
+  .numbers-head a {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .numbers {
+    padding-bottom: var(--sp-10);
+  }
+
+  .numbers-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .numbers-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--sp-6);
+  }
+
+  .numbers-list li:nth-child(3) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .numbers-list b {
+    font-size: var(--fs-6);
   }
 }
 
@@ -1839,7 +1977,9 @@ label,
 /* ── The animated stretch of genome in the hero ── */
 
 /* A plate: the surface every drawing stands on (level 2: its own fill, an
-   edge and a shadow, 16px corners, 24px in). */
+   edge and a shadow, 16px corners, 24px in). The hero's holds Figure 1: a
+   head of its label, its four phases and Play; the drawing, its counts read
+   out in a column at its right; and under both, its caption and key. */
 .demo {
   background: var(--surface-2);
   border: 1px solid var(--line-2);
@@ -1847,35 +1987,43 @@ label,
   padding: var(--sp-5) var(--sp-6) var(--sp-5);
   box-shadow: var(--shadow-2);
   margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 13.5rem;
+  grid-template-areas:
+    "head  head"
+    "stage tally"
+    "cap   cap";
+  column-gap: var(--sp-7);
+  align-items: center;
 }
 
 .demo-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--sp-3);
-  margin: 0 0 var(--sp-3);
+  grid-area: head;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "label step ctrl";
+  align-items: center;
+  gap: var(--sp-2) var(--sp-4);
+  margin: 0 0 var(--sp-4);
   padding-bottom: var(--sp-3);
   border-bottom: 1px solid var(--line-1);
-  font-size: var(--fs-n2);
-  line-height: var(--lh-ui);
-  color: var(--ink-3);
 }
 
-.demo-head > span:first-child {
-  text-wrap: pretty;
+.demo-head .fig-n {
+  grid-area: label;
 }
 
-.demo-head b {
-  color: var(--ink-1);
-  font-weight: var(--fw-semibold);
+.demo-stage {
+  grid-area: stage;
+  position: relative;
+  min-width: 0;
 }
 
 .demo-ctrl {
+  grid-area: ctrl;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  flex: none;
 }
 
 .demo-ctrl .mini-btn {
@@ -1904,12 +2052,13 @@ label,
    the drawing to its phase when pressed. The words may wrap, in room kept
    for them. */
 .demo-step {
+  grid-area: step;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 2px 12px;
   min-height: 1.6em;
-  color: var(--ink);
+  color: var(--ink-1);
   font-weight: var(--fw-semibold);
 }
 
@@ -1943,11 +2092,11 @@ label,
 
 /* A phase still to come is drawn at 3:1, so the control shows. */
 .hero-seg::before {
-  background: var(--line-input);
+  background: var(--line-3);
 }
 
 .hero-seg:hover::before {
-  background: var(--muted);
+  background: var(--ink-3);
 }
 
 .hero-seg i {
@@ -1980,19 +2129,61 @@ label,
 }
 
 .hero-phase {
-  flex: 1 1 15em;
+  flex: 1 1 12em;
   min-width: 0;
 }
 
+/* The caption under the drawing and its counts: what the figure shows, in a
+   bold first sentence, then the key to its marks. */
+.demo-cap {
+  grid-area: cap;
+  display: grid;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--line-1);
+  font-size: var(--fs-n2);
+  line-height: var(--lh-ui);
+  color: var(--ink-3);
+}
+
+.demo-cap p {
+  max-width: 56em;
+  text-wrap: pretty;
+}
+
+.demo-cap b {
+  color: var(--ink-1);
+  font-weight: var(--fw-semibold);
+}
+
+.demo-cap .legend {
+  margin-top: 0;
+}
+
+/* Narrower, the counts go under the drawing, three in a row. */
+@media (max-width: 760px) {
+  .demo {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "head" "stage" "tally" "cap";
+  }
+}
+
 @media (max-width: 600px) {
+  .demo {
+    padding: var(--sp-4) var(--sp-4) var(--sp-4);
+  }
+
+  /* The label and Play on one line, the phases under them. */
+  .demo-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "label ctrl" "step step";
+  }
+
   .demo-step {
     min-height: calc(24px + 2px + 1.55em);
     font-size: var(--fs-n1);
   }
-}
-
-.demo-stage {
-  position: relative;
 }
 
 .legend {
@@ -2107,22 +2298,29 @@ label,
   clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
-/* The counts: figures set large, each over what it counts. */
+/* The counts of Figure 1, read out in a column at the drawing's right: each
+   a figure in the colour of what it counts (the bands' green and amber, the
+   grey of a dropped call), beside what it counts. */
 .tally {
+  grid-area: tally;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-3);
-  margin-top: var(--sp-4);
-  padding-top: var(--sp-4);
-  border-top: 1px solid var(--line-1);
+  gap: var(--sp-1);
+  align-self: stretch;
+  align-content: center;
+  padding-left: var(--sp-6);
+  border-left: 1px solid var(--line-1);
   font-size: var(--fs-n2);
   line-height: var(--lh-ui);
   color: var(--ink-3);
 }
 
 .tally > div {
-  margin: -6px -8px;
-  padding: 6px 8px;
+  display: grid;
+  grid-template-columns: 1.6ch minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--sp-4);
+  margin: 0 calc(-1 * var(--sp-2));
+  padding: var(--sp-2);
   border-radius: var(--r-3);
   transition: background 0.2s ease;
 }
@@ -2138,18 +2336,18 @@ label,
 
 /* A count pressed to stay lit keeps a frame. */
 .tally > [aria-pressed="true"] {
-  box-shadow: inset 0 0 0 1px var(--line-input);
+  box-shadow: inset 0 0 0 1px var(--line-3);
 }
 
 .tally b {
-  display: block;
-  margin-bottom: var(--sp-1);
-  font-size: var(--fs-4);
-  font-weight: var(--fw-display);
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  font-size: var(--fs-6);
+  font-weight: var(--fw-light);
+  letter-spacing: -0.03em;
+  line-height: 1;
   color: var(--ink-1);
   font-variant-numeric: tabular-nums;
+  text-align: center;
+  transition: color 0.4s ease;
 }
 
 .tally .t-agree b {
@@ -2161,16 +2359,35 @@ label,
 }
 
 .tally .t-drop b {
-  color: var(--muted);
+  color: var(--ink-3);
 }
 
 /* Before the calls are compared, the counts wait in grey, still readable. */
 .tally .t-off b {
-  color: var(--muted);
+  color: var(--ink-3);
 }
 
-.tally b {
-  transition: color 0.4s ease;
+/* Under the drawing, three in a row, each figure over what it counts. */
+@media (max-width: 760px) {
+  .tally {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-3);
+    margin-top: var(--sp-4);
+    padding: var(--sp-4) 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--line-1);
+  }
+
+  .tally > div {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    row-gap: var(--sp-1);
+  }
+
+  .tally b {
+    font-size: var(--fs-4);
+    text-align: left;
+  }
 }
 
 /* The phases: each class reveals one more layer. A hidden layer leaves the
@@ -2216,7 +2433,9 @@ label,
 /* ── Sections ── */
 
 /* A section is a chapter: 96px above and below on a wide screen, a hairline
-   between chapters, and a head of kicker, title and lead. */
+   between chapters. Its head hangs its number and label in the margin
+   column, and puts the title and lead in the main one; steps, the FAQ and
+   running text follow the main column, and figures take the whole width. */
 .section {
   padding: var(--sp-12) 0;
   border-top: 1px solid var(--line-1);
@@ -2236,29 +2455,25 @@ label,
 
 /* Two widths on the front page: running text ends at one reading measure, and
    everything else (cards, drawings, the benchmark, the report) spans the
-   whole column. The measure is an edge, not a width, so text that starts
-   further in (a step's, after its number) ends where the rest does: 42rem is
-   36em of step text once the number's column is taken off. */
+   whole column. */
 .section {
   --measure: 42rem;
 }
 
-.section-head {
-  margin-bottom: var(--sp-8);
+main {
+  counter-reset: chapter figure;
 }
 
-@media (max-width: 600px) {
-  .section-head {
-    margin-bottom: var(--sp-6);
-  }
+.section-head {
+  margin-bottom: var(--sp-9);
 }
 
 .section-head h2 {
   max-width: 20em;
 }
 
-/* The kicker: a caps label in the accent. On the front page each carries its
-   chapter's number, drawn (not read), and a short rule. */
+/* The kicker: the chapter's number, drawn large in the accent (not read),
+   over its label in caps. */
 .kicker {
   display: flex;
   align-items: center;
@@ -2272,25 +2487,26 @@ label,
   margin-bottom: var(--sp-4);
 }
 
-main {
-  counter-reset: chapter;
+.section-head .kicker {
+  color: var(--ink-3);
 }
 
 .section-head .kicker::before {
   counter-increment: chapter;
   content: counter(chapter, decimal-leading-zero);
   content: counter(chapter, decimal-leading-zero) / "";
-  padding-right: calc(var(--sp-6) + var(--sp-3));
-  background: linear-gradient(var(--accent-line), var(--accent-line)) right center / var(--sp-6) 1px no-repeat;
-  font-family: var(--mono);
-  font-weight: var(--fw-semibold);
-  letter-spacing: 0.04em;
-  color: var(--ink-3);
+  font-size: var(--fs-10);
+  font-weight: var(--fw-light);
+  line-height: 0.82;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  color: var(--accent);
 }
 
 /* Not the kicker: a paragraph of the head would otherwise outrank it and turn
    it grey and full size. */
-.section-head p:not(.kicker) {
+.section-head p:not(.kicker, .pull) {
   color: var(--ink-2);
   font-size: var(--fs-1);
   line-height: 1.55;
@@ -2298,11 +2514,130 @@ main {
   max-width: var(--measure);
 }
 
+/* A figure the chapter stands on, pulled out into the margin: the number
+   large, what it counts under it. */
+.pull {
+  font-size: var(--fs-n1);
+  line-height: var(--lh-ui);
+  color: var(--ink-2);
+}
+
+.pull b {
+  display: block;
+  margin-bottom: var(--sp-2);
+  font-size: var(--fs-10);
+  font-weight: var(--fw-light);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+/* On a wide screen: the margin column, then the main one. The number's top
+   meets the title's capitals. */
+@media (min-width: 941px) {
+  .section-head {
+    display: grid;
+    grid-template-columns: var(--col-margin) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    column-gap: var(--col-gap);
+    align-items: start;
+  }
+
+  .section-head > * {
+    grid-column: 2;
+  }
+
+  .section-head > .kicker {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-4);
+    margin: 0.32rem 0 0;
+  }
+
+  /* A head with a figure pulled out keeps its number level with the title,
+     and the figure level with the lead. */
+  .section-head:has(> .pull) > .kicker {
+    grid-row: 1;
+  }
+
+  .section-head > .pull {
+    grid-column: 1;
+    grid-row: 2 / span 2;
+    margin-top: var(--sp-6);
+    padding-top: var(--sp-5);
+    border-top: 1px solid var(--line-2);
+  }
+
+  /* Steps, questions and the notes between figures read in the main column. */
+  .section .wrap > :is(.steps, .faq) {
+    margin-left: calc(var(--col-margin) + var(--col-gap));
+  }
+}
+
+@media (max-width: 940px) {
+  .section-head {
+    margin-bottom: var(--sp-7);
+  }
+
+  .section-head .kicker::before {
+    font-size: var(--fs-6);
+    margin-right: var(--sp-1);
+  }
+
+  .pull {
+    margin-top: var(--sp-6);
+    padding-left: var(--sp-4);
+    border-left: 2px solid var(--accent-line);
+    max-width: var(--measure);
+  }
+
+  .pull b {
+    font-size: var(--fs-6);
+  }
+}
+
 @media (max-width: 600px) {
-  .section-head p:not(.kicker) {
+  .section-head {
+    margin-bottom: var(--sp-6);
+  }
+
+  .section-head p:not(.kicker, .pull) {
     font-size: var(--fs-0);
     line-height: var(--lh-body);
   }
+}
+
+/* A figure's label and title, over it: "Figure n" in caps, counted down the
+   page, then what it shows. */
+.fig-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-1) var(--sp-3);
+  margin: 0 0 var(--sp-4);
+  font-size: var(--fs-n1);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-ui);
+  color: var(--ink-1);
+}
+
+.fig-n {
+  flex: none;
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+  letter-spacing: var(--tr-caps);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.fig-n::before {
+  counter-increment: figure;
+  content: "Figure " counter(figure);
+  content: "Figure " counter(figure) / "";
 }
 
 .cols-2 {
@@ -2341,6 +2676,12 @@ main {
   margin-top: var(--sp-3);
 }
 
+/* A note under a figure, its caption: as wide as a line of text reads. */
+.section .wrap > .note {
+  max-width: 52rem;
+  margin-top: var(--sp-4);
+}
+
 /* Words for the pointer the reader has: "point at" with a mouse, "tap" on a
    touch screen. */
 .when-touch {
@@ -2359,71 +2700,55 @@ main {
 
 /* ── Start here: four steps ── */
 
+/* Each step under a hairline, its number hung in the margin column, large
+   and light, its title level with the number's top. */
 .steps {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
-}
-
-.steps {
-  --step-num: 40px;
-  --step-gap: 20px;
 }
 
 .steps > li {
   position: relative;
-  display: grid;
-  grid-template-columns: var(--step-num) minmax(0, 1fr);
-  gap: 0 var(--step-gap);
-  padding-bottom: var(--sp-10);
+  padding: var(--sp-8) 0 var(--sp-10);
+  border-top: 1px solid var(--line-1);
 }
 
 .steps > li:last-child {
   padding-bottom: 0;
 }
 
-/* The line that joins the numbers. */
-.steps > li::before {
-  content: "";
-  position: absolute;
-  left: calc(var(--step-num) / 2 - 1px);
-  top: calc(var(--step-num) + var(--sp-2));
-  bottom: var(--sp-2);
-  width: 2px;
-  border-radius: 1px;
-  background: linear-gradient(var(--accent-line), var(--line-1));
-}
-
-.steps > li:last-child::before {
-  display: none;
-}
-
-/* A step's number: the accent, flat, in a ring of the page's colour. */
 .step-num {
-  width: var(--step-num);
-  height: var(--step-num);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-weight: var(--fw-display);
-  font-size: var(--fs-n1);
+  display: block;
+  font-size: var(--fs-7);
+  font-weight: var(--fw-light);
+  line-height: 1;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
-  color: var(--on-accent);
-  background: var(--accent);
-  box-shadow: 0 0 0 4px var(--surface-0), var(--glow);
+  color: var(--accent);
+}
+
+@media (min-width: 941px) {
+  /* The number hangs out of the main column, into the margin. */
+  .step-num {
+    position: absolute;
+    top: calc(var(--sp-8) - 0.06em);
+    right: calc(100% + var(--col-gap));
+  }
 }
 
 .step-body h3 {
   font-size: var(--fs-2);
-  margin: 6px 0 var(--sp-3);
+  margin: 0 0 var(--sp-3);
 }
 
 .step-body > p {
   color: var(--ink-2);
   margin-bottom: var(--sp-4);
-  max-width: calc(var(--measure, 42rem) - var(--step-num) - var(--step-gap));
+  max-width: var(--measure, 42rem);
 }
 
 .step-body > .code + .code,
@@ -2472,23 +2797,45 @@ main {
   }
 }
 
-@media (max-width: 600px) {
-  .steps {
-    --step-num: 32px;
-    --step-gap: 12px;
+/* Narrower, the number sits beside the step's title, and the rest of the
+   step runs the whole width under both. */
+@media (max-width: 940px) {
+  .steps > li {
+    display: grid;
+    grid-template-columns: 2.6rem minmax(0, 1fr);
+    align-items: baseline;
+    padding: var(--sp-7) 0 var(--sp-9);
   }
 
-  .steps > li {
-    padding-bottom: var(--sp-9);
+  .step-body {
+    display: contents;
+  }
+
+  .step-body > * {
+    grid-column: 1 / -1;
+  }
+
+  .step-body > h3 {
+    grid-column: 2;
   }
 
   .step-num {
-    font-size: var(--fs-n2);
+    font-size: var(--fs-6);
+  }
+}
+
+@media (max-width: 600px) {
+  .steps > li {
+    grid-template-columns: 2.2rem minmax(0, 1fr);
+    padding: var(--sp-6) 0 var(--sp-9);
+  }
+
+  .step-num {
+    font-size: var(--fs-4);
   }
 
   .step-body h3 {
     font-size: var(--fs-1);
-    margin-top: 3px;
   }
 
   /* What a run prints, smaller: it is there to be recognised, not read. */
@@ -2540,6 +2887,7 @@ main {
 @media (max-width: 600px) {
   .code pre {
     white-space: pre-wrap;
+    padding-right: var(--sp-11);
   }
 }
 
@@ -2822,10 +3170,12 @@ kbd {
   background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
 }
 
+/* Chosen: the one solid accent of a set of choices, as the segments and the
+   stories are. */
 .tab[aria-selected="true"] {
-  background: var(--accent-wash);
-  border-color: var(--accent-line);
-  color: var(--accent);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
 }
 
 .tabpanel[hidden] {
@@ -2886,12 +3236,13 @@ html:not(.js) .builder {
   cursor: pointer;
 }
 
-/* A one-of-many choice (role=radio) or a switch between drawings. */
+/* A one-of-many choice (role=radio) or a switch between drawings: chosen,
+   it takes the accent, solid, so what is chosen shows at a glance. Where
+   the reader is (the current page, the open question) takes the wash. */
 .seg button:is([aria-pressed="true"], [aria-checked="true"]) {
-  background: var(--accent-wash);
-  border-color: var(--accent-line);
-  color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent-line);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
 }
 
 .seg button:not([aria-pressed="true"], [aria-checked="true"]):hover {
@@ -3039,18 +3390,19 @@ html:not(.js) .builder {
   }
 }
 
-/* ── What AMAP decides: one card per case ── */
+/* ── What AMAP decides: the five outcomes, one figure ── */
 
+/* Figure 2: one plate, five panels lettered a to e, hairlines between them
+   rather than five boxes. The conflicts take a row of their own. The docs
+   draw the same windows one by one, each a plate (.fig.case). */
 .cases {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sp-5);
-}
-
-@media (max-width: 860px) {
-  .cases {
-    grid-template-columns: minmax(0, 1fr);
-  }
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-5);
+  box-shadow: var(--shadow-2);
+  counter-reset: panel;
 }
 
 .case {
@@ -3065,6 +3417,23 @@ html:not(.js) .builder {
   min-width: 0;
 }
 
+.cases > .case {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: var(--sp-6) var(--sp-7) var(--sp-6);
+}
+
+.cases > .case:nth-child(n + 3) {
+  border-top: 1px solid var(--line-1);
+}
+
+.cases > .case:nth-child(2),
+.cases > .case:nth-child(5) {
+  border-left: 1px solid var(--line-1);
+}
+
 .case-wide {
   grid-column: 1 / -1;
 }
@@ -3074,6 +3443,17 @@ html:not(.js) .builder {
   align-items: center;
   gap: var(--sp-3);
   flex-wrap: wrap;
+}
+
+/* The panel's letter, drawn (not read). */
+.cases .case-head::before {
+  counter-increment: panel;
+  content: counter(panel, lower-alpha);
+  content: counter(panel, lower-alpha) / "";
+  font-size: var(--fs-1);
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  color: var(--ink-1);
 }
 
 .case-tag {
@@ -3144,7 +3524,7 @@ html:not(.js) .builder {
   font-size: var(--fs-n1);
   color: var(--ink-2);
   padding-top: var(--sp-3);
-  border-top: 1px solid var(--line-1);
+  border-top: 1px dashed var(--line-2);
   margin-top: auto;
 }
 
@@ -3171,19 +3551,39 @@ html:not(.js) .builder {
 
 .cases-hint {
   display: none;
-  margin: -14px 0 10px;
+  margin: calc(-1 * var(--sp-2)) 0 var(--sp-3);
   font-size: var(--fs-n2);
-  color: var(--muted);
+  color: var(--ink-3);
 }
 
-/* On a phone the five cards are a strip to swipe, the next one showing at
-   the edge, rather than two thousand pixels to scroll past. */
+@media (max-width: 860px) {
+  .cases {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cases > .case:nth-child(n + 2) {
+    border-top: 1px solid var(--line-1);
+  }
+
+  .cases > .case:nth-child(2),
+  .cases > .case:nth-child(5) {
+    border-left: 0;
+  }
+}
+
+/* On a phone the five panels are a strip to swipe, each a plate of its own,
+   the next one showing at the edge, rather than two thousand pixels to
+   scroll past. */
 @media (max-width: 600px) {
   .cases-hint {
     display: block;
   }
 
   .cases {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
     grid-template-columns: none;
     grid-auto-flow: column;
     grid-auto-columns: 86%;
@@ -3196,7 +3596,13 @@ html:not(.js) .builder {
     scroll-padding: 0 16px;
   }
 
-  .case {
+  .cases > .case,
+  .cases > .case:nth-child(n + 2) {
+    background: var(--surface-2);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-5);
+    box-shadow: var(--shadow-2);
+    padding: var(--sp-5) var(--sp-4) var(--sp-4);
     scroll-snap-align: start;
   }
 
@@ -3559,10 +3965,14 @@ html:not(.js) .builder {
 
 /* ── Output cards ── */
 
+/* Six files, as open columns rather than boxes: each under a rule in the
+   colour of the metro line of the step that writes it, the sample's alone
+   for what every run writes, joined by the eggNOG database's for what only
+   a full run writes. */
 .files {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-4);
+  gap: var(--sp-8) var(--sp-8);
 }
 
 @media (max-width: 980px) {
@@ -3574,29 +3984,25 @@ html:not(.js) .builder {
 @media (max-width: 520px) {
   .files {
     grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
+    gap: var(--sp-5);
   }
 }
 
 .file {
-  background: var(--surface-1);
-  border: 1px solid var(--line-2);
-  border-radius: var(--r-4);
-  padding: var(--sp-5) var(--sp-6) var(--sp-5);
+  position: relative;
+  padding-top: var(--sp-5);
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
 }
 
-/* A short stretch of the metro line of the step that writes the file: the
-   sample's alone for what every run writes, joined by the eggNOG
-   database's for what only a full run writes. */
 .file .lane {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   display: block;
-  flex: none;
-  width: 40px;
-  height: 4px;
-  margin-bottom: var(--sp-2);
+  height: 3px;
   border-radius: 2px;
   background: var(--m-main);
 }
@@ -3612,7 +4018,7 @@ html:not(.js) .builder {
   background: none;
   border: none;
   padding: 0;
-  color: var(--ink);
+  color: var(--ink-1);
   font-weight: var(--fw-semibold);
 }
 
@@ -3628,26 +4034,24 @@ html:not(.js) .builder {
 
 .file .when {
   margin-top: auto;
-  padding-top: var(--sp-2);
+  padding-top: var(--sp-1);
   font-size: var(--fs-n2);
   color: var(--ink-3);
 }
 
-/* On a phone a card is a row: the line down its side, then the file, what
+/* On a phone a file is a row: the line down its side, then the file, what
    it is and when it is written. */
 @media (max-width: 520px) {
   .file {
-    display: grid;
-    grid-template-columns: 4px minmax(0, 1fr);
-    gap: 2px var(--sp-3);
-    padding: var(--sp-3) var(--sp-4);
+    padding: 0 0 0 var(--sp-4);
   }
 
   .file .lane {
-    grid-row: 1 / span 3;
-    width: 4px;
+    top: 2px;
+    bottom: 2px;
+    right: auto;
+    width: 3px;
     height: auto;
-    margin: 0;
   }
 
   .file.full-run .lane {
@@ -3656,10 +4060,10 @@ html:not(.js) .builder {
 
   .file p {
     font-size: var(--fs-n2);
-    line-height: 1.4;
+    line-height: 1.45;
   }
 
-  /* Each card says when it is written; the colour key can go. */
+  /* Each file says when it is written; the colour key can go. */
   .files-key {
     display: none;
   }
@@ -4135,37 +4539,13 @@ html:not(.js) .builder {
 
 /* ── FAQ ── */
 
-/* On a wide screen the head holds the left and the questions the right; the
-   questions are one list in one card, a hairline between them. */
-@media (min-width: 941px) {
-  #faq > .wrap {
-    display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    column-gap: var(--sp-10);
-    align-items: start;
-  }
-
-  #faq .section-head {
-    position: sticky;
-    top: calc(60px + var(--sp-7));
-    margin-bottom: 0;
-  }
-}
-
+/* The questions read in the main column, as one list between a rule over
+   it and one under it, a hairline between each two. */
 .faq {
   display: grid;
-  max-width: var(--measure, 42rem);
-  background: var(--surface-1);
-  border: 1px solid var(--line-2);
-  border-radius: var(--r-4);
-}
-
-#faq .faq {
-  max-width: none;
-}
-
-.faq details {
-  padding: 0 var(--sp-6);
+  max-width: 52rem;
+  border-top: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line-2);
 }
 
 .faq details + details {
@@ -4175,8 +4555,9 @@ html:not(.js) .builder {
 .faq summary {
   cursor: pointer;
   padding: var(--sp-5) 0;
-  font-size: var(--fs-0);
+  font-size: var(--fs-1);
   font-weight: var(--fw-semibold);
+  letter-spacing: var(--tr-heading);
   line-height: var(--lh-ui);
   color: var(--ink-1);
   list-style: none;
@@ -4208,6 +4589,7 @@ html:not(.js) .builder {
   place-items: center;
   width: 24px;
   height: 24px;
+  margin-top: 1px;
   border: 1px solid var(--line-2);
   border-radius: 50%;
   color: var(--ink-3);
@@ -4225,23 +4607,25 @@ html:not(.js) .builder {
 }
 
 @media (max-width: 600px) {
-  .faq details {
-    padding: 0 var(--sp-4);
-  }
-
   .faq summary {
     padding: var(--sp-4) 0;
-    font-size: var(--fs-n1);
+    font-size: var(--fs-0);
   }
 }
 
 .faq .ans {
-  padding: 0 0 var(--sp-5);
+  padding: 0 var(--sp-8) var(--sp-6) 0;
   color: var(--ink-2);
   font-size: var(--fs-n1);
   line-height: 1.55;
   display: grid;
   gap: var(--sp-3);
+}
+
+@media (max-width: 600px) {
+  .faq .ans {
+    padding-right: 0;
+  }
 }
 
 /* Measured times, each with what was run. */
@@ -4421,20 +4805,27 @@ html:not(.js) .builder {
   margin-top: 18px;
 }
 
-/* A table wider than its box scrolls, and shades the edge it continues past
-   (the same covers and shadows as a block of code). */
+/* A table set as a paper sets one: a heavy rule over it and under it, a
+   hairline under its head and between its rows, no box. A table wider than
+   its box scrolls, and shades the edge it continues past (the same covers
+   and shadows as a block of code); the covers are the colour of what the
+   table sits on, the page or a figure's card. */
 .table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--line-2);
-  border-radius: var(--r-4);
-  --cover: var(--surface-1);
+  border-top: 2px solid var(--ink-3);
+  border-bottom: 2px solid var(--ink-3);
+  --cover: var(--surface-0);
   --shade: rgba(255, 255, 255, 0.16);
   background:
     linear-gradient(to right, var(--cover) 40%, transparent) left / 28px 100% no-repeat local,
     linear-gradient(to left, var(--cover) 40%, transparent) right / 28px 100% no-repeat local,
     radial-gradient(farthest-side at 0 50%, var(--shade), transparent) left / 12px 100% no-repeat scroll,
     radial-gradient(farthest-side at 100% 50%, var(--shade), transparent) right / 12px 100% no-repeat scroll,
-    var(--surface-1);
+    var(--cover);
+}
+
+.fig .table-wrap {
+  --cover: var(--surface-1);
 }
 
 :root[data-theme="light"] .table-wrap {
@@ -4456,6 +4847,20 @@ td {
   vertical-align: top;
 }
 
+/* The first and last columns meet the rules' ends; a row opened from a
+   link keeps room for its bar. */
+.table-wrap :is(th, td):first-child {
+  padding-left: 0;
+}
+
+.table-wrap :is(th, td):last-child {
+  padding-right: 0;
+}
+
+.table-wrap tr:target > td:first-child {
+  padding-left: var(--sp-3);
+}
+
 td {
   padding-block: 14px;
 }
@@ -4470,8 +4875,7 @@ th {
   text-transform: uppercase;
   letter-spacing: var(--tr-caps);
   color: var(--ink-3);
-  background: color-mix(in srgb, var(--ink-1) 3.5%, var(--surface-1));
-  border-bottom-color: var(--line-2);
+  border-bottom-color: var(--line-3);
   font-weight: var(--fw-bold);
   vertical-align: bottom;
   white-space: nowrap;
@@ -4835,7 +5239,15 @@ th.num {
   }
 }
 
+/* The groups of pages, numbered as the front page numbers its chapters: the
+   number in the accent (drawn, not read), a short rule, the name in caps. */
+.docs-menu {
+  counter-reset: docs-group;
+}
+
 .docs-section {
+  display: flex;
+  align-items: center;
   font-size: var(--fs-n3);
   font-weight: var(--fw-bold);
   line-height: 1.3;
@@ -4844,6 +5256,18 @@ th.num {
   color: var(--ink-3);
   margin: var(--sp-3) 0 var(--sp-1);
   padding-left: var(--sp-3);
+}
+
+.docs-section::before {
+  counter-increment: docs-group;
+  content: counter(docs-group, decimal-leading-zero);
+  content: counter(docs-group, decimal-leading-zero) / "";
+  padding-right: calc(var(--sp-4) + var(--sp-2));
+  margin-right: var(--sp-2);
+  background: linear-gradient(var(--accent-line), var(--accent-line)) right center / var(--sp-4) 1px no-repeat;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
 }
 
 .docs-menu > .docs-section:first-of-type,
@@ -5032,6 +5456,26 @@ th.num {
   color: var(--accent);
 }
 
+/* Where the page is: a caps label in the accent, as a chapter's kicker. */
+.prose .crumb {
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+  letter-spacing: var(--tr-caps);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.prose .crumb a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.prose .crumb a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
 .prose .ver {
   font-size: var(--fs-n2);
 }
@@ -5042,6 +5486,22 @@ th.num {
   letter-spacing: var(--tr-display);
   line-height: 1.1;
   margin-bottom: var(--sp-4);
+}
+
+/* What the page is for, in one line under its title. */
+.prose .standfirst {
+  max-width: 40em;
+  margin: calc(-1 * var(--sp-1)) 0 var(--sp-4);
+  font-size: var(--fs-1);
+  line-height: 1.5;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+@media (max-width: 600px) {
+  .prose .standfirst {
+    font-size: var(--fs-0);
+  }
 }
 
 .prose .doc-meta {
@@ -5097,8 +5557,8 @@ th.num {
 
 .prose .hx-2 {
   font-size: var(--fs-4);
-  margin: var(--sp-9) 0 var(--sp-4);
-  padding-top: var(--sp-6);
+  margin: var(--sp-8) 0 var(--sp-4);
+  padding-top: var(--sp-5);
   border-top: 1px solid var(--line-1);
 }
 
@@ -5122,7 +5582,7 @@ th.num {
 
 @media (min-width: 861px) {
   .prose .hx-2 > .anchor {
-    top: var(--sp-6) !important;
+    top: var(--sp-5) !important;
   }
 }
 
@@ -5598,11 +6058,32 @@ th.num {
   padding: 16px 16px 12px;
 }
 
+/* A figure's caption, as a paper sets one: "Figure n" in caps, counted down
+   the page (drawn, not read), then its first sentence in full ink (set bold
+   by the docs builder), then the rest. */
 .prose figcaption {
   font-size: var(--fs-n2);
   line-height: var(--lh-ui);
   color: var(--ink-3);
-  margin-top: var(--sp-2);
+  margin-top: var(--sp-3);
+  text-wrap: pretty;
+}
+
+.prose figcaption::before {
+  counter-increment: figure;
+  content: "Figure " counter(figure);
+  content: "Figure " counter(figure) / "";
+  margin-right: var(--sp-2);
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tr-caps);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.cap-lead {
+  color: var(--ink-1);
+  font-weight: var(--fw-semibold);
 }
 
 .pager {
@@ -5646,9 +6127,29 @@ th.num {
   text-align: right;
 }
 
+/* The Docs tab's groups, numbered as the sidebar numbers them. */
+.docs-home .prose {
+  counter-reset: docs-group;
+}
+
 .docs-group {
   font-size: var(--fs-0) !important;
   margin: 1.6em 0 0.7em !important;
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+}
+
+.docs-group::before {
+  counter-increment: docs-group;
+  content: counter(docs-group, decimal-leading-zero);
+  content: counter(docs-group, decimal-leading-zero) / "";
+  font-weight: var(--fw-light);
+  font-size: var(--fs-2);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
 }
 
 /* ── Figures written out by the docs builder ── */
@@ -5991,9 +6492,17 @@ th.num {
 }
 
 .how-group .seg a[aria-current="true"] {
-  background: var(--accent-wash);
+  background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--on-accent);
+}
+
+.how-group .seg a[aria-current="true"]:hover,
+.seg button:is([aria-pressed="true"], [aria-checked="true"]):hover,
+.tab[aria-selected="true"]:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--on-accent);
 }
 
 .how-tag {
@@ -7315,33 +7824,38 @@ html:not(.js) .how-nav {
 /* A table for everyone: its rows and cells carry their ARIA roles, and the
    bars only draw what the numbers in them say. Each bar is AMAP; the part
    of it Bakta finds on its own, scored by the same rules, is shaded up to a
-   line, and its number is printed under the bar. */
+   line, and its number is printed under the bar. Set as a table in a paper
+   is: a heavy rule over it and under it, a hairline under its head and
+   between its rows, no boxes. */
 .proof {
   display: grid;
-  gap: 8px;
   max-width: none;
+  border-top: 2px solid var(--ink-3);
+  border-bottom: 2px solid var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
 
 .pf-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.25fr);
-  gap: var(--sp-4);
+  gap: var(--sp-6);
   align-items: start;
-  padding: var(--sp-3) var(--sp-5);
-  border: 1px solid var(--line-2);
-  border-radius: var(--r-4);
-  background: var(--surface-1);
+  padding: var(--sp-4) 0;
+  border-top: 1px solid var(--line-1);
 }
 
 .pf-headrow {
-  border: 0;
-  background: none;
-  padding-top: 0;
-  padding-bottom: 0;
+  padding: var(--sp-3) 0;
+  border-top: 0;
+  border-bottom: 1px solid var(--line-2);
   font-size: var(--fs-n2);
   font-weight: var(--fw-semibold);
+  line-height: var(--lh-ui);
   color: var(--ink-3);
+}
+
+.pf-headrow + .pf-row {
+  border-top: 0;
 }
 
 .pf-name {
@@ -7351,12 +7865,13 @@ html:not(.js) .how-nav {
 }
 
 .pf-name b {
-  font-size: var(--fs-n1);
+  font-size: var(--fs-0);
+  font-weight: var(--fw-semibold);
   color: var(--ink-1);
 }
 
 .pf-name small {
-  color: var(--muted);
+  color: var(--ink-3);
   font-size: var(--fs-n2);
 }
 
@@ -7410,7 +7925,7 @@ html:not(.js) .how-nav {
 .pf-bar small {
   padding-left: 2px;
   font-size: var(--fs-n2);
-  color: var(--muted);
+  color: var(--ink-3);
 }
 
 .pf-none .pf-track {
@@ -7419,14 +7934,14 @@ html:not(.js) .how-nav {
   padding: 0 10px;
   line-height: 26px;
   font-size: var(--fs-n2);
-  color: var(--muted);
+  color: var(--ink-3);
 }
 
 @media (max-width: 760px) {
   .pf-row {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 6px 12px;
-    padding: 8px 12px;
+    padding: var(--sp-3) 0;
   }
 
   .pf-name {
@@ -7435,6 +7950,10 @@ html:not(.js) .how-nav {
     flex-wrap: wrap;
     gap: 0 8px;
     align-items: baseline;
+  }
+
+  .pf-name b {
+    font-size: var(--fs-n1);
   }
 
   .pf-headrow span:first-child {

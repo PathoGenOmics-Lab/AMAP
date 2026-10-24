@@ -49,38 +49,58 @@
         <div class="eyebrow"><span class="dot"></span>A Nextflow pipeline for bacterial genomes</div>
         <h1>Bakta calls the genes. <span class="grad">AMAP checks every one.</span></h1>
         <p class="lead">AMAP annotates assembled genomes with Bakta, aligns a trusted reference proteome onto them with miniprot, and settles every disagreement: late starts, split genes, calls that are not genes, genes Bakta missed. Built for the <i>M.&nbsp;tuberculosis</i> complex, and for any species with a reference.</p>
-        <div class="actions">
-          <a class="btn btn-primary" href="#start">Start here</a>
-          <a class="btn btn-ghost" href="getting-started/tutorial.html">Read the tutorial</a>
-          <a class="btn btn-ghost btn-gh" href="https://github.com/PathoGenOmics-Lab/AMAP"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+        <div class="hero-side">
+          <div class="actions">
+            <a class="btn btn-primary" href="#start">Start here</a>
+            <a class="btn btn-ghost" href="getting-started/tutorial.html">Read the tutorial</a>
+            <a class="btn btn-ghost btn-gh" href="https://github.com/PathoGenOmics-Lab/AMAP"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+          </div>
+          <dl class="spec">
+            <div><dt>In</dt><dd>assembled genomes (FASTA)</dd></div>
+            <div><dt>Out</dt><dd>corrected GFF3, GenBank and proteome, the tables behind every decision, and a report of the whole run</dd></div>
+          </dl>
         </div>
-        <p class="hero-proof">On <i>M.&nbsp;tuberculosis</i> CDC1551, of Bakta's <b>4,077</b> calls AMAP settles the <b>1,100</b> that disagree with the reference, drops <b>130</b> that are not genes and puts back <b>97</b> genes Bakta missed. <a href="#cases">See each case</a></p>
-        <dl class="spec">
-          <div><dt>In</dt><dd>assembled genomes (FASTA)</dd></div>
-          <div><dt>Out</dt><dd>corrected GFF3, GenBank and proteome, the tables behind every decision, and a report of the whole run</dd></div>
-        </dl>
       </div>
 
       <figure class="demo" data-hero aria-label="Twelve Bakta calls at the start of the CDC1551 genome, the eight H37Rv proteins aligned there, and the eight genes AMAP keeps.">
         <div class="demo-head">
-          <span><b><i>M.&nbsp;tuberculosis</i> CDC1551</b>, its first 12.4 kb, against H37Rv. <span class="when-hover">Point at a gene.</span><span class="when-touch">Tap a gene.</span></span>
+          <span class="fig-n" aria-hidden="true"></span>
+          <p class="demo-step" data-hero-step aria-live="polite">What AMAP keeps</p>
           <span class="demo-ctrl"><button class="mini-btn" type="button" data-hero-replay>Replay</button></span>
         </div>
-        <p class="demo-step" data-hero-step aria-live="polite">What AMAP keeps</p>
         <div class="demo-stage" data-hero-stage></div>
-        <div class="legend">
-          <span><i class="chip bakta"></i>Bakta's call</span>
-          <span><i class="chip ref"></i>H37Rv protein, aligned</span>
-          <span><i class="chip amap"></i>what AMAP keeps</span>
-          <span><i class="chip band-agree"></i>same coordinates</span>
-          <span><i class="chip band-conflict"></i>coordinates differ</span>
-        </div>
         <div class="tally">
           <div class="t-agree"><b data-tally="agree">4</b>calls agree with the reference</div>
           <div class="t-fixed"><b data-tally="fixed">4</b>genes get the reference's coordinates</div>
           <div class="t-drop"><b data-tally="drop">3</b>calls are dropped</div>
         </div>
+        <figcaption class="demo-cap">
+          <p><b>The first 12.4 kb of <i>M.&nbsp;tuberculosis</i> CDC1551, against H37Rv.</b> Twelve calls by Bakta, the eight H37Rv proteins aligned there, and the eight genes AMAP keeps. <span class="when-hover">Point at a gene.</span><span class="when-touch">Tap a gene.</span></p>
+          <div class="legend">
+            <span><i class="chip bakta"></i>Bakta's call</span>
+            <span><i class="chip ref"></i>H37Rv protein, aligned</span>
+            <span><i class="chip amap"></i>what AMAP keeps</span>
+            <span><i class="chip band-agree"></i>same coordinates</span>
+            <span><i class="chip band-conflict"></i>coordinates differ</span>
+          </div>
+        </figcaption>
       </figure>
+    </div>
+  </section>
+
+  <section class="numbers" aria-labelledby="numbers-title">
+    <div class="wrap">
+      <div class="numbers-head">
+        <h2 class="numbers-label" id="numbers-title">Across the whole genome</h2>
+        <p><i>M.&nbsp;tuberculosis</i> CDC1551, against H37Rv</p>
+        <a href="#cases">See each case</a>
+      </div>
+      <ul class="numbers-list">
+        <li class="n-calls"><b>4,077</b>calls by Bakta, each held up against the reference</li>
+        <li class="n-settled"><b>1,100</b>disagree with it, and are settled</li>
+        <li class="n-dropped"><b>130</b>are not genes, and are dropped</li>
+        <li class="n-back"><b>97</b>genes Bakta missed, put back</li>
+      </ul>
     </div>
   </section>
 
@@ -201,6 +221,7 @@ Total: 0 error(s), 0 warning(s)</div>
         <h2>Each call, held up against the reference</h2>
         <p>Every Bakta call is compared with where the reference proteins align, on its strand and contig. That puts it in one of four cases, numbered as the code numbers them: 2 and 3 agree, 4 conflicts, 1 has no reference. A reference gene with no call at all is a fifth. These are real genes of CDC1551: <span class="when-hover">point at</span><span class="when-touch">tap</span> one for its coordinates.</p>
       </div>
+      <p class="fig-title"><span class="fig-n" aria-hidden="true"></span><span>Five outcomes, on real genes of CDC1551</span></p>
       <p class="cases-hint">Five cards: swipe for the next.</p>
       <div class="cases">
         <article class="case" data-fig="case2">
@@ -260,7 +281,9 @@ Total: 0 error(s), 0 warning(s)</div>
         <p class="kicker">Does it work?</p>
         <h2>Checked against genomes whose answer is known</h2>
         <p>Seven genomes, scored against genes AMAP did not annotate: the reference's own, carried onto each genome by a whole-genome alignment. AMAP finds every unchanged gene at exactly its coordinates, under its name; Bakta alone, scored the same way, finds 67 to 90% of them.</p>
+        <p class="pull"><b>100%</b>of unchanged genes found at exactly their coordinates, in all seven genomes. Bakta alone: 67 to 90%.</p>
       </div>
+      <p class="fig-title"><span class="fig-n" aria-hidden="true"></span><span>Genes found per genome, by AMAP and by Bakta alone</span></p>
       <div class="proof" role="table" aria-label="Accuracy benchmark: genes found per genome, by AMAP and by Bakta alone">
         <div class="pf-row pf-headrow" role="row"><span role="cell"></span><span role="columnheader">Unchanged genes, at exactly their coordinates</span><span role="columnheader">Changed genes, found under their name</span></div>
 <div class="pf-row" role="row"><span class="pf-name" role="rowheader"><b><i>M.&nbsp;tuberculosis</i> H37Rv</b><small>against itself</small></span><span class="pf-bar pf-exact" role="cell" data-found="4026" data-total="4026" data-bakta="2905"><span class="pf-track"><i class="pf-fill" style="width:100.00%" aria-hidden="true"></i><i class="pf-ghost" style="width:72.16%" aria-hidden="true"></i><b>4,026 / 4,026</b></span><small>Bakta alone: 2,905</small></span><span class="pf-bar pf-changed pf-none" role="cell"><span class="pf-track">no gene changed</span></span></div>
@@ -282,6 +305,7 @@ Total: 0 error(s), 0 warning(s)</div>
         <h2>Where each step happens</h2>
         <p>Stations are the processes of <code class="nw">main.nf</code>; lines are what travels between them. Pick a station, or flip an option to see what a run leaves out.</p>
       </div>
+      <p class="fig-title"><span class="fig-n" aria-hidden="true"></span><span>Every process of <code>main.nf</code>, in the order it runs them</span></p>
       <div class="metro-wrap" data-metro>
         <div class="metro-opts">
           <span>Run with</span>
@@ -417,6 +441,7 @@ case1_kept     11</pre>
         <h2>The whole run on one page</h2>
         <p>This one is the example report: twelve made-up genomes across four lineages, built around a real CDC1551 run. <b>Synthetic data</b>, so read the layout, not the numbers.</p>
       </div>
+      <p class="fig-title"><span class="fig-n" aria-hidden="true"></span><span>The example report, open in the page</span></p>
       <div class="report-frame">
         <div class="report-bar"><i></i><i></i><i></i><span>final_report.html</span><em class="tag-synthetic">synthetic data</em><a href="examples/demo_report.html" target="_blank" rel="noopener">Open full screen <span aria-hidden="true">&#8599;</span><span class="visually-hidden">(opens in a new tab)</span></a></div>
         <div class="report-stage" data-report-stage>

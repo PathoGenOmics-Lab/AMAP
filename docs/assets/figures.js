@@ -300,10 +300,12 @@
         }
         var maskAttr = "";
         if (g.short && gx2 - gx1 > 6) {
-          // An alignment that stops short of its protein's end fades out there.
+          // An alignment short of its whole protein fades out on the side it
+          // lacks: its end (3'), or for a piece of a cut gene its start (5').
+          // The 3' end is on the right of a plus-strand gene.
           var mid = id + "-" + i + "-" + k;
           var fadeW = Math.min(16, (gx2 - gx1) * 0.4);
-          var right = g.st !== "-";
+          var right = (g.short === "3'") === (g.st !== "-");
           var fx1 = right ? gx2 - fadeW : gx1 + fadeW;
           var fx2 = right ? gx2 : gx1;
           masks.push(
@@ -314,7 +316,7 @@
           );
           maskAttr = ' mask="url(#sm-' + mid + ')"';
         }
-        out.push('<path class="' + klass + (cutL || cutR ? " g-cut" : "") + (g.short ? " g-short" : "") + '"' + fill + maskAttr + ' d="' + arrow(gx1, gx2, gy, geneH, g.st, open, g.short ? "3'" : "") + '"/>');
+        out.push('<path class="' + klass + (cutL || cutR ? " g-cut" : "") + (g.short ? " g-short" : "") + '"' + fill + maskAttr + ' d="' + arrow(gx1, gx2, gy, geneH, g.st, open, g.short || "") + '"/>');
         if (g.gap) {
           var gpx = X(g.gap);
           out.push('<line class="gap-mark" x1="' + gpx.toFixed(1) + '" x2="' + gpx.toFixed(1) + '" y1="' + (gy - 5) + '" y2="' + (gy + geneH + 5) + '"/>');
@@ -712,7 +714,7 @@
   var LEGEND = [
     ["bakta", "bakta", "Bakta's call"],
     ["ref", "ref", null],
-    ["short", "ref short", "alignment stops short of the protein's end"],
+    ["short", "ref short", "alignment short of the whole protein"],
     ["amap", "amap", "what AMAP keeps"],
     ["partial", "amap partial", "partial: cut by a contig end"],
     ["pseudo", "pseudo", "pseudogene"],
@@ -888,10 +890,14 @@
       };
     });
     var ref = win.ref.map(function (r) {
-      var whole = r.complete ? "the whole protein, to its stop" : "stops short of its end: not the whole protein";
+      // The piece of a gene a contig end cut (the second pass's, in the one
+      // window that has one) holds the protein's last residues and lacks its
+      // start; any other alignment that is not the whole protein stops short
+      // of its end.
+      var whole = r.complete ? "the whole protein, to its stop" : r.piece ? "a piece: the protein's last residues, without its start" : "stops short of its end: not the whole protein";
       var gap = look.gaps && look.gaps[r.prot];
       return {
-        s: r.s, e: r.e, st: r.st, name: r.prot, gap: gap ? gap.at : null, gapLabel: gap ? gap.label : null, short: !r.complete,
+        s: r.s, e: r.e, st: r.st, name: r.prot, gap: gap ? gap.at : null, gapLabel: gap ? gap.label : null, short: r.complete ? "" : r.piece ? "5'" : "3'",
         k: win.bakta.some(function (c) {
           return same(c, r);
         }) ? "agree" : win.amap.some(function (a) {

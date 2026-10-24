@@ -627,7 +627,8 @@ class Renderer:
     def inline(self, text: str, links: bool = True, whole: bool = False) -> str:
         """An inline span as HTML. With links, a chip of code that names an
         option of the parameters page links to its row there; whole keeps
-        every chip on one line, as the name of a table's row."""
+        a chip on one line, as the name of a table's row, unless it is longer
+        than a phone's line holds (a long file name then breaks after a _ or .)."""
         keep: list[str] = []
         unlinked: dict[str, str] = {}
 
@@ -637,7 +638,7 @@ class Renderer:
 
         def code(m: re.Match) -> str:
             raw = m.group(2).strip()
-            chip = f'<code class="nw">{html.escape(raw)}</code>' if whole else code_chip(raw)
+            chip = f'<code class="nw">{html.escape(raw)}</code>' if whole and len(raw) <= LONG_TOKEN else code_chip(raw)
             flag = raw.split(" ")[0]
             if links and flag in options() and self.source != PARAMETERS:
                 marker = stash(f'<a class="opt-link" href="{self.root}user-guide/parameters.html#opt-{flag[2:]}">{chip}</a>')

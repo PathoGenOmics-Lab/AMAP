@@ -1058,6 +1058,8 @@ p {
   line-height: 1.6;
   font-size: 0.86rem;
   tab-size: 8;
+  /* The block's own corners, so its background does not square them off. */
+  border-radius: calc(var(--radius-sm) - 1px);
   /* A block wider than its box shades the edge it continues past. The covers
      scroll with the text and the shadows stay put, so a shadow shows only
      where there is more to see. */
@@ -1107,8 +1109,9 @@ code .nw {
 }
 
 /* Files, trees and program output keep their layout at every width, and
-   scroll. */
-.prose .code:not(.cmd) pre {
+   scroll. The command a builder writes ([data-command]) wraps as on the front
+   page. */
+.prose .code:not(.cmd) pre:not([data-command]) {
   white-space: pre;
 }
 
@@ -1228,6 +1231,7 @@ code .nw {
 
 .code.out .code-title {
   border-bottom: 1px dashed var(--line-strong);
+  color: var(--muted);
 }
 
 .code.out .copy {
@@ -1252,7 +1256,7 @@ code .nw {
     padding: 3px 10px;
   }
 
-  .prose .code pre {
+  .prose .code pre:not([data-command]) {
     padding-right: 16px;
     padding-left: 14px;
   }

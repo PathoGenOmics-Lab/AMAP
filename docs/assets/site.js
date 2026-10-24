@@ -1623,8 +1623,11 @@
   }
 
   // ── The page contents follow the reader down the page ──
+  // The contents in the sidebar (docs), the box under the h1 (docs on a
+  // phone) and the rail of chapters (front page) all mark the section being
+  // read; the first of them for a heading decides its level.
 
-  var tocLinks = Array.prototype.slice.call(document.querySelectorAll(".docs-toc a, .toc-inline a"));
+  var tocLinks = Array.prototype.slice.call(document.querySelectorAll(".page-toc a, .toc-inline a, .rail a"));
   var tocTargets = [];
   var seenTarget = {};
   tocLinks.forEach(function (link) {
@@ -1656,7 +1659,7 @@
       sheetToc.hidden = false;
       Array.prototype.push.apply(tocLinks, sheetToc.querySelectorAll("a"));
     }
-    var main = document.querySelector("main.prose");
+    var main = document.querySelector("main");
     if (main && header) {
       hereBar = document.createElement("button");
       hereBar.type = "button";
@@ -1687,20 +1690,54 @@
     });
   }
 
+  // The sidebar's contents: the section being read unfolds its h3s, the h2
+  // an h3 being read is in is marked too, and the sidebar scrolls (itself,
+  // never the page) to keep the mark in view.
+  var sideToc = document.querySelector(".docs-nav .page-toc");
+  var sideMenu = sideToc ? sideToc.closest(".docs-menu") : null;
+  // Until the list has opened where it was (below), only the marks move.
+  var menuReady = false;
+
+  function revealInMenu(el, whole) {
+    if (!sideMenu || !el || sideMenu.scrollHeight <= sideMenu.clientHeight + 1) return;
+    var m = sideMenu.getBoundingClientRect();
+    if (!m.height) return;
+    var r = el.getBoundingClientRect();
+    var pad = whole ? 8 : 40;
+    var by = 0;
+    if (r.height > m.height - 2 * pad || r.top < m.top + pad) by = r.top - m.top - pad;
+    else if (r.bottom > m.bottom - pad) by = r.bottom - m.bottom + pad;
+    if (Math.abs(by) < 1) return;
+    sideMenu.scrollTo({ top: sideMenu.scrollTop + by, behavior: reducedMotion() || whole ? "auto" : "smooth" });
+  }
+
+  function markSide(link) {
+    if (!sideToc) return;
+    var group = link ? link.closest(".toc-2") : null;
+    sideToc.querySelectorAll(".toc-2").forEach(function (li) {
+      li.classList.toggle("open", li === group);
+      li.classList.toggle("in", li === group && !!link.closest(".toc-3"));
+    });
+    if (link && menuReady) revealInMenu(link, false);
+  }
+
   function setCurrent(id) {
     currentId = id;
+    var side = null;
     tocLinks.forEach(function (link) {
       var on = link.getAttribute("href") === "#" + id;
       link.classList.toggle("active", on);
       if (on) link.setAttribute("aria-current", "location");
       else link.removeAttribute("aria-current");
+      if (on && sideToc && sideToc.contains(link)) side = link;
     });
+    markSide(side);
     updateHere();
   }
 
   function updateHere() {
     if (!hereBar) return;
-    var title = document.querySelector("main.prose h1");
+    var title = document.querySelector("main h1");
     var past = title ? title.getBoundingClientRect().bottom < HEADER_GAP : window.scrollY > 240;
     hereBar.classList.toggle("on", past);
     var current = tocTargets.filter(function (t) {
@@ -1881,7 +1918,8 @@
 
   // ── The page list keeps the current page in view ──
   // The list scrolls on its own; it opens where it was on the page before,
-  // and if the current page is out of sight there, with that page centred.
+  // and if the current page is out of sight there, it is brought in with as
+  // much of its contents as fits, then the section being read.
   var menu = document.querySelector(".docs-menu");
   if (menu) {
     // On a phone the list starts folded, so the page itself comes first. A
@@ -1899,8 +1937,13 @@
         if (r.top < m.top + 8 || r.bottom > m.bottom - 8) {
           menu.scrollTop += r.top - m.top - (menu.clientHeight - r.height) / 2;
         }
+        if (sideMenu === menu) {
+          revealInMenu(currentPage.parentElement, true);
+          revealInMenu(sideToc.querySelector('a[aria-current="location"]'), true);
+        }
       }
     }
+    menuReady = true;
     var saveMenu = function () {
       sessionSet("amap.menuScroll", menu.scrollTop);
     };

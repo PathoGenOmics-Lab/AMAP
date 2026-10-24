@@ -256,8 +256,8 @@ body {
    phone, and from 1216px the edge of the centred column (half the screen less
    584px; a background's percentage is taken of the room left by its tile,
    hence the two offsets). The docs keep only the major lines, quieter in the
-   light theme, so long reading stays calm; the sticky header and the
-   sidebar sit on its rows. */
+   light theme, so long reading stays calm; the sticky header, the sidebar
+   and the front page's rail sit on its rows. */
 :root {
   --grid-x-major: 24px;
   --grid-x-minor: 8px;
@@ -2795,6 +2795,115 @@ main {
   content: "Figure " counter(figure) / "";
 }
 
+/* ── The front page's rail of chapters ──
+   Where there is room beside the column (from 1440px: 104px of rail, 20px
+   from the column, 12px or more from the screen's edge), the page's figure
+   and chapters stand in the margin as a ruler: a tick for each, numbered as
+   the page numbers them, on rows of two grid squares that sit on the
+   graticule from its second major line down. The one being read takes the
+   accent on the rule and its name in full ink (site.js, as the docs'
+   contents). Narrower, the rail goes: the header's search lists the same
+   chapters, and on a phone the bar under the header names the one in view. */
+.rail {
+  display: none;
+}
+
+@media (min-width: 1440px) {
+  .rail {
+    --rail-w: 104px;
+    display: block;
+    position: fixed;
+    z-index: 40;
+    top: 160px;
+    left: max(12px, calc(50% - 584px - var(--sp-5) - var(--rail-w)));
+    width: var(--rail-w);
+  }
+}
+
+.rail ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rail a {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.1ch minmax(0, 1fr);
+  column-gap: var(--sp-2);
+  align-items: center;
+  height: 32px;
+  padding-left: var(--sp-3);
+  border-left: 1px solid var(--line-2);
+  color: var(--ink-3);
+  font-size: var(--fs-n3);
+  line-height: 1.3;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+/* A tick on the rule for each, as the ruler under the header has. */
+.rail a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 6px;
+  height: 1px;
+  background: var(--tick-major);
+}
+
+.rail-n {
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+/* Figure 1 is named as the page names it, in caps in the accent. */
+.rail a.rail-fig {
+  display: flex;
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tr-caps);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.rail a:hover {
+  color: var(--ink-1);
+}
+
+.rail a.rail-fig:hover {
+  color: var(--accent-hover);
+}
+
+.rail a[aria-current]::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 7px;
+  bottom: 7px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+.rail a[aria-current]::after {
+  width: 9px;
+  background: var(--accent);
+}
+
+.rail a[aria-current]:not(.rail-fig) {
+  color: var(--ink-1);
+  font-weight: var(--fw-semibold);
+}
+
+@media (pointer: coarse) {
+  .rail a {
+    height: 40px;
+  }
+}
+
 .cols-2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5105,33 +5214,28 @@ th.num {
 
 /* ── Documentation pages ── */
 
-/* The docs take a wider frame than the front page, so the text column keeps
-   its width next to the page list and the contents; header, columns and
-   footer share its edges. Running text keeps a reading measure inside the
-   column, while code, tables and drawings use all of it. */
-.docs .wrap {
-  max-width: 1380px;
-}
-
+/* The docs share the front page's frame: the page list, with the page's own
+   contents under its entry, then the text column, 848px wide on a large
+   screen (the sidebar and the gap are four squares of the graticule, so the
+   column starts on one of its major lines). Header, columns and footer share
+   its edges. Running text keeps a reading measure inside the column, while
+   code, tables and drawings use all of it. */
 .docs-layout {
+  --side: 224px;
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 200px;
+  grid-template-columns: var(--side) minmax(0, 1fr);
   column-gap: var(--sp-9);
   padding-top: var(--sp-8);
   padding-bottom: var(--sp-12);
 }
 
-.wrap.docs-home {
-  grid-template-columns: 220px minmax(0, 1fr);
+.docs-layout > .prose {
+  max-width: none;
 }
 
-@media (max-width: 1279px) {
-  .wrap.docs-layout {
-    grid-template-columns: 220px minmax(0, 1fr);
-  }
-
-  .docs-toc {
-    display: none;
+@media (min-width: 1216px) {
+  .docs-layout {
+    --side: 272px;
   }
 }
 
@@ -5144,8 +5248,7 @@ th.num {
   }
 }
 
-.docs-nav,
-.docs-toc {
+.docs-nav {
   position: sticky;
   top: 80px;
   align-self: start;
@@ -5158,16 +5261,13 @@ th.num {
   z-index: 10;
 }
 
-/* The page list and the contents scroll on their own; the search box does
-   not, so its results can spread over the page instead of being cut off. */
-.docs-menu,
-.docs-toc {
+/* The page list, with the contents in it, scrolls on its own; the search
+   box does not, so its results can spread over the page instead of being cut
+   off. site.js keeps the current page and the section being read in view. */
+.docs-menu {
   max-height: calc(100vh - 150px);
   overflow: auto;
-}
-
-.docs-toc {
-  max-height: calc(100vh - 96px);
+  scrollbar-width: thin;
 }
 
 @media (max-width: 860px) {
@@ -5445,8 +5545,7 @@ th.num {
   margin-top: var(--sp-2);
 }
 
-.docs-nav ul,
-.docs-toc ul {
+.docs-nav ul {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -5486,54 +5585,70 @@ th.num {
   background: var(--accent);
 }
 
-/* The contents: a rail of hairline, the section in view on an accent stretch
-   of it. */
-.docs-toc p {
-  font-size: var(--fs-n3);
-  font-weight: var(--fw-bold);
-  line-height: 1.3;
-  text-transform: uppercase;
-  letter-spacing: var(--tr-caps);
-  color: var(--ink-3);
-  margin-bottom: var(--sp-3);
+/* The page's contents, under its entry: a rail of hairline in line with the
+   page names, the section being read on an accent stretch of it, in full
+   ink. The h3s of that section unfold under it (site.js; with no script all
+   of them show). On a phone, where the list is folded at the top, the
+   contents are the box under the h1 instead. */
+.docs-nav .page-toc {
+  margin: var(--sp-1) 0 var(--sp-2) var(--sp-3);
 }
 
-.docs-toc li a {
-  display: block;
-  padding: 5px 0 5px var(--sp-3);
+.docs-nav .page-toc a {
+  padding: 4px var(--sp-2) 4px var(--sp-3);
   border-left: 1px solid var(--line-2);
+  border-radius: 0 var(--r-2) var(--r-2) 0;
   color: var(--ink-3);
   font-size: var(--fs-n2);
-  text-decoration: none;
   line-height: 1.4;
 }
 
-.docs-toc li.toc-3 a {
-  padding-left: calc(var(--sp-3) + var(--sp-3));
-  font-size: var(--fs-n2);
+.docs-nav .page-toc .toc-3 a {
+  padding-left: calc(var(--sp-3) * 2);
 }
 
-.docs-toc li a:hover {
+.docs-nav .page-toc a:hover {
   color: var(--ink-1);
 }
 
-.docs-toc li a.active {
-  border-left: 2px solid var(--accent);
-  padding-left: 11px;
+.docs-nav .page-toc a[aria-current="location"] {
   color: var(--ink-1);
+  font-weight: var(--fw-medium);
 }
 
-.docs-toc li.toc-3 a.active {
-  padding-left: 23px;
+.docs-nav .page-toc a[aria-current="location"]::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--accent);
 }
 
-/* The contents where the contents column does not show: folded under the
-   h1, its sections only. */
+/* The section an h3 being read is in: its name in the second ink. */
+.docs-nav .page-toc .in > a:not([aria-current]) {
+  color: var(--ink-2);
+}
+
+html.js .page-toc .toc-2:not(.open) > ul {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .page-toc {
+    display: none;
+  }
+}
+
+/* The contents where there is no sidebar (a phone): folded under the h1,
+   its sections only. */
 .toc-inline {
   display: none;
 }
 
-@media (max-width: 1279px) {
+@media (max-width: 860px) {
   .prose .toc-inline {
     display: block;
     max-width: 68ch;
@@ -6133,12 +6248,13 @@ th.num {
 
 /* On paper: light colours, the text alone, and the address of every link
    that leaves the site. */
-/* On paper, and in a high-contrast theme, the graticule, its ruler and the
-   plates' corner marks step out: they are drawn for a screen, and a forced
-   palette would turn them into lines of text colour. */
+/* On paper, and in a high-contrast theme, the graticule, its ruler, the
+   plates' corner marks and the rail of chapters step out: they are drawn for
+   a screen, and a forced palette would turn them into lines of text colour. */
 @media print {
   body::before,
   .top::after,
+  .rail,
   :is(.demo, .cases, .case, .metro-wrap, .how-stage-card, .excerpt, .report-frame)::after {
     display: none !important;
   }
@@ -6191,7 +6307,7 @@ th.num {
     color: var(--ink);
   }
 
-  .docs :is(.top, .docs-nav, .docs-toc, .toc-inline, .copy, .docs-pager, .edit, .to-top, .foot, .skip, .crumb-row, .anchor) {
+  .docs :is(.top, .docs-nav, .toc-inline, .copy, .docs-pager, .edit, .to-top, .foot, .skip, .crumb-row, .anchor) {
     display: none !important;
   }
 
@@ -8654,7 +8770,8 @@ html:not(.js) .how-nav {
   .how-steps button[aria-current="step"],
   .tally > [aria-pressed="true"],
   .docs-results a.active,
-  .docs-toc li a.active,
+  .page-toc a.active,
+  .rail a.active,
   .toc-inline a.active,
   .sheet-toc a.active,
   .docs-nav li a[aria-current="page"],

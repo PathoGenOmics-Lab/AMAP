@@ -45,9 +45,10 @@ fails when it drifts. This does, in seventeen parts:
   search      the search index has the shape the search box reads, every
               option has an entry that lands on its row, and the index stays
               under its size budget;
-  front       the pages the command builder links to exist, and the front
+  front       the pages the command builder links to exist, the front
               page's report frame and the picture standing in for it are
-              there, the picture light;
+              there, the picture light, and its rail lists Figure 1 and every
+              chapter in order, under the numbers the page gives them;
   dashes      no em-dashes.
 
 Run from the repository root, with what requirements-test.txt installs (the
@@ -1201,6 +1202,28 @@ def check_front(pages: dict[str, Page]) -> list[str]:
         size = (SITE / src).stat().st_size if (SITE / src).exists() else 0
         if size > POSTER_BYTES:
             problems.append(f"index.html: {src} is {size:,} bytes, over the {POSTER_BYTES:,} it may weigh")
+    problems += check_rail(front)
+    return problems
+
+
+def check_rail(front: str) -> list[str]:
+    """The rail beside the front page lists Figure 1, then every chapter, in
+    the page's order, each under the number the page gives it (the page counts
+    its chapters in CSS; the rail writes the numbers out, so they can drift)."""
+    rail = re.search(r'<nav class="rail"[^>]*>(.*?)</nav>', front, re.S)
+    if not rail:
+        return ["index.html: the rail of chapters is missing"]
+    links = re.findall(r'<a\b[^>]*href="#([\w-]+)"[^>]*>(.*?)</a>', rail.group(1), re.S)
+    hero = re.search(r'<section class="hero" id="([\w-]+)"', front)
+    chapters = re.findall(r'<section class="section(?: [\w-]+)*" id="([\w-]+)">\s*<div class="wrap">\s*<div class="section-head">\s*<p class="kicker">', front)
+    expected = ([hero.group(1)] if hero else []) + chapters
+    problems = []
+    if [target for target, _ in links] != expected:
+        problems.append(f"index.html: the rail lists {[t for t, _ in links]}, the page's figure and chapters are {expected}")
+    for n, (target, label) in enumerate(links[1:], 1):
+        number = re.search(r'<span class="rail-n"[^>]*>(\d+)</span>', label)
+        if not number or int(number.group(1)) != n:
+            problems.append(f"index.html: the rail numbers #{target} {number.group(1) if number else 'not at all'}, the page numbers it {n:02d}")
     return problems
 
 

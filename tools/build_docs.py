@@ -1737,7 +1737,37 @@ def section_id(section: str) -> str:
     return slugify(section, {})
 
 
-def sidebar(root: str, current: str | None) -> str:
+def page_contents(headings: list[tuple[int, str, str]], levels: tuple[int, ...]) -> str:
+    """The page's own contents for the sidebar, nested under its entry: each
+    h2, and the h3s under it in a list of their own (site.js unfolds those of
+    the section being read; with no script they all show)."""
+    groups: list[tuple[str, str, list[tuple[str, str]]]] = []
+    for level, text, slug in headings:
+        if level not in levels:
+            continue
+        if level == 3 and groups:
+            groups[-1][2].append((text, slug))
+        else:
+            groups.append((text, slug, []))
+    if not groups:
+        return ""
+    out = ['\n        <ul class="page-toc" aria-label="On this page">\n']
+    for text, slug, subs in groups:
+        out.append(f'          <li class="toc-2"><a href="#{slug}">{html.escape(text)}</a>')
+        if subs:
+            out.append(
+                "<ul>"
+                + "".join(f'<li class="toc-3"><a href="#{s}">{html.escape(t)}</a></li>' for t, s in subs)
+                + "</ul>"
+            )
+        out.append("</li>\n")
+    out.append("        </ul>\n      ")
+    return "".join(out)
+
+
+def sidebar(root: str, current: str | None, contents: str = "") -> str:
+    """The page list, its search, and under the current page its contents:
+    the one place a page's sections are listed where there is a sidebar."""
     out = [
         '<div class="docs-nav">\n',
         '  <div class="docs-search">\n'
@@ -1753,8 +1783,10 @@ def sidebar(root: str, current: str | None) -> str:
             label = f"nav-{section_id(sec)}"
             out.append(f'    <p class="docs-section" id="{label}">{sec}</p>\n    <ul aria-labelledby="{label}">\n')
             section = sec
-        here = ' aria-current="page"' if path == current else ""
-        out.append(f'      <li><a href="{root}{href(path)}"{here}>{title}</a></li>\n')
+        if path == current:
+            out.append(f'      <li><a href="{root}{href(path)}" aria-current="page">{title}</a>{contents}</li>\n')
+        else:
+            out.append(f'      <li><a href="{root}{href(path)}">{title}</a></li>\n')
     # On a phone the page list is folded before the first paint, so the page
     # itself comes first; with no script, or on a wider screen, it stays open.
     out.append(
@@ -1845,14 +1877,10 @@ def doc_page(position: int) -> tuple[Path, str, list[dict]]:
     root = "../" * path.count("/")
     # The changelog's contents are its versions; its categories repeat in each.
     levels = (2,) if renderer.changelog else (2, 3)
-    toc = "".join(
-        f'<li class="toc-{level}"><a href="#{slug}">{html.escape(text)}</a></li>'
-        for level, text, slug in renderer.headings
-        if level in levels
-    )
+    contents = page_contents(renderer.headings, levels)
     h2s = [(text, slug) for level, text, slug in renderer.headings if level == 2]
-    # Under the h1: how long the page takes to read, and below the width where
-    # the contents column shows, the contents themselves, folded.
+    # Under the h1: how long the page takes to read, and where there is no
+    # sidebar to list them (a phone), the contents themselves, folded.
     minutes = max(1, round(renderer.words / 200))
     # Under the h1, what the page is for: its line from PAGES, the one the
     # Docs tab and a shared link show.
@@ -1884,13 +1912,12 @@ def doc_page(position: int) -> tuple[Path, str, list[dict]]:
     body = (
         header(root, current, href(path))
         + '<div class="wrap docs-layout">\n'
-        + sidebar(root, path)
+        + sidebar(root, path, contents)
         + f'<main class="prose" id="content">\n{crumb}'
         + content
         + f'\n{to_top}<p class="edit"><a href="{REPO}/edit/main/{edit_path}">{GH_SVG}Edit this page on GitHub</a></p>\n'
         + pager
         + "\n</main>\n"
-        + (f'<nav class="docs-toc" aria-label="On this page"><p>On this page</p><ul>{toc}</ul></nav>\n' if toc else "")
         + "</div>\n"
         + footer(root)
     )

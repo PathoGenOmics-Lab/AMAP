@@ -113,6 +113,16 @@
 
   /* ── Tabs ── */
 
+  // A file excerpt too wide for a phone scrolls; it opens on what it is
+  // there to show, its first highlighted mark, with a little before it.
+  function revealMark(panel) {
+    var pre = panel && panel.querySelector("pre");
+    var mark = pre && pre.querySelector("mark");
+    if (!mark || pre.scrollWidth <= pre.clientWidth + 1) return;
+    var left = mark.getBoundingClientRect().left - pre.getBoundingClientRect().left + pre.scrollLeft;
+    pre.scrollLeft = Math.max(0, left - pre.clientWidth * 0.3);
+  }
+
   document.querySelectorAll('[role="tablist"]').forEach(function (list) {
     var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
     function select(tab) {
@@ -122,8 +132,12 @@
         t.tabIndex = on ? 0 : -1;
         var panel = document.getElementById(t.getAttribute("aria-controls"));
         if (panel) panel.hidden = !on;
+        if (on) revealMark(panel);
       });
     }
+    tabs.forEach(function (tab) {
+      if (tab.getAttribute("aria-selected") === "true") revealMark(document.getElementById(tab.getAttribute("aria-controls")));
+    });
     tabs.forEach(function (tab, i) {
       tab.tabIndex = tab.getAttribute("aria-selected") === "true" ? 0 : -1;
       tab.addEventListener("click", function () {
@@ -139,6 +153,77 @@
       });
     });
   });
+
+  /* ── Sideways scrollers ── */
+
+  // On a phone the case cards, the story chips and the metro map scroll
+  // sideways. What the keyboard focuses there comes into view: a case's
+  // whole card, anything else just enough. Not on a screen wide enough for
+  // them, where nothing scrolls.
+  ["cases", "how-group", "metro-scroll"].forEach(function (name) {
+    document.querySelectorAll("." + name).forEach(function (box) {
+      box.addEventListener("focusin", function (event) {
+        var scroller = name === "how-group" ? event.target.closest(".seg") : box;
+        if (!scroller || scroller.scrollWidth <= scroller.clientWidth + 1) return;
+        var card = name === "cases" && event.target.closest(".case");
+        (card || event.target).scrollIntoView({ block: "nearest", inline: card ? "start" : "nearest" });
+      });
+    });
+  });
+
+  /* ── Scroll regions ── */
+
+  // A table, a command or a program's output too wide for the screen
+  // scrolls sideways. While it does, it is a tab stop with a name, so the
+  // keyboard can scroll it; while it fits, it is neither.
+  function scrollRegion(el) {
+    var scrolls = el.scrollWidth > el.clientWidth + 1;
+    var was = el.hasAttribute("data-scroll-region");
+    if (scrolls === was) return;
+    if (scrolls) {
+      el.setAttribute("data-scroll-region", "");
+      el.setAttribute("tabindex", "0");
+      el.setAttribute("role", "region");
+      if (!el.hasAttribute("aria-labelledby") && !el.hasAttribute("aria-label")) {
+        var code = el.closest(".code");
+        var title = code && code.querySelector(".code-title");
+        var kind = el.classList.contains("table-wrap")
+          ? "Table"
+          : title
+            ? title.textContent.trim()
+            : el.closest(".cmd, .builder") || el.querySelector(".ln")
+              ? "Command"
+              : el.closest(".excerpt")
+                ? "File excerpt"
+                : el.classList.contains("out") || el.closest(".out")
+                  ? "Output"
+                  : "Text";
+        el.setAttribute("aria-label", kind + ", scrolls sideways");
+        el.setAttribute("data-scroll-label", "");
+      }
+    } else {
+      el.removeAttribute("data-scroll-region");
+      el.removeAttribute("tabindex");
+      el.removeAttribute("role");
+      if (el.hasAttribute("data-scroll-label")) {
+        el.removeAttribute("aria-label");
+        el.removeAttribute("data-scroll-label");
+      }
+    }
+  }
+  var scrollers = document.querySelectorAll(".table-wrap, .code pre, .out, .excerpt pre");
+  if ("ResizeObserver" in window) {
+    var watchScroll = new ResizeObserver(function (records) {
+      records.forEach(function (r) {
+        scrollRegion(r.target);
+      });
+    });
+    scrollers.forEach(function (el) {
+      watchScroll.observe(el);
+    });
+  } else {
+    scrollers.forEach(scrollRegion);
+  }
 
   /* ── Copy buttons ── */
 
@@ -350,21 +435,27 @@
     // A command as the page writes it: a span per line, with its newline in
     // it, and a span per word, a flag in .f and a value in .v, so that a
     // narrow screen wraps between words, under the line it continues.
+    // A continued line keeps its indent with its first word and its closing
+    // backslash with its last, so neither sits on a line of its own on a
+    // phone; what Copy takes is the same text.
     function commandHtml(all) {
-      var rows = ['<span class="p">$ </span><span class="t">nextflow</span> <span class="t">run</span> <span class="t">PathoGenOmics-Lab/AMAP</span>'];
+      var rows = [['<span class="p">$ </span><span class="t">nextflow</span>', '<span class="t">run</span>', '<span class="t">PathoGenOmics-Lab/AMAP</span>']];
       all.forEach(function (line) {
         rows.push(
-          "    " +
-            line[0]
-              .map(function (part) {
-                return '<span class="' + (/^-/.test(part) ? "f" : "v") + '">' + esc(part) + "</span>";
-              })
-              .join(" ")
+          line[0].map(function (part) {
+            return '<span class="' + (/^-/.test(part) ? "f" : "v") + '">' + esc(part) + "</span>";
+          })
         );
       });
       return rows
         .map(function (row, k) {
-          return '<span class="ln">' + row + (k < rows.length - 1 ? " \\\n" : "") + "</span>";
+          var parts = row.slice();
+          var more = k < rows.length - 1;
+          if (k > 0) parts[0] = '<span class="nw">    ' + parts[0] + "</span>";
+          if (more) parts[parts.length - 1] = '<span class="nw">' + parts[parts.length - 1] + " \\</span>";
+          // An indented line that wraps hangs four characters further in,
+          // as the docs' commands do (--i is its indent).
+          return '<span class="ln"' + (k > 0 ? ' style="--i:4"' : "") + ">" + parts.join(" ") + (more ? "\n" : "") + "</span>";
         })
         .join("");
     }
@@ -379,7 +470,7 @@
             '<li><span class="flags">' +
             flags
               .map(function (flag) {
-                return "<code>" + esc(flag) + "</code>";
+                return '<code class="nw">' + esc(flag) + "</code>";
               })
               .join(" ") +
             "</span><span>" + esc(line[1]) + "</span></li>"
@@ -394,21 +485,21 @@
       if (choice.engine === "slurm") {
         out.push("On a cluster the slurm profile sets the ceilings, so a laptop's do not apply.");
         out.push(
-          "Bakta's jobs ask for <code>--qos=medium</code>; if your cluster has none, see " +
+          "Bakta's jobs ask for <code class='nw'>--qos=medium</code>; if your cluster has none, see " +
             '<a href="' + builderRoot + 'deployment/hpc.html#fitting-your-site">HPC clusters</a>.'
         );
       }
       if (choice.engine !== "docker") {
         out.push(
-          "The singularity profile keeps the converted image in <code>singularity_cache/</code> under <code>--outdir</code>, " +
-            "and that wins over <code>NXF_SINGULARITY_CACHEDIR</code>. To keep one shared copy, put " +
-            "<code>singularity.cacheDir = '/shared/singularity_cache'</code> in a config passed with <code>-c</code>."
+          "The singularity profile keeps the converted image in <code class='nw'>singularity_cache/</code> under <code class='nw'>--outdir</code>, " +
+            "and that wins over <code class='nw'>NXF_SINGULARITY_CACHEDIR</code>. To keep one shared copy, put " +
+            "<code>singularity.cacheDir = '/shared/singularity_cache'</code> in a config passed with <code class='nw'>-c</code>."
         );
       }
       if (small && choice.engine === "docker") {
-        out.push("8 GB is what Docker Desktop usually gives: if <code>docker info</code> reports more, raise <code>--max_memory</code> to it.");
+        out.push("8 GB is what Docker Desktop usually gives: if <code class='nw'>docker info</code> reports more, raise <code class='nw'>--max_memory</code> to it.");
       } else if (small) {
-        out.push("Set <code>--max_memory</code> to the memory the machine has free.");
+        out.push("Set <code class='nw'>--max_memory</code> to the memory the machine has free.");
       }
       if (small && opt("only") && onlyByLaptop) {
         out.push("<b>Only the corrected genes</b> is ticked for you: eggNOG loads its whole database into memory and asks for 50 GB. Untick it on a machine that has that much.");
@@ -519,7 +610,7 @@
 
   /* ── Embedded report ── */
 
-  // The example report is 1.9 MB of scripts and plots, so the page shows a
+  // The example report is 4.5 MB of scripts and plots, so the page shows a
   // picture of it until the reader asks for it. Once open it takes the mouse
   // and the keyboard for its own plots, and gives them back when the pointer
   // or focus leaves it, a touch lands outside it, Escape is pressed or Done
@@ -599,6 +690,24 @@
 
   /* ── Documentation: search, page contents, menu ── */
 
+  // An old anchor (a heading renamed since, or GitHub's anchor for a
+  // changelog heading) leads to the heading's current one, which goes in the
+  // address so the contents and the arrival mark follow it.
+  function followAlias() {
+    var id = decodeURIComponent(location.hash.slice(1));
+    var alias = id && document.getElementById(id);
+    if (!alias || !alias.classList.contains("anchor-alias")) return;
+    var to = alias.getAttribute("data-to");
+    var target = document.getElementById(to);
+    if (!target) return;
+    try {
+      history.replaceState(history.state, "", "#" + to);
+    } catch (e) {}
+    target.scrollIntoView();
+  }
+  followAlias();
+  window.addEventListener("hashchange", followAlias);
+
   var header = document.querySelector("header.top");
   var HEADER_GAP = 61; // the sticky header's height, its border included
 
@@ -667,8 +776,24 @@
     db: ["database"],
     cluster: ["hpc", "slurm"],
     mamba: ["conda"],
-    gbk: ["genbank"]
+    gbk: ["genbank"],
+    vanish: ["missing", "ignored"],
+    vanished: ["missing", "ignored"],
+    disappear: ["missing", "ignored"],
+    disappeared: ["missing", "ignored"],
+    dropped: ["missing", "ignored"],
+    proteome: ["faa", "proteins"],
+    laptop: ["docker desktop"]
   };
+
+  // Words a question in plain words is made of and every page has: "how to
+  // run on slurm" searches for run and slurm. A query of nothing else keeps
+  // them.
+  var STOP = {};
+  ("a an the to of on in is are be do does did how what where why which when who can i my me we you use using " +
+    "much many mean means get with for it this that there").split(" ").forEach(function (w) {
+    STOP[w] = true;
+  });
 
   // A query word matches where a word starts, so "skip" finds --skip_typing and
   // not the middle of another word. A lone number matches only as a whole
@@ -686,7 +811,7 @@
   }
 
   function queryWords(query) {
-    return query
+    var words = query
       .toLowerCase()
       .split(/\s+/)
       .map(function (w) {
@@ -695,6 +820,10 @@
       .filter(function (w) {
         return w.length > 1 || /^[0-9]$/.test(w);
       });
+    var content = words.filter(function (w) {
+      return !STOP[w];
+    });
+    return content.length ? content : words;
   }
 
   function termGroups(words) {
@@ -828,23 +957,62 @@
   // Every entry that has every word, grouped by page. A page ranks by its best
   // entry plus how much of the page is about the words; Changelog entries
   // count half, so the page that explains a thing comes before the release
-  // that changed it.
+  // that changed it. When no entry has every word of three or more, the
+  // entries that miss one word come instead, scored by how many they have.
   function searchDocs(query) {
     var words = queryWords(query);
-    var result = { words: words, groups: [], total: 0, suggestion: null };
+    var result = { words: words, groups: [], total: 0, suggestion: null, partial: false };
     if (!words.length) return result;
     var groupsOfTerms = termGroups(words);
     var byPage = {};
     var order = [];
-    indexEntries().forEach(function (e) {
+    var entries = indexEntries();
+    // Each word against each entry, once. A word most entries have ("run")
+    // weighs less than one few have ("slurm"), so in a question the word
+    // that names the subject decides.
+    var per = entries.map(function (e) {
+      return groupsOfTerms.map(function (group) {
+        return scoreTerm(group, e);
+      });
+    });
+    var weights = groupsOfTerms.map(function (_g, k) {
+      var df = 0;
+      per.forEach(function (row) {
+        if (row[k]) df++;
+      });
+      return Math.log(1 + entries.length / (1 + df));
+    });
+    var mean = weights.reduce(function (a, b) {
+      return a + b;
+    }, 0) / weights.length;
+    var allowMissing = 0;
+    var matched = function (row) {
       var score = 0;
       var tf = 0;
-      for (var k = 0; k < groupsOfTerms.length; k++) {
-        var s = scoreTerm(groupsOfTerms[k], e);
-        if (!s) return;
-        score += s.score;
+      var missing = 0;
+      for (var k = 0; k < row.length; k++) {
+        var s = row[k];
+        if (!s) {
+          if (++missing > allowMissing) return null;
+          continue;
+        }
+        score += s.score * (mean ? weights[k] / mean : 1);
         tf += s.tf;
       }
+      score *= (row.length - missing) / row.length;
+      return { score: score, tf: tf };
+    };
+    var matches = per.map(matched);
+    if (words.length >= 3 && !matches.some(Boolean)) {
+      allowMissing = 1;
+      result.partial = true;
+      matches = per.map(matched);
+    }
+    entries.forEach(function (e, i) {
+      var m = matches[i];
+      if (!m) return;
+      var score = m.score;
+      var tf = m.tf;
       score += phraseBonus(words, e);
       if (e._kind === "changelog") score *= 0.5;
       var key = e._base;
@@ -1020,7 +1188,10 @@
       } else {
         var groups = found.groups.slice(0, 8);
         var pages = found.groups.length;
-        var line = found.total + (found.total === 1 ? " result" : " results") + " in " + pages + (pages === 1 ? " page" : " pages");
+        var line =
+          (found.partial ? "No page has every word: " : "") +
+          found.total + (found.total === 1 ? " result" : " results") + (found.partial ? " with all but one," : "") +
+          " in " + pages + (pages === 1 ? " page" : " pages");
         html += '<div class="r-count" aria-hidden="true">' + line + (pages > groups.length ? ", the best " + groups.length + " shown" : "") + "</div>";
         groups.forEach(function (g, gi) {
           var more = g.sections.length;
@@ -1054,7 +1225,12 @@
             );
           });
         });
-        announce(found.total + (found.total === 1 ? " result" : " results") + " for " + query + ", in " + pages + (pages === 1 ? " page" : " pages"), 350);
+        announce(
+          (found.partial ? "No page has every word. " : "") +
+            found.total + (found.total === 1 ? " result" : " results") + (found.partial ? " with all but one word" : "") +
+            " for " + query + ", in " + pages + (pages === 1 ? " page" : " pages"),
+          350
+        );
       }
       html += '<div class="r-foot" aria-hidden="true"><kbd>↑</kbd> <kbd>↓</kbd> to move, <kbd>Enter</kbd> to open, <kbd>Esc</kbd> to close</div>';
       panel.innerHTML = html;
@@ -1262,12 +1438,13 @@
     sheet.id = "search-sheet";
     sheet.hidden = true;
     sheet.setAttribute("role", "dialog");
+    sheet.setAttribute("aria-modal", "true");
     sheet.setAttribute("aria-label", "Search the documentation");
     sheet.innerHTML =
       '<div class="wrap">' +
       '<div class="docs-search sheet-search">' + GLASS +
       '<input type="search" placeholder="Search the docs" aria-label="Search the documentation">' +
-      '<button type="button" class="sheet-close" aria-label="Close the search"><span class="on-keys">Esc</span><span class="on-touch">Close</span></button>' +
+      '<button type="button" class="sheet-close" aria-label="Close the search (Esc)"><span class="on-keys">Esc</span><span class="on-touch">Close</span></button>' +
       '<div class="docs-results" hidden></div>' +
       "</div>" +
       '<div class="sheet-empty">' +
@@ -1328,6 +1505,13 @@
       if (b) b.setAttribute("aria-expanded", "true");
     });
     document.documentElement.classList.add("sheet-open");
+    // The page under the sheet is out of reach while it is open; the header
+    // stays, and focus that goes there closes the sheet.
+    Array.prototype.forEach.call(document.body.children, function (el) {
+      if (el === sheet || el === scrim || el === header || el === hereBar || el === statusLine || el.inert || /^(SCRIPT|STYLE)$/.test(el.tagName)) return;
+      el.inert = true;
+      el.setAttribute("data-sheet-inert", "");
+    });
     sheet.scrollTop = 0;
     // From the bar that names the section, the contents come first, with no
     // keyboard popping up over them; from anywhere else, the search box.
@@ -1352,14 +1536,60 @@
       if (b) b.setAttribute("aria-expanded", "false");
     });
     document.documentElement.classList.remove("sheet-open");
+    document.querySelectorAll("[data-sheet-inert]").forEach(function (el) {
+      el.inert = false;
+      el.removeAttribute("data-sheet-inert");
+    });
     if (restore && sheetOpener && sheetOpener.focus) sheetOpener.focus();
   }
 
-  // "/" and Ctrl or Cmd+K open the search from anywhere on the site.
+  // "/" and Ctrl or Cmd+K open the search from anywhere on the site. A key
+  // of a single character can be turned off (WCAG 2.1.4), from the footer of
+  // every page; this browser remembers it.
+  var slashOn = true;
+  try {
+    slashOn = localStorage.getItem("amap.slash") !== "off";
+  } catch (e) {}
+  var slashToggle = null;
+  function setSlash(on, save) {
+    slashOn = on;
+    if (save) {
+      try {
+        if (on) localStorage.removeItem("amap.slash");
+        else localStorage.setItem("amap.slash", "off");
+      } catch (e) {}
+    }
+    document.documentElement.classList.toggle("no-slash", !on);
+    document.querySelectorAll("[aria-keyshortcuts]").forEach(function (el) {
+      el.setAttribute("aria-keyshortcuts", (on ? "/ " : "") + "Control+K Meta+K");
+    });
+    if (slashToggle) {
+      slashToggle.textContent = on ? "The / key opens the search: turn it off" : "The / key does nothing: turn it on";
+    }
+  }
+  var foot = document.querySelector("footer.foot");
+  var footBase = foot && foot.querySelector(".foot-base");
+  if (foot && !footBase) {
+    footBase = document.createElement("div");
+    footBase.className = "wrap foot-base";
+    foot.appendChild(footBase);
+  }
+  if (footBase && searchButton) {
+    slashToggle = document.createElement("button");
+    slashToggle.type = "button";
+    slashToggle.className = "slash-toggle";
+    slashToggle.addEventListener("click", function () {
+      setSlash(!slashOn, true);
+      announce(slashOn ? "The / key opens the search" : "The / key no longer opens the search");
+    });
+    footBase.appendChild(slashToggle);
+  }
+  setSlash(slashOn, false);
+
   document.addEventListener("keydown", function (event) {
     var t = event.target;
     var typing = t && (/^(input|textarea|select)$/i.test(t.tagName) || t.isContentEditable);
-    var slash = event.key === "/" && !typing && !event.ctrlKey && !event.metaKey && !event.altKey;
+    var slash = slashOn && event.key === "/" && !typing && !event.ctrlKey && !event.metaKey && !event.altKey;
     var k = (event.key === "k" || event.key === "K") && (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey;
     if (!slash && !k) return;
     event.preventDefault();

@@ -30,7 +30,7 @@ appears to work until a test touches `classify_cases.py`, which pulls in
 plotly through `classify/plotting.py`.
 
 The suite covers ID handling, overlap arithmetic, case classification, the
-rules that resolve and recover genes, and the parsers, and it runs in about a second. Anything
+rules that resolve and recover genes, and the parsers, and it runs in about three minutes (some tests skip themselves when a tool such as R or Diamond is missing). Anything
 touching `bin/classify/` should come with a test, since the correction logic is
 where a silent change does the most damage.
 
@@ -75,10 +75,12 @@ docker run --rm --platform linux/amd64 -v "$PWD:/amap" -w /amap \
 
 `tests/benchmark/README.md` explains how the truth is built and what to expect.
 
-The quickest way to run the whole pipeline is the test profile:
+The quickest check of the whole chain up to the correction is the test
+profile, without eggNOG, whose 45 GB database the test profile's 8 GB cap
+cannot hold:
 
 ```bash
-nextflow run . -profile docker,test
+nextflow run . -profile docker,test --skip_functional_annotation --outdir amap-test
 ```
 
 ### Pipeline code and `-resume`

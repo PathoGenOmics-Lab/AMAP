@@ -16,7 +16,7 @@ sections, which say that the run skipped them.
 It is self-contained: the data travels inside the file, compressed, and nothing
 is fetched from anywhere, so it opens with no network and survives being
 emailed. Fifteen MTBC genomes make a file of about half a megabyte, against
-4.4 MB for `final_report.html` with twelve. It is dark, like the website, with a
+4.5 MB for `final_report.html` with twelve. It is dark, like the website, with a
 switch to light at the top right.
 
 ## The sections
@@ -147,8 +147,10 @@ A section without its inputs says which and why instead of drawing anything.
 With a custom reference, under `--skip_typing` and `--skip_mycobrowser`, every
 genome is `Untyped` and the names and products come from Bakta and eggNOG.
 
-Genomes of the sample sheet that produced no annotation, because the pipeline
-ignored a task that kept failing, are named at the top of the report.
+A genome that was classified but has no corrected genes, because the pipeline
+set aside its correction after it kept failing, is named at the top of the
+report. One whose Bakta, miniprot or classification task was set aside never
+reaches the report: see [a sample is missing](../deployment/troubleshooting.md#a-sample-is-missing-from-the-results-ignored--1).
 
 ## Size
 

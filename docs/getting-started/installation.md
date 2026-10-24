@@ -94,7 +94,10 @@ database, the one thing the image does not hold. It is the largest thing AMAP
 keeps: `eggnog.db` alone unpacks to 41.4 GB from a 6.8 GB download, and the
 build also downloads the 9.5 GB eggNOG proteome, makes the bacteria-only Diamond
 index from it and deletes it. It is built once, in the folder `--eggnog_db`
-names, and every run after reuses it, so point that somewhere with room.
+names, and every run after reuses it, so point that somewhere with room. The
+annotation then loads it into memory and asks for 50 GB, where the test profile
+caps every task at 8 GB and 1 h, so keep `--skip_functional_annotation` for the
+test.
 
 > [!TIP]
 > **Check inputs before a long run**

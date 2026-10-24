@@ -1066,6 +1066,13 @@ def check_citation() -> list[str]:
             problems.append(f"{page}: the BibTeX's {key} is not {value}, as in {CITATION_CFF}")
     if f"({year}). AMAP (Version {version})" not in text:
         problems.append(f"{page}: the APA line does not say ({year}) and Version {version}, as {CITATION_CFF} does")
+    # The README cites it too, with the same BibTeX.
+    readme = README.read_text(encoding="utf-8")
+    bib = re.search(r"^@software\{.*?^```", readme, re.S | re.M)
+    bib = bib.group(0) if bib else ""
+    for key, value in (("version", version), ("year", year), ("month", MONTHS[int(month) - 1])):
+        if not re.search(rf"^\s*{key} = \{{?{re.escape(value)}\}}?,?\s*\}}?$", bib, re.M):
+            problems.append(f"README.md: the BibTeX's {key} is not {value}, as in {CITATION_CFF}")
     return problems
 
 
@@ -1137,6 +1144,9 @@ def check_readme(pages: dict[str, Page]) -> list[str]:
             problems.append(f"README.md: links to {url}, and docs/{target} has no #{anchor}")
     if "mkdocs" in text.lower():
         problems.append("README.md: still mentions MkDocs")
+    # Typing puts the lineage in front of a sample's folder name.
+    for folder in sorted(set(re.findall(r"results/\w+/\{sampleId\}/", text))):
+        problems.append(f"README.md: names {folder}, where the folder is {{lineage}}_{{sampleId}}")
     # Its pictures are files of the repository.
     for src in re.findall(r'(?:src|srcset)="([^"]+)"', text) + re.findall(r"!\[[^\]]*\]\(([^)\s]+)", text):
         if not re.match(r"^https?:", src) and not Path(src).exists():
@@ -1290,6 +1300,30 @@ def check_search_index() -> list[str]:
 EM_DASH = "\u2014"
 
 
+# ── anchors ──
+
+
+def check_anchors(pages: dict[str, Page]) -> list[str]:
+    """Links written before a heading was renamed still land: every old id
+    LEGACY_IDS keeps is on its page, and the changelog has GitHub's anchor for
+    every heading of CHANGELOG.md, as links to it from GitHub use them."""
+    problems = []
+    for source, ids in build_docs.LEGACY_IDS.items():
+        name = build_docs.href(source)
+        for old in ids:
+            if name in pages and old not in pages[name].ids:
+                problems.append(f"{name}: has no #{old}, which LEGACY_IDS keeps for links written before")
+    seen: dict[str, int] = {}
+    name = build_docs.href(build_docs.CHANGELOG[0])
+    for line in build_docs.CHANGELOG[1].read_text(encoding="utf-8").splitlines():
+        heading = re.match(r"^#{1,6}\s+(.*)$", line)
+        if heading:
+            slug = build_docs.slugify(build_docs.plain(heading.group(1)), seen)
+            if name in pages and slug not in pages[name].ids:
+                problems.append(f"{name}: has no #{slug}, GitHub's anchor for the changelog heading {heading.group(1)!r}")
+    return problems
+
+
 def check_dashes() -> list[str]:
     """No em-dashes in what the site says. What a program prints is quoted as
     it prints it, so code blocks are left out (validate_inputs.py writes one),
@@ -1332,6 +1366,7 @@ def main() -> int:
         ("figures", lambda: check_figure_scripts(pages)),
         ("search", check_search_index),
         ("front", lambda: check_front(pages)),
+        ("anchors", lambda: check_anchors(pages)),
         ("dashes", check_dashes),
     ]
     failed = 0

@@ -583,10 +583,22 @@ mark.search-hit {
   }
 }
 
-/* Under 360px, GitHub leaves the header; the page's foot links to it. */
+/* Under 360px the links and buttons draw closer, so GitHub keeps its place;
+   where the row still runs over, site.js drops it (squeeze-6), and the
+   page's foot links to it. */
 @media (max-width: 359px) {
-  .nav .gh-link {
-    display: none;
+  .nav a {
+    padding: 7px 3px;
+  }
+
+  .nav .gh-link,
+  .nav .icon-btn,
+  .nav .search-btn {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    margin-left: 0;
   }
 }
 
@@ -1020,6 +1032,11 @@ label,
 
   .sheet-close {
     top: 4px;
+  }
+
+  /* A block's head holds the taller Copy with 4px above and below it. */
+  .code > .code-title {
+    min-height: 48px;
   }
 
   .nav a {
@@ -1517,7 +1534,6 @@ label,
   font-size: 0.82rem;
   line-height: 1.4;
   color: var(--ink-soft);
-  pointer-events: none;
 }
 
 .demo-tip::after {
@@ -1686,8 +1702,9 @@ label,
   border-radius: 2px;
 }
 
+/* A phase still to come is drawn at 3:1, so the control shows. */
 .hero-seg::before {
-  background: var(--line-strong);
+  background: var(--line-input);
 }
 
 .hero-seg:hover::before {
@@ -1871,6 +1888,15 @@ label,
 .tally > .lit {
   background: var(--bg-subtle);
   color: var(--ink-soft);
+}
+
+.tally > [role="button"] {
+  cursor: pointer;
+}
+
+/* A count pressed to stay lit keeps a frame. */
+.tally > [aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1px var(--line-input);
 }
 
 .tally b {
@@ -2245,6 +2271,12 @@ code .nw {
   white-space: nowrap;
 }
 
+/* Words a command line keeps together: its indent with its first word, and
+   its closing backslash with its last. pre keeps the indent's spaces. */
+.code .ln .nw {
+  white-space: pre;
+}
+
 /* A path too long for a phone's line comes apart only after a /. */
 .code :is(.t, .f, .v).path {
   white-space: inherit;
@@ -2255,9 +2287,15 @@ code .nw {
 }
 
 /* A long piece of a chip with nothing to break at, a commit hash, breaks
-   anywhere rather than run off a phone's screen. */
-code .brk {
+   anywhere rather than run off a phone's screen; a long word of a command
+   too, after any spaces it has. */
+code .brk,
+.code :is(.t, .f, .v).brk {
   overflow-wrap: anywhere;
+}
+
+.code :is(.t, .f, .v).brk {
+  white-space: inherit;
 }
 
 /* Files, trees and program output keep their layout at every width, and
@@ -2272,8 +2310,19 @@ code .brk {
   user-select: none;
 }
 
-.code .c {
+.code .c,
+.code .tc {
   color: var(--code-muted);
+}
+
+/* A tree's comment goes under its file on a phone, from where the name
+   starts (--c), instead of off the right edge. */
+@media (max-width: 600px) {
+  .prose .code.tree .tc {
+    display: block;
+    white-space: normal;
+    padding-left: calc((var(--c, 0) + 2) * 1ch);
+  }
 }
 
 .code .f {
@@ -3348,7 +3397,23 @@ html:not(.js) .builder {
   .excerpt pre {
     white-space: pre;
     overflow-wrap: normal;
+    /* The code blocks' scroll shadows: a shadow shows on a side only where
+       there is more to see. */
+    background:
+      linear-gradient(to right, var(--code-bg) 40%, transparent) left / 28px 100% no-repeat local,
+      linear-gradient(to left, var(--code-bg) 40%, transparent) right / 28px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--excerpt-shade), transparent) left / 12px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--excerpt-shade), transparent) right / 12px 100% no-repeat scroll,
+      var(--code-bg);
   }
+}
+
+.excerpt {
+  --excerpt-shade: rgba(255, 255, 255, 0.18);
+}
+
+:root[data-theme="light"] .excerpt {
+  --excerpt-shade: rgba(16, 27, 24, 0.2);
 }
 
 .excerpt mark {
@@ -3872,6 +3937,36 @@ html:not(.js) .builder {
   flex: 1 0 100%;
   border-top: 1px solid var(--line);
   margin-bottom: 14px;
+}
+
+/* The switch for the / key, at the end of the footer's last line. */
+.slash-toggle {
+  margin-left: auto;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.slash-toggle:hover {
+  color: var(--ink);
+}
+
+/* A docs page has its search box in the sidebar, which stays in view, so
+   the header does not offer a second one where the sidebar shows. */
+@media (min-width: 861px) {
+  body.docs .top .search-btn {
+    display: none;
+  }
+}
+
+/* With the / key off, nothing advertises it. */
+.no-slash .search-key {
+  display: none;
 }
 
 @media (max-width: 760px) {
@@ -4506,6 +4601,13 @@ th.num {
 .prose h6 {
   font-size: 1rem;
   margin: 1.5em 0 0.5em;
+}
+
+/* An old anchor of a heading, just before it; site.js moves the address on
+   to the heading's own. */
+.anchor-alias {
+  display: block;
+  height: 0;
 }
 
 /* A heading and its # link: the link sits in the gutter to the left of the
@@ -5348,6 +5450,21 @@ th.num {
   color: var(--ink);
 }
 
+/* A gene, a station or a link of a drawing that the keyboard reaches is
+   scrolled clear of the sticky header: Chrome ignores the page's
+   scroll-padding for an SVG element. */
+.trk .hot,
+.metro .stn,
+.net .hot {
+  scroll-margin-top: 84px;
+  scroll-margin-bottom: 16px;
+}
+
+/* A chip focused in a row that scrolls clears the row's faded edge. */
+.how-group .seg a {
+  scroll-margin-inline: 32px;
+}
+
 .how-group .seg a[aria-current="true"] {
   background: var(--accent);
   border-color: var(--accent);
@@ -5381,10 +5498,14 @@ th.num {
     /* Room inside the scroller for a focused chip's ring, which it would
        otherwise clip. */
     margin: -5px -16px -1px;
-    padding: 5px 16px;
+    /* The end of the row clears the right fade, so the last chip, scrolled
+       to, shows whole. */
+    padding: 5px 32px 5px 16px;
     scrollbar-width: none;
-    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
-    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    /* Both edges fade, so a chip cut at either reads as more to swipe to;
+       the left fade lies over the row's own padding until it scrolls. */
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 28px), transparent);
   }
 
   .how-group .seg::-webkit-scrollbar {
@@ -5590,9 +5711,9 @@ th.num {
   transition: opacity 0.4s ease, visibility 0s linear 0.4s;
 }
 
-/* The name of a row still to come, faintly. */
+/* The name of a row still to come, fainter, and still readable. */
 .trk .ghost {
-  opacity: 0.25;
+  opacity: 0.7;
 }
 
 /* Back and Next sit right under the drawing, where the text under them
@@ -6893,6 +7014,10 @@ html:not(.js) .how-nav {
   stroke-width: 14px;
 }
 
+.net-pill-hit {
+  fill: transparent;
+}
+
 .net-link {
   cursor: default;
   outline: none;
@@ -7179,5 +7304,32 @@ html:not(.js) .how-nav {
   .case-fig,
   .net {
     background: var(--bg-elev);
+  }
+
+  /* A chosen, pressed or current control is drawn by its background and
+     shadow, which forced colours take away: in their place, the system's
+     highlight. */
+  .seg button:is([aria-pressed="true"], [aria-checked="true"]),
+  .how-group .seg a[aria-current="true"],
+  .tab[aria-selected="true"],
+  .how-steps button[aria-current="step"],
+  .tally > [aria-pressed="true"],
+  .docs-results a.active,
+  .docs-toc li a.active,
+  .toc-inline a.active,
+  .sheet-toc a.active,
+  .docs-nav li a[aria-current="page"],
+  .nav a[aria-current] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+    border-color: Highlight;
+  }
+
+  .seg button:is([aria-pressed="true"], [aria-checked="true"]) *,
+  .how-group .seg a[aria-current="true"] *,
+  .how-steps button[aria-current="step"] *,
+  .docs-results a.active * {
+    color: HighlightText;
   }
 }

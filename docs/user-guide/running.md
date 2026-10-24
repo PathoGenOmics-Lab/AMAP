@@ -43,13 +43,24 @@ the local machine.
 nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv
 ```
 
-CPUs are auto-detected and memory is capped at 16 GB. Raise both if the machine
-allows:
+CPUs are auto-detected and memory is capped at 16 GB. On a laptop under Docker
+Desktop, the VM's limit, often 8 GB, is the one that counts: lower the cap to
+what `docker info` reports, and skip eggNOG, which asks for 50 GB:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \
-    --tsv samples.tsv --max_cpus 8 --max_memory 32.GB
+    --tsv samples.tsv --max_cpus 4 --max_memory 8.GB \
+    --skip_functional_annotation
 ```
+
+On a workstation with more, raise it:
+
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile docker \
+    --tsv samples.tsv --max_cpus 16 --max_memory 64.GB
+```
+
+[What each step needs](../getting-started/tutorial.md#the-machine).
 
 A handful of genomes is fine locally. Past about twenty genomes, a cluster is
 worth the setup.
@@ -60,10 +71,11 @@ worth the setup.
 nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv
 ```
 
-Each process becomes its own scheduler job, with up to 200 running at once, so
-Bakta, miniprot and eggNOG parallelise across all your samples. Defaults reach
-48 CPUs and 128 GB per job, and every process carries a time limit so nothing
-sits in the queue forever.
+Each task becomes its own scheduler job, up to 200 at once (the checks, the
+versions and the parameters run on the launching node), so Bakta, miniprot and
+the correction run side by side across your samples. eggNOG is one job for all
+of them. Defaults reach 48 CPUs and 128 GB per job, and every process has a
+time limit, so a stuck job ends instead of holding its slot.
 
 To match your site's queues and accounting:
 

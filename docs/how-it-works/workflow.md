@@ -37,7 +37,8 @@ IDs stay as you wrote them.
 ## 3. Annotation with Bakta
 
 [Bakta](https://github.com/oschwengers/bakta) produces the baseline annotation:
-CDS, tRNA, rRNA and other features. This is the annotation AMAP will correct,
+CDS, rRNA and other features (AMAP runs it with `--skip-trna`, so there are no
+tRNAs). This is the annotation AMAP will correct,
 and it is published unmodified under `BAKTA/` so you can compare.
 
 `--genus` and `--species` are passed through, so setting them correctly improves

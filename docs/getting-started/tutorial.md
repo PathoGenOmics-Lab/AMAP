@@ -47,8 +47,8 @@ nextflow -version
 > [!WARNING]
 > **Java 8 is not enough**
 >
-> Nextflow will refuse to start on Java 8 with a message about an
-> unsupported class file version. Install a newer JDK, for example
+> On Java 8 or 11, Nextflow stops with "Cannot find Java or it's a wrong
+> version". Install a newer JDK, for example
 > `conda install -c conda-forge openjdk=17`.
 
 Then a container engine. Docker on a laptop, Singularity or Apptainer on a
@@ -109,19 +109,14 @@ Memory decides whether the run finishes at all. Two steps are heavy:
 
 Nextflow will not start a task that asks for more memory than the machine has,
 so on a laptop these requests are the thing that fails, not your data. Lower
-the ceiling to what `docker info` reports, and every request is clamped to it:
+the ceiling to what `docker info` reports, and every request is clamped to it.
+Leave eggNOG out as well: it loads its whole database into memory, about 45 GB,
+whatever the ceiling, so no cap makes it fit.
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \
-    --tsv samples.tsv --max_cpus 4 --max_memory 8.GB
-```
-
-eggNOG will be slower and may still run out on a genuinely small machine. The
-alternative is to skip functional annotation altogether:
-
-```bash
-nextflow run PathoGenOmics-Lab/AMAP -profile docker \
-    --tsv samples.tsv --skip_functional_annotation
+    --tsv samples.tsv --max_cpus 4 --max_memory 8.GB \
+    --skip_functional_annotation
 ```
 
 You still get the corrected genes, which is what AMAP exists to produce, as a
@@ -229,8 +224,9 @@ CDC1551	/path/to/amap-tutorial/cdc1551.fna
 > `^I`. (`cat -A` does the same on Linux but is not accepted by the `cat`
 > that ships with macOS.)
 
-Keep sample IDs to letters, digits and underscores. Several scripts cut the
-name at the first dot, so `G26689.1` becomes `G26689`.
+Keep sample IDs to letters, digits and underscores. The classification cuts
+names at the first dot, so a sample `G26689.1` would be set aside and missing
+from the results.
 
 ## 5. Validate before committing to a long run
 
@@ -239,23 +235,20 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --validate_only
 ```
 
-The checks write their verdict to `results/pipeline_info/validation.log`, which
-ends:
+Checks that pass write their verdict to `results/pipeline_info/validation.log`;
+one that fails stops the run and prints the whole report instead. The verdict
+is two lines:
 
 ```bash
-tail -n 8 results/pipeline_info/validation.log
+grep -E '^(Results|Total)' results/pipeline_info/validation.log
 ```
 
 ```text
---- FASTA Validation (1 samples) ---
-
-============================================================
 Results: 1 OK, 0 warnings, 0 failed
 Total: 0 error(s), 0 warning(s)
-============================================================
-
-  ✓ PASSED — all 1 samples look good
 ```
+
+The log's last line then starts `✓ PASSED`.
 
 This costs seconds and catches the mistakes that would otherwise surface
 minutes in. [Preparing inputs](inputs.md) lists every check and its threshold.
@@ -398,13 +391,17 @@ rows. None of the six columns depends on eggNOG; the one that does,
 Lineage typing puts the lineage in front of the sample ID, so CDC1551 comes
 out as `L4_CDC1551`:
 
-| What | Where |
-| :--- | :--- |
-| Corrected annotation | `results/AMAP/L4_CDC1551/L4_CDC1551-AMAP.gff3` |
-| Same, GenBank | `results/AMAP/L4_CDC1551/L4_CDC1551-AMAP.gbk` |
-| Proteins for downstream tools | `results/AMAP/L4_CDC1551/L4_CDC1551-AMAP.clean.faa` |
-| Everything known per gene | `results/AMAP/L4_CDC1551/L4_CDC1551-AMAPmastertable.tsv` |
-| Tool versions for your methods | `results/pipeline_info/software_versions.yml` |
+| What | Where | Written |
+| :--- | :--- | :--- |
+| Corrected annotation | `results/AMAP/L4_CDC1551/L4_CDC1551-AMAP.gff3` | after eggNOG |
+| Same, GenBank | `results/AMAP/L4_CDC1551/L4_CDC1551-AMAP.gbk` | after eggNOG |
+| Proteins for downstream tools | `results/AMAP/L4_CDC1551/L4_CDC1551-AMAP.clean.faa` | after eggNOG |
+| Everything known per gene | `results/AMAP/L4_CDC1551/L4_CDC1551-AMAPmastertable.tsv` | after eggNOG |
+| Tool versions for your methods | `results/pipeline_info/software_versions.yml` | every run |
+
+The run above skipped eggNOG, so in their place it has `L4_CDC1551.AMAP.tsv`,
+`L4_CDC1551.AMAP.faa` and `L4_CDC1551.AMAP.fna`, with a dot: the corrected
+genes, their proteins and their sequences.
 
 > [!NOTE]
 > **Two protein files, and they differ on purpose**

@@ -60,9 +60,12 @@ path to your own copy with its
 
 ### Validation failures
 
-`results/pipeline_info/validation.log` says which check failed and for which
-sample; the terminal does not. Thresholds are in
-[preparing inputs](../getting-started/inputs.md).
+A check that fails stops the run, and Nextflow prints the validator's whole
+report, which check failed and for which sample, under `Command output`,
+followed by the task's `Work dir`. Only a check that passes writes
+`results/pipeline_info/validation.log`; after a failure the log is in that work
+folder. With `--strict_validation`, a warning fails the same way. Thresholds
+are in [preparing inputs](../getting-started/inputs.md).
 
 ## Container problems
 
@@ -193,6 +196,24 @@ put back.
 Two of the classification's sources listed a gene at exactly the same place,
 and one entry was kept. Genes on different contigs never collide, since the
 contig is part of the key.
+
+### A sample is missing from the results ("Ignored : 1")
+
+A task run per sample that fails for any reason but its limits (exit 137, 140
+or 143) is tried twice more and then set aside, so one bad genome does not stop
+the others. The run still ends `✓ COMPLETED`, its summary counts the task
+under `Ignored`, and a warning after it says how many failed. The genome's
+results stop at that step: set aside at the correction or before it, it has no
+folder under `AMAP/`, and if it was the correction itself, `amap_report.html`
+names it at the top. To find which task it was and why:
+
+```bash
+grep -w FAILED results/pipeline_info/execution_trace_*.txt
+```
+
+The trace's second column is the task's hash, the start of its folder under
+`work/`, and that folder's `.command.err` says why. A dot in a sample ID is one
+cause: see [preparing inputs](../getting-started/inputs.md#the-sample-sheet).
 
 ### The clean proteome has fewer sequences than the GFF3 has genes
 

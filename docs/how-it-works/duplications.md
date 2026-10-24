@@ -11,7 +11,7 @@ self-hits. A pair is kept when the identical residues of the alignment cover
 between two otherwise unrelated proteins is not counted as duplication. Kept
 pairs become links in a graph, and its connected pieces become the
 duplication families, listed in
-`DUPLICATIONS/{sample}/duplications_{sample}_groups.tsv`.
+`DUPLICATIONS/{lineage}_{sampleId}/duplications_{lineage}_{sampleId}_groups.tsv`.
 
 <!-- figure: dup-family -->
 

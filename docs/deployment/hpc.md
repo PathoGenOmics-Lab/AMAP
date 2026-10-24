@@ -22,11 +22,17 @@ All four queue up to 200 jobs at once, default to 48 CPUs and 128 GB per job,
 and enable node-local scratch. SGE additionally requests memory through
 `-l h_vmem`, and uses the `smp` parallel environment.
 
-Tune the concurrency to your site's policy if 200 is too aggressive:
+Tune the concurrency to your site's policy if 200 is too aggressive. The
+queue size belongs to the executor, not to a process, so `-process.queueSize`
+changes nothing; set it in a config passed with `-c`:
+
+```groovy title="queue.config"
+executor.queueSize = 50
+```
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
-    --tsv samples.tsv -process.queueSize 50
+    -c queue.config --tsv samples.tsv
 ```
 
 ## Fitting your site
@@ -149,6 +155,10 @@ to outlast everything it submits.
 A process killed by the out-of-memory killer is resubmitted with more memory,
 scaling with the attempt number up to `--max_memory`. That handles the occasional
 unusually large genome without you having to size everything for the worst case.
+
+A task run per sample that fails for another reason is tried twice more and
+then set aside, so the run finishes without that sample and says so under
+`Ignored`: see [a sample is missing](troubleshooting.md#a-sample-is-missing-from-the-results-ignored--1).
 
 eggNOG is the memory-hungry step. It runs once over all samples rather than once
 per sample, which keeps a shared filesystem from being hammered but does mean

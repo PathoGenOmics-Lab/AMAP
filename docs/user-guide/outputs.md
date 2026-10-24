@@ -11,9 +11,10 @@ alone under `--skip_typing`.
 | :--- | :--- |
 | The whole analysis, after a run with eggNOG ([the full report](report.md)) | `results/final_report.html` |
 | Each genome and each gene, question by question, in every run ([the report by question](amap-report.md)) | `results/amap_report.html` |
-| Corrected annotation for a sample | `results/AMAP/{lineage}_{sampleId}/*-AMAP.gff3` |
-| Proteins for downstream tools | `results/AMAP/{lineage}_{sampleId}/*-AMAP.clean.faa` |
-| Everything known about every gene | `results/AMAP/{lineage}_{sampleId}/*-AMAPmastertable.tsv` |
+| Corrected annotation for a sample, after a run with eggNOG | `results/AMAP/{lineage}_{sampleId}/*-AMAP.gff3` |
+| Proteins for downstream tools, after a run with eggNOG | `results/AMAP/{lineage}_{sampleId}/*-AMAP.clean.faa` |
+| Everything known about every gene, after a run with eggNOG | `results/AMAP/{lineage}_{sampleId}/*-AMAPmastertable.tsv` |
+| The corrected genes, their proteins and sequences, in every run | `results/AMAP/{lineage}_{sampleId}/*.AMAP.tsv`, `.faa`, `.fna` |
 | Tool versions for your methods section | `results/pipeline_info/software_versions.yml` |
 
 ## The full tree
@@ -55,13 +56,14 @@ results/
 │       ├── *-case[1-4].tsv             # One table per case
 │       ├── *-rvmissing.tsv             # Reference genes Bakta missed, put back
 │       ├── *.html                      # Interactive overlap plots
-│       └── *_corrected.tsv             # Final corrected coordinates
+│       └── *_corrected.tsv             # As classified, before the stop codon check
 │
 ├── DUPLICATIONS/
 │   ├── {lineage}_{sampleId}/
-│   │   ├── duplications*               # Raw Diamond output, within-genome
+│   │   ├── duplications_*              # Diamond hits within the genome, sorted
 │   │   ├── duplications_*_groups.tsv   # Duplicated genes grouped into families
-│   │   └── *.dup                       # Duplicated protein sequences
+│   │   ├── duplications_*_network.png  # The families drawn
+│   │   └── *_interactive.html          # The same, interactive
 │   ├── homologous_communities.tsv      # Communities across samples, with metrics
 │   └── homologous_communities.html     # Interactive network
 │
@@ -82,8 +84,8 @@ results/
 │   ├── execution_trace_*.txt           # Per-process resource usage
 │   ├── software_versions.yml / .tsv    # Exact tool versions
 │   ├── params.yml                      # Parameters used for this run
-│   ├── validation.log                  # Pre-flight validation results
-│   └── run_summary.txt                 # Status, duration, sample counts
+│   ├── validation.log                  # The checks' verdict, when they pass
+│   └── run_summary.txt                 # Status, duration, task counts and the command
 │
 ├── final_report.html                   # The full report, after eggNOG
 └── amap_report.html                    # The report by question, in every run
@@ -237,7 +239,7 @@ through it.
   `final_report.html`, and `AMAP/` holds only the corrected table and sequences,
   `*.AMAP.tsv`, `*.AMAP.faa` and `*.AMAP.fna`, without the GFF3, the GenBank or
   the master table. You still get `BAKTA/` and `CDS_CASES/`, including
-  `*_corrected.tsv` with the corrected coordinates, and `amap_report.html`,
+  `*_corrected.tsv` with the classification's coordinates, and `amap_report.html`,
   without its eggNOG sections.
 - **`--skip_mycobrowser`**: `*-AMAP.MycoBrowser.tsv` is written empty and the Mycobrowser sections drop
   out of the report. Everything else is unaffected.

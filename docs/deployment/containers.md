@@ -121,9 +121,10 @@ nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
 ```
 
 With Nextflow 24.04 and 26.10 alike, `nextflow -c shared.config config
--profile singularity` then shows `cacheDir = '/shared/singularity_cache'`,
-where without it the profile's `results/singularity_cache` stays, whatever the
-variable says.
+PathoGenOmics-Lab/AMAP -profile singularity` then shows
+`cacheDir = '/shared/singularity_cache'`, where without it the profile's
+`results/singularity_cache` stays, whatever the variable says. The pipeline has
+to be pulled first: any run does it, or `nextflow pull PathoGenOmics-Lab/AMAP`.
 
 More cluster specifics in [deployment on HPC](hpc.md).
 

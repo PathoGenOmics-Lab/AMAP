@@ -43,8 +43,9 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --validate_only
 ```
 
-The verdict, and any warnings, are in `results/pipeline_info/validation.log`;
-the terminal only says whether the step ran.
+When the check passes, its verdict and any warnings are in
+`results/pipeline_info/validation.log`, and the terminal says only that the
+step ran. When it fails, the run stops and the terminal prints the whole report.
 
 ## 4. Run it
 
@@ -75,14 +76,16 @@ nextflow run PathoGenOmics-Lab/AMAP \
 
 Without a scheduler profile every task is capped at the machine's CPUs and
 16 GB, and with the scheduler profiles at 48 CPUs and 128 GB, whichever order
-the profiles come in; a larger request, such as the 50 GB the eggNOG annotation
-asks for, is lowered to the cap. Nextflow refuses to start a task asking for
-more memory than the machine has, so on a smaller machine, lower the ceiling to
-what `docker info` says your containers can have:
+the profiles come in; a larger request is lowered to the cap. Nextflow refuses
+to start a task asking for more memory than the machine has, so on a smaller
+machine, lower the ceiling to what `docker info` says your containers can have,
+and leave eggNOG out: it loads its whole database into memory, about 45 GB,
+whatever the ceiling.
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \
-    --tsv samples.tsv --max_cpus 4 --max_memory 8.GB
+    --tsv samples.tsv --max_cpus 4 --max_memory 8.GB \
+    --skip_functional_annotation
 ```
 
 The [tutorial](tutorial.md#the-machine) has the per-step figures and what to do
@@ -100,8 +103,9 @@ things to open first:
 | :--- | :--- |
 | Each genome and each gene, question by question, in every run | `results/amap_report.html` |
 | The full report, after a run with eggNOG | `results/final_report.html` |
-| Corrected annotation, per sample | `results/AMAP/{lineage}_{sampleId}/*-AMAP.gff3` |
-| Protein sequences for downstream tools | `results/AMAP/{lineage}_{sampleId}/*-AMAP.clean.faa` |
+| Corrected annotation, per sample, after a run with eggNOG | `results/AMAP/{lineage}_{sampleId}/*-AMAP.gff3` |
+| Protein sequences for downstream tools, after a run with eggNOG | `results/AMAP/{lineage}_{sampleId}/*-AMAP.clean.faa` |
+| The corrected genes, their proteins and sequences, in every run | `results/AMAP/{lineage}_{sampleId}/*.AMAP.tsv`, `.faa`, `.fna` |
 
 > [!NOTE]
 > **Which protein file do I want?**

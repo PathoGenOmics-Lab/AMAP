@@ -30,6 +30,7 @@ import html
 import json
 import re
 import sys
+import textwrap
 from pathlib import Path
 
 DOCS = Path("docs")
@@ -40,7 +41,7 @@ REPO = "https://github.com/PathoGenOmics-Lab/AMAP"
 # only gets its place in the list.
 PAGES = [
     ("Getting started", "getting-started/installation.md", "Installation", "Nextflow, a container engine, and running without one."),
-    ("Getting started", "getting-started/quickstart.md", "Quickstart", "The front page's three steps as a page, about 10 minutes once installed."),
+    ("Getting started", "getting-started/quickstart.md", "Quickstart", "The front page's four steps as a page: the test, a sample sheet, the check and the run."),
     ("Getting started", "getting-started/tutorial.md", "Tutorial", "One real genome, start to finish, with every number."),
     ("Getting started", "getting-started/inputs.md", "Preparing inputs", "The sample sheet, the genomes, and the checks run on them."),
     ("User guide", "user-guide/parameters.md", "Parameters", "Every option, its default, and when to change it."),
@@ -327,6 +328,34 @@ def slugify(text: str, seen: dict[str, int]) -> str:
     return slug
 
 
+# Anchors that links written before a heading was renamed still use: each
+# page's old id, and the heading it now belongs to. The changelog keeps
+# GitHub's anchor for every heading of CHANGELOG.md on its own (see
+# Renderer.heading), since links to those are written on GitHub.
+LEGACY_IDS = {
+    "getting-started/quickstart.md": {
+        "1-write-a-sample-sheet": "2-write-a-sample-sheet",
+        "2-check-the-inputs": "3-check-the-inputs",
+        "3-run-it": "4-run-it",
+        "4-read-the-results": "5-read-the-results",
+        "5-resume-an-interrupted-run": "6-resume-an-interrupted-run",
+    },
+    "how-it-works/workflow.md": {"10-report": "10-the-full-report", "11-interactive-report": "11-the-report-by-question"},
+    "about/citation.md": {"citing-amap": "citation"},
+    "deployment/hpc.md": {"running-on-a-cluster": "hpc-clusters"},
+    "user-guide/custom-reference.md": {"using-your-own-reference": "custom-reference"},
+    "user-guide/report.md": {"the-report": "the-full-report-final_reporthtml"},
+    "user-guide/amap-report.md": {"the-interactive-report": "the-report-by-question-amap_reporthtml"},
+    "how-it-works/index.md": {"how-it-works": "overview"},
+}
+
+
+def anchor_alias(old: str, new: str) -> str:
+    """An old anchor that leads to a heading's current one; site.js puts the
+    current one in the address."""
+    return f'<span class="anchor-alias" id="{html.escape(old)}" data-to="{html.escape(new)}"></span>'
+
+
 def plain(markdown_inline: str) -> str:
     """The text of an inline span, without its markup."""
     text = re.sub(r"`([^`]*)`", r"\1", markdown_inline)
@@ -457,28 +486,40 @@ def open_quote(line: str, quote: str | None) -> str | None:
     return quote
 
 
+# A word of a command longer than this may come apart on a phone: a path
+# after a /, anything else (a commit hash, a quoted sentence) where it must.
+SHELL_LONG = 26
+
+
 def shell_token(token: str, kind: str) -> str:
-    """One word of a command, which never wraps inside itself; a long path
-    may, after a /."""
-    if len(token) > LONG_TOKEN and "/" in token:
-        pieces = re.findall(r"[^/]*/+|[^/]+", token)
+    """One word of a command, which never wraps inside itself unless it is
+    too long for a phone's line: a path then breaks after a /, and anything
+    else at its spaces or, failing those, anywhere."""
+    if len(token) > SHELL_LONG and "/" in token and not token.startswith(("'", '"')):
+        # After each /, and in a file name too long for a line after _ or .
+        pieces = [q for p in re.findall(r"[^/]*/+|[^/]+", token)
+                  for q in (re.findall(r"[^_.]*[_.]+|[^_.]+", p) if len(p) > SHELL_LONG else [p])]
         inner = "<wbr>".join(f'<span class="nw">{html.escape(p)}</span>' for p in pieces)
         return f'<span class="{kind} path">{inner}</span>'
+    if len(token) > SHELL_LONG:
+        return f'<span class="{kind} brk">{html.escape(token)}</span>'
     return f'<span class="{kind}">{html.escape(token)}</span>'
 
 
 def shell_line(line: str) -> str:
     """A line of shell as words: flags (.f), their values (.v), other words
     (.t) and a comment (.c). The spaces stay between the words, so a long
-    line wraps there and only there."""
-    out, at, tokens = [], 0, list(TOKEN.finditer(line))
+    line wraps there and only there. A line's indent stays with its first
+    word, and a closing backslash with its last, so neither ends up on a line
+    of its own on a phone."""
+    units, at, tokens = [], 0, list(TOKEN.finditer(line))
     k = 0
     while k < len(tokens):
         m = tokens[k]
-        out.append(html.escape(line[at:m.start()]))
+        gap = html.escape(line[at:m.start()])
         word = m.group(0)
         if word.startswith("#"):
-            out.append(f'<span class="c">{html.escape(line[m.start():])}</span>')
+            units.append([gap, f'<span class="c">{html.escape(line[m.start():])}</span>'])
             at = len(line)
             break
         if re.match(r"^--?[A-Za-z]", word):
@@ -489,17 +530,34 @@ def shell_line(line: str) -> str:
             if valued and nxt and not re.match(r"^(-|#|\\$|\||&&|;|>)", nxt.group(0)):
                 value = nxt.group(0)
                 pair = shell_token(word, "f") + html.escape(line[m.end():nxt.start()]) + shell_token(value, "v")
-                out.append(f'<span class="kv">{pair}</span>' if len(word) + len(value) < 32 else pair)
+                units.append([gap, f'<span class="kv">{pair}</span>' if len(word) + len(value) < SHELL_LONG else pair])
                 at = nxt.end()
                 k += 2
                 continue
-            out.append(shell_token(word, "f"))
+            units.append([gap, shell_token(word, "f")])
         else:
-            out.append(shell_token(word, "t"))
+            units.append([gap, shell_token(word, "t")])
         at = m.end()
         k += 1
-    out.append(html.escape(line[at:]))
-    return "".join(out)
+    if len(units) > 1 and tokens and tokens[-1].group(0) == "\\" and at == tokens[-1].end():
+        gap, slash = units.pop()
+        # Only the last word goes with it: of a flag and its value, the value.
+        body = units[-1][1]
+        last = re.search(r'(<span class="v[^"]*">.*</span>)$', body) if body.startswith('<span class="f') else None
+        head, tail = (body[: last.start()], last.group(1)) if last and not body.startswith('<span class="kv') else ("", body)
+        if not re.search(r'class="[^"]*\b(path|brk)\b', tail):
+            units[-1][1] = f'{head}<span class="nw">{tail}{gap}{slash}</span>'
+        else:
+            units.append([gap, slash])
+    if units and units[0][0].strip() == "" and units[0][0]:
+        # The indent goes with the first word: of a flag and its value, the flag.
+        body = units[0][1]
+        first = re.match(r'(<span class="f">[^<]*</span>)(.+)$', body, re.S)
+        if first:
+            units[0] = ["", f'<span class="nw">{units[0][0]}{first.group(1)}</span>{first.group(2)}']
+        elif not re.match(r'<span class="[^"]*\b(path|brk)\b', body):
+            units[0] = ["", f'<span class="nw">{units[0][0]}{body}</span>']
+    return "".join(gap + body for gap, body in units) + html.escape(line[at:])
 
 
 def shell_html(lines: list[str], prompts: bool) -> str:
@@ -598,6 +656,8 @@ class Renderer:
         self.changelog = source == CHANGELOG[0]
         self.version: tuple[str, str] | None = None  # the changelog's version being read: (slug, label)
         self.seen: dict[str, int] = {}
+        self.gh_seen: dict[str, int] = {}  # GitHub's anchors, for the changelog's aliases
+        self.legacy = {new: old for old, new in LEGACY_IDS.get(source, {}).items()}
         self.headings: list[tuple[int, str, str]] = []  # (level, text, slug)
         self.sections: list[dict] = []  # for the search index
         self.extra: list[dict] = []  # search entries of their own: callouts
@@ -784,6 +844,7 @@ class Renderer:
         """A heading with its id. Below the h1 it carries a # link, outside the
         heading itself so that the heading's name is only its text."""
         label = plain(text)
+        github = slugify(label, self.gh_seen) if self.changelog else ""
         if self.changelog and level == 2:
             label, slug, short = version_heading(label)
             self.seen[slug] = 0
@@ -801,10 +862,15 @@ class Renderer:
         if self.changelog and level > 2 and self.version:
             section = f"{self.version[1]} / {label}"
         self.sections.append({"heading": section, "slug": slug, "level": level, "text": [], "code": []})
+        aliases = ""
+        if github and github != slug:
+            aliases += anchor_alias(github, slug)
+        if slug in self.legacy:
+            aliases += anchor_alias(self.legacy.pop(slug), slug)
         if level == 1:
-            return f'<h1 id="{slug}">{rendered}</h1>'
+            return f'{aliases}<h1 id="{slug}">{rendered}</h1>'
         return (
-            f'<div class="hx hx-{level}"><h{level} id="{slug}">{rendered}</h{level}>'
+            f'{aliases}<div class="hx hx-{level}"><h{level} id="{slug}">{rendered}</h{level}>'
             f'<a class="anchor" href="#{slug}" aria-label="Link to: {html.escape(label)}">#</a></div>'
         )
 
@@ -972,7 +1038,8 @@ class Renderer:
         named = f' aria-labelledby="{self.sections[-1]["slug"]}"' if self.sections else ""
         wrap = "table-wrap cards-wrap" if cards else "table-wrap"
         table_class = ' class="cards"' if cards else ""
-        out = [f'<div class="{wrap}" role="region" tabindex="0"{named}><table{table_class}><thead><tr>']
+        # site.js makes it a named, focusable region only while it scrolls.
+        out = [f'<div class="{wrap}"{named}><table{table_class}><thead><tr>']
         out += [f"<th{cls(k)}>{self.inline(c)}</th>" for k, c in enumerate(head)]
         out.append("</tr></thead><tbody>")
         for row in body:
@@ -1011,6 +1078,25 @@ class Renderer:
                 head = '<div class="code-title">Tab separated</div>'
         else:
             text = html.escape("\n".join(body))
+            # A tree of files with a comment after each: on a phone each
+            # comment goes under its file, from where the name starts.
+            if sum(1 for line in body if re.search(r"\S {2,}# ", line)) >= 2:
+                classes.append("tree")
+                rows = []
+                for n, line in enumerate(body):
+                    end = "\n" if n + 1 < len(body) else ""
+                    m = re.match(r"^(.*?\S)( {2,})(# .*)$", line)
+                    if not m:
+                        rows.append(html.escape(line) + end)
+                        continue
+                    col = len(re.match(r"^[│├└─ ]*", m.group(1)).group(0))
+                    # The line's end goes inside the comment: as a block on a
+                    # phone, it would otherwise leave an empty line after it.
+                    rows.append(
+                        html.escape(m.group(1))
+                        + f'<span class="tc" style="--c:{col}">{html.escape(m.group(2) + m.group(3))}{end}</span>'
+                    )
+                text = "".join(rows)
         if not head:
             classes.append("bare")
         return f'<div class="{" ".join(classes)}"{data_lang}>{head}<pre>{text}</pre></div>'
@@ -1081,32 +1167,26 @@ SHEET = [("sampleId", "fasta"), ("G26689", "/data/genomes/G26689.fasta"), ("G266
          ("L4_G12345", "./assemblies/L4_G12345.fa")]
 
 
-def run_validator(sheet: str) -> list[str]:
-    """What validate_inputs.py prints, as a run of --validate_only shows it,
-    for a sample sheet: its error lines and its verdict."""
-    import contextlib
-    import io
-    import importlib.util
-    import tempfile
-
-    spec = importlib.util.spec_from_file_location("validate_inputs", VALIDATOR)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "samples.tsv"
-        path.write_text(sheet)
-        out = io.StringIO()
-        argv = sys.argv
-        sys.argv = ["validate_inputs.py", "--tsv", str(path)]
-        try:
-            with contextlib.redirect_stdout(out):
-                module.main()
-        except SystemExit:
-            pass
-        finally:
-            sys.argv = argv
-    lines = out.getvalue().replace(str(path), "samples.tsv").splitlines()
-    return [line for line in lines if line.strip().startswith(("✗", "FAILED"))]
+def sheet_error(title: str, values: dict[str, str]) -> list[str]:
+    """The box main.nf stops with when it reads a sample sheet that has a
+    mistake, before any task runs: the lines of the error whose box starts
+    with title, with its ${...} filled in from values. The box's frame is
+    left out, so the words wrap on a phone and nothing else does."""
+    code = Path("main.nf").read_text(encoding="utf-8")
+    for body in re.findall(r'error """\n(.*?)"""', code, re.S):
+        lines = textwrap.dedent(body).strip().splitlines()
+        if len(lines) > 1 and lines[1].strip("║ ").startswith(title):
+            out = []
+            for line in lines:
+                if line.startswith(("╔", "╚")):
+                    continue
+                for expr, value in values.items():
+                    line = line.replace("${" + expr + "}", value)
+                if "${" in line:
+                    raise SystemExit(f"tools/build_docs.py: main.nf's '{title}' box has {line.strip()}, which sheet_error() cannot fill")
+                out.append(re.sub(r"^║ {0,2}", "", line).replace("\\\\t", "\\t").rstrip())
+            return out
+    raise SystemExit(f"tools/build_docs.py: main.nf no longer stops on a sample sheet with '{title}'")
 
 
 def validation_ranges() -> dict[str, float]:
@@ -1263,8 +1343,8 @@ def hpc_figure(_renderer: "Renderer", lines: list[str]) -> str:
         '<div class="hpc-box hpc-nodes"><p class="hpc-title">The compute nodes</p>'
         f"<p>One job per task, at most {cluster['cpus']} CPUs and {memory} each, in the AMAP image, "
         + ("working on the node's own disk and copying back only the results.</p>" if slurm.get("params.scratch") == "true" else "</p>")
-        + '<div class="hpc-tasks"><span>per sample: Bakta, miniprot, the correction, duplications, pangenome</span>'
-        "<span>once for all: eggNOG, the genomes compared, the report</span></div></div>"
+        + '<div class="hpc-tasks"><span>per sample: Bakta, miniprot, the correction, duplications</span>'
+        "<span>once for all: eggNOG, the pangenome, the genomes compared, the report</span></div></div>"
     )
     # The singularity profile keeps the image under --outdir, and that wins
     # over NXF_SINGULARITY_CACHEDIR: one shared copy needs singularity.cacheDir
@@ -1359,7 +1439,10 @@ def failure_figure(_renderer: "Renderer", _lines: list[str]) -> str:
     bakta = re.search(r"memory\s*=\s*\{ (\d+)\.GB \* task\.attempt \}", blocks.get("BAKTA_ANNOTATOR", ""))
     terminate = [name for name, body in blocks.items() if "errorStrategy = 'terminate'" in body]
     eggnog = re.search(r"errorStrategy = \{ task\.exitStatus in \[[\d, ]+\] \? 'retry' : 'terminate' \}", blocks.get("ANNOT_EGGNOGMAP_BATCH", ""))
-    if not (rule and bakta and eggnog):
+    # The pangenome runs once for the whole run but keeps the default rule, so
+    # it is set aside like a step run per sample (main.nf goes on without it).
+    pangene = blocks.get("PANGENE")
+    if not (rule and bakta and eggnog and pangene is not None and "errorStrategy" not in pangene):
         raise SystemExit("tools/build_docs.py: nextflow.config no longer handles failures the way failure_figure() reads it")
     codes = [c.strip() for c in rule.group(1).split(",")]
     retries = int(rule.group(3))
@@ -1384,7 +1467,8 @@ def failure_figure(_renderer: "Renderer", _lines: list[str]) -> str:
             "Its work directory, named in the log, says why.",
         ])
         + "</div>"
-        + '<p class="fail-except">The steps run once for all the samples are retried too, and then stop the run. Some stop it '
+        + '<p class="fail-except">The steps run once for all the samples are retried too, and then stop the run, except the '
+        + "pangenome: like a step run per sample, it is set aside after two more tries, and the reports go on without it. Some stop it "
         + "at once: " + ", ".join(f"<code>{p}</code>" for p in terminate)
         + " on any failure, and the eggNOG annotation on anything but memory or time.</p>"
         + "<figcaption>What <code>nextflow.config</code> does with a task that fails.</figcaption></figure>"
@@ -1420,15 +1504,19 @@ def sheet_figure() -> str:
         "<li><b>A real tab</b> between the two columns, on every line, header included. Spaces will not do.</li>"
         "<li><b><code>fasta</code></b>: the assembled genome, as an absolute path or one relative to where you launch Nextflow.</li></ol>"
     )
-    good = "\n".join(f"{a}\t{b}" for a, b in SHEET) + "\n"
-    spaced = "\n".join(f"{a:<12}{b}" for a, b in SHEET) + "\n"
+    # The two mistakes main.nf catches as it reads the sheet, before any task
+    # starts: spaces for tabs make the header one column, and the first path
+    # that does not exist stops it.
+    spaced_header = "".join(f"{a:<12}" for a in SHEET[0]).rstrip()
+    first_id, first_path = SHEET[1]
     checks = [
-        ("With spaces where the tabs go", run_validator(spaced)),
-        ("With tabs, and paths that do not exist yet", run_validator(good)),
+        ("With spaces where the tabs go", sheet_error("Invalid TSV format!", {"row.keySet().join('  ')": spaced_header})),
+        ("With tabs, and paths that do not exist yet",
+         sheet_error("FASTA file not found!", {"row.sampleId": first_id, "row.fasta": first_path})),
     ]
     blocks = "".join(
-        f'<div class="sheet-check"><p class="sheet-when">{when}, <code>--validate_only</code> stops with:</p>'
-        f'<pre>{html.escape(chr(10).join(line.strip() for line in lines))}</pre></div>'
+        f'<div class="sheet-check"><p class="sheet-when">{when}, <code>nextflow run</code> stops before any task with:</p>'
+        f'<pre>{html.escape(chr(10).join(lines))}</pre></div>'
         for when, lines in checks
     )
     return (
@@ -1436,8 +1524,9 @@ def sheet_figure() -> str:
         '<span class="sheet-n sheet-n-tab">2</span></p>'
         f"{table}</div>{notes}</div>"
         f'<div class="sheet-checks">{blocks}</div>'
-        "<figcaption>The sample sheet, with its tabs drawn. Below it, what the check prints for the two mistakes it "
-        "catches most: both messages come from running <code>bin/validate_inputs.py</code> on this sheet.</figcaption></figure>"
+        "<figcaption>The sample sheet, with its tabs drawn. Below it, what a run prints for the two mistakes it catches "
+        "most, <code>--validate_only</code> or not: both messages are <code>main.nf</code>'s own, filled in for this sheet. "
+        "They stop the run before the checks start, so no <code>validation.log</code> is written.</figcaption></figure>"
     )
 
 
@@ -1515,8 +1604,9 @@ def ranges_figure() -> str:
     )
     return (
         f'<figure class="fig gauges">{"".join(gauges)}{key}'
-        "<figcaption>Where a genome has to sit, with the limits read off <code>bin/validate_inputs.py</code>, and where the six "
-        "genomes of the accuracy benchmark sit: inside every range, with no warning.</figcaption></figure>"
+        "<figcaption>Where a genome has to sit, with the limits read off <code>bin/validate_inputs.py</code>, and where six of "
+        "the seven genomes of the accuracy benchmark sit: inside every range, with no warning. The seventh, CP110619, is "
+        "another assembly of H37Rv and is not measured here.</figcaption></figure>"
     )
 
 
@@ -1554,10 +1644,13 @@ def released() -> str:
     return next(name for name, _ in releases() if name[0].isdigit())
 
 
-def header(root: str, current: str) -> str:
+def header(root: str, current: str, this_page: str = "") -> str:
+    """The site's header. The link to the section a page is in is current;
+    it is the current page only when it leads to this page itself."""
     def nav(target: str, label: str, key: str, optional: bool = False) -> str:
         cls = ' class="nav-optional"' if optional else ""
-        here = ' aria-current="page"' if key == current else ""
+        to_here = this_page and target == f"{root}{this_page}"
+        here = ' aria-current="page"' if to_here else ' aria-current="true"' if key == current else ""
         return f'      <a{cls} href="{target}"{here}>{label}</a>\n'
 
     return (
@@ -1704,6 +1797,8 @@ def doc_page(position: int) -> tuple[Path, str, list[dict]]:
     section, path, title, description = PAGES[position]
     renderer = Renderer(path)
     content = renderer.blocks(source_lines(path))
+    if renderer.legacy:
+        raise SystemExit(f"tools/build_docs.py: {path} has no heading {sorted(renderer.legacy)} for LEGACY_IDS to lead to")
     if renderer.changelog:
         content = content.replace("documented in this file", "documented on this page")
     root = "../" * path.count("/")
@@ -1744,7 +1839,7 @@ def doc_page(position: int) -> tuple[Path, str, list[dict]]:
         f'<a href="{root}{INDEX}#{section_id(section)}">{section}</a></p>{version_line(root)}</div>\n'
     )
     body = (
-        header(root, current)
+        header(root, current, href(path))
         + '<div class="wrap docs-layout">\n'
         + sidebar(root, path)
         + f'<main class="prose" id="content">\n{crumb}'
@@ -1803,7 +1898,7 @@ def index_page() -> tuple[Path, str]:
         cards.append(f'<a href="{href(path)}"><b>{title}</b><span>{line}</span></a>\n')
     cards.append("</div>\n")
     body = (
-        header("", "docs")
+        header("", "docs", INDEX)
         + '<div class="wrap docs-layout docs-home">\n'
         + sidebar("", None)
         + '<main class="prose" id="content">\n<h1>Documentation</h1>\n'

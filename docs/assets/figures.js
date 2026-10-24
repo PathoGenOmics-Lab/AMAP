@@ -27,8 +27,12 @@
 
   // A tooltip's HTML as one line a screen reader can say.
   function plain(html) {
+    // A line break of the tip reads as a new sentence before a capital and
+    // as a comma before anything else.
     return String(html)
-      .replace(/<br\s*\/?>/gi, ". ")
+      .replace(/\s*<br\s*\/?>\s*(<[^>]+>)*\s*(.)/gi, function (_m, _tags, next) {
+        return (/[A-Z]/.test(next) ? ". " : ", ") + next;
+      })
       .replace(/<[^>]+>/g, "")
       .replace(/&lt;/g, "<")
       .replace(/&gt;/g, ">")
@@ -656,9 +660,13 @@
     sync();
     if ("ResizeObserver" in window) new ResizeObserver(sync).observe(container);
     var shownTarget = null;
+    // A tip stays while the pointer is on it, and for a moment after the
+    // pointer leaves a gene, so it can be read and pointed at (WCAG 1.4.13).
+    var tipTimer = 0;
     function show(target) {
       var text = target.getAttribute("data-tip");
       if (!text) return;
+      clearTimeout(tipTimer);
       sync();
       container.querySelectorAll(".hot.on").forEach(function (el) {
         el.classList.remove("on");
@@ -714,22 +722,35 @@
       return best;
     }
     container.addEventListener("mouseover", function (event) {
+      if (tip.contains(event.target)) {
+        clearTimeout(tipTimer);
+        return;
+      }
       var hot = event.target.closest(".hot");
       if (hot && container.contains(hot) && isShown(hot)) show(hot);
       // Off every gene, the tip goes, unless it is the focused gene's.
-      else if (!inline() && shownTarget && document.activeElement !== shownTarget) hide();
+      else if (!inline() && shownTarget && document.activeElement !== shownTarget) {
+        clearTimeout(tipTimer);
+        tipTimer = setTimeout(hide, 200);
+      }
     });
     container.addEventListener("mouseleave", function () {
       if (!inline()) hide();
     });
     container.addEventListener("focusin", function (event) {
       var hot = event.target.closest(".hot");
+      // A focused gene's name is read already; the line under the drawing
+      // would only say it again.
+      readout.setAttribute("aria-live", "off");
       if (hot) show(hot);
     });
     container.addEventListener("focusout", function () {
       if (!inline()) hide();
     });
     container.addEventListener("click", function (event) {
+      if (tip.contains(event.target)) return;
+      // A tap says what it found, there and only there.
+      if (event.detail) readout.setAttribute("aria-live", "polite");
       var hot = event.target.closest(".hot");
       if (!hot || !isShown(hot)) hot = nearest(event);
       if (hot) show(hot);
@@ -1164,32 +1185,52 @@
       }).length
     };
     var tallies = {};
+    var items = [];
+    // The count pressed to stay lit, or null.
+    var pinned = null;
+    function show(key) {
+      lit = key;
+      items.forEach(function (it) {
+        it.el.classList.toggle("lit", it.key === key);
+        it.el.setAttribute("aria-pressed", it.key === pinned ? "true" : "false");
+      });
+      if (svg) {
+        if (lit) svg.setAttribute("data-light", lit);
+        else svg.removeAttribute("data-light");
+      }
+    }
     fig.querySelectorAll("[data-tally]").forEach(function (el) {
       tallies[el.getAttribute("data-tally")] = el;
       el._on = null;
-      // Pointing at a count lights the genes and bands it counts.
+      // Pointing at a count lights the genes and bands it counts; pressing
+      // it keeps them lit until it is pressed again.
       var item = el.parentNode;
       var key = el.getAttribute("data-tally");
-      var light = function (on) {
-        lit = on ? (key === "drop" ? "drop" : key) : null;
-        item.classList.toggle("lit", !!on);
-        if (svg) {
-          if (lit) svg.setAttribute("data-light", lit);
-          else svg.removeAttribute("data-light");
-        }
-      };
+      items.push({ el: item, key: key });
       item.setAttribute("tabindex", "0");
+      item.setAttribute("role", "button");
+      item.setAttribute("aria-pressed", "false");
+      var toggle = function () {
+        pinned = pinned === key ? null : key;
+        show(pinned || key);
+      };
       item.addEventListener("pointerenter", function () {
-        light(true);
+        show(key);
       });
       item.addEventListener("pointerleave", function () {
-        light(false);
+        show(pinned);
       });
       item.addEventListener("focus", function () {
-        light(true);
+        show(key);
       });
       item.addEventListener("blur", function () {
-        light(false);
+        show(pinned);
+      });
+      item.addEventListener("click", toggle);
+      item.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        toggle();
       });
     });
 
@@ -1285,8 +1326,12 @@
         var on = k === "agree" ? n >= 3 : n >= 4;
         var el = tallies[k];
         el.parentNode.classList.toggle("t-off", !on);
+        // A count not yet made shows no number, so nothing reads as a count
+        // that is not true yet.
         if (on && el._on !== true) countUp(el, counts[k], el._on !== null);
-        else if (!on) el.textContent = "0";
+        else if (!on) el.textContent = "\u2013";
+        if (on) el.removeAttribute("aria-hidden");
+        else el.setAttribute("aria-hidden", "true");
         el._on = on;
       });
     }
@@ -1548,7 +1593,7 @@
     },
     EGGNOG_DB: {
       name: "eggNOG database", proc: "EGGNOG_DB", x: 735, y: 60, kind: "end", label: "left",
-      text: "Builds the eggNOG database on the first run, a bacteria-only index of about 3 GB plus the metadata it downloads, and reuses it after.",
+      text: "Builds the eggNOG database on the first run: eggnog.db, 41.4 GB unpacked from a 6.8 GB download, and a bacteria-only Diamond index of about 3 GB. It reuses them after.",
       reads: "", writes: "the folder --eggnog_db points at", flags: "--eggnog_db; skipped with --skip_functional_annotation", doc: "how-it-works/workflow.html#1-eggnog-database-setup", functional: true
     },
     ANNOT_EGGNOGMAP_BATCH: {
@@ -2051,6 +2096,8 @@
       // The label repeats its line, which says it all to a screen reader.
       out.push(
         '<g class="hot net-link ' + l.cls + '" aria-hidden="true" data-tip="' + esc(l.tip) + '">' +
+          // A finger's target: 24 px tall, though the pill is drawn 16.
+          '<rect class="net-pill-hit" x="' + spot.x.toFixed(1) + '" y="' + (spot.y - 4).toFixed(1) + '" width="' + Math.max(lw, 24).toFixed(1) + '" height="24"/>' +
           '<rect class="net-pill" x="' + spot.x.toFixed(1) + '" y="' + spot.y.toFixed(1) + '" width="' + lw.toFixed(1) + '" height="16" rx="8"/>' +
           '<text class="net-pct" x="' + (spot.x + lw / 2).toFixed(1) + '" y="' + (spot.y + 11.5).toFixed(1) + '" text-anchor="middle">' + esc(l.label) + "</text></g>"
       );

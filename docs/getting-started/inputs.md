@@ -28,21 +28,27 @@ common reason a sample sheet is rejected.
 > [!WARNING]
 > **Avoid dots in sample IDs**
 >
-> Several scripts derive the sample name by cutting at the first dot, so
-> `G26689.1` becomes `G26689` and two such samples would collide. Stick to
-> letters, digits and underscores.
+> The classification cuts names at the first dot, so for `G26689.1` it writes
+> its tables as `L4_G26689` while the pipeline waits for `L4_G26689.1`. The
+> step fails, is tried twice more and is set aside, and the run finishes
+> without that sample. Validation does not check this: stick to letters,
+> digits and underscores.
 
 ## Pre-flight validation
 
-`VALIDATE_INPUTS` runs before any computation, on every run. To run only the
-checks and stop:
+`VALIDATE_INPUTS` runs before any computation, on every run except
+`-profile test`, which has no sample sheet. To run only the checks and stop:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --validate_only
 ```
 
-Results are written to `results/pipeline_info/validation.log`.
+A check that passes writes its results to
+`results/pipeline_info/validation.log`; one that fails stops the run and prints
+them. Two mistakes in the sheet itself stop it even earlier, before any task
+starts, with a message of the pipeline's own and no log at all: the drawing of
+the sheet above shows both.
 
 <!-- figure: validation-ranges -->
 

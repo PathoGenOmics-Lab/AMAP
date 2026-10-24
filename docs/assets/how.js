@@ -36,7 +36,81 @@
 
   var STORIES = [
     {
-      key: "new", group: "The five outcomes", label: "Not in the reference", tag: "Case 1",
+      key: "agree", group: "The five outcomes, in eight stories", label: "Agrees", tag: "Case 2",
+      panels: [{ key: "case2", from: 1960, to: 3300, tick: 500 }],
+      text: [
+        "Bakta calls dnaN from 2,052 to 3,260 on the plus strand.",
+        "miniprot aligns H37Rv's Rv0002, dnaN, onto CDC1551: the whole protein, from 2,052 to 3,260, stop codon included.",
+        "Same start, same end, same strand and the same length: case 2, a perfect match.",
+        "Nothing to settle. The call stays as Bakta made it, and is tied to Rv0002.",
+        "It ends in a stop codon: nothing to change.",
+        NOTHING[6],
+        "It keeps Bakta's locus tag and name, with Rv0002 in its Dbxref."
+      ],
+      out: [
+        "L4_CDC1551  AMAP  CDS  2052  3260  .  +  0  ID=L4_CDC1551_00002;Parent=gene-L4_CDC1551_00002;Name=dnaN;product=DNA polymerase III (beta chain) DnaN (DNA nucleotidyltransferase);Dbxref=AMAP_ids:Rv0002"
+      ]
+    },
+    {
+      key: "same-ends", group: "The five outcomes, in eight stories", label: "Same ends, other length", tag: "Case 3",
+      panels: [{ key: "case3", from: 23700, to: 25600, tick: 500 }],
+      text: [
+        "Bakta calls fhaA from 23,861 to 25,426 on the minus strand: 1,566 bp.",
+        "H37Rv's Rv0020c, fhaA, aligns over exactly the same stretch, the whole protein to its stop codon. Its protein is six residues longer: miniprot aligns 1,584 nt of it on these 1,566 bp, with a gap where CDC1551 lacks them.",
+        "Same start, same end, same strand, but not the same length: 1,566 bp called, 1,584 nt aligned. That is case 3, an imperfect match.",
+        "Nothing to settle. A case 3 call is reliable enough: it stays as Bakta made it, tied to Rv0020c.",
+        "It ends in a stop codon: nothing to change.",
+        NOTHING[6],
+        "It keeps Bakta's locus tag, name and product, with Rv0020c in its Dbxref."
+      ],
+      out: [
+        "L4_CDC1551  AMAP  CDS  23861  25426  .  -  0  ID=L4_CDC1551_00025;Parent=gene-L4_CDC1551_00025;Name=fhaA;product=Conserved protein with FHA domain%2C FhaA;Dbxref=AMAP_ids:Rv0020c"
+      ]
+    },
+    {
+      key: "late-start", group: "The five outcomes, in eight stories", label: "Starts late", tag: "Case 4",
+      panels: [{ key: "case4-start", from: -60, to: 1640, tick: 500, marks: [{ s: 1, e: 33, rows: [0, 1], label: "33 bp", labelAt: "right", from: 3 }] }],
+      text: [
+        "Bakta calls dnaA from base 34 to 1,524.",
+        "H37Rv's Rv0001, dnaA, aligns end to end from base 1 to 1,524.",
+        "Same strand, same end, but a start 33 bp apart: case 4, a conflicting overlap. One call against one alignment.",
+        "With a single overlap the reference wins, unless the call is longer by more than 550 bp and the alignment is not complete in its frame. Here the alignment is the longer of the two: AMAP keeps 1 to 1,524.",
+        "It ends in a stop codon: nothing to change.",
+        NOTHING[6],
+        "No Bakta call has these coordinates, so it is written under the reference protein's name."
+      ],
+      out: ["L4_CDC1551  AMAP  CDS  1  1524  .  +  0  ID=L4_CDC1551_Rv0001;Parent=gene-L4_CDC1551_Rv0001;Name=;product=;Dbxref=AMAP_ids:Rv0001"]
+    },
+    {
+      key: "split", group: "The five outcomes, in eight stories", label: "One gene, two calls", tag: "Case 4",
+      panels: [{ key: "case4-split", from: 9850, to: 10950, tick: 250 }],
+      text: [
+        "Bakta calls two short genes, from 9,963 to 10,160 and from 10,523 to 10,828, both hypothetical proteins.",
+        "H37Rv's Rv0007 aligns end to end over both, from 9,914 to 10,828.",
+        "Both calls overlap the one alignment with other coordinates: case 4, with several calls on one alignment.",
+        "The call that overlaps the alignment most is weighed against it. The reference wins if it is at least as long, if the call is longer by less than 500 bp, if the alignment is complete in the call's frame, or if the call spans other reference genes too. Rv0007 is longer than either call: one gene goes in, 9,914 to 10,828.",
+        "It ends in a stop codon: nothing to change.",
+        NOTHING[6],
+        "Written under Rv0007, as no Bakta call has its coordinates."
+      ],
+      out: ["L4_CDC1551  AMAP  CDS  9914  10828  .  +  0  ID=L4_CDC1551_Rv0007;Parent=gene-L4_CDC1551_Rv0007;Name=;product=;Dbxref=AMAP_ids:Rv0007"]
+    },
+    {
+      key: "longer", group: "The five outcomes, in eight stories", label: "Much longer", tag: "Case 4",
+      panels: [{ key: "case4-longer", from: 2267500, to: 2272800, tick: 1000, marks: [{ s: 2267753, e: 2271055, rows: [0, 1], label: "3,303 bp", from: 3 }] }],
+      text: [
+        "Bakta calls a 4,821 bp site-specific DNA methyltransferase on the minus strand.",
+        "H37Rv's Rv2024c, 516 residues, aligns over 1,518 bp at one end of it: residues 1 to 506, short of the protein's end, with no stop codon.",
+        "One call against one alignment, with other coordinates: case 4.",
+        "A call longer by more than 550 bp wins over an alignment that is not complete in its frame: such an alignment stopped short, and dropping a whole gene for it would be the worse mistake. Bakta's call, 3,303 bp longer, is kept.",
+        "It ends in a stop codon: nothing to change.",
+        NOTHING[6],
+        "It keeps Bakta's locus tag and product, and takes Rv2024c's name in its Dbxref: no other gene carries it, and the alignment spans more than half of the protein."
+      ],
+      out: ["L4_CDC1551  AMAP  CDS  2267753  2272573  .  -  0  ID=L4_CDC1551_02139;Parent=gene-L4_CDC1551_02139;Name=;product=site-specific DNA-methyltransferase (adenine-specific);Dbxref=AMAP_ids:Rv2024c"]
+    },
+    {
+      key: "new", group: "The five outcomes, in eight stories", label: "Not in the reference", tag: "Case 1",
       panels: [{ key: "case1-kept", from: 1979300, to: 1985800, tick: 2000 }],
       text: [
         "Bakta calls four genes in a row: a mannosyltransferase, a sulfite oxidase-like oxidoreductase, an MMPL transporter and a hypothetical protein.",
@@ -53,7 +127,7 @@
       ]
     },
     {
-      key: "false", group: "The five outcomes", label: "A known false call", tag: "Case 1",
+      key: "false", group: "The five outcomes, in eight stories", label: "A known false call", tag: "Case 1",
       panels: [{ key: "case1-dropped", from: 11330, to: 11620, tick: 100 }],
       text: [
         "Bakta calls a 108 bp hypothetical protein on the minus strand.",
@@ -67,81 +141,7 @@
       out: []
     },
     {
-      key: "agree", group: "The five outcomes", label: "Agrees", tag: "Case 2",
-      panels: [{ key: "case2", from: 1960, to: 3300, tick: 500 }],
-      text: [
-        "Bakta calls dnaN from 2,052 to 3,260 on the plus strand.",
-        "miniprot aligns H37Rv's Rv0002, dnaN, onto CDC1551: the whole protein, from 2,052 to 3,260, stop codon included.",
-        "Same start, same end, same strand and the same length: case 2, a perfect match.",
-        "Nothing to settle. The call stays as Bakta made it, and is tied to Rv0002.",
-        "It ends in a stop codon: nothing to change.",
-        NOTHING[6],
-        "It keeps Bakta's locus tag and name, with Rv0002 in its Dbxref."
-      ],
-      out: [
-        "L4_CDC1551  AMAP  CDS  2052  3260  .  +  0  ID=L4_CDC1551_00002;Parent=gene-L4_CDC1551_00002;Name=dnaN;product=DNA polymerase III (beta chain) DnaN (DNA nucleotidyltransferase);Dbxref=AMAP_ids:Rv0002"
-      ]
-    },
-    {
-      key: "same-ends", group: "The five outcomes", label: "Same ends, other length", tag: "Case 3",
-      panels: [{ key: "case3", from: 23700, to: 25600, tick: 500 }],
-      text: [
-        "Bakta calls fhaA from 23,861 to 25,426 on the minus strand: 1,566 bp.",
-        "H37Rv's Rv0020c, fhaA, aligns over exactly the same stretch, the whole protein to its stop codon. Its protein is six residues longer: miniprot aligns 1,584 nt of it on these 1,566 bp, with a gap where CDC1551 lacks them.",
-        "Same start, same end, same strand, but not the same length: 1,566 bp called, 1,584 nt aligned. That is case 3, an imperfect match.",
-        "Nothing to settle. A case 3 call is reliable enough: it stays as Bakta made it, tied to Rv0020c.",
-        "It ends in a stop codon: nothing to change.",
-        NOTHING[6],
-        "It keeps Bakta's locus tag, name and product, with Rv0020c in its Dbxref."
-      ],
-      out: [
-        "L4_CDC1551  AMAP  CDS  23861  25426  .  -  0  ID=L4_CDC1551_00025;Parent=gene-L4_CDC1551_00025;Name=fhaA;product=Conserved protein with FHA domain%2C FhaA;Dbxref=AMAP_ids:Rv0020c"
-      ]
-    },
-    {
-      key: "late-start", group: "The five outcomes", label: "Starts late", tag: "Case 4",
-      panels: [{ key: "case4-start", from: -60, to: 1640, tick: 500, marks: [{ s: 1, e: 33, rows: [0, 1], label: "33 bp", labelAt: "right", from: 3 }] }],
-      text: [
-        "Bakta calls dnaA from base 34 to 1,524.",
-        "H37Rv's Rv0001, dnaA, aligns end to end from base 1 to 1,524.",
-        "Same strand, same end, but a start 33 bp apart: case 4, a conflicting overlap. One call against one alignment.",
-        "With a single overlap the reference wins, unless the call is longer by more than 550 bp and the alignment is not complete in its frame. Here the alignment is the longer of the two: AMAP keeps 1 to 1,524.",
-        "It ends in a stop codon: nothing to change.",
-        NOTHING[6],
-        "No Bakta call has these coordinates, so it is written under the reference protein's name."
-      ],
-      out: ["L4_CDC1551  AMAP  CDS  1  1524  .  +  0  ID=L4_CDC1551_Rv0001;Parent=gene-L4_CDC1551_Rv0001;Name=;product=;Dbxref=AMAP_ids:Rv0001"]
-    },
-    {
-      key: "split", group: "The five outcomes", label: "One gene, two calls", tag: "Case 4",
-      panels: [{ key: "case4-split", from: 9850, to: 10950, tick: 250 }],
-      text: [
-        "Bakta calls two short genes, from 9,963 to 10,160 and from 10,523 to 10,828, both hypothetical proteins.",
-        "H37Rv's Rv0007 aligns end to end over both, from 9,914 to 10,828.",
-        "Both calls overlap the one alignment with other coordinates: case 4, with several calls on one alignment.",
-        "The call that overlaps the alignment most is weighed against it. The reference wins if it is at least as long, if the call is longer by less than 500 bp, if the alignment is complete in the call's frame, or if the call spans other reference genes too. Rv0007 is longer than either call: one gene goes in, 9,914 to 10,828.",
-        "It ends in a stop codon: nothing to change.",
-        NOTHING[6],
-        "Written under Rv0007, as no Bakta call has its coordinates."
-      ],
-      out: ["L4_CDC1551  AMAP  CDS  9914  10828  .  +  0  ID=L4_CDC1551_Rv0007;Parent=gene-L4_CDC1551_Rv0007;Name=;product=;Dbxref=AMAP_ids:Rv0007"]
-    },
-    {
-      key: "longer", group: "The five outcomes", label: "Much longer", tag: "Case 4",
-      panels: [{ key: "case4-longer", from: 2267500, to: 2272800, tick: 1000, marks: [{ s: 2267753, e: 2271055, rows: [0, 1], label: "3,303 bp", from: 3 }] }],
-      text: [
-        "Bakta calls a 4,821 bp site-specific DNA methyltransferase on the minus strand.",
-        "H37Rv's Rv2024c, 516 residues, aligns over 1,518 bp at one end of it: residues 1 to 506, short of the protein's end, with no stop codon.",
-        "One call against one alignment, with other coordinates: case 4.",
-        "A call longer by more than 550 bp wins over an alignment that is not complete in its frame: such an alignment stopped short, and dropping a whole gene for it would be the worse mistake. Bakta's call, 3,303 bp longer, is kept.",
-        "It ends in a stop codon: nothing to change.",
-        NOTHING[6],
-        "It keeps Bakta's locus tag and product, and takes Rv2024c's name in its Dbxref: no other gene carries it, and the alignment spans more than half of the protein."
-      ],
-      out: ["L4_CDC1551  AMAP  CDS  2267753  2272573  .  -  0  ID=L4_CDC1551_02139;Parent=gene-L4_CDC1551_02139;Name=;product=site-specific DNA-methyltransferase (adenine-specific);Dbxref=AMAP_ids:Rv2024c"]
-    },
-    {
-      key: "missed", group: "The five outcomes", label: "Missed by Bakta", tag: "Missing",
+      key: "missed", group: "The five outcomes, in eight stories", label: "Missed by Bakta", tag: "Missing",
       panels: [{ key: "missing", from: 33100, to: 34420, tick: 250, marks: [{ s: 33526, e: 33738, rows: [0, 1], label: "no call", kind: "ref", from: 3 }] }],
       text: [
         "Bakta calls a gene from 33,168 to 33,497 and bioF2 from 34,239, and nothing between them.",
@@ -508,7 +508,11 @@
       if (moved && was && !off) flash(el);
     });
     stage.querySelectorAll("[data-ghost-from]").forEach(function (el) {
-      el.classList.toggle("ghost", step < +el.getAttribute("data-ghost-from"));
+      var ghost = step < +el.getAttribute("data-ghost-from");
+      el.classList.toggle("ghost", ghost);
+      // A row still to come is named when it arrives, not before.
+      if (ghost) el.setAttribute("aria-hidden", "true");
+      else el.removeAttribute("aria-hidden");
     });
     // The calls with nothing aligned are dashed once compared (3), and the
     // ones dropped fade once the disagreements are settled (4).
@@ -560,7 +564,10 @@
     textBox.style.minHeight = tallest + "px";
   }
 
-  function drawStory() {
+  // center: bring the story's chip into the middle of its row, when the
+  // reader picked the story or a link named it; on a first visit the rows
+  // start at their first chip.
+  function drawStory(center) {
     stop();
     stage.innerHTML = "";
     var used = {};
@@ -603,21 +610,17 @@
       var same = !changes[n];
       b.classList.toggle("same", same);
       var note = b.querySelector(".how-same");
-      if (same && !note) {
-        note = document.createElement("span");
-        note.className = "how-same";
-        note.textContent = ", no change in this story";
-        b.appendChild(note);
-      } else if (!same && note) {
-        note.remove();
-      }
+      if (note) note.remove();
+      // A hollow step is named with its note, as one phrase.
+      if (same) b.setAttribute("aria-label", n + " " + STEPS[n - 1] + ", no change in this story");
+      else b.removeAttribute("aria-label");
       if (same) b.title = "No change in this story";
       else b.removeAttribute("title");
     });
     showStep();
     fitText();
     // The picked story's chip in view, in a row that scrolls sideways.
-    var chip = picker.querySelector('[data-story="' + story.key + '"]');
+    var chip = center && picker.querySelector('[data-story="' + story.key + '"]');
     var row = chip && chip.parentNode;
     if (row && row.scrollWidth > row.clientWidth + 2) {
       row.scrollLeft = Math.max(0, chip.offsetLeft - row.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2);
@@ -675,7 +678,7 @@
     stop();
     story = find(b.getAttribute("data-story")) || story;
     step = 1;
-    drawStory();
+    drawStory(true);
     address();
     reveal();
   });
@@ -744,7 +747,7 @@
     story = want.story;
     step = want.step;
   }
-  drawStory();
+  drawStory(!!want);
   if (want) reveal();
   window.addEventListener("hashchange", function () {
     var w = wanted();
@@ -753,7 +756,7 @@
     var redraw = w.story !== story;
     story = w.story;
     step = w.step;
-    if (redraw) drawStory();
+    if (redraw) drawStory(true);
     else showStep(true);
     reveal();
   });

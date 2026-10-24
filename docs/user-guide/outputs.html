@@ -33,7 +33,7 @@
       <a href="../index.html#start">Start here</a>
       <a class="nav-optional" href="../how-it-works.html">How it works</a>
       <a class="nav-optional" href="../getting-started/tutorial.html">Tutorial</a>
-      <a href="../documentation.html" aria-current="page">Docs</a>
+      <a href="../documentation.html" aria-current="true">Docs</a>
       <a class="gh-link" href="https://github.com/PathoGenOmics-Lab/AMAP"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a>
       <button class="icon-btn" type="button" data-theme-toggle aria-label="Switch between light and dark">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
@@ -98,75 +98,76 @@
 
 <p>Everything lands under <a class="opt-link" href="../user-guide/parameters.html#opt-outdir"><code class="nw">--outdir</code></a>, <code class="nw">results/</code> by default, in one subdirectory per pipeline stage. <code class="nw">{lineage}_{sampleId}</code> below is the sample's name as lineage typing leaves it, <code class="nw">L4_G26689</code> for sample <code class="nw">G26689</code>, or the sample ID alone under <a class="opt-link" href="../user-guide/parameters.html#opt-skip_typing"><code class="nw">--skip_typing</code></a>.</p>
 <div class="hx hx-2"><h2 id="where-to-look-first">Where to look first</h2><a class="anchor" href="#where-to-look-first" aria-label="Link to: Where to look first">#</a></div>
-<div class="table-wrap" role="region" tabindex="0" aria-labelledby="where-to-look-first"><table><thead><tr><th>What you want</th><th>File</th></tr></thead><tbody><tr><td data-label="What you want">The whole analysis, after a run with eggNOG (<a href="report.html">the full report</a>)</td><td data-label="File"><code><span class="nw">results/</span><wbr><span class="nw">final_</span><wbr><span class="nw">report.</span><wbr><span class="nw">html</span></code></td></tr><tr><td data-label="What you want">Each genome and each gene, question by question, in every run (<a href="amap-report.html">the report by question</a>)</td><td data-label="File"><code class="nw">results/amap_report.html</code></td></tr><tr><td data-label="What you want">Corrected annotation for a sample</td><td data-label="File"><code><span class="nw">results/</span><wbr><span class="nw">AMAP/</span><wbr><span class="nw">{lineage}_</span><wbr><span class="nw">{sampleId}/</span><wbr><span class="nw">*-AMAP.</span><wbr><span class="nw">gff3</span></code></td></tr><tr><td data-label="What you want">Proteins for downstream tools</td><td data-label="File"><code><span class="nw">results/</span><wbr><span class="nw">AMAP/</span><wbr><span class="nw">{lineage}_</span><wbr><span class="nw">{sampleId}/</span><wbr><span class="nw">*-AMAP.</span><wbr><span class="nw">clean.</span><wbr><span class="nw">faa</span></code></td></tr><tr><td data-label="What you want">Everything known about every gene</td><td data-label="File"><code><span class="nw">results/</span><wbr><span class="nw">AMAP/</span><wbr><span class="nw">{lineage}_</span><wbr><span class="nw">{sampleId}/</span><wbr><span class="nw">*-AMAPmastertable.</span><wbr><span class="nw">tsv</span></code></td></tr><tr><td data-label="What you want">Tool versions for your methods section</td><td data-label="File"><code><span class="nw">results/</span><wbr><span class="nw">pipeline_</span><wbr><span class="nw">info/</span><wbr><span class="nw">software_</span><wbr><span class="nw">versions.</span><wbr><span class="nw">yml</span></code></td></tr></tbody></table></div>
+<div class="table-wrap" aria-labelledby="where-to-look-first"><table><thead><tr><th>What you want</th><th>File</th></tr></thead><tbody><tr><td data-label="What you want">The whole analysis, after a run with eggNOG (<a href="report.html">the full report</a>)</td><td data-label="File"><code><span class="nw">results/</span><wbr><span class="nw">final_</span><wbr><span class="nw">report.</span><wbr><span class="nw">html</span></code></td></tr><tr><td data-label="What you want">Each genome and each gene, question by question, in every run (<a href="amap-report.html">the report by question</a>)</td><td data-label="File"><code class="nw">results/amap_report.html</code></td></tr><tr><td data-label="What you want">Corrected annotation for a sample, after a run with eggNOG</td><td data-label="File"><code><span class="nw">results/</span><wbr><span class="nw">AMAP/</span><wbr><span class="nw">{lineage}_</span><wbr><span class="nw">{sampleId}/</span><wbr><span class="nw">*-AMAP.</span><wbr><span class="nw">gff3</span></code></td></tr><tr><td data-label="What you want">Proteins for downstream tools, after a run with eggNOG</td><td data-label="File"><code><span class="nw">results/</span><wbr><span class="nw">AMAP/</span><wbr><span class="nw">{lineage}_</span><wbr><span class="nw">{sampleId}/</span><wbr><span class="nw">*-AMAP.</span><wbr><span class="nw">clean.</span><wbr><span class="nw">faa</span></code></td></tr><tr><td data-label="What you want">Everything known about every gene, after a run with eggNOG</td><td data-label="File"><code><span class="nw">results/</span><wbr><span class="nw">AMAP/</span><wbr><span class="nw">{lineage}_</span><wbr><span class="nw">{sampleId}/</span><wbr><span class="nw">*-AMAPmastertable.</span><wbr><span class="nw">tsv</span></code></td></tr><tr><td data-label="What you want">The corrected genes, their proteins and sequences, in every run</td><td data-label="File"><code><span class="nw">results/</span><wbr><span class="nw">AMAP/</span><wbr><span class="nw">{lineage}_</span><wbr><span class="nw">{sampleId}/</span><wbr><span class="nw">*.</span><wbr><span class="nw">AMAP.</span><wbr><span class="nw">tsv</span></code>, <code class="nw">.faa</code>, <code class="nw">.fna</code></td></tr><tr><td data-label="What you want">Tool versions for your methods section</td><td data-label="File"><code><span class="nw">results/</span><wbr><span class="nw">pipeline_</span><wbr><span class="nw">info/</span><wbr><span class="nw">software_</span><wbr><span class="nw">versions.</span><wbr><span class="nw">yml</span></code></td></tr></tbody></table></div>
 <div class="hx hx-2"><h2 id="the-full-tree">The full tree</h2><a class="anchor" href="#the-full-tree" aria-label="Link to: The full tree">#</a></div>
 <figure class="fig results-map"><div class="rm-row"><i class="rm-line rm-main"></i><code class="rm-folder">PATHOTYPR/</code><div class="rm-what"><span class="rm-by">PATHOTYPR</span><span class="rm-when">Left out with <code class="nw">--skip_typing</code>.</span></div></div><div class="rm-row"><i class="rm-line rm-main"></i><code class="rm-folder">BAKTA/</code><div class="rm-what"><span class="rm-by">BAKTA_ANNOTATOR</span><span class="rm-when">Always written.</span></div></div><div class="rm-row"><i class="rm-line rm-main"></i><code class="rm-folder">CDS_CASES/</code><div class="rm-what"><span class="rm-by">TYPE_CASES</span><span class="rm-when">Always written.</span></div></div><div class="rm-row"><i class="rm-line rm-main"></i><code class="rm-folder">AMAP/</code><div class="rm-what"><span class="rm-by">FIX_CDS, then GET_OUTPUTS and GET_COUNT</span><span class="rm-when">Left out with <code><span class="nw">--skip_</span><wbr><span class="nw">functional_</span><wbr><span class="nw">annotation</span></code> only FIX_CDS's <code class="nw">*.AMAP.tsv</code>, <code class="nw">.faa</code> and <code class="nw">.fna</code> are left.</span></div></div><div class="rm-row"><i class="rm-line rm-dup"></i><code class="rm-folder">DUPLICATIONS/</code><div class="rm-what"><span class="rm-by">GET_DUPLICATIONS, GET_ALLDUP</span><span class="rm-when">Left out with <code><span class="nw">--skip_</span><wbr><span class="nw">functional_</span><wbr><span class="nw">annotation</span></code>.</span></div></div><div class="rm-row"><i class="rm-line rm-pan"></i><code class="rm-folder">PANGENE/</code><div class="rm-what"><span class="rm-by">PANGENE</span><span class="rm-when">Left out with <code><span class="nw">--skip_</span><wbr><span class="nw">functional_</span><wbr><span class="nw">annotation</span></code>.</span></div></div><div class="rm-row"><i class="rm-line rm-main"></i><code class="rm-folder">final_report.html</code><div class="rm-what"><span class="rm-by">FINAL_REPORT</span><span class="rm-when">Left out with <code><span class="nw">--skip_</span><wbr><span class="nw">functional_</span><wbr><span class="nw">annotation</span></code>.</span></div></div><div class="rm-row"><i class="rm-line rm-none"></i><code class="rm-folder">pipeline_info/</code><div class="rm-what"><span class="rm-by">VALIDATE_INPUTS, SOFTWARE_VERSIONS, DUMP_PARAMS and Nextflow itself</span><span class="rm-when">Always written.</span></div></div><figcaption>Each folder under <code class="nw">results/</code>, the processes of the <a href="../how-it-works/workflow.html">metro map</a> that write it, and the options that leave it out. The colour is the metro line of its process.</figcaption></figure>
-<div class="code bare" data-lang="text"><pre>results/
+<div class="code tree bare" data-lang="text"><pre>results/
 ├── AMAP/
 │   └── {lineage}_{sampleId}/
-│       ├── *.AMAP.tsv                  # Every run: the corrected genes, one row each
-│       ├── *.AMAP.faa                  # Every run: their proteins
-│       ├── *.AMAP.fna                  # Every run: their nucleotide sequences
-│       ├── *-AMAP.faa                  # Corrected proteins, pseudogenes included
-│       ├── *-AMAP.clean.faa            # No pseudogenes, no internal stops
-│       ├── *-AMAP.fna                  # Corrected nucleotide sequences
-│       ├── *-AMAP.tsv                  # The finished annotation, every feature
-│       ├── *-AMAP.gff3                 # Corrected annotation, GFF3
-│       ├── *-AMAP.gbk                  # Corrected annotation, GenBank
-│       ├── *-AMAP.qc.tsv               # Size, GC%, coding density, annotation rate
-│       ├── *-AMAPmastertable.tsv       # Every gene, with eggNOG and Mycobrowser
-│       ├── *-AMAP.COG.tsv              # COG category counts
-│       ├── *-AMAP.MycoBrowser.tsv      # Mycobrowser category counts
-│       └── *-AMAP.noRef.tsv            # The genes that name no reference gene
-│
+│       ├── *.AMAP.tsv<span class="tc" style="--c:12">                  # Every run: the corrected genes, one row each
+</span>│       ├── *.AMAP.faa<span class="tc" style="--c:12">                  # Every run: their proteins
+</span>│       ├── *.AMAP.fna<span class="tc" style="--c:12">                  # Every run: their nucleotide sequences
+</span>│       ├── *-AMAP.faa<span class="tc" style="--c:12">                  # Corrected proteins, pseudogenes included
+</span>│       ├── *-AMAP.clean.faa<span class="tc" style="--c:12">            # No pseudogenes, no internal stops
+</span>│       ├── *-AMAP.fna<span class="tc" style="--c:12">                  # Corrected nucleotide sequences
+</span>│       ├── *-AMAP.tsv<span class="tc" style="--c:12">                  # The finished annotation, every feature
+</span>│       ├── *-AMAP.gff3<span class="tc" style="--c:12">                 # Corrected annotation, GFF3
+</span>│       ├── *-AMAP.gbk<span class="tc" style="--c:12">                  # Corrected annotation, GenBank
+</span>│       ├── *-AMAP.qc.tsv<span class="tc" style="--c:12">               # Size, GC%, coding density, annotation rate
+</span>│       ├── *-AMAPmastertable.tsv<span class="tc" style="--c:12">       # Every gene, with eggNOG and Mycobrowser
+</span>│       ├── *-AMAP.COG.tsv<span class="tc" style="--c:12">              # COG category counts
+</span>│       ├── *-AMAP.MycoBrowser.tsv<span class="tc" style="--c:12">      # Mycobrowser category counts
+</span>│       └── *-AMAP.noRef.tsv<span class="tc" style="--c:12">            # The genes that name no reference gene
+</span>│
 ├── BAKTA/
-│   └── {lineage}_{sampleId}/           # Bakta&#x27;s own annotation, uncorrected
-│       ├── *.gff3  *.gbff  *.embl  *.tsv  *.json
+│   └── {lineage}_{sampleId}/<span class="tc" style="--c:8">           # Bakta&#x27;s own annotation, uncorrected
+</span>│       ├── *.gff3  *.gbff  *.embl  *.tsv  *.json
 │       ├── *.faa  *.ffn  *.fna
 │       ├── *.hypotheticals.faa  *.hypotheticals.tsv
 │       ├── *.inference.tsv
-│       ├── *.png  *.svg                # Genome map
-│       └── *.txt  *.log                # Bakta summary statistics and log
-│
+│       ├── *.png  *.svg<span class="tc" style="--c:12">                # Genome map
+</span>│       └── *.txt  *.log<span class="tc" style="--c:12">                # Bakta summary statistics and log
+</span>│
 ├── CDS_CASES/
 │   ├── summary/
-│   │   └── *-summary.tsv               # Case counts, all samples
-│   └── {lineage}_{sampleId}/
-│       ├── *-case[1-4].tsv             # One table per case
-│       ├── *-rvmissing.tsv             # Reference genes Bakta missed, put back
-│       ├── *.html                      # Interactive overlap plots
-│       └── *_corrected.tsv             # Final corrected coordinates
-│
+│   │   └── *-summary.tsv<span class="tc" style="--c:12">               # Case counts, all samples
+</span>│   └── {lineage}_{sampleId}/
+│       ├── *-case[1-4].tsv<span class="tc" style="--c:12">             # One table per case
+</span>│       ├── *-rvmissing.tsv<span class="tc" style="--c:12">             # Reference genes Bakta missed, put back
+</span>│       ├── *.html<span class="tc" style="--c:12">                      # Interactive overlap plots
+</span>│       └── *_corrected.tsv<span class="tc" style="--c:12">             # As classified, before the stop codon check
+</span>│
 ├── DUPLICATIONS/
 │   ├── {lineage}_{sampleId}/
-│   │   ├── duplications*               # Raw Diamond output, within-genome
-│   │   ├── duplications_*_groups.tsv   # Duplicated genes grouped into families
-│   │   └── *.dup                       # Duplicated protein sequences
-│   ├── homologous_communities.tsv      # Communities across samples, with metrics
-│   └── homologous_communities.html     # Interactive network
-│
+│   │   ├── duplications_*<span class="tc" style="--c:12">              # Diamond hits within the genome, sorted
+</span>│   │   ├── duplications_*_groups.tsv<span class="tc" style="--c:12">   # Duplicated genes grouped into families
+</span>│   │   ├── duplications_*_network.png<span class="tc" style="--c:12">  # The families drawn
+</span>│   │   └── *_interactive.html<span class="tc" style="--c:12">          # The same, interactive
+</span>│   ├── homologous_communities.tsv<span class="tc" style="--c:8">      # Communities across samples, with metrics
+</span>│   └── homologous_communities.html<span class="tc" style="--c:8">     # Interactive network
+</span>│
 ├── PANGENE/
-│   ├── pangenome.gfa                   # Pangenome graph of the whole run
-│   ├── pangenome.bubbles.txt           # Structural variation in the graph
-│   ├── pangenome.Rtab                  # Gene presence/absence, a column per sample
-│   └── pangenome.stat                  # Graph statistics
-│
+│   ├── pangenome.gfa<span class="tc" style="--c:8">                   # Pangenome graph of the whole run
+</span>│   ├── pangenome.bubbles.txt<span class="tc" style="--c:8">           # Structural variation in the graph
+</span>│   ├── pangenome.Rtab<span class="tc" style="--c:8">                  # Gene presence/absence, a column per sample
+</span>│   └── pangenome.stat<span class="tc" style="--c:8">                  # Graph statistics
+</span>│
 ├── PATHOTYPR/
-│   ├── typing/*_summary.tsv            # Lineage calls, one row per contig with markers
-│   └── fastas/*.fasta                  # Each genome as {lineage}_{sampleId}.fasta
-│
+│   ├── typing/*_summary.tsv<span class="tc" style="--c:8">            # Lineage calls, one row per contig with markers
+</span>│   └── fastas/*.fasta<span class="tc" style="--c:8">                  # Each genome as {lineage}_{sampleId}.fasta
+</span>│
 ├── pipeline_info/
-│   ├── execution_report_*.html         # Nextflow execution report
-│   ├── execution_timeline_*.html       # Timeline
-│   ├── pipeline_dag_*.html             # Dependency graph
-│   ├── execution_trace_*.txt           # Per-process resource usage
-│   ├── software_versions.yml / .tsv    # Exact tool versions
-│   ├── params.yml                      # Parameters used for this run
-│   ├── validation.log                  # Pre-flight validation results
-│   └── run_summary.txt                 # Status, duration, sample counts
-│
-├── final_report.html                   # The full report, after eggNOG
-└── amap_report.html                    # The report by question, in every run</pre></div>
+│   ├── execution_report_*.html<span class="tc" style="--c:8">         # Nextflow execution report
+</span>│   ├── execution_timeline_*.html<span class="tc" style="--c:8">       # Timeline
+</span>│   ├── pipeline_dag_*.html<span class="tc" style="--c:8">             # Dependency graph
+</span>│   ├── execution_trace_*.txt<span class="tc" style="--c:8">           # Per-process resource usage
+</span>│   ├── software_versions.yml / .tsv<span class="tc" style="--c:8">    # Exact tool versions
+</span>│   ├── params.yml<span class="tc" style="--c:8">                      # Parameters used for this run
+</span>│   ├── validation.log<span class="tc" style="--c:8">                  # The checks&#x27; verdict, when they pass
+</span>│   └── run_summary.txt<span class="tc" style="--c:8">                 # Status, duration, task counts and the command
+</span>│
+├── final_report.html<span class="tc" style="--c:4">                   # The full report, after eggNOG
+</span>└── amap_report.html<span class="tc" style="--c:4">                    # The report by question, in every run</span></pre></div>
 <p>The <code class="nw">.AMAP.</code> files, with a dot, are the correction's own output, written in every run, <a class="opt-link" href="../user-guide/parameters.html#opt-skip_functional_annotation"><code><span class="nw">--skip_</span><wbr><span class="nw">functional_</span><wbr><span class="nw">annotation</span></code></a> included. The <code class="nw">-AMAP.</code> files, with a hyphen, are the finished annotation, written after eggNOG. <code class="nw">*.AMAP.faa</code> and <code class="nw">*-AMAP.faa</code> hold the same proteins, and the two <code class="nw">.fna</code> files the same sequences.</p>
 <div class="hx hx-2"><h2 id="the-key-files">The key files</h2><a class="anchor" href="#the-key-files" aria-label="Link to: The key files">#</a></div>
 <div class="hx hx-3"><h3 id="-amapgff3-and--amapgbk"><code class="nw">*-AMAP.gff3</code> and <code class="nw">*-AMAP.gbk</code></h3><a class="anchor" href="#-amapgff3-and--amapgbk" aria-label="Link to: *-AMAP.gff3 and *-AMAP.gbk">#</a></div>
@@ -196,7 +197,7 @@ contig_10  AMAP  CDS  101478  102146  .  +  0  ID=L4_CDC1551d_Rv1239c_2;&hellip;
 <p>The audit trail for the correction. Each case table lists the genes that fell into it, so you can see exactly what was changed and why. The <a href="../how-it-works/correction-algorithm.html">correction algorithm</a> explains the cases; <code class="nw">*-summary.tsv</code> aggregates the counts across samples and feeds the report. Its last three columns say which sample the counts are for: <code class="nw">Sequence</code> is the name its files carry (<code class="nw">L4_G26689</code>), <code class="nw">Lineage</code> what typing called it (<code class="nw">Untyped</code> under <a class="opt-link" href="../user-guide/parameters.html#opt-skip_typing"><code class="nw">--skip_typing</code></a>) and <code class="nw">Sample</code> its ID in the sample sheet (<code class="nw">G26689</code>).</p>
 <div class="hx hx-4"><h4 id="what-a-healthy-summary-looks-like">What a healthy summary looks like</h4><a class="anchor" href="#what-a-healthy-summary-looks-like" aria-label="Link to: What a healthy summary looks like">#</a></div>
 <p>Two real runs, those of the <a href="../getting-started/tutorial.html">tutorial</a>, to calibrate expectations. On the left, <em>M. tuberculosis</em> CDC1551 against the bundled H37Rv reference. On the right, <em>E. coli</em> O157:H7 Sakai against K-12 MG1655, using a custom reference.</p>
-<div class="table-wrap" role="region" tabindex="0" aria-labelledby="what-a-healthy-summary-looks-like"><table><thead><tr><th>Case</th><th class="num">CDC1551 vs H37Rv</th><th class="num">Sakai vs K-12</th></tr></thead><tbody><tr><td data-label="Case">case2, exact match</td><td class="num" data-label="CDC1551 vs H37Rv">2813</td><td class="num" data-label="Sakai vs K-12">3324</td></tr><tr><td data-label="Case">case3, length differs</td><td class="num" data-label="CDC1551 vs H37Rv">24</td><td class="num" data-label="Sakai vs K-12">31</td></tr><tr><td data-label="Case">case4, resolved conflict</td><td class="num" data-label="CDC1551 vs H37Rv">1100</td><td class="num" data-label="Sakai vs K-12">507</td></tr><tr><td data-label="Case">case1_kept, genuinely novel</td><td class="num" data-label="CDC1551 vs H37Rv">11</td><td class="num" data-label="Sakai vs K-12">1387</td></tr><tr><td data-label="Case">rv_missing, rescued</td><td class="num" data-label="CDC1551 vs H37Rv">97</td><td class="num" data-label="Sakai vs K-12">133</td></tr><tr><td data-label="Case">total_cds before correction</td><td class="num" data-label="CDC1551 vs H37Rv">4077</td><td class="num" data-label="Sakai vs K-12">5367</td></tr></tbody></table></div>
+<div class="table-wrap" aria-labelledby="what-a-healthy-summary-looks-like"><table><thead><tr><th>Case</th><th class="num">CDC1551 vs H37Rv</th><th class="num">Sakai vs K-12</th></tr></thead><tbody><tr><td data-label="Case">case2, exact match</td><td class="num" data-label="CDC1551 vs H37Rv">2813</td><td class="num" data-label="Sakai vs K-12">3324</td></tr><tr><td data-label="Case">case3, length differs</td><td class="num" data-label="CDC1551 vs H37Rv">24</td><td class="num" data-label="Sakai vs K-12">31</td></tr><tr><td data-label="Case">case4, resolved conflict</td><td class="num" data-label="CDC1551 vs H37Rv">1100</td><td class="num" data-label="Sakai vs K-12">507</td></tr><tr><td data-label="Case">case1_kept, genuinely novel</td><td class="num" data-label="CDC1551 vs H37Rv">11</td><td class="num" data-label="Sakai vs K-12">1387</td></tr><tr><td data-label="Case">rv_missing, rescued</td><td class="num" data-label="CDC1551 vs H37Rv">97</td><td class="num" data-label="Sakai vs K-12">133</td></tr><tr><td data-label="Case">total_cds before correction</td><td class="num" data-label="CDC1551 vs H37Rv">4077</td><td class="num" data-label="Sakai vs K-12">5367</td></tr></tbody></table></div>
 <figure class="fig case-bars"><div class="cb-rows"><div class="cb-row"><span class="cb-name">CDC1551 vs H37Rv</span><span class="cb-total">4,077 Bakta calls</span><div class="cb-bar" aria-hidden="true"><span class="cb-seg cb-agree" style="width:52.27%" title="case 2: 2,813"><span class="cb-n">2,813</span></span><span class="cb-seg cb-agree3" style="width:0.45%" title="case 3: 24"></span><span class="cb-seg cb-conflict" style="width:20.44%" title="case 4: 1,100"><span class="cb-n">1,100</span></span><span class="cb-seg cb-novel" style="width:0.20%" title="case 1, kept: 11"></span><span class="cb-seg cb-missing" style="width:1.80%" title="reference genes put back: 97"></span></div><div class="cb-values"><span><i class="cb-key cb-agree"></i>case 2 <b>2,813</b></span><span><i class="cb-key cb-agree3"></i>case 3 <b>24</b></span><span><i class="cb-key cb-conflict"></i>case 4 <b>1,100</b></span><span><i class="cb-key cb-novel"></i>case 1, kept <b>11</b></span><span><i class="cb-key cb-missing"></i>missing, put back <b>97</b></span></div></div><div class="cb-row"><span class="cb-name">Sakai vs K-12</span><span class="cb-total">5,367 Bakta calls</span><div class="cb-bar" aria-hidden="true"><span class="cb-seg cb-agree" style="width:61.76%" title="case 2: 3,324"><span class="cb-n">3,324</span></span><span class="cb-seg cb-agree3" style="width:0.58%" title="case 3: 31"></span><span class="cb-seg cb-conflict" style="width:9.42%" title="case 4: 507"><span class="cb-n">507</span></span><span class="cb-seg cb-novel" style="width:25.77%" title="case 1, kept: 1,387"><span class="cb-n">1,387</span></span><span class="cb-seg cb-missing" style="width:2.47%" title="reference genes put back: 133"></span></div><div class="cb-values"><span><i class="cb-key cb-agree"></i>case 2 <b>3,324</b></span><span><i class="cb-key cb-agree3"></i>case 3 <b>31</b></span><span><i class="cb-key cb-conflict"></i>case 4 <b>507</b></span><span><i class="cb-key cb-novel"></i>case 1, kept <b>1,387</b></span><span><i class="cb-key cb-missing"></i>missing, put back <b>133</b></span></div></div></div><figcaption>The same table, drawn. The number that differs by two orders of magnitude is case 1: the prophages and the LEE island that O157:H7 carries and K-12 does not.</figcaption></figure>
 <p>The one number that differs by two orders of magnitude is case 1, and that is biology: CDC1551 is the same species as the reference so almost nothing is genuinely new, while O157:H7 carries prophages and the LEE island that K-12 does not have.</p>
 <p>What should worry you is the opposite: <strong>case 2 at or near zero</strong>. Every gene disagreeing with the reference by a few bases means something systematic is wrong with the reference, not with 4000 individual genes. The usual cause is a reference proteome whose coordinates do not describe the sequence its proteins were translated from.</p>
@@ -207,7 +208,7 @@ contig_10  AMAP  CDS  101478  102146  .  +  0  ID=L4_CDC1551d_Rv1239c_2;&hellip;
 <div class="hx hx-3"><h3 id="amap_reporthtml"><code class="nw">amap_report.html</code></h3><a class="anchor" href="#amap_reporthtml" aria-label="Link to: amap_report.html">#</a></div>
 <p>One self-contained file, organised by the questions a run raises: how each genome annotated, where genes are missing or broken on the reference, one gene in every genome, what the correction changed, the pseudogenes by lineage, what lies outside the reference, and the functional profile. Written with or without the functional annotation. <a href="amap-report.html">The report by question</a> goes through it.</p>
 <div class="hx hx-2"><h2 id="effect-of-the-skip-options">Effect of the skip options</h2><a class="anchor" href="#effect-of-the-skip-options" aria-label="Link to: Effect of the skip options">#</a></div>
-<ul><li><strong><a class="opt-link" href="../user-guide/parameters.html#opt-skip_typing"><code class="nw">--skip_typing</code></a></strong>: No <code class="nw">PATHOTYPR/</code> directory. Samples keep their original IDs instead of being renamed by lineage.</li><li><strong><a class="opt-link" href="../user-guide/parameters.html#opt-skip_functional_annotation"><code><span class="nw">--skip_</span><wbr><span class="nw">functional_</span><wbr><span class="nw">annotation</span></code></a></strong>: The run stops after correction. No <code class="nw">DUPLICATIONS/</code>, <code class="nw">PANGENE/</code> or <code class="nw">final_report.html</code>, and <code class="nw">AMAP/</code> holds only the corrected table and sequences, <code class="nw">*.AMAP.tsv</code>, <code class="nw">*.AMAP.faa</code> and <code class="nw">*.AMAP.fna</code>, without the GFF3, the GenBank or the master table. You still get <code class="nw">BAKTA/</code> and <code class="nw">CDS_CASES/</code>, including <code class="nw">*_corrected.tsv</code> with the corrected coordinates, and <code class="nw">amap_report.html</code>, without its eggNOG sections.</li><li><strong><a class="opt-link" href="../user-guide/parameters.html#opt-skip_mycobrowser"><code class="nw">--skip_mycobrowser</code></a></strong>: <code class="nw">*-AMAP.MycoBrowser.tsv</code> is written empty and the Mycobrowser sections drop out of the report. Everything else is unaffected.</li></ul>
+<ul><li><strong><a class="opt-link" href="../user-guide/parameters.html#opt-skip_typing"><code class="nw">--skip_typing</code></a></strong>: No <code class="nw">PATHOTYPR/</code> directory. Samples keep their original IDs instead of being renamed by lineage.</li><li><strong><a class="opt-link" href="../user-guide/parameters.html#opt-skip_functional_annotation"><code><span class="nw">--skip_</span><wbr><span class="nw">functional_</span><wbr><span class="nw">annotation</span></code></a></strong>: The run stops after correction. No <code class="nw">DUPLICATIONS/</code>, <code class="nw">PANGENE/</code> or <code class="nw">final_report.html</code>, and <code class="nw">AMAP/</code> holds only the corrected table and sequences, <code class="nw">*.AMAP.tsv</code>, <code class="nw">*.AMAP.faa</code> and <code class="nw">*.AMAP.fna</code>, without the GFF3, the GenBank or the master table. You still get <code class="nw">BAKTA/</code> and <code class="nw">CDS_CASES/</code>, including <code class="nw">*_corrected.tsv</code> with the classification's coordinates, and <code class="nw">amap_report.html</code>, without its eggNOG sections.</li><li><strong><a class="opt-link" href="../user-guide/parameters.html#opt-skip_mycobrowser"><code class="nw">--skip_mycobrowser</code></a></strong>: <code class="nw">*-AMAP.MycoBrowser.tsv</code> is written empty and the Mycobrowser sections drop out of the report. Everything else is unaffected.</li></ul>
 <div class="hx hx-2"><h2 id="next-steps">Next steps</h2><a class="anchor" href="#next-steps" aria-label="Link to: Next steps">#</a></div>
 <ul><li><a href="../how-it-works/index.html">How it works</a>: what produced all this</li><li><a href="../how-it-works/duplications.html">Duplication metrics</a>: reading the network numbers</li></ul>
 <p class="edit"><a href="https://github.com/PathoGenOmics-Lab/AMAP/edit/main/docs/user-guide/outputs.md"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Edit this page on GitHub</a></p>

@@ -8,10 +8,12 @@ pangenome matrix one genome column short, took the gene names for row names,
 and never drew the heatmap. The tables a "#" can reach are read with no comment
 character: the pangenome matrix, and the ones that list the reference
 annotation's gene IDs, which extract_ref_proteins.py keeps as they are.
+PANGENE now names each column after its sample, without the "#0".
 
-The last test runs the report's own R code. It needs Rscript and the packages
-of the pangenome section (the AMAP container has both) and is skipped without
-them, as in CI.
+The last test runs the report's own R code on the matrix PANGENE writes, a
+column per sample, and counts the genes they all share. It needs Rscript and
+the packages of the pangenome section (the AMAP container has both) and is
+skipped without them, as in CI.
 """
 
 import re
@@ -26,22 +28,22 @@ ROOT = Path(__file__).resolve().parent.parent
 REPORT = ROOT / "bin" / "report" / "report_AMAP.Rmd"
 MERGE_RTABS = ROOT / "bin" / "merge_rtabs.py"
 
-# The first rows of what PANGENE wrote for two typed samples, the first 2 Mb
-# of CDC1551 and of M. bovis against H37Rv: each sample's genes against the
-# other sample's genome.
+# Rows of what PANGENE wrote for three typed samples, the first 2 Mb of
+# M. bovis, CDC1551 and H37Rv against H37Rv: genes all three share, RD4, which
+# M. bovis lacks, the phiRv1 prophage, which CDC1551 lacks, and two genes no
+# reference gene matches, under the sample whose copy pangene kept.
 RTABS = {
-    "A4_Mbovis.Rtab": (
-        "Gene\tL4_CDC1551_A4_Mbovis#0\n"
-        "A4_Mbovis_Rv0001;+;0-1524\t1\n"
-        "A4_Mbovis_00002;+;2051-3260\t1\n"
-        "A4_Mbovis_Rv0003;+;3279-4437\t1\n"),
-    "L4_CDC1551.Rtab": (
-        "Gene\tA4_Mbovis_L4_CDC1551#0\n"
-        "L4_CDC1551_Rv0001;+;0-1524\t1\n"
-        "L4_CDC1551_00002;+;2051-3260\t1\n"
-        "L4_CDC1551_Rv0003;+;3279-4437\t1\n"),
+    "pangenome.Rtab": (
+        "Gene\tA4_Mbovis\tL4_CDC1551\tL4_H37Rv\n"
+        "Rv0001\t1\t1\t1\n"
+        "Rv0002\t1\t1\t1\n"
+        "Rv0003\t1\t1\t1\n"
+        "Rv1506c\t0\t1\t1\n"
+        "Rv1573\t1\t0\t1\n"
+        "A4_Mbovis_01833\t1\t1\t0\n"
+        "L4_CDC1551_01396\t0\t1\t0\n"),
 }
-GENOMES = ["L4_CDC1551_A4_Mbovis#0", "A4_Mbovis_L4_CDC1551#0"]
+GENOMES = ["A4_Mbovis", "L4_CDC1551", "L4_H37Rv"]
 
 # params the report reads with read.table that a "#" can reach
 HASH_TABLES = ["pangene_file", "rvmissing_file", "mastertable_file", "dup_file"]
@@ -61,8 +63,8 @@ def merged(tmp_path):
     return tmp_path / "input_pangene.txt"
 
 
-def test_the_matrix_reaches_the_report_with_its_hashes(merged):
-    assert merged.read_text().splitlines()[0].split("\t") == ["Gene", *GENOMES]
+def test_the_matrix_reaches_the_report_a_column_per_sample(merged):
+    assert merged.read_text() == RTABS["pangenome.Rtab"]
 
 
 @pytest.mark.parametrize("param", HASH_TABLES)
@@ -106,9 +108,11 @@ def test_the_report_uses_every_genome_column(merged):
         load,
         'cat("columns:", colnames(pangene_raw), sep = "\\t"); cat("\\n")',
         *chunks,
+        'cat("samples:", n_samples, "core:", sum(gene_class == "Core (100%)"), "\\n")',
     ]))
     run = subprocess.run([exe, "pangene.R"], cwd=merged.parent, capture_output=True, text=True)
     assert run.returncode == 0, run.stderr
     assert "columns:\t" + "\t".join(["Gene", *GENOMES]) in run.stdout
+    assert "samples: 3 core: 3" in run.stdout
     assert "No pangene data available" not in run.stdout
     assert "Could not generate heatmap" not in run.stdout

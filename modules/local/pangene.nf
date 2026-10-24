@@ -1,108 +1,91 @@
 /*
- * PANGENE — pangenome graph per sample.
+ * PANGENE: one pangenome for the whole run.
  *
- * Architecture for scalability:
- * Each sample's corrected proteins (fixfaa) are aligned against every OTHER
- * sample's genome (ref_fastas) using miniprot. With N samples, this is
- * N×(N-1) alignments total.
+ * pangene builds its graph from one set of proteins aligned to every genome.
+ * The set is the reference proteome and the genes of each sample that no
+ * reference gene matches (bin/pangenome.py); miniprot aligns it to every
+ * sample's genome, the sample's own included, one alignment per genome. Each
+ * gene is then one row of the matrix and each genome one column, named after
+ * its sample, so the genes the samples share are the rows found in every
+ * column.
  *
- * The genomes are told apart by file name, one <name>.fasta per sample, and
- * the one named like the sample's own genome is left out. PATHOTYPR writes
- * them; with --skip_typing, PANGENE_GENOME below does.
- *
- * The reference FASTAs are provided as a SINGLE directory (via stageAs)
- * to avoid Nextflow staging N-1 individual symlinks per sample — which at
- * 500 samples means 249,500 staging operations.
- *
- * Miniprot jobs run in parallel batches within each process instance,
- * bounded by task.cpus to avoid oversubscription.
+ * The genomes are <name>.fasta, one per sample, as PATHOTYPR writes them or,
+ * with --skip_typing, PANGENE_GENOME below. Miniprot jobs run in parallel
+ * batches, bounded by task.cpus to avoid oversubscription.
  */
 process PANGENE {
-    tag "$sampleId"
+    tag "${genomes.size()} genomes"
+    // The AMAP code this task runs, in its cache key (see docs/about/contributing.md)
+    ext code: { files("${projectDir}/bin/pangenome.py") }
 
-    // A closure: the strict parser evaluates publishDir once, when the process
-    // is defined, so ${sampleId} has to wait for each task.
-    publishDir path: { "${params.outdir}/PANGENE/${sampleId}" },
-               mode: 'link', overwrite: true,
-               pattern: "*.{gfa,bubbles.txt,Rtab,stat}"
+    publishDir "${params.outdir}/PANGENE", mode: 'link', overwrite: true,
+               pattern: "pangenome.{gfa,bubbles.txt,Rtab,stat}"
 
     input:
-    tuple val(sampleId),
-          path(fixtsv),
-          path(fixfaa),
-          path(fixfna),
-          path(baktatsv),
-          path(fasta),
-          path(emapper)
-    path ref_fastas, stageAs: 'refs/*'  // every sample's genome, from PATHOTYPR or PANGENE_GENOME
+    // Every sample's genome, <name>.fasta: a list even for one sample
+    path genomes, stageAs: 'genomes/*', arity: '1..*'
+    // Every sample's <name>.AMAP.tsv and <name>.AMAP.faa, for the genes no
+    // reference gene matches
+    path corrected, stageAs: 'corrected/*', arity: '1..*'
+    // In a folder of its own: a proteome on the host may have any name,
+    // proteins.faa included, which this task writes
+    path ref_proteome, stageAs: 'reference/*'
 
     output:
-    tuple val(sampleId),
-          path("${sampleId}.gfa"),
-          path("${sampleId}.bubbles.txt"),
-          path("${sampleId}.Rtab"),
-          emit: pangene_out
+    path "pangenome.Rtab", emit: rtab
+    path "pangenome.{gfa,bubbles.txt,stat}"
 
     script:
     """
+    # AMAP code in this task's cache key: ${task.ext.code.collect { f -> f.name }.join(' ')}
     set -euo pipefail
-    shopt -s nullglob          # empty glob → empty list
 
-    # 1) create AMAP-style links (overwrite on resume)
-    ln -sf ${fixfaa} ${sampleId}-AMAP.faa
-    ln -sf ${fixfna} ${sampleId}-AMAP.fna
+    # 1) The proteins every genome is searched with
+    python3 ${projectDir}/bin/pangenome.py proteins --reference ${ref_proteome} \\
+        --out proteins.faa corrected/*.AMAP.tsv
 
-    # 2) collect reference genomes — exclude self
-    refs=()
-    for f in refs/*.fasta; do
-        [[ "\$(basename \$f)" == "${fasta}" ]] && continue
-        refs+=("\$f")
-    done
-
-    if [ \${#refs[@]} -eq 0 ]; then
-        echo "No reference FASTA files – skipping pangene for ${sampleId}"
-        echo "H\tVN:1.0" > ${sampleId}.gfa
-        touch ${sampleId}.bubbles.txt ${sampleId}.Rtab ${sampleId}.stat
-        exit 0
-    fi
-
-    echo "==> ${sampleId}: aligning against \${#refs[@]} references (${task.cpus} CPUs)..."
-
-    # 3) build PAFs — parallel with bounded concurrency
+    # 2) Align them to every genome, the sample's own included, in parallel
+    #    with bounded concurrency
+    genomes=(genomes/*.fasta)
+    echo "==> aligning \$(grep -c '>' proteins.faa) proteins to \${#genomes[@]} genomes (${task.cpus} CPUs)..."
     THREADS_PER_JOB=2
     MAX_JOBS=\$(( ${task.cpus} / THREADS_PER_JOB ))
     [ \$MAX_JOBS -lt 1 ] && MAX_JOBS=1
 
+    mkdir -p paf
     pids=()
-    running=0
     fail=0
-    for ref in "\${refs[@]}"; do
-        base=\$(basename "\$ref" .fasta)
+    for genome in "\${genomes[@]}"; do
         miniprot --outs=0.97 --no-cs -S -Iut\${THREADS_PER_JOB} \\
-                 "\$ref" ${fixfaa} \\
-                 > "\${base}_${sampleId}.paf" &
+                 "\$genome" proteins.faa \\
+                 > "paf/\$(basename "\$genome" .fasta).paf" &
         pids+=(\$!)
-        running=\$((running + 1))
-        if [ \$running -ge \$MAX_JOBS ]; then
+        if [ \${#pids[@]} -ge \$MAX_JOBS ]; then
             for p in "\${pids[@]}"; do
                 wait \$p || { echo "ERROR: miniprot PID \$p failed" >&2; fail=1; }
             done
             pids=()
-            running=0
         fi
     done
-    for p in "\${pids[@]}"; do
+    # Guarded: an empty array is unbound under set -u in the bash before 4.4
+    # that macOS has as /bin/bash
+    [ \${#pids[@]} -eq 0 ] || for p in "\${pids[@]}"; do
         wait \$p || { echo "ERROR: miniprot PID \$p failed" >&2; fail=1; }
     done
     [ \$fail -eq 0 ] || exit 1
 
-    # 4) run pangene
-    pangene -p0 *.paf > ${sampleId}.gfa
-    k8 /usr/local/bin/pangene.js call       ${sampleId}.gfa > ${sampleId}.bubbles.txt
-    k8 /usr/local/bin/pangene.js gfa2matrix ${sampleId}.gfa > ${sampleId}.Rtab
-    gfatools stat ${sampleId}.gfa > ${sampleId}.stat
+    # 3) One graph for the whole run; pangene names each genome after its PAF
+    pangene -p0 paf/*.paf > pangenome.gfa
+    k8 /usr/local/bin/pangene.js call       pangenome.gfa > pangenome.bubbles.txt
+    k8 /usr/local/bin/pangene.js gfa2matrix pangenome.gfa > genes_by_genome.Rtab
+    gfatools stat pangenome.gfa > pangenome.stat
 
-    rm -f *.paf
+    # 4) One column per genome, named after its sample, a genome none of the
+    #    proteins was found in included
+    python3 ${projectDir}/bin/pangenome.py matrix --out pangenome.Rtab \\
+        genes_by_genome.Rtab "\${genomes[@]}"
+
+    rm -rf paf
     """
 }
 

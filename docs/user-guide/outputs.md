@@ -59,11 +59,10 @@ results/
 │   └── homologous_communities.html     # Interactive network
 │
 ├── PANGENE/
-│   └── {sampleId}/
-│       ├── *.gfa                       # Pangenome graph
-│       ├── *.bubbles.txt               # Structural variation in the graph
-│       ├── *.Rtab                      # Gene presence/absence matrix
-│       └── *.stat                      # Graph statistics
+│   ├── pangenome.gfa                   # Pangenome graph of the whole run
+│   ├── pangenome.bubbles.txt           # Structural variation in the graph
+│   ├── pangenome.Rtab                  # Gene presence/absence, a column per sample
+│   └── pangenome.stat                  # Graph statistics
 │
 ├── PATHOTYPR/
 │   ├── typing/*_summary.tsv            # Lineage calls, one row per contig with markers
@@ -187,6 +186,17 @@ disagreeing with the reference by a few bases means something systematic is
 wrong with the reference, not with 4000 individual genes. The usual cause is a
 reference proteome whose coordinates do not describe the sequence its proteins
 were translated from.
+
+### `PANGENE/pangenome.Rtab`
+
+The gene presence/absence matrix of the whole run, the one both reports draw
+the pangenome from: one row per gene, one column per sample, 1 where pangene
+found the gene in that sample's genome. Every genome is searched with the same
+proteins, the reference proteome and the genes no reference gene matches, so a
+gene with a 1 in every column is one all the samples share. A gene is named
+after its reference gene (`Rv1506c`) or, when no reference gene matches it,
+after one sample's copy of it (`L4_CDC1551_01396`, the ID in that sample's
+master table).
 
 ### `final_report.html`
 

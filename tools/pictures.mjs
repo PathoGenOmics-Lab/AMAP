@@ -143,6 +143,7 @@ try {
   // The card and the icon: small pages of their own, on the site's stylesheet
   // and drawings, written next to the site so its paths resolve.
   const DOCS = join(ROOT, 'docs')
+  const README = join(DOCS, 'assets', 'readme')
   const shoot = async (name, html, width, height, file) => {
     const tmp = join(DOCS, `.${name}.html`)
     writeFileSync(tmp, html)
@@ -182,7 +183,6 @@ AMAPFigures.render(document.querySelector('[data-card]'), function () { return A
   if (want('readme')) {
     // The README's pictures: drawings of the site, in either theme, at twice
     // the size for sharp screens.
-    const README = join(DOCS, 'assets', 'readme')
     mkdirSync(README, { recursive: true })
     const element = async (url, selector, file, theme, width) => {
       await page('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 2, mobile: false })
@@ -235,6 +235,10 @@ body { margin: 0; padding: 16px; width: 1100px; }
     const hero = readFileSync(join(DOCS, 'index.html'), 'utf8')
       .match(/<figure class="demo" data-hero[\s\S]*?<\/figure>/)[0]
       .replace(/ <span class="when-hover">.*?<\/span><span class="when-touch">.*?<\/span>/, '')
+    // How long figures.js holds each step before the next; the last is held
+    // twice as long as the first, for the picture to rest on.
+    const dwell = JSON.parse(readFileSync(join(DOCS, 'assets', 'figures.js'), 'utf8').match(/var DWELL = (\[[\d, ]+\]);/)[1])
+    mkdirSync(README, { recursive: true })
     const frames = mkdtempSync(join(tmpdir(), 'amap-hero-'))
     const playing = join(DOCS, '.readme-hero.html')
     try {
@@ -255,7 +259,7 @@ ${hero}
         await page('Page.navigate', { url: pathToFileURL(playing).href })
         const steps = []
         for (let n = 1; n <= 4; n++) {
-          // figures.js moves on every 2.1 s: wait for the step, then for its fade.
+          // Wait for figures.js to reach the step, then for its fade.
           for (let waited = 0; ; waited += 50) {
             const { result } = await page('Runtime.evaluate', {
               returnByValue: true, expression: `document.querySelector('[data-hero] svg')?.getAttribute('data-phase')`,
@@ -271,8 +275,9 @@ ${hero}
           const { data } = await page('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: result.value.w, height: result.value.h, scale: 1 } })
           const file = join(frames, `${theme}-${n}.png`)
           writeFileSync(file, Buffer.from(data, 'base64'))
-          // As long as the site shows each step, and the last one twice as long.
-          steps.push(`${file}:${n === 4 ? 4200 : 2100}`)
+          // As long as the site shows each step, and the last one twice as long
+          // as the first.
+          steps.push(`${file}:${n === 4 ? 2 * dwell[0] : dwell[n - 1]}`)
         }
         const out = join(README, `hero-${theme}.gif`)
         const joined = spawnSync(process.env.PYTHON || 'python3', [join(ROOT, 'tools', 'gif.py'), out, ...steps], { stdio: 'inherit' })

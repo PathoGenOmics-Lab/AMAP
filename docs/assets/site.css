@@ -2202,6 +2202,11 @@ html:not(.js) .builder {
   white-space: nowrap;
 }
 
+/* A path longer than a phone breaks after one of its folders. */
+.counts-term .path {
+  white-space: normal;
+}
+
 .counts-term .p {
   color: var(--code-muted);
   user-select: none;

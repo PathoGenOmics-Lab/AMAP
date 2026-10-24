@@ -25,6 +25,7 @@ breaks.
 from __future__ import annotations
 
 import argparse
+import functools
 import html
 import json
 import re
@@ -38,15 +39,15 @@ REPO = "https://github.com/PathoGenOmics-Lab/AMAP"
 # a .md file is built into a page; an .html path is a page written by hand and
 # only gets its place in the list.
 PAGES = [
-    ("Getting started", "getting-started/tutorial.md", "Tutorial", "From an empty folder to a corrected genome, with the numbers of a real run."),
     ("Getting started", "getting-started/installation.md", "Installation", "Nextflow, a container engine, and running without one."),
-    ("Getting started", "getting-started/quickstart.md", "Quickstart", "From an installed Nextflow to an open report."),
+    ("Getting started", "getting-started/quickstart.md", "Quickstart", "The front page's three steps as a page, about 10 minutes once installed."),
+    ("Getting started", "getting-started/tutorial.md", "Tutorial", "One real genome, start to finish, with every number."),
     ("Getting started", "getting-started/inputs.md", "Preparing inputs", "The sample sheet, the genomes, and the checks run on them."),
     ("User guide", "user-guide/parameters.md", "Parameters", "Every option, its default, and when to change it."),
     ("User guide", "user-guide/running.md", "Running AMAP", "Profiles, schedulers and larger runs."),
     ("User guide", "user-guide/outputs.md", "Outputs", "Every folder and file, and what a healthy run looks like."),
-    ("User guide", "user-guide/report.md", "The report", "What each section of final_report.html shows."),
-    ("User guide", "user-guide/amap-report.md", "The interactive report", "amap_report.html, question by question, with or without eggNOG."),
+    ("User guide", "user-guide/report.md", "The full report", "What each section of final_report.html shows."),
+    ("User guide", "user-guide/amap-report.md", "The report by question", "amap_report.html, question by question, with or without eggNOG."),
     ("User guide", "user-guide/custom-reference.md", "Custom reference", "Any organism, against a trusted annotation of your own."),
     ("How it works", "how-it-works.html", "Step by step, illustrated", "One gene at a time, from Bakta's call to what AMAP keeps."),
     ("How it works", "how-it-works/index.md", "Overview", "What goes into a decision, and the five outcomes."),
@@ -79,10 +80,13 @@ SUN_SVG = (
     'l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
 )
 THEME_BOOT = (
-    '<script>try { document.documentElement.dataset.theme = localStorage.getItem("amap.theme") === "light" ? '
-    '"light" : "dark"; } catch (e) { document.documentElement.dataset.theme = "dark"; }</script>'
+    '<script>document.documentElement.classList.add("js"); try { document.documentElement.dataset.theme = '
+    'localStorage.getItem("amap.theme") === "light" ? "light" : "dark"; } catch (e) { '
+    'document.documentElement.dataset.theme = "dark"; }</script>'
 )
 INLINE_TAGS = re.compile(r"</?(kbd|br|sup|sub|strong|em|b|i)\s*/?>", re.I)
+# What figures.js looks for to draw: a page with none of these needs neither it nor its data.
+FIGURE_HOOK = re.compile(r"\bdata-(fig|inputs|outcomes|metro|dup)(?=[\s=>])")
 ALERTS = {"NOTE": "Note", "TIP": "Tip", "IMPORTANT": "Important", "WARNING": "Warning", "CAUTION": "Caution"}
 FIGURE_MARK = re.compile(r"^<!--\s*figure:\s*([\w-]+)\s*-->$")
 
@@ -343,13 +347,260 @@ def strip_front_matter(lines: list[str]) -> list[str]:
     return lines
 
 
+# ── Inline code ──
+#
+# A chip of code never splits inside a word. Up to SHORT_CODE characters it
+# does not wrap at all; a longer one wraps only at a space or after a /, _ or
+# ., so a path or a long option name comes apart where it reads in pieces.
+# Each piece is a span that does not wrap, with a <wbr> between pieces: the
+# browser's own rules would also break after a hyphen, '--|skip_typing'.
+
+SHORT_CODE = 24
+
+
+def code_pieces(text: str) -> str:
+    out = []
+    for token in re.split(r"( +)", text):
+        if not token:
+            continue
+        if token.isspace():
+            out.append(token)
+            continue
+        pieces = re.findall(r"[^/_.]*[/_.]+|[^/_.]+", token)
+        out.append("<wbr>".join(f'<span class="nw">{html.escape(p)}</span>' for p in pieces))
+    return "".join(out)
+
+
+def code_chip(text: str) -> str:
+    if len(text) <= SHORT_CODE:
+        return f'<code class="nw">{html.escape(text)}</code>'
+    return f"<code>{code_pieces(text)}</code>"
+
+
+def chips_in(fragment: str) -> str:
+    """The same treatment for the <code> of a figure written as HTML."""
+    return re.sub(r"<code>([^<]*)</code>", lambda m: code_chip(html.unescape(m.group(1))), fragment)
+
+
+# ── Options ──
+#
+# Every --option of the parameters page has a row there with an id, and a
+# chip of code naming one anywhere else in the docs links to it.
+
+PARAMETERS = "user-guide/parameters.md"
+
+
+@functools.lru_cache(maxsize=None)
+def parameter_rows() -> list[dict]:
+    """The --option rows of the parameters page: flag, section, cells."""
+    rows, section, head = [], "", []
+    for line in (DOCS / PARAMETERS).read_text(encoding="utf-8").splitlines():
+        heading = re.match(r"^##\s+(.*)$", line)
+        if heading:
+            section = heading.group(1).strip()
+            continue
+        if not line.startswith("|"):
+            head = []
+            continue
+        cells = [c.strip() for c in re.split(r"(?<!\\)\|", line.strip().strip("|"))]
+        if not head:
+            head = [plain(c) for c in cells]
+            continue
+        flag = re.fullmatch(r"`(--[a-z][a-z0-9_]*)`", cells[0])
+        if flag:
+            rows.append({"flag": flag.group(1), "section": section, "cells": dict(zip(head, (plain(c) for c in cells)))})
+    return rows
+
+
+def options() -> set[str]:
+    return {row["flag"] for row in parameter_rows()}
+
+
+def switches() -> set[str]:
+    """Options that take no value: what follows one on a command line is not its value."""
+    return {row["flag"] for row in parameter_rows() if row["cells"].get("Type") == "boolean"} | {"--rm", "--help", "--version"}
+
+
+# Nextflow's own options that take a value.
+NF_VALUED = {"-profile", "-work-dir", "-c", "-r"}
+
+
+# ── Code blocks ──
+
+SHELL = {"bash", "sh", "console", "shell"}
+TOKEN = re.compile(r"""(?:[^\s'"]|'[^']*'|"(?:\\.|[^"\\])*")+|\S+""")
+LONG_TOKEN = 36
+
+
+def open_quote(line: str, quote: str | None) -> str | None:
+    """The quote still open at the end of a line of shell, given the one open
+    at its start."""
+    i = 0
+    while i < len(line):
+        ch = line[i]
+        if quote is None:
+            if ch == "\\":
+                i += 2
+                continue
+            if ch == "#" and (i == 0 or line[i - 1].isspace()):
+                return None
+            if ch in "'\"":
+                quote = ch
+        elif ch == quote:
+            quote = None
+        elif ch == "\\" and quote == '"':
+            i += 2
+            continue
+        i += 1
+    return quote
+
+
+def shell_token(token: str, kind: str) -> str:
+    """One word of a command, which never wraps inside itself; a long path
+    may, after a /."""
+    if len(token) > LONG_TOKEN and "/" in token:
+        pieces = re.findall(r"[^/]*/+|[^/]+", token)
+        inner = "<wbr>".join(f'<span class="nw">{html.escape(p)}</span>' for p in pieces)
+        return f'<span class="{kind} path">{inner}</span>'
+    return f'<span class="{kind}">{html.escape(token)}</span>'
+
+
+def shell_line(line: str) -> str:
+    """A line of shell as words: flags (.f), their values (.v), other words
+    (.t) and a comment (.c). The spaces stay between the words, so a long
+    line wraps there and only there."""
+    out, at, tokens = [], 0, list(TOKEN.finditer(line))
+    k = 0
+    while k < len(tokens):
+        m = tokens[k]
+        out.append(html.escape(line[at:m.start()]))
+        word = m.group(0)
+        if word.startswith("#"):
+            out.append(f'<span class="c">{html.escape(line[m.start():])}</span>')
+            at = len(line)
+            break
+        if re.match(r"^--?[A-Za-z]", word):
+            nxt = tokens[k + 1] if k + 1 < len(tokens) else None
+            valued = (
+                (word.startswith("--") and "=" not in word and word not in switches()) or word in NF_VALUED or word.startswith("-process.")
+            )
+            if valued and nxt and not re.match(r"^(-|#|\\$|\||&&|;|>)", nxt.group(0)):
+                value = nxt.group(0)
+                pair = shell_token(word, "f") + html.escape(line[m.end():nxt.start()]) + shell_token(value, "v")
+                out.append(f'<span class="kv">{pair}</span>' if len(word) + len(value) < 32 else pair)
+                at = nxt.end()
+                k += 2
+                continue
+            out.append(shell_token(word, "f"))
+        else:
+            out.append(shell_token(word, "t"))
+        at = m.end()
+        k += 1
+    out.append(html.escape(line[at:]))
+    return "".join(out)
+
+
+def shell_html(lines: list[str], prompts: bool) -> str:
+    """Each line of a shell block as a .ln, which wraps with a hanging
+    indent. A line that starts a command gets a $ prompt, which Copy leaves
+    out; a line that carries one on, after a backslash or inside a quote or
+    a loop, does not."""
+    out = []
+    carried = False
+    quote = None
+    depth = 0
+    for n, line in enumerate(lines):
+        stripped = line.strip()
+        indent = len(line) - len(line.lstrip(" "))
+        starts = prompts and stripped and not carried and quote is None and depth == 0 and not stripped.startswith("#")
+        prompt = '<span class="p">$ </span>' if starts else ""
+        # Inside a quote that spans lines is another program's text (an R
+        # call, say): its words still wrap only between them, uncoloured.
+        body = shell_line(line) if quote is None else re.sub(r"\S+", lambda m: shell_token(m.group(0), "t"), line)
+        style = f' style="--i:{indent}"' if indent else ""
+        end = "\n" if n + 1 < len(lines) else ""
+        out.append(f'<span class="ln"{style}>{prompt}{body}{end}</span>')
+        quote = open_quote(line, quote)
+        carried = stripped.endswith("\\")
+        if quote is None and not carried and stripped:
+            first = stripped.split()[0]
+            closes = re.search(r"\b(done|fi|esac)\b", stripped)
+            if first in ("for", "while", "until", "if", "case") and not closes:
+                depth += 1
+            elif first in ("done", "fi", "esac"):
+                depth = max(depth - 1, 0)
+    return "".join(out)
+
+
+def tsv_html(lines: list[str]) -> str:
+    """A tab-separated file, with each tab drawn. Copy takes the real tabs."""
+    return "\n".join(
+        '<span class="tsv-tab">\t</span>'.join(html.escape(cell) for cell in line.split("\t")) for line in lines
+    )
+
+
+CHANGELOG_EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-➿⬀-⯿️‍]")
+MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+
+
+def version_heading(text: str) -> tuple[str, str, str]:
+    """A version of the changelog as the page names it: '[1.0.1] - 2026-07-25'
+    becomes ('1.0.1, 25 July 2026', 'v1-0-1', '1.0.1')."""
+    if re.fullmatch(r"\[?Unreleased\]?", text.strip(), re.I):
+        return "On main, not yet released", "unreleased", "Unreleased"
+    m = re.match(r"^\[?([\d.]+)\]?(?:\s*-\s*(\d{4})(?:-(\d{2})-(\d{2}))?)?", text.strip())
+    if not m:
+        return text, slugify(text, {}), text
+    version, year, month, day = m.groups()
+    when = f"{int(day)} {MONTHS[int(month) - 1]} {year}" if day else (year or "")
+    return (f"{version}, {when}" if when else version), "v" + version.replace(".", "-"), version
+
+
+# The room a table has on a 360 px phone (326 px), with a margin for an
+# estimate that runs about 10% wide: measured, tables estimated at 341 fit
+# and those at 391 overflow. Then what a character takes there, code or
+# text, and a cell's padding.
+PHONE_TABLE = 360
+PHONE_CHAR = 7.8
+PHONE_CELL = 20
+
+
+def phone_width(head: list[str], body: list[list[str]]) -> float:
+    """About the narrowest a table can be: each column as wide as its widest
+    word or unbreakable chip, the first column's chips whole."""
+    columns = [0.0] * len(head)
+    for row in [head] + body:
+        for k, cell in enumerate(row[: len(head)]):
+            units = []
+            for m in re.finditer(r"`([^`]+)`", cell):
+                code = m.group(1).strip()
+                if k == 0 or len(code) <= SHORT_CODE:
+                    units.append(len(code) + 1.5)
+                else:
+                    units.append(max(len(p) for t in code.split() for p in re.findall(r"[^/_.]*[/_.]+|[^/_.]+", t)) + 1.5)
+            units += [len(w) for w in plain(re.sub(r"`[^`]+`", " ", cell)).split()]
+            columns[k] = max([columns[k]] + units)
+    return sum(c * PHONE_CHAR + PHONE_CELL for c in columns)
+
+
+def first_sentence(text: str, limit: int = 160) -> str:
+    m = re.match(r"(.+?[.:])(\s|$)", text)
+    cut = m.group(1) if m else text
+    return cut if len(cut) <= limit else cut[:limit].rsplit(" ", 1)[0] + "..."
+
+
 class Renderer:
     def __init__(self, source: str):
         self.source = source  # markdown path relative to docs/, e.g. user-guide/outputs.md
+        self.root = "../" * source.count("/")
+        self.changelog = source == CHANGELOG[0]
+        self.version: tuple[str, str] | None = None  # the changelog's version being read: (slug, label)
         self.seen: dict[str, int] = {}
         self.headings: list[tuple[int, str, str]] = []  # (level, text, slug)
         self.sections: list[dict] = []  # for the search index
+        self.extra: list[dict] = []  # search entries of their own: callouts
         self.figures: list[str] = []
+        self.words = 0  # of running text, for the reading time
 
     # Links
 
@@ -373,20 +624,37 @@ class Renderer:
 
     # Inline
 
-    def inline(self, text: str) -> str:
+    def inline(self, text: str, links: bool = True, whole: bool = False) -> str:
+        """An inline span as HTML. With links, a chip of code that names an
+        option of the parameters page links to its row there; whole keeps
+        every chip on one line, as the name of a table's row."""
         keep: list[str] = []
+        unlinked: dict[str, str] = {}
 
         def stash(fragment: str) -> str:
             keep.append(fragment)
             return f"\x00{len(keep) - 1}\x00"
 
-        text = re.sub(r"(`+)(.+?)\1", lambda m: stash(f"<code>{html.escape(m.group(2).strip())}</code>"), text)
+        def code(m: re.Match) -> str:
+            raw = m.group(2).strip()
+            chip = f'<code class="nw">{html.escape(raw)}</code>' if whole else code_chip(raw)
+            flag = raw.split(" ")[0]
+            if links and flag in options() and self.source != PARAMETERS:
+                marker = stash(f'<a class="opt-link" href="{self.root}user-guide/parameters.html#opt-{flag[2:]}">{chip}</a>')
+                unlinked[marker] = chip
+                return marker
+            return stash(chip)
+
+        text = re.sub(r"(`+)(.+?)\1", code, text)
         text = re.sub(r"\\([\\`*_{}\[\]()#+\-.!|<>])", lambda m: stash(html.escape(m.group(1))), text)
         text = re.sub(r"<(https?://[^>\s]+)>", lambda m: stash(f'<a href="{html.escape(m.group(1))}">{html.escape(m.group(1))}</a>'), text)
         text = INLINE_TAGS.sub(lambda m: stash(m.group(0)), text)
 
         def link(m: re.Match) -> str:
             label, target = m.group(1), m.group(2).strip().split(" ")[0]
+            # A link's own text keeps its chips plain: no link inside a link.
+            for marker, chip in unlinked.items():
+                label = label.replace(marker, stash(chip))
             return stash(f'<a href="{html.escape(self.link(target))}">') + label + stash("</a>")
 
         text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", link, text)
@@ -403,23 +671,29 @@ class Renderer:
     def blocks(self, lines: list[str]) -> str:
         out: list[str] = []
         i = 0
+        # A text block right after a shell block is what that command prints.
+        after_shell = False
         while i < len(lines):
             line = lines[i]
             stripped = line.strip()
             if not stripped:
                 i += 1
                 continue
+            shell = False
             figure = FIGURE_MARK.match(stripped)
             if figure:
                 name = figure.group(1)
                 if name in DERIVED:
-                    out.append(DERIVED[name](self, lines))
+                    out.append(chips_in(DERIVED[name](self, lines)))
                 elif name in FIGURES:
-                    self.figures.append(name)
-                    out.append(FIGURES[name])
+                    # Only a drawing that figures.js draws needs it loaded.
+                    if FIGURE_HOOK.search(FIGURES[name]):
+                        self.figures.append(name)
+                    out.append(chips_in(FIGURES[name]))
                 else:
                     raise SystemExit(f"docs/{self.source}: no figure called {name!r}")
                 i += 1
+                after_shell = False
                 continue
             if stripped.startswith("<!--"):
                 # A comment for whoever edits the markdown, not for the page.
@@ -431,6 +705,7 @@ class Renderer:
             if tabs:
                 i, rendered = tabs
                 out.append(rendered)
+                after_shell = False
                 continue
             fence = re.match(r"^(\s*)(```+|~~~+)\s*(.*)$", line)
             if fence:
@@ -441,16 +716,13 @@ class Renderer:
                     body.append(lines[i][indent:] if lines[i][:indent].strip() == "" else lines[i])
                     i += 1
                 i += 1
-                out.append(self.code(info, body))
+                out.append(self.code(info, body, after_shell))
+                after_shell = (info.split() or [""])[0] in SHELL and "title=" not in info
                 continue
+            after_shell = False
             heading = re.match(r"^(#{1,6})\s+(.*?)\s*#*$", line)
             if heading:
-                level, text = len(heading.group(1)), heading.group(2)
-                slug = slugify(plain(text), self.seen)
-                self.headings.append((level, plain(text), slug))
-                self.sections.append({"heading": plain(text), "slug": slug, "level": level, "text": []})
-                anchor = f'<a class="anchor" href="#{slug}" aria-label="Link to this section">#</a>' if level > 1 else ""
-                out.append(f'<h{level} id="{slug}">{self.inline(text)}{anchor}</h{level}>')
+                out.append(self.heading(len(heading.group(1)), heading.group(2)))
                 i += 1
                 continue
             if re.match(r"^(-{3,}|\*{3,}|_{3,})$", stripped):
@@ -489,6 +761,7 @@ class Renderer:
                 i += 1
             text = " ".join(para)
             self.note(text)
+            self.words += len(plain(text).split())
             out.append(f"<p>{self.inline(text)}</p>")
         return "\n".join(out)
 
@@ -504,13 +777,46 @@ class Renderer:
             or (s.startswith("|") and i + 1 < len(lines) and re.match(r"^\|?\s*:?-{2,}", lines[i + 1].strip()))
         )
 
+    def heading(self, level: int, text: str) -> str:
+        """A heading with its id. Below the h1 it carries a # link, outside the
+        heading itself so that the heading's name is only its text."""
+        label = plain(text)
+        if self.changelog and level == 2:
+            label, slug, short = version_heading(label)
+            self.seen[slug] = 0
+            self.version = (slug, short)
+            rendered = html.escape(label)
+        elif self.changelog and level > 2:
+            label = CHANGELOG_EMOJI.sub("", label).strip()
+            slug = slugify(f"{self.version[0]} {label}" if self.version else label, self.seen)
+            rendered = html.escape(label)
+        else:
+            slug = slugify(label, self.seen)
+            rendered = self.inline(text, links=False)
+        self.headings.append((level, label, slug))
+        section = label
+        if self.changelog and level > 2 and self.version:
+            section = f"{self.version[1]} / {label}"
+        self.sections.append({"heading": section, "slug": slug, "level": level, "text": [], "code": []})
+        if level == 1:
+            return f'<h1 id="{slug}">{rendered}</h1>'
+        return (
+            f'<div class="hx hx-{level}"><h{level} id="{slug}">{rendered}</h{level}>'
+            f'<a class="anchor" href="#{slug}" aria-label="Link to: {html.escape(label)}">#</a></div>'
+        )
+
     def note(self, text: str) -> None:
         if self.sections:
             self.sections[-1]["text"].append(plain(text))
 
+    def note_code(self, text: str) -> None:
+        if self.sections:
+            self.sections[-1]["code"].append(text)
+
     def quote(self, quoted: list[str]) -> str:
         """A block quote, or one of GitHub's alerts (> [!WARNING]) as a callout
-        whose first bold line, if it has one, is its title."""
+        whose first bold line, if it has one, is its title. A callout says its
+        kind in words, not only in its colour, and is found by search."""
         first = next((q.strip() for q in quoted if q.strip()), "")
         alert = re.match(r"^\[!(\w+)\]$", first)
         if not alert or alert.group(1).upper() not in ALERTS:
@@ -520,12 +826,23 @@ class Renderer:
         while body and not body[0].strip():
             body = body[1:]
         title = ALERTS[kind]
+        label = ""
         if body and re.match(r"^\*\*(.+)\*\*$", body[0].strip()):
             title = self.inline(body[0].strip()[2:-2])
             self.note(plain(body[0].strip()))
+            label = f'<span class="callout-kind">{ALERTS[kind]}</span>'
             body = body[1:]
+        name = html.unescape(re.sub(r"<[^>]+>", "", title))
+        cid = slugify("note " + name, self.seen)
+        if label:
+            self.extra.append({
+                "section": name,
+                "slug": cid,
+                # The whole callout is in its section's entry; this one finds it by its title.
+                "text": first_sentence(plain(" ".join(q.strip() for q in body if q.strip() and not q.strip().startswith("```")))),
+            })
         return (
-            f'<div class="callout callout-{kind.lower()}"><p class="callout-title">{title}</p>'
+            f'<div class="callout callout-{kind.lower()}" id="{cid}"><p class="callout-title">{label}{title}</p>'
             f"{self.blocks(body)}</div>"
         )
 
@@ -629,28 +946,71 @@ class Renderer:
         body = [cells(r) for r in rows[2:]]
         self.last_table = (head, body)
         for row in body:
-            self.note(" ".join(row))
+            # Each option of the parameters page has a search entry of its own.
+            if not (self.source == PARAMETERS and re.fullmatch(r"`--[a-z][a-z0-9_]*`", row[0])):
+                self.note(" ".join(row))
+        labels = [plain(c) for c in head]
 
-        def cls(k: int) -> str:
-            return ' class="num"' if k < len(aligns) and aligns[k].endswith(":") and not aligns[k].startswith(":") else ""
+        def cls(k: int, extra: str = "") -> str:
+            names = ["num"] if k < len(aligns) and aligns[k].endswith(":") and not aligns[k].startswith(":") else []
+            names += [extra] if extra else []
+            return f' class="{" ".join(names)}"' if names else ""
 
-        out = ['<div class="table-wrap"><table><thead><tr>']
+        def cell(k: int, c: str) -> str:
+            label = f' data-label="{html.escape(labels[k])}"' if k < len(labels) else ""
+            # A type is a word to read, not code to type.
+            if k < len(labels) and labels[k].lower() == "type":
+                return f"<td{cls(k, 'type')}{label}>{html.escape(plain(c))}</td>"
+            return f"<td{cls(k)}{label}>{self.inline(c, whole=k == 0)}</td>"
+
+        # A table of four columns or more, or one that cannot fit a phone
+        # without a chip of code splitting, becomes a list of cards there.
+        cards = len(head) >= 4 or phone_width(head, body) > PHONE_TABLE
+        named = f' aria-labelledby="{self.sections[-1]["slug"]}"' if self.sections else ""
+        wrap = "table-wrap cards-wrap" if cards else "table-wrap"
+        table_class = ' class="cards"' if cards else ""
+        out = [f'<div class="{wrap}" role="region" tabindex="0"{named}><table{table_class}><thead><tr>']
         out += [f"<th{cls(k)}>{self.inline(c)}</th>" for k, c in enumerate(head)]
         out.append("</tr></thead><tbody>")
         for row in body:
-            out.append("<tr>" + "".join(f"<td{cls(k)}>{self.inline(c)}</td>" for k, c in enumerate(row)) + "</tr>")
+            flag = re.fullmatch(r"`(--[a-z][a-z0-9_]*)`", row[0]) if row else None
+            rid = f' id="opt-{flag.group(1)[2:]}"' if flag else ""
+            out.append(f"<tr{rid}>" + "".join(cell(k, c) for k, c in enumerate(row)) + "</tr>")
         out.append("</tbody></table></div>")
         return "".join(out)
 
-    def code(self, info: str, body: list[str]) -> str:
+    def code(self, info: str, body: list[str], after_shell: bool = False) -> str:
+        """A fenced block. A shell block is a terminal, its lines wrapping
+        between words with a hanging indent; the text block right after one is
+        what it prints; a file keeps its layout and says its name."""
         self.last_code = body
         title = re.search(r'title="([^"]*)"', info)
         lang = info.split()[0] if info and not info.startswith("title=") else ""
-        caption = f'<div class="code-title">{html.escape(title.group(1))}</div>' if title else ""
         data_lang = f' data-lang="{html.escape(lang)}"' if lang else ""
-        text = html.escape("\n".join(body))
-        self.note(" ".join(body)[:300])
-        return f'<div class="code"{data_lang}>{caption}<pre>{text}</pre></div>'
+        self.note_code("\n".join(body))
+        classes = ["code"]
+        head = ""
+        if title:
+            head = f'<div class="code-title fname">{html.escape(title.group(1))}</div>'
+        if lang in SHELL:
+            classes.append("cmd")
+            text = shell_html(body, prompts=not title)
+            if not title:
+                head = '<div class="code-title">Terminal</div>'
+        elif lang == "text" and after_shell and not title:
+            classes.append("out")
+            head = '<div class="code-title">Output</div>'
+            text = html.escape("\n".join(body))
+        elif lang == "tsv":
+            classes.append("tsv")
+            text = tsv_html(body)
+            if not title:
+                head = '<div class="code-title">Tab separated</div>'
+        else:
+            text = html.escape("\n".join(body))
+        if not head:
+            classes.append("bare")
+        return f'<div class="{" ".join(classes)}"{data_lang}>{head}<pre>{text}</pre></div>'
 
     def raw_html(self, chunk: str) -> str:
         """Raw HTML passes through. A <picture> that swaps on the system colour
@@ -1168,6 +1528,21 @@ FIGURES["excerpt"] = EXCERPT
 # ── Pages ──
 
 
+def releases() -> list[tuple[str, bool]]:
+    """The versions of CHANGELOG.md, newest first: (version, has notes). The
+    first is 'Unreleased' while main is ahead of the last release."""
+    out = []
+    for block in re.split(r"^## ", CHANGELOG[1].read_text(encoding="utf-8"), flags=re.M)[1:]:
+        name = re.match(r"\[?([\w.]+)\]?", block).group(1)
+        out.append((name, bool(block.split("\n", 1)[1].strip()) if "\n" in block else False))
+    return out
+
+
+def released() -> str:
+    """The last version released."""
+    return next(name for name, _ in releases() if name[0].isdigit())
+
+
 def header(root: str, current: str) -> str:
     def nav(target: str, label: str, key: str, optional: bool = False) -> str:
         cls = ' class="nav-optional"' if optional else ""
@@ -1191,42 +1566,57 @@ def header(root: str, current: str) -> str:
 
 
 def footer(root: str) -> str:
+    version = released()
     return (
         '<footer class="foot">\n  <div class="wrap">\n    <div>\n      <h3>Cite</h3>\n'
-        "      <blockquote>Ruiz-Rodriguez, P., &amp; Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software].</blockquote>\n"
+        f"      <blockquote>Ruiz-Rodriguez, P., &amp; Coscolla, M. (2026). AMAP (Version {version}) [Computer software].</blockquote>\n"
         '      <p class="doi">Software: <a href="https://doi.org/10.5281/zenodo.8024446">doi:10.5281/zenodo.8024446</a></p>\n    </div>\n'
         "    <div>\n      <h3>Learn more</h3>\n      <ul>\n"
         f'        <li><a href="{root}getting-started/tutorial.html">Tutorial</a></li>\n'
         f'        <li><a href="{root}{INDEX}">Documentation</a></li>\n'
         f'        <li><a href="{root}how-it-works.html">How it works</a></li>\n'
         f'        <li><a href="{root}user-guide/parameters.html">Parameters</a></li>\n'
-        f'        <li><a href="{REPO}/blob/main/CHANGELOG.md">Changelog</a></li>\n'
+        f'        <li><a href="{root}about/changelog.html">Changelog</a></li>\n'
         "      </ul>\n    </div>\n    <div>\n      <h3>Project</h3>\n      <ul>\n"
         f'        <li><a href="{REPO}">GitHub</a></li>\n'
         f'        <li><a href="{REPO}/issues">Report a bug</a></li>\n'
         '        <li><a href="https://hub.docker.com/r/paururo/amap">Docker image</a></li>\n'
-        "        <li>GPL-3.0 &middot; PathoGenOmics Lab</li>\n      </ul>\n    </div>\n  </div>\n</footer>\n"
+        "      </ul>\n    </div>\n  </div>\n"
+        f'  <div class="wrap foot-base"><span>PathoGenOmics Lab</span><span>GPL-3.0</span><span>AMAP {version}</span></div>\n'
+        "</footer>\n"
     )
+
+
+def section_id(section: str) -> str:
+    """The id of a section of the docs on the Docs tab, e.g. 'user-guide'."""
+    return slugify(section, {})
 
 
 def sidebar(root: str, current: str | None) -> str:
     out = [
-        '<aside class="docs-nav" aria-label="Documentation">\n',
+        '<div class="docs-nav">\n',
         '  <div class="docs-search">\n'
         '    <input type="search" placeholder="Search the docs" aria-label="Search the documentation" data-docs-search>\n'
         '    <div class="docs-results" data-docs-results hidden></div>\n  </div>\n',
-        '  <details class="docs-menu" open>\n    <summary>Pages</summary>\n',
+        '  <nav aria-label="Documentation">\n  <details class="docs-menu" open>\n    <summary>Pages</summary>\n',
     ]
     section = None
     for sec, path, title, _ in PAGES:
         if sec != section:
             if section is not None:
                 out.append("    </ul>\n")
-            out.append(f'    <p class="docs-section">{sec}</p>\n    <ul>\n')
+            label = f"nav-{section_id(sec)}"
+            out.append(f'    <p class="docs-section" id="{label}">{sec}</p>\n    <ul aria-labelledby="{label}">\n')
             section = sec
         here = ' aria-current="page"' if path == current else ""
         out.append(f'      <li><a href="{root}{href(path)}"{here}>{title}</a></li>\n')
-    out.append("    </ul>\n  </details>\n</aside>\n")
+    # On a phone the page list is folded before the first paint, so the page
+    # itself comes first; with no script, or on a wider screen, it stays open.
+    out.append(
+        "    </ul>\n  </details>\n"
+        '  <script>if (matchMedia("(max-width: 860px)").matches) document.currentScript.previousElementSibling.open = false;</script>\n'
+        "  </nav>\n</div>\n"
+    )
     return "".join(out)
 
 
@@ -1256,7 +1646,8 @@ def social(root: str, title: str, description: str, path: str) -> str:
     )
 
 
-def page(root: str, title: str, description: str, body: str, figures: list[str] | None = None, path: str = "") -> str:
+def page(root: str, title: str, description: str, body: str, figures: list[str] | None = None, path: str = "",
+         body_class: str = "docs", note: str = "", tail: str = "") -> str:
     data = list(dict.fromkeys(FIGURE_DATA[f] for f in figures or [] if f in FIGURE_DATA))
     return (
         "<!doctype html>\n"
@@ -1267,15 +1658,16 @@ def page(root: str, title: str, description: str, body: str, figures: list[str] 
         f'<link rel="icon" href="{root}assets/favicon.png" type="image/png">\n'
         + social(root, title, description, path)
         + f'<link rel="stylesheet" href="{root}assets/site.css">\n'
-        f"{THEME_BOOT}\n</head>\n<body>\n"
+        f'{THEME_BOOT}\n</head>\n<body class="{body_class}">\n'
         '<a class="skip" href="#content">Skip to the content</a>\n'
-        "<!-- Generated by tools/build_docs.py from the markdown next to this file. Edit that, then run it. -->\n"
+        + (note or "<!-- Generated by tools/build_docs.py from the markdown next to this file. Edit that, then run it. -->\n")
         + body
         + f'<script src="{root}assets/search-index.js"></script>\n'
         + f'<script src="{root}assets/site.js"></script>\n'
         + (f'<script src="{root}assets/figure-data.js"></script>\n' if figures else "")
         + "".join(f'<script src="{root}{d}"></script>\n' for d in data)
         + (f'<script src="{root}assets/figures.js"></script>\n' if figures else "")
+        + tail
         + "</body>\n</html>\n"
     )
 
@@ -1286,60 +1678,115 @@ def source_lines(path: str) -> list[str]:
     return strip_front_matter((DOCS / path).read_text(encoding="utf-8").splitlines())
 
 
+def version_line(root: str) -> str:
+    """Which AMAP the pages describe: main, while it is ahead of the last release."""
+    ahead = any(name.lower() == "unreleased" and notes for name, notes in releases())
+    version = released()
+    if ahead:
+        return (f'<p class="ver">Describes AMAP on main, ahead of {version}: '
+                f'<a href="{root}about/changelog.html#unreleased">what changed</a></p>')
+    return f'<p class="ver">Describes <a href="{root}about/changelog.html#v{version.replace(".", "-")}">AMAP {version}</a></p>'
+
+
 def doc_page(position: int) -> tuple[Path, str, list[dict]]:
     section, path, title, description = PAGES[position]
     renderer = Renderer(path)
     content = renderer.blocks(source_lines(path))
+    if renderer.changelog:
+        content = content.replace("documented in this file", "documented on this page")
     root = "../" * path.count("/")
+    # The changelog's contents are its versions; its categories repeat in each.
+    levels = (2,) if renderer.changelog else (2, 3)
     toc = "".join(
         f'<li class="toc-{level}"><a href="#{slug}">{html.escape(text)}</a></li>'
         for level, text, slug in renderer.headings
-        if level in (2, 3)
+        if level in levels
     )
+    h2s = [(text, slug) for level, text, slug in renderer.headings if level == 2]
+    # Under the h1: how long the page takes to read, and below the width where
+    # the contents column shows, the contents themselves, folded.
+    minutes = max(1, round(renderer.words / 200))
+    under = f'<p class="doc-meta">{minutes} min read</p>\n'
+    if h2s:
+        under += (
+            '<details class="toc-inline"><summary>On this page</summary><ul>'
+            + "".join(f'<li><a href="#{slug}">{html.escape(text)}</a></li>' for text, slug in h2s)
+            + "</ul></details>\n"
+        )
+    end = content.find("</h1>")
+    if end >= 0:
+        content = content[: end + 5] + "\n" + under + content[end + 5 :]
+    to_top = '<p class="to-top"><a href="#content">Back to the top</a></p>\n' if len(h2s) >= 6 else ""
     prev_page = PAGES[position - 1] if position > 0 else None
     next_page = PAGES[position + 1] if position + 1 < len(PAGES) else None
-    pager = '<nav class="pager" aria-label="Previous and next page">'
+    pager = '<nav class="pager docs-pager" aria-label="Previous and next page">'
     if prev_page:
         pager += f'<a class="prev" href="{root}{href(prev_page[1])}"><span>Previous</span>{prev_page[2]}</a>'
     if next_page:
         pager += f'<a class="next" href="{root}{href(next_page[1])}"><span>Next</span>{next_page[2]}</a>'
     pager += "</nav>"
     edit_path = CHANGELOG[1].as_posix() if path == CHANGELOG[0] else f"docs/{path}"
-    current = "tutorial" if path == "getting-started/tutorial.md" else "docs"
+    current = "tutorial" if path == "getting-started/tutorial.md" else "how" if path.startswith("how-it-works/") else "docs"
+    crumb = (
+        f'<div class="crumb-row"><p class="crumb"><a href="{root}{INDEX}">Docs</a> / '
+        f'<a href="{root}{INDEX}#{section_id(section)}">{section}</a></p>{version_line(root)}</div>\n'
+    )
     body = (
         header(root, current)
         + '<div class="wrap docs-layout">\n'
         + sidebar(root, path)
-        + f'<main class="prose" id="content">\n<p class="crumb"><a href="{root}{INDEX}">Docs</a> / {section}</p>\n'
+        + f'<main class="prose" id="content">\n{crumb}'
         + content
-        + f'\n<p class="edit"><a href="{REPO}/blob/main/{edit_path}">{GH_SVG}Edit this page on GitHub</a></p>\n'
+        + f'\n{to_top}<p class="edit"><a href="{REPO}/edit/main/{edit_path}">{GH_SVG}Edit this page on GitHub</a></p>\n'
         + pager
         + "\n</main>\n"
-        + (f'<aside class="docs-toc" aria-label="On this page"><p>On this page</p><ul>{toc}</ul></aside>\n' if toc else "")
+        + (f'<nav class="docs-toc" aria-label="On this page"><p>On this page</p><ul>{toc}</ul></nav>\n' if toc else "")
         + "</div>\n"
         + footer(root)
     )
-    entries = [
-        {
+    url = href(path)
+    entries = []
+    for s in renderer.sections:
+        kind = "page" if s["level"] == 1 else "changelog" if renderer.changelog else "section"
+        entry = {
             "page": title,
             "section": s["heading"] if s["level"] > 1 else "",
-            "url": f"{path[:-3]}.html" + (f"#{s['slug']}" if s["level"] > 1 else ""),
-            "text": " ".join(s["text"])[:600],
+            "url": url + (f"#{s['slug']}" if s["level"] > 1 else ""),
+            "text": " ".join(s["text"]),
         }
-        for s in renderer.sections
-    ]
-    html_page = page(root, f"{title} | AMAP docs", description, body, figures=renderer.figures, path=href(path))
-    return DOCS / f"{path[:-3]}.html", html_page, entries
+        if s["code"]:
+            # Each word of the section's code once: enough to find it by, and
+            # never shown, as a snippet comes from the text.
+            entry["code"] = " ".join(dict.fromkeys(w for w in " ".join(s["code"]).split() if re.search(r"\w", w)))
+        entry["kind"] = kind
+        entries.append(entry)
+    for c in renderer.extra:
+        entries.append({"page": title, "section": c["section"], "url": f"{url}#{c['slug']}", "text": c["text"], "kind": "section"})
+    if path == PARAMETERS:
+        entries += option_entries()
+    html_page = page(root, f"{title} | AMAP docs", description, body, figures=renderer.figures, path=url)
+    return DOCS / url, html_page, entries
 
 
 def index_page() -> tuple[Path, str]:
-    cards = []
+    tasks = [
+        ("deployment/hpc.html", "Run on a SLURM cluster"),
+        ("user-guide/custom-reference.html", "Use another species"),
+        ("deployment/troubleshooting.html", "My run failed"),
+        ("user-guide/outputs.html", "Which file do I open"),
+        ("user-guide/parameters.html", "Every option"),
+    ]
+    cards = [
+        '<nav class="hub-tasks" aria-labelledby="common-tasks"><p class="hub-label" id="common-tasks">Common tasks</p><ul>'
+        + "".join(f'<li><a href="{link}">{label}</a></li>' for link, label in tasks)
+        + "</ul></nav>\n"
+    ]
     section = None
     for sec, path, title, line in PAGES:
         if sec != section:
             if section is not None:
                 cards.append("</div>\n")
-            cards.append(f'<h2 class="docs-group">{sec}</h2>\n<div class="deep">\n')
+            cards.append(f'<h2 class="docs-group" id="{section_id(sec)}">{sec}</h2>\n<div class="deep">\n')
             section = sec
         cards.append(f'<a href="{href(path)}"><b>{title}</b><span>{line}</span></a>\n')
     cards.append("</div>\n")
@@ -1357,6 +1804,194 @@ def index_page() -> tuple[Path, str]:
     return DOCS / INDEX, page("", "Documentation | AMAP", "AMAP's documentation, page by page.", body, path=INDEX)
 
 
+# ── The page that is not there ──
+#
+# GitHub Pages serves 404.html for any address it has no file for, at any
+# depth, so every link here starts from the site's own address. A script sends
+# an address that names a page in another way (a trailing slash, no .html, a
+# folder) to it, and offers the nearest page for anything else.
+
+SITE_PATH = "/AMAP/"
+
+
+def not_found_page() -> tuple[Path, str]:
+    root = SITE_PATH
+    known = [{"href": href(path), "title": title} for _sec, path, title, _ in PAGES]
+    known += [{"href": "index.html", "title": "Front page"}, {"href": INDEX, "title": "Documentation"}]
+    sections = sorted({section_id(sec) for sec, *_ in PAGES})
+    script = (
+        "<script>\n(function () {\n"
+        f"  var ROOT = {json.dumps(root)};\n"
+        f"  var PAGES = {json.dumps(known)};\n"
+        f"  var SECTIONS = {json.dumps(sections)};\n"
+        "  var path = decodeURIComponent(location.pathname);\n"
+        "  var rel = path.indexOf(ROOT) === 0 ? path.slice(ROOT.length) : path.replace(/^\\/+/, \"\");\n"
+        "  var stem = rel.replace(/\\/+$/, \"\").replace(/\\/index\\.html?$/, \"\").replace(/\\.html?$/, \"\").toLowerCase();\n"
+        "  var base = function (h) { return h.replace(/\\.html$/, \"\"); };\n"
+        "  var last = function (s) { return s.split(\"/\").pop(); };\n"
+        "  // A page asked for without .html, or as a folder: go there.\n"
+        "  if (!/\\.html?$/.test(rel) || /\\/$/.test(rel)) {\n"
+        "    var exact = PAGES.filter(function (p) { return base(p.href) === stem; });\n"
+        "    if (!exact.length && stem.indexOf(\"/\") < 0) exact = PAGES.filter(function (p) { return last(base(p.href)) === stem; });\n"
+        "    if (exact.length === 1) { location.replace(ROOT + exact[0].href + location.search + location.hash); return; }\n"
+        "    // A section of the docs: its place on the Docs tab.\n"
+        "    if (SECTIONS.indexOf(stem) >= 0) { location.replace(ROOT + \"documentation.html#\" + stem); return; }\n"
+        "  }\n"
+        "  // Anything else: the page whose name is nearest.\n"
+        "  var word = last(stem) || stem;\n"
+        "  var distance = function (a, b) {\n"
+        "    var row = [], i, j, prev, next;\n"
+        "    for (j = 0; j <= b.length; j++) row.push(j);\n"
+        "    for (i = 1; i <= a.length; i++) {\n"
+        "      prev = row[0]; row[0] = i;\n"
+        "      for (j = 1; j <= b.length; j++) {\n"
+        "        next = row[j];\n"
+        "        row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));\n"
+        "        prev = next;\n"
+        "      }\n"
+        "    }\n"
+        "    return row[b.length];\n"
+        "  };\n"
+        "  var best = null;\n"
+        "  if (word) PAGES.forEach(function (p) {\n"
+        "    var names = [last(base(p.href)), p.title.toLowerCase().replace(/[^a-z0-9]+/g, \"-\")];\n"
+        "    names.forEach(function (n) {\n"
+        "      var d = distance(word, n) / Math.max(word.length, n.length);\n"
+        "      if (!best || d < best.d) best = { d: d, page: p };\n"
+        "    });\n"
+        "  });\n"
+        "  var near = document.querySelector(\"[data-nearest]\");\n"
+        "  if (near && best && best.d <= 0.5) {\n"
+        "    var link = near.querySelector(\"a\");\n"
+        "    link.href = ROOT + best.page.href;\n"
+        "    link.textContent = best.page.title;\n"
+        "    near.hidden = false;\n"
+        "  }\n"
+        "  // The search box starts with the words of the address, for the reader to\n"
+        "  // correct; its results open when they do.\n"
+        "  var box = document.querySelector(\".lost-search [data-docs-search]\");\n"
+        "  if (box && word) box.value = word.replace(/[-_]+/g, \" \");\n"
+        "})();\n</script>\n"
+    )
+    body = (
+        header(root, "")
+        + '<main id="content">\n  <section class="ref-hero lost-hero">\n    <div class="wrap">\n'
+        "      <h1>That page is not here</h1>\n"
+        "      <p>The link that brought you here points at something that has moved or never existed. Nothing is broken on your side.</p>\n"
+        '      <p class="nearest" data-nearest hidden>The nearest page: <a href="' + root + 'documentation.html">Documentation</a></p>\n'
+        '      <div class="docs-search lost-search">\n'
+        '        <input type="search" placeholder="Search the docs" aria-label="Search the documentation" data-docs-search>\n'
+        '        <div class="docs-results" data-docs-results hidden></div>\n      </div>\n'
+        '      <figure class="lost" aria-label="A drawing in the site\'s style: the link you followed, drawn as a call, and no page of the site aligned under it.">\n'
+        '        <div class="lost-scroll">\n'
+        '        <svg class="trk" viewBox="0 0 560 96" role="img" aria-hidden="true">\n'
+        '          <text class="row-label" x="0" y="28">Your link</text>\n'
+        '          <line class="row-line" x1="96" x2="556" y1="24" y2="24"/>\n'
+        '          <path class="g g-bakta" d="M190,14 H408 L420,24 L408,34 H190 Z"/>\n'
+        '          <text class="gname" x="305" y="28" text-anchor="middle">this page</text>\n'
+        '          <text class="row-label" x="0" y="74">The site</text>\n'
+        '          <line class="row-line" x1="96" x2="556" y1="70" y2="70"/>\n'
+        '          <text class="gsub" x="305" y="64" text-anchor="middle">no page aligns here</text>\n'
+        "        </svg>\n        </div>\n"
+        "        <figcaption>Case 1, for a page: nothing aligns where this link points.</figcaption>\n"
+        "      </figure>\n"
+        '      <div class="actions">\n'
+        f'        <a class="btn btn-primary" href="{root}index.html">The front page</a>\n'
+        f'        <a class="btn btn-ghost" href="{root}getting-started/tutorial.html">The tutorial</a>\n'
+        f'        <a class="btn btn-ghost" href="{root}{INDEX}">All the docs</a>\n'
+        "      </div>\n    </div>\n  </section>\n</main>\n"
+        + footer(root)
+    )
+    note = (
+        "<!-- Generated by tools/build_docs.py. GitHub Pages serves this for any missing page, at any\n"
+        "     depth, so every link here starts from the site's own address. -->\n"
+    )
+    text = page(root, "Not here | AMAP", "The page you followed a link to has moved or never existed.", body,
+                path="404.html", body_class="lost-page", note=note, tail=script)
+    return DOCS / "404.html", text
+
+
+# ── Search ──
+#
+# Besides the sections of every page: each option of the parameters page, the
+# sections and questions of the front page, and the stories of how-it-works.html.
+
+
+def option_entries() -> list[dict]:
+    out = []
+    for row in parameter_rows():
+        cells = dict(row["cells"])
+        cells.pop("Parameter", None)
+        what = cells.pop("Description", "")
+        rest = ". ".join(f"{k}: {v}" for k, v in cells.items() if v)
+        out.append({
+            "page": "Parameters",
+            "section": row["flag"],
+            "url": f"user-guide/parameters.html#opt-{row['flag'][2:]}",
+            "text": f"{what} {rest}. In {row['section']}.".replace("..", "."),
+            "kind": "option",
+        })
+    return out
+
+
+def tag_text(fragment: str) -> str:
+    """The words of an HTML fragment."""
+    text = re.sub(r"<(script|style)\b.*?</\1>", " ", fragment, flags=re.S)
+    return " ".join(html.unescape(re.sub(r"<[^>]+>", " ", text)).split())
+
+
+FRONT_SECTIONS = ["start", "cases", "proof", "pipeline", "outputs", "report", "faq"]
+
+
+def front_page_entries() -> list[dict]:
+    front = (DOCS / "index.html").read_text(encoding="utf-8")
+    description = re.search(r'<meta name="description" content="([^"]*)"', front)
+    out = [{"page": "Front page", "section": "", "url": "index.html", "text": html.unescape(description.group(1)) if description else "", "kind": "page"}]
+    for key in FRONT_SECTIONS:
+        m = re.search(rf'<section\b[^>]*\bid="{key}"[^>]*>(.*?)</section>', front, re.S)
+        if not m:
+            raise SystemExit(f"tools/build_docs.py: docs/index.html has no section #{key} for the search index")
+        block = m.group(1)
+        title = re.search(r"<h2[^>]*>(.*?)</h2>", block, re.S)
+        kicker = re.search(r'<p class="kicker">(.*?)</p>', block, re.S)
+        name = tag_text(title.group(1)) if title else key
+        lead = re.search(r'<div class="section-head">(.*?)</div>', block, re.S)
+        text = tag_text(lead.group(1)) if lead else ""
+        if kicker:
+            text = text.replace(tag_text(kicker.group(1)), "", 1).strip()
+        out.append({"page": "Front page", "section": name, "url": f"index.html#{key}", "text": text, "kind": "section"})
+        if key == "faq":
+            for q in re.finditer(r"<details\b[^>]*>\s*<summary>(.*?)</summary>(.*?)</details>", block, re.S):
+                out.append({"page": "Front page", "section": tag_text(q.group(1)), "url": "index.html#faq",
+                            "text": tag_text(q.group(2)), "kind": "faq"})
+    return out
+
+
+def story_entries() -> list[dict]:
+    """Each story of how-it-works.html: its title and the words of its steps."""
+    how = (DOCS / "assets" / "how.js").read_text(encoding="utf-8")
+    nothing = dict(re.findall(r'^\s+(\w+): ("(?:\\.|[^"\\])*"),?$', how[how.index("var NOTHING"):how.index("var STORIES")], re.M))
+    page_title = next(title for _sec, path, title, _ in PAGES if path == "how-it-works.html")
+    out = [{"page": page_title, "section": "", "url": "how-it-works.html",
+            "text": next(line for _sec, path, _t, line in PAGES if path == "how-it-works.html"), "kind": "page"}]
+    stories = how[how.index("var STORIES"):]
+    starts = list(re.finditer(r'^\s+key: "([\w-]+)", group: "([^"]*)", label: "([^"]*)", tag: "([^"]*)"', stories, re.M))
+    if not starts:
+        raise SystemExit("tools/build_docs.py: no stories found in docs/assets/how.js for the search index")
+    for k, m in enumerate(starts):
+        chunk = stories[m.end(): starts[k + 1].start() if k + 1 < len(starts) else len(stories)]
+        steps = re.search(r"\btext: \[(.*?)\n\s+\]", chunk, re.S)
+        words = []
+        if steps:
+            for item in re.finditer(r'"(?:\\.|[^"\\])*"|NOTHING\[(\w+)\]|NOTHING\.(\w+)', steps.group(1)):
+                ref = item.group(1) or item.group(2)
+                words.append(json.loads(nothing[ref]) if ref else json.loads(item.group(0)))
+        key, group, label, tag = m.groups()
+        out.append({"page": page_title, "section": label, "url": f"how-it-works.html#{key}",
+                    "text": f"{tag}. {group}. " + " ".join(words), "kind": "story"})
+    return out
+
+
 def build() -> dict[Path, str]:
     files: dict[Path, str] = {}
     entries: list[dict] = []
@@ -1368,9 +2003,12 @@ def build() -> dict[Path, str]:
         entries += page_entries
     index_path, index_text = index_page()
     files[index_path] = index_text
+    lost_path, lost_text = not_found_page()
+    files[lost_path] = lost_text
+    entries += front_page_entries() + story_entries()
     files[SEARCH_INDEX] = (
         "/* Generated by tools/build_docs.py: the documentation, section by section, for the search box. */\n"
-        "window.AMAP_DOCS_INDEX = " + json.dumps(entries, ensure_ascii=False, indent=0) + ";\n"
+        "window.AMAP_DOCS_INDEX = " + json.dumps(entries, ensure_ascii=False, separators=(",", ":")) + ";\n"
     )
     return files
 

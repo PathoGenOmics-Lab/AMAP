@@ -4855,6 +4855,22 @@ html:not(.js) .how-nav {
   outline: none;
 }
 
+/* The ring a protein shows when the keyboard is on it, and only then. */
+.net-node circle.net-ring {
+  fill: none;
+  stroke: transparent;
+  stroke-dasharray: none;
+}
+
+.net-node:focus-visible circle.net-ring {
+  stroke: var(--ink);
+  stroke-width: 2px;
+}
+
+.net-link:focus-visible .net-hit {
+  stroke: color-mix(in srgb, var(--ink) 22%, transparent);
+}
+
 .net-name {
   font-size: 11.5px;
   font-weight: 650;

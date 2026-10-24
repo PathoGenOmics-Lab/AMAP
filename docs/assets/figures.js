@@ -582,10 +582,14 @@
 
   /* ── Tooltips ──
 
-     On a wide screen with a mouse the tip floats over the drawing, its caret
-     on the gene. On a touch screen, or a drawing narrower than 600 px, it is
-     a line of text under the drawing instead, so it never covers the rows
-     being compared. Escape hides it. */
+     With a mouse the tip floats over the drawing, above the gene with its
+     caret on it, so the rows under the gene stay in sight. On a touch
+     screen, or a drawing too narrow for a tip beside its rows, it is a line
+     of text under the drawing instead, which never covers them. Escape hides
+     it. */
+
+  // Under this width a floating tip (up to 290 px) would cover the drawing.
+  var NARROW = 420;
 
   var openTips = [];
 
@@ -617,10 +621,37 @@
     var hint = '<span class="say-hint"><span class="say-hover">Point at</span><span class="say-touch">Tap</span> ' + esc(what) + "</span>";
     readout.innerHTML = hint;
     function inline() {
-      return mq("(hover: none)") || container.clientWidth < 600;
+      return mq("(hover: none)") || container.clientWidth < NARROW;
+    }
+    // A mouse moving from gene to gene must not make the page under the
+    // drawing jump, so there the line keeps the height of the figure's
+    // longest tip. A tap is deliberate: the line keeps three lines' room and
+    // grows for a longer tip.
+    var fitted = -1;
+    function fit() {
+      var w = readout.offsetWidth;
+      if (w === fitted) return;
+      fitted = w;
+      readout.style.minHeight = "";
+      if (!w || mq("(hover: none)")) return;
+      var probe = readout.cloneNode(false);
+      probe.removeAttribute("aria-live");
+      probe.setAttribute("aria-hidden", "true");
+      probe.style.cssText = "position:absolute;visibility:hidden;pointer-events:none;left:0;top:0;min-height:0;width:" + w + "px";
+      container.appendChild(probe);
+      var tallest = 0;
+      container.querySelectorAll(".hot[data-tip]").forEach(function (h) {
+        probe.innerHTML = h.getAttribute("data-tip");
+        tallest = Math.max(tallest, probe.offsetHeight);
+      });
+      probe.remove();
+      if (tallest) readout.style.minHeight = tallest + "px";
     }
     function sync() {
-      container.classList.toggle("tips-inline", inline());
+      var on = inline();
+      container.classList.toggle("tips-inline", on);
+      if (on) fit();
+      else fitted = -1;
     }
     sync();
     if ("ResizeObserver" in window) new ResizeObserver(sync).observe(container);

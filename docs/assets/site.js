@@ -739,6 +739,9 @@
     input.setAttribute("enterkeyhint", "go");
     panel.setAttribute("role", "listbox");
     panel.setAttribute("aria-label", "Search results");
+    // A list that scrolls is a Tab stop of its own in some browsers; this one
+    // is reached with the arrows, so Tab goes on past it and closes it.
+    panel.setAttribute("tabindex", "-1");
 
     function show() {
       panel.hidden = false;
@@ -1147,6 +1150,32 @@
     openSearch(document.activeElement && document.activeElement !== document.body ? document.activeElement : searchButton);
   });
 
+  // ── The header keeps to one row ──
+  // The stylesheet drops header items at widths measured with the usual
+  // fonts. A wider font, larger text or extra letter spacing can still run
+  // the row over, so the header then sheds the same items, one step at a
+  // time, until it fits (the squeeze-1 to squeeze-6 rules in site.css).
+  var SQUEEZE_STEPS = 6;
+  function fitHeader() {
+    for (var s = 1; s <= SQUEEZE_STEPS; s++) header.classList.remove("squeeze-" + s);
+    for (var step = 1; step <= SQUEEZE_STEPS && nav.scrollWidth > nav.clientWidth + 1; step++) {
+      header.classList.add("squeeze-" + step);
+    }
+  }
+
+  if (nav && header) {
+    fitHeader();
+    var fitQueued = false;
+    window.addEventListener("resize", function () {
+      if (fitQueued) return;
+      fitQueued = true;
+      requestAnimationFrame(function () {
+        fitQueued = false;
+        fitHeader();
+      });
+    });
+  }
+
   // ── The page contents follow the reader down the page ──
 
   var tocLinks = Array.prototype.slice.call(document.querySelectorAll(".docs-toc a, .toc-inline a"));
@@ -1409,6 +1438,11 @@
   // and if the current page is out of sight there, with that page centred.
   var menu = document.querySelector(".docs-menu");
   if (menu) {
+    // On a phone the list starts folded, so the page itself comes first. A
+    // page that folds it before the first paint (a script right after the
+    // list) is left alone; any other page is folded here.
+    var foldsItself = menu.nextElementSibling && menu.nextElementSibling.tagName === "SCRIPT";
+    if (!foldsItself && window.matchMedia && window.matchMedia("(max-width: 860px)").matches) menu.open = false;
     var currentPage = menu.querySelector('a[aria-current="page"]');
     if (menu.scrollHeight > menu.clientHeight + 1) {
       var saved = sessionGet("amap.menuScroll");

@@ -541,7 +541,7 @@ mark.search-hit {
 
 /* On a phone the controls keep their room: tighter gaps, a smaller logo, and
    GitHub as its mark (its name stays for screen readers). */
-@media (max-width: 420px) {
+@media (max-width: 439px) {
   .top .wrap {
     gap: 8px;
   }
@@ -585,6 +585,36 @@ mark.search-hit {
   .nav .gh-link {
     display: none;
   }
+}
+
+/* The widths above are measured with the usual system fonts. When the row
+   still runs over (a wider font, larger text, extra letter spacing), site.js
+   sheds the same items in this order, one step at a time, until it fits. */
+.top.squeeze-1 .brand span {
+  display: none;
+}
+
+.top.squeeze-2 .search-btn {
+  justify-content: center;
+  padding: 0;
+  margin-left: 4px;
+}
+
+.top.squeeze-2 .search-btn .search-btn-label,
+.top.squeeze-2 .search-btn .search-key,
+.top.squeeze-3 .nav a.nav-optional[href$="tutorial.html"],
+.top.squeeze-4 .nav a.nav-optional[href$="how-it-works.html"],
+.top.squeeze-6 .nav .gh-link {
+  display: none;
+}
+
+.top.squeeze-5 .gh-link span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* ── Buttons ── */

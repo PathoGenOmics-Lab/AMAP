@@ -92,7 +92,7 @@ on first use and cached, and it is the largest thing a run keeps: `eggnog.db`
 alone unpacks to 41.4 GB from a 6.8 GB download. For its bacteria-only Diamond
 index AMAP also downloads the 9.5 GB eggNOG proteome, and deletes it once the
 index is built. Nextflow keeps every intermediate under `work/`, which came to
-98 MB for the test in step 2 and 248 MB for all the runs of this page, none
+97 MB for the test in step 2 and 248 MB for all the runs of this page, none
 with eggNOG, and grows with the sample sheet.
 
 Memory decides whether the run finishes at all. Two steps are heavy:

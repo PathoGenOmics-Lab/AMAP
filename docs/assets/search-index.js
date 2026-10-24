@@ -16,7 +16,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Tutorial",
 "section": "The machine",
 "url": "getting-started/tutorial.html#the-machine",
-"text": "Worth checking before you start, because this is what stops a run rather than anything you will have got wrong. Disk goes first. The container is 12 GB unpacked. The eggNOG database is built on first use and cached, and it is the largest thing a run keeps: eggnog.db alone unpacks to 41.4 GB from a 6.8 GB download. For its bacteria-only Diamond index AMAP also downloads the 9.5 GB eggNOG proteome, and deletes it once the index is built. Nextflow keeps every intermediate under work/, which came to 98 MB for the test in step 2 and 248 MB for all the runs of this page, none with eggNOG, and grows "
+"text": "Worth checking before you start, because this is what stops a run rather than anything you will have got wrong. Disk goes first. The container is 12 GB unpacked. The eggNOG database is built on first use and cached, and it is the largest thing a run keeps: eggnog.db alone unpacks to 41.4 GB from a 6.8 GB download. For its bacteria-only Diamond index AMAP also downloads the 9.5 GB eggNOG proteome, and deletes it once the index is built. Nextflow keeps every intermediate under work/, which came to 97 MB for the test in step 2 and 248 MB for all the runs of this page, none with eggNOG, and grows "
 },
 {
 "page": "Tutorial",

@@ -964,6 +964,54 @@ def check_readme(pages: dict[str, Page]) -> list[str]:
 EM_DASH = "\u2014"
 
 
+def check_figure_scripts(pages: dict[str, Page]) -> list[str]:
+    """A page that loads figures.js gives it something to draw: an element it
+    mounts a drawing on (the hooks are read off figures.js), or a script of
+    its own that draws with it, as how.js does."""
+    hooks = set(re.findall(r"""document\.querySelectorAll\(["']\[data-([\w-]+)""", FIGURES_JS.read_text(encoding="utf-8")))
+    if not hooks:
+        return ["assets/figures.js: no drawing hooks found; update check_figure_scripts()"]
+    hook = re.compile(r"\sdata-(?:" + "|".join(sorted(hooks)) + r")(?=[\s=>])")
+    problems = []
+    for name, page in pages.items():
+        scripts = [url for tag, url in page.links if tag == "script"]
+        if not any(url.endswith("assets/figures.js") for url in scripts):
+            continue
+        if any(url.endswith("assets/how.js") for url in scripts):
+            continue
+        if not hook.search((SITE / name).read_text(encoding="utf-8")):
+            problems.append(f"{name}: loads figures.js and its data, but has nothing for it to draw")
+    return problems
+
+
+SEARCH_INDEX = SITE / "assets" / "search-index.js"
+SEARCH_KINDS = {"page", "section", "option", "faq", "story", "changelog"}
+
+
+def check_search_index() -> list[str]:
+    """The search index has the shape the search box reads, and every option
+    of the parameters page has an entry of its own that lands on its row."""
+    text = SEARCH_INDEX.read_text(encoding="utf-8")
+    try:
+        entries = json.loads(text[text.index("=") + 1:].strip().rstrip(";"))
+    except ValueError as error:
+        return [f"{SEARCH_INDEX}: not the JSON build_docs.py writes ({error})"]
+    problems = []
+    for k, entry in enumerate(entries):
+        missing = {"page", "section", "url", "text", "kind"} - set(entry)
+        if missing:
+            problems.append(f"{SEARCH_INDEX}: entry {k} ({entry.get('url')}) has no {', '.join(sorted(missing))}")
+        elif entry["kind"] not in SEARCH_KINDS:
+            problems.append(f"{SEARCH_INDEX}: entry {k} ({entry['url']}) is of kind {entry['kind']!r}")
+    options = {e["section"]: e["url"] for e in entries if e.get("kind") == "option"}
+    for row in build_docs.parameter_rows():
+        flag = row["flag"]
+        want = f"user-guide/parameters.html#opt-{flag[2:]}"
+        if options.get(flag) != want:
+            problems.append(f"{SEARCH_INDEX}: {flag} has no search entry landing on {want}")
+    return problems
+
+
 def check_dashes() -> list[str]:
     """No em-dashes in what the site says. What a program prints is quoted as
     it prints it, so code blocks are left out (validate_inputs.py writes one),
@@ -998,6 +1046,8 @@ def main() -> int:
         ("benchmark", lambda: check_benchmark(pages)),
         ("metro", check_metro),
         ("readme", lambda: check_readme(pages)),
+        ("figures", lambda: check_figure_scripts(pages)),
+        ("search", check_search_index),
         ("dashes", check_dashes),
     ]
     failed = 0

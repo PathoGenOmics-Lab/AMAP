@@ -634,7 +634,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Custom reference",
 "section": "What AMAP does with it",
 "url": "user-guide/custom-reference.html#what-amap-does-with-it",
-"text": "PREPARE_REFERENCE runs once, before any sample is processed, and does three things. 1. Extracts the reference proteome. Every CDS becomes a protein, headed GENE_ID_START-END contig=SEQUENCE, SEQUENCE being the name --ref_genome gives the sequence the gene is on. Those embedded coordinates are not decoration: the paralog step reads them back to predict where each protein belongs in the sample, which tells its own locus from a paralog's, so the header format matters. A CDS across the origin of a circular sequence ends past the sequence's last base, the way GFF3 writes it: tagA on plasmid pO157 ("
+"text": "PREPARE_REFERENCE runs once, before any sample is processed, and does three things. 1. Extracts the reference proteome. Every CDS becomes a protein, headed GENE_ID_START-END contig=SEQUENCE, SEQUENCE being the name --ref_genome gives the sequence the gene is on. The header matters. The paralog step reads its coordinates back to predict where each protein belongs in the sample, which tells its own locus from a paralog's. From GenBank, the existing /translation qualifier is used when present; otherwise the sequence is extracted and translated. From GFF3, the lines of each CDS are joined first, a"
 },
 {
 "page": "Custom reference",
@@ -664,7 +664,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "Custom reference",
 "section": "Things that trip people up",
 "url": "user-guide/custom-reference.html#things-that-trip-people-up",
-"text": "The annotation and the genome must match Coordinates from the annotation are used directly against the FASTA. An annotation from a different assembly of the same organism produces nonsense: extracted proteins will not translate, and the reference proteome will be mostly empty. PREPARE_REFERENCE prints the count of extracted proteins, so check it looks like a genome's worth. Reference genes need identifiers A GFF3 whose CDS features carry no locus_tag, ID, gene or Name is skipped entirely, and the run fails with \"No proteins extracted\". This happens with minimal GFF3 exports from some annotatio"
+"text": "The annotation and the genome must match Coordinates from the annotation are used directly against the FASTA. An annotation from a different assembly of the same organism produces nonsense: extracted proteins will not translate, and the reference proteome will be mostly empty. PREPARE_REFERENCE writes the count of extracted proteins into its work directory, where grep -h 'Curated proteins' work///.command.out finds it, so check it looks like a genome's worth. Reference genes need identifiers A GFF3 whose CDS features carry no locus_tag, ID, gene or Name is skipped entirely, and the run fails w"
 },
 {
 "page": "Custom reference",
@@ -784,7 +784,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The correction algorithm",
 "section": "",
 "url": "how-it-works/correction-algorithm.html",
-"text": "The core of AMAP. It referees between the initial Bakta annotation and the Miniprot alignments of a trusted reference proteome, classifying every candidate gene and then applying a set of rules to resolve the disagreements. Coordinates throughout are 1-based inclusive, so a gene's length is end - start + 1. Every comparison is strand-aware and contig-aware: genes on opposite strands at the same position are different genes and never conflict, and nor are genes on different contigs of a draft assembly, where every contig starts at 1. Bakta runs with --keep-contig-headers so that it names the co"
+"text": "The core of AMAP. It referees between the initial Bakta annotation and the miniprot alignments of a trusted reference proteome, classifying every candidate gene and then applying a set of rules to resolve the disagreements. Coordinates throughout are 1-based inclusive, so a gene's length is end - start + 1. Every comparison is strand-aware and contig-aware: genes on opposite strands at the same position are different genes and never conflict, and nor are genes on different contigs of a draft assembly, where every contig starts at 1. Bakta runs with --keep-contig-headers so that it names the co"
 },
 {
 "page": "The correction algorithm",
@@ -796,25 +796,25 @@ window.AMAP_DOCS_INDEX = [
 "page": "The correction algorithm",
 "section": "Small proteins",
 "url": "how-it-works/correction-algorithm.html#small-proteins",
-"text": "Miniprot needs a seed of several residues and enough score to report an alignment, which a protein of a few dozen residues rarely gives it: annotating E. coli K-12 with its own proteome, it placed none of 33 proteins of 8 to 29 residues, and it put the toxin IbsC (b4665), 19 residues three of which differ from its neighbour IbsD's, on that neighbour only. Every protein without an exact, complete placement is looked for in the six-frame translation of the genome, preceded by a start codon and followed by a stop, and each exact copy found where Miniprot did not already place the protein becomes "
+"text": "miniprot needs a seed of several residues and enough score to report an alignment, which a protein of a few dozen residues rarely gives it: annotating E. coli K-12 with its own proteome, it placed none of 33 proteins of 8 to 29 residues, and it put the toxin IbsC (b4665), 19 residues three of which differ from its neighbour IbsD's, on that neighbour only. Every protein without an exact, complete placement is looked for in the six-frame translation of the genome, preceded by a start codon and followed by a stop, and each exact copy found where miniprot did not already place the protein becomes "
 },
 {
 "page": "The correction algorithm",
 "section": "Pieces of cut genes",
 "url": "how-it-works/correction-algorithm.html#pieces-of-cut-genes",
-"text": "A draft assembly cuts the genes its contig breaks run through. Miniprot reports only the placements within 5% of a protein's best, so it places the larger piece of such a gene and not the smaller one at the end of another contig: in CDC1551 cut into 40 contigs, none of the 25 smaller pieces was annotated. A placement was cut by its contig when it lacks residues at one end of its protein, ends within 30 bp of the contig's edge on that side, and those residues would not fit in the bases left. What it lacks, if 8 residues or more, is aligned again as a protein of its own, and its best placement i"
+"text": "A gene a contig end cuts is placed in pieces. A draft assembly cuts the genes its contig breaks run through, and miniprot reports only the placements within 5% of a protein's best, so it places the larger piece of such a gene and not the smaller one at the end of another contig: in CDC1551 cut into 40 contigs, none of the 25 smaller pieces was annotated. A placement was cut by its contig when all of these hold: it lacks residues at one end of its protein it ends within 30 bp of the contig's edge on that side those residues would not fit in the bases left What it lacks, if 8 residues or more, i"
 },
 {
 "page": "The correction algorithm",
 "section": "Paralog placements",
 "url": "how-it-works/correction-algorithm.html#paralog-placements",
-"text": "Miniprot places a reference protein everywhere it scores within 5% of its best, so a protein with a paralog is placed at both loci. Before anything is classified, each placement is checked against where the protein belongs. The reference proteome carries each protein's coordinates in its header (Rv1150_1278269-1278820), but those are reference coordinates, and any indel upstream shifts every position after it. So each placement's reference position is predicted from the nearest proteins placed only once, which follow the sample's local offset from the reference, and the placement closest to wh"
+"text": "miniprot places a reference protein everywhere it scores within 5% of its best, so a protein with a paralog is placed at both loci. Before anything is classified, each placement is checked against where the protein belongs. The reference proteome carries each protein's coordinates in its header (Rv1150_1278269-1278820), but those are reference coordinates, and any indel upstream shifts every position after it. So each placement's reference position is predicted from the nearest proteins placed only once, which follow the sample's local offset from the reference, and the placement closest to wh"
 },
 {
 "page": "The correction algorithm",
 "section": "1. Classification",
 "url": "how-it-works/correction-algorithm.html#1-classification",
-"text": "Every Bakta CDS is compared against the Miniprot alignments. Case 2, perfect match. Same start, same end, same strand as an alignment, and the same length. Correct, kept as is. Case 3, imperfect match. Same coordinates, but the aligned length differs, typically from indels. Reliable enough, kept. Case 4, conflicting overlap. A Bakta CDS and an alignment overlap on the same strand, but their coordinates do not match. This is the conflict that has to be adjudicated. Case 1, potentially novel. A Bakta CDS with no overlap to any alignment. Either a genuine gene absent from the reference, or someth"
+"text": "Every Bakta CDS is compared against the miniprot alignments. Case 2, perfect match. Same start, same end, same strand as an alignment, and the same length. Correct, kept as is. Case 3, imperfect match. Same coordinates, but the aligned length differs, typically from indels. Reliable enough, kept. Case 4, conflicting overlap. A Bakta CDS and an alignment overlap on the same strand, but their coordinates do not match. This is the conflict that has to be adjudicated. Case 1, potentially novel. A Bakta CDS with no overlap to any alignment. Either a genuine gene absent from the reference, or someth"
 },
 {
 "page": "The correction algorithm",
@@ -832,7 +832,7 @@ window.AMAP_DOCS_INDEX = [
 "page": "The correction algorithm",
 "section": "Single overlaps",
 "url": "how-it-works/correction-algorithm.html#single-overlaps",
-"text": "One Bakta CDS against one reference alignment, on the same strand of the same contig. Lengths are compared, and: the reference wins by default the Bakta version wins only if it is longer by more than 550 bp, and the alignment is not complete in the call's reading frame The asymmetry is deliberate. A reference alignment is usually the better boundary, but a much longer Bakta call normally means the alignment fragmented, and discarding a full-length gene in favour of a partial alignment would be the worse error. A complete alignment, one that covers the whole reference protein down to its stop c"
+"text": "One Bakta CDS against one reference alignment, on the same strand of the same contig. Lengths are compared, and: the reference wins by default the Bakta version wins only if it is longer by more than 550 bp, and the alignment is not complete in the call's reading frame The asymmetry is deliberate. A reference alignment is usually the better boundary, but a much longer Bakta call normally means the alignment fragmented, and discarding a full-length gene in favour of a partial alignment would be the worse error. Beyond length: A complete alignment has not fragmented. It covers the whole referenc"
 },
 {
 "page": "The correction algorithm",
@@ -850,13 +850,13 @@ window.AMAP_DOCS_INDEX = [
 "page": "The correction algorithm",
 "section": "5. Rescuing missing genes",
 "url": "how-it-works/correction-algorithm.html#5-rescuing-missing-genes",
-"text": "A reference protein is missing when no gene accounts for any of its placements, and then it goes back in at its best one. A gene accounts for a placement when it sits on it: same contig and strand, the same reading frame, covering at least 50% of it, and not known to be another reference gene. The frame matters because genes that really overlap sit in different frames (Rv0724A and Rv0725c); another reference gene in the same frame does not count either, since some are nested (E. coli hokC inside mokC). Placements on other genes' loci have already been dropped in step 0, so what is left to resc"
+"text": "A reference protein that no gene accounts for goes back in, at its best placement. A gene accounts for a placement when it sits on it: on the same contig and strand in the same reading frame, since genes that really overlap sit in different frames (Rv0724A and Rv0725c) covering at least 50% of it and not known to be another reference gene, since some are nested in the same frame (E. coli hokC inside mokC) Placements on other genes' loci have already been dropped in step 0, so what is left to rescue sits where the gene belongs or at a locus nobody claims. A longer call takes the name of the pro"
 },
 {
 "page": "The correction algorithm",
 "section": "6. Final deduplication",
 "url": "how-it-works/correction-algorithm.html#6-final-deduplication",
-"text": "Where one gene ends up at several coordinates, entries fully contained inside a different gene are dropped, always keeping at least one entry per gene so nothing disappears entirely. After the stop codon check, deduplicate_rvs.py ranks the genes that share a reference protein: a non-pseudogene over a pseudogene, then the longer one, then one Bakta also called at exactly those coordinates, then the one nearer where the protein belongs by synteny. The first keeps its place. The others stay as further copies of the gene when they are at least 90% as long as the first, clear of the copies kept, an"
+"text": "Where one gene ends up at several coordinates, entries fully contained inside a different gene are dropped, always keeping at least one entry per gene so nothing disappears entirely. After the stop codon check, one gene per reference protein comes first, and the rest stay only as real copies or pieces. deduplicate_rvs.py ranks the genes that share a reference protein: a non-pseudogene over a pseudogene then the longer one then one Bakta also called at exactly those coordinates then the one nearer where the protein belongs by synteny The first keeps its place. The others stay as further copies "
 },
 {
 "page": "The correction algorithm",
@@ -1372,19 +1372,19 @@ window.AMAP_DOCS_INDEX = [
 "page": "Citation",
 "section": "",
 "url": "about/citation.html",
-"text": "Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software]. <https://doi.org/10.5281/zenodo.8024446> @software{Ruiz-Rodriguez_AMAP_2026,   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},   doi = {10.5281/zenodo.8024446},   license = {GPL-3.0},   month = apr,   title = {{AMAP}},   url = {https://github.com/PathoGenOmics-Lab/AMAP},   version = {1.0.1},   year = {2026}} The repository also carries a CITATION.cff, which GitHub reads to offer a formatted citation from the sidebar."
+"text": "If AMAP is part of your work, cite it in whichever form your reference manager takes. All three say the same thing; the DOI is the concept DOI, which always resolves to the newest version. Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software]. https://doi.org/10.5281/zenodo.8024446 APA @software{Ruiz-Rodriguez_AMAP_2026,   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},   doi = {10.5281/zenodo.8024446},   license = {GPL-3.0},   month = jul,   title = {{AMAP}},   url = {https://github.com/PathoGenOmics-Lab/AMAP},   version = {1.0.1},   year = {2026}} BibTeX "
 },
 {
 "page": "Citation",
 "section": "Authors",
 "url": "about/citation.html#authors",
-"text": "Paula Ruiz-Rodriguez and Mireia Coscolla I2SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Valencia, Spain."
+"text": "Paula Ruiz-Rodriguez and Mireia Coscolla Institute for Integrative Systems Biology (I2SysBio, University of Valencia-CSIC), FISABIO Joint Research Unit \"Infection and Public Health\", Paterna, Spain."
 },
 {
 "page": "Citation",
 "section": "Cite the tools too",
 "url": "about/citation.html#cite-the-tools-too",
-"text": "AMAP orchestrates other people's work. If a result depends on one of these, cite it as well. Nextflow Runs the pipeline Bakta Baseline annotation Miniprot Reference proteome alignment eggNOG-mapper Functional annotation Diamond Duplication searches pangene Pangenome graph pathotypr MTBC lineage typing The exact version of each one used by a given run is recorded in results/pipeline_info/software_versions.yml."
+"text": "AMAP orchestrates other people's work. If a result depends on one of these, cite it as well. Nextflow Runs the pipeline Di Tommaso et al., Nature Biotechnology 35, 316-319 (2017). 10.1038/nbt.3820 Bakta Baseline annotation Schwengers et al., Microbial Genomics 7, 000685 (2021). 10.1099/mgen.0.000685 miniprot Reference proteome alignment Li, Bioinformatics 39, btad014 (2023). 10.1093/bioinformatics/btad014 eggNOG-mapper Functional annotation Cantalapiedra et al., Molecular Biology and Evolution 38, 5825-5829 (2021). 10.1093/molbev/msab293 Diamond Duplication searches, and eggNOG's Buchfink et a"
 },
 {
 "page": "Citation",

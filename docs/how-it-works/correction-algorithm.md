@@ -1,7 +1,7 @@
 # The correction algorithm
 
 The core of AMAP. It referees between the initial Bakta annotation and the
-Miniprot alignments of a trusted reference proteome, classifying every candidate
+miniprot alignments of a trusted reference proteome, classifying every candidate
 gene and then applying a set of rules to resolve the disagreements.
 
 Coordinates throughout are 1-based inclusive, so a gene's length is
@@ -9,20 +9,39 @@ Coordinates throughout are 1-based inclusive, so a gene's length is
 opposite strands at the same position are different genes and never conflict,
 and nor are genes on different contigs of a draft assembly, where every contig
 starts at 1. Bakta runs with `--keep-contig-headers` so that it names the
-contigs as the FASTA and Miniprot do; by default it renames them `contig_N`.
+contigs as the FASTA and miniprot do; by default it renames them `contig_N`.
+
+The steps in order:
+
+0. [Placements](#0-placements): small proteins found exactly, the pieces of cut
+   genes placed, and a protein's placements on its paralogs' loci dropped.
+1. [Classification](#1-classification): every Bakta call sorted into a case,
+   and the reference genes Bakta missed.
+2. [Filtering case 1](#2-filtering-case-1): a call with nothing in the
+   reference stays only if Bakta is not known to invent it.
+3. [Resolving case 4](#3-resolving-case-4): the reference's coordinates win,
+   unless Bakta's call is much longer.
+4. [Deduplication on insert](#4-deduplication-on-insert): a gene displaces one
+   already accepted only when it is much longer.
+5. [Rescuing missing genes](#5-rescuing-missing-genes): a reference gene no
+   gene accounts for goes back in.
+6. [Final deduplication](#6-final-deduplication): one place per gene, plus real
+   copies and the pieces of cut genes.
+7. [Stop codon check](#7-stop-codon-check): every gene translated, then
+   extended, flagged as a pseudogene or marked partial.
 
 ## 0. Placements
 
 ### Small proteins
 
-Miniprot needs a seed of several residues and enough score to report an
+miniprot needs a seed of several residues and enough score to report an
 alignment, which a protein of a few dozen residues rarely gives it: annotating
 *E. coli* K-12 with its own proteome, it placed none of 33 proteins of 8 to 29
 residues, and it put the toxin IbsC (b4665), 19 residues three of which differ
 from its neighbour IbsD's, on that neighbour only. Every protein without an exact,
 complete placement is looked for in the six-frame translation of the genome,
 preceded by a start codon and followed by a stop, and each exact copy found
-where Miniprot did not already place the protein becomes a complete placement.
+where miniprot did not already place the protein becomes a complete placement.
 Proteins shorter than 8 residues are not searched.
 
 <!-- figure: small-protein -->
@@ -37,26 +56,31 @@ this way.
 
 ### Pieces of cut genes
 
-A draft assembly cuts the genes its contig breaks run through. Miniprot reports
-only the placements within 5% of a protein's best, so it places the larger
-piece of such a gene and not the smaller one at the end of another contig: in
-CDC1551 cut into 40 contigs, none of the 25 smaller pieces was annotated. A
-placement was cut by its contig when it lacks residues at one end of its
-protein, ends within **30 bp** of the contig's edge on that side, and those
-residues would not fit in the bases left. What it lacks, if **8** residues or
-more, is aligned again as a protein of its own, and its best placement is the
-piece at the other contig end; this pass runs with `-L 10 -n 2`, so that
-Miniprot indexes and chains the short reading frames an edge leaves. A
-placement of that protein which runs off a contig edge on the side of the cut,
-within 30 bp, is a piece of the gene and becomes a placement of the gene's
-protein. In the CDC1551 draft that places 22 of the 25 smaller pieces; the
-other three are five or six codons long.
+**A gene a contig end cuts is placed in pieces.** A draft assembly cuts the
+genes its contig breaks run through, and miniprot reports only the placements
+within 5% of a protein's best, so it places the larger piece of such a gene and
+not the smaller one at the end of another contig: in CDC1551 cut into 40
+contigs, none of the 25 smaller pieces was annotated.
+
+A placement was cut by its contig when all of these hold:
+
+- it lacks residues at one end of its protein
+- it ends within **30 bp** of the contig's edge on that side
+- those residues would not fit in the bases left
+
+What it lacks, if **8** residues or more, is aligned again as a protein of its
+own, and its best placement is the piece at the other contig end. This pass
+runs with `-L 10 -n 2`, so that miniprot indexes and chains the short reading
+frames an edge leaves. A placement of that protein which runs off a contig edge
+on the side of the cut, within 30 bp, is a piece of the gene and becomes a
+placement of the gene's protein. In the CDC1551 draft that places 22 of the 25
+smaller pieces; the other three are five or six codons long.
 
 <!-- figure: contig-end-2 -->
 
 ### Paralog placements
 
-Miniprot places a reference protein everywhere it scores within 5% of its best,
+miniprot places a reference protein everywhere it scores within 5% of its best,
 so a protein with a paralog is placed at both loci. Before anything is
 classified, each placement is checked against where the protein belongs.
 
@@ -95,7 +119,7 @@ this Rv3425 and Rv3426 would sit on Rv3429.
 
 ## 1. Classification
 
-Every Bakta CDS is compared against the Miniprot alignments.
+Every Bakta CDS is compared against the miniprot alignments.
 
 **Case 2, perfect match.** Same start, same end, same strand as an alignment,
 and the same length. Correct, kept as is.
@@ -155,14 +179,18 @@ contig. Lengths are compared, and:
 The asymmetry is deliberate. A reference alignment is usually the better
 boundary, but a much longer Bakta call normally means the alignment fragmented,
 and discarding a full-length gene in favour of a partial alignment would be the
-worse error. A complete alignment, one that covers the whole reference protein
-down to its stop codon, has not fragmented: a longer call in its frame ends at
-the same stop and only starts further upstream (plcD, Rv1755c, 843 bp in H37Rv
-and 1545 bp in Bakta's call on CDC1551). A call in another frame is another
-gene, and keeps its chance to win on length; the alignment then comes back in
-step 5. A call that wins in the alignment's frame is the protein's gene, longer
-than in the reference, and takes its name in step 5. If the Bakta CDS overlaps
-more than one alignment, the reference wins regardless.
+worse error. Beyond length:
+
+- **A complete alignment has not fragmented.** It covers the whole reference
+  protein down to its stop codon, so a longer call in its frame ends at the same
+  stop and only starts further upstream (plcD, Rv1755c, 843 bp in H37Rv and
+  1545 bp in Bakta's call on CDC1551).
+- **A call in another frame is another gene**, and keeps its chance to win on
+  length; the alignment then comes back in step 5.
+- **A call that wins in the alignment's frame is the protein's gene**, longer
+  than in the reference, and takes its name in step 5.
+- **A Bakta CDS that overlaps more than one alignment loses**: the reference
+  wins regardless.
 
 <!-- figure: case4-longer -->
 
@@ -197,28 +225,36 @@ displace any of them: Bakta's version of Rv1614, one codon longer, replaced it.
 
 ## 5. Rescuing missing genes
 
-A reference protein is missing when no gene accounts for any of its
-placements, and then it goes back in at its best one. A gene accounts for a
-placement when it sits on it: same contig and strand, the **same reading
-frame**, covering at least **50%** of it, and not known to be another reference
-gene. The frame matters because genes that really overlap sit in different
-frames (Rv0724A and Rv0725c); another reference gene in the same frame does not
-count either, since some are nested (*E. coli* hokC inside mokC). Placements on
-other genes' loci have already been dropped in step 0, so what is left to rescue
-sits where the gene belongs or at a locus nobody claims.
+**A reference protein that no gene accounts for goes back in**, at its best
+placement. A gene accounts for a placement when it sits on it:
+
+- on the same contig and strand
+- in the **same reading frame**, since genes that really overlap sit in
+  different frames (Rv0724A and Rv0725c)
+- covering at least **50%** of it
+- and not known to be another reference gene, since some are nested in the same
+  frame (*E. coli* hokC inside mokC)
+
+Placements on other genes' loci have already been dropped in step 0, so what is
+left to rescue sits where the gene belongs or at a locus nobody claims.
 
 <!-- figure: missing -->
 
-A gene that stands for no reference protein accounts for any placement in its
-frame: the Bakta call that won its locus in step 3 over a shorter alignment.
-When no gene carries the protein's name, that call takes it, as long as the
-alignment spans at least **half** of the protein. Otherwise the gene came out
-with no name and the protein was missing from the table. In *M. bovis*, H37Rv's
-mmpL6 (Rv1557) is the 3' end of a 2904 bp gene that the TbD1 deletion cut short
-in H37Rv; CDC1551 and *M. bovis* carry a 4821 bp DNA methyltransferase gene
-whose first 506 residues are H37Rv's Rv2024c. A remnant names nothing: the
-RD12 deletion of *M. bovis* leaves the last 67 of cyp141's (Rv3121) 400
-residues at the end of a 321-codon gene that is not cyp141.
+**A longer call takes the name of the protein it beat.** A gene that stands
+for no reference protein accounts for any placement in its frame: the Bakta
+call that won its locus in step 3 over a shorter alignment. When no gene
+carries the protein's name, that call takes it, as long as the alignment spans
+at least **half** of the protein; without this the gene came out with no name
+and the protein was missing from the table. Two calls named this way:
+
+- in *M. bovis*, H37Rv's mmpL6 (Rv1557) is the 3' end of a 2904 bp gene that
+  the TbD1 deletion cut short in H37Rv
+- CDC1551 and *M. bovis* carry a 4821 bp DNA methyltransferase gene whose first
+  506 residues are H37Rv's Rv2024c
+
+A remnant names nothing: the RD12 deletion of *M. bovis* leaves the last 67 of
+cyp141's (Rv3121) 400 residues at the end of a 321-codon gene that is not
+cyp141.
 
 The pieces of a cut gene are parts of its protein, not copies of it, so each is
 missing on its own, and one in place does not keep another out. In the CDC1551
@@ -231,21 +267,38 @@ Where one gene ends up at several coordinates, entries fully contained inside a
 different gene are dropped, always keeping at least one entry per gene so
 nothing disappears entirely.
 
-After the stop codon check, `deduplicate_rvs.py` ranks the genes that share a
-reference protein: a non-pseudogene over a pseudogene, then the longer one, then
-one Bakta also called at exactly those coordinates, then the one nearer where
-the protein belongs by synteny. The first keeps its place. The others stay as
-**further copies** of the gene when they are at least **90%** as long as the
-first, clear of the copies kept, and not covered by another reference gene; a
-pseudogene must also be 90% as long as the reference protein, which a piece of
-a split gene is not, and anything else is a remnant of the gene and goes. A genome can carry a gene more
-than once, and these copies are what the duplication analysis counts: *E. coli*
-O157:H7 Sakai keeps 34 that used to be deleted. The pieces of a cut gene stay
-as well, when the first gene is one of them: each is marked partial at its cut
-end, no two are open at the same end alone (a gene has one first piece and one
-last, and any number between that a contig holds whole), they are clear of each
-other, and together they are at most **110%** of the reference gene's length.
-Copies and pieces only Miniprot placed are all named after their protein, so
+**After the stop codon check, one gene per reference protein comes first, and
+the rest stay only as real copies or pieces.** `deduplicate_rvs.py` ranks the
+genes that share a reference protein:
+
+1. a non-pseudogene over a pseudogene
+2. then the longer one
+3. then one Bakta also called at exactly those coordinates
+4. then the one nearer where the protein belongs by synteny
+
+The first keeps its place. The others stay as **further copies** of the gene
+when all of these hold, and anything else is a remnant of the gene and goes:
+
+- at least **90%** as long as the first
+- clear of the copies kept
+- not covered by another reference gene
+- for a pseudogene, also 90% as long as the reference protein, which a piece of
+  a split gene is not
+
+A genome can carry a gene more than once, and these copies are what the
+duplication analysis counts: *E. coli* O157:H7 Sakai keeps 34 that used to be
+deleted.
+
+The pieces of a cut gene stay as well, when the first gene is one of them and
+all of these hold:
+
+- each is marked partial at its cut end
+- no two are open at the same end alone: a gene has one first piece and one
+  last, and any number between that a contig holds whole
+- they are clear of each other
+- together they are at most **110%** of the reference gene's length
+
+Copies and pieces only miniprot placed are all named after their protein, so
 later ones get `_2`, `_3` to keep identifiers unique.
 
 <!-- figure: copies-1 -->
@@ -276,15 +329,17 @@ Rv3373 into Rv3374), and extending would annotate that gene twice.
 
 <!-- figure: frameshift -->
 
-**Genes a contig cut short are partial.** In a draft assembly, a gene whose
-frame reaches the end of its contig with no stop, from within 30 bp of it, was
-cut by the assembly: it runs to the last codon there and is marked `3'`
-partial. One that opens within a codon of the contig's edge without a start
-codon is `5'` partial, and so is one that opens there with a codon that can
-start a gene but whose protein begins inside its reference protein: a cut
-leaves whatever codon it falls before at the edge, and one in six codons inside
-H37Rv genes is one a gene can start with. Neither is a pseudogene. Each piece
-of a cut gene is annotated this way, under the gene's name.
+**Genes a contig cut short are partial**, not pseudogenes, and each piece of a
+cut gene is marked this way, under the gene's name:
+
+- **`3'` partial**: in a draft assembly, a gene whose frame reaches the end of
+  its contig with no stop, from within 30 bp of it, was cut by the assembly,
+  and runs to the last codon there.
+- **`5'` partial**: a gene that opens within a codon of the contig's edge
+  without a start codon, or with a codon that can start a gene but whose
+  protein begins inside its reference protein. A cut leaves whatever codon it
+  falls before at the edge, and one in six codons inside H37Rv genes is one a
+  gene can start with.
 
 <!-- figure: contig-end -->
 

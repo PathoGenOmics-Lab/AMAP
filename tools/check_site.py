@@ -2,7 +2,7 @@
 """Check the website in docs/ against the pipeline it describes.
 
 The site is plain HTML with no build step, so nothing renders it and nothing
-fails when it drifts. This does, in twelve parts:
+fails when it drifts. This does, in thirteen parts:
 
   links       every internal link and #anchor resolves (the stories how.js
               opens and the sections of the example report included), no page
@@ -31,6 +31,8 @@ fails when it drifts. This does, in twelve parts:
               end cuts is lost (it comes back in pieces);
   install     the front page, the installation page and the tutorial install
               Nextflow with the same command;
+  citation    the citation page shows CITATION.cff as it is, and its APA line
+              and BibTeX give the version and date CITATION.cff does;
   report      the example report, and the Rmd every final_report.html comes
               from, load nothing from another host (MathJax included), and
               the example has lang="en" and alt text on every image;
@@ -991,6 +993,33 @@ def check_install(pages: dict[str, Page]) -> list[str]:
     return problems
 
 
+CITATION_CFF = Path("CITATION.cff")
+MONTHS = "jan feb mar apr may jun jul aug sep oct nov dec".split()
+
+
+def check_citation() -> list[str]:
+    """The citation page shows CITATION.cff as it is, and its APA line and
+    BibTeX give the version, year and month CITATION.cff does."""
+    page = SITE / "about" / "citation.md"
+    text = page.read_text(encoding="utf-8")
+    cff = CITATION_CFF.read_text(encoding="utf-8")
+    problems = []
+    shown = re.search(r"^\*\*CITATION\.cff\*\*\s*```yaml\n(.*?)```", text, re.S | re.M)
+    body = "\n".join(line for line in cff.splitlines() if not line.startswith("#")).strip()
+    if not shown or shown.group(1).strip() != body:
+        problems.append(f"{page}: its CITATION.cff tab is not {CITATION_CFF} as it is")
+    version = re.search(r"^version: ([\d.]+)", cff, re.M).group(1)
+    year, month = re.search(r"^date-released: '(\d{4})-(\d{2})", cff, re.M).groups()
+    bib = re.search(r"^@software\{.*?^```", text, re.S | re.M)
+    bib = bib.group(0) if bib else ""
+    for key, value in (("version", version), ("year", year), ("month", MONTHS[int(month) - 1])):
+        if not re.search(rf"^\s*{key} = \{{?{re.escape(value)}\}}?,?\s*\}}?$", bib, re.M):
+            problems.append(f"{page}: the BibTeX's {key} is not {value}, as in {CITATION_CFF}")
+    if f"({year}). AMAP (Version {version})" not in text:
+        problems.append(f"{page}: the APA line does not say ({year}) and Version {version}, as {CITATION_CFF} does")
+    return problems
+
+
 # ── report ──
 #
 # The example report is the report's own output and is not checked as a page,
@@ -1127,6 +1156,7 @@ def main() -> int:
         ("metro", check_metro),
         ("words", check_words),
         ("install", lambda: check_install(pages)),
+        ("citation", check_citation),
         ("report", check_report),
         ("readme", lambda: check_readme(pages)),
         ("dashes", check_dashes),

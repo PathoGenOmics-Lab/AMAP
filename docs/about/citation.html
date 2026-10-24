@@ -89,24 +89,109 @@
 </aside>
 <main class="prose" id="content">
 <p class="crumb"><a href="../documentation.html">Docs</a> / About</p>
-<h1 id="citing-amap">Citing AMAP</h1>
-<blockquote><p>Ruiz-Rodriguez, P., &amp; Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software]. <a href="https://doi.org/10.5281/zenodo.8024446">https://doi.org/10.5281/zenodo.8024446</a></p></blockquote>
-<div class="code" data-lang="bibtex"><pre>@software{Ruiz-Rodriguez_AMAP_2026,
+<h1 id="citation">Citation</h1>
+<p>If AMAP is part of your work, cite it in whichever form your reference manager takes. All three say the same thing; the DOI is the concept DOI, which always resolves to the newest version.</p>
+<div class="tabset"><div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" aria-controls="tabs-about-citation-md-6-0" id="tabs-about-citation-md-6-0-tab">APA</button><button class="tab" role="tab" aria-selected="false" aria-controls="tabs-about-citation-md-6-1" id="tabs-about-citation-md-6-1-tab">BibTeX</button><button class="tab" role="tab" aria-selected="false" aria-controls="tabs-about-citation-md-6-2" id="tabs-about-citation-md-6-2-tab">CITATION.cff</button></div><div class="tabpanel" role="tabpanel" id="tabs-about-citation-md-6-0" aria-labelledby="tabs-about-citation-md-6-0-tab"><div class="code" data-lang="text"><pre>Ruiz-Rodriguez, P., &amp; Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software]. https://doi.org/10.5281/zenodo.8024446</pre></div></div><div class="tabpanel" role="tabpanel" id="tabs-about-citation-md-6-1" aria-labelledby="tabs-about-citation-md-6-1-tab" hidden><div class="code" data-lang="bibtex"><pre>@software{Ruiz-Rodriguez_AMAP_2026,
   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},
   doi = {10.5281/zenodo.8024446},
   license = {GPL-3.0},
-  month = apr,
+  month = jul,
   title = {{AMAP}},
   url = {https://github.com/PathoGenOmics-Lab/AMAP},
   version = {1.0.1},
-  year = {2026}}</pre></div>
-<p>The repository also carries a <code>CITATION.cff</code>, which GitHub reads to offer a formatted citation from the sidebar.</p>
+  year = {2026}}</pre></div></div><div class="tabpanel" role="tabpanel" id="tabs-about-citation-md-6-2" aria-labelledby="tabs-about-citation-md-6-2-tab" hidden><div class="code" data-lang="yaml"><pre>cff-version: 1.2.0
+title: AMAP
+message: &#x27;If you use this software, please cite it as below.&#x27;
+type: software
+authors:
+  - family-names: Ruiz-Rodriguez
+    given-names: Paula
+    orcid: &#x27;https://orcid.org/0000-0003-0727-5974&#x27;
+    affiliation: &gt;-
+      Institute for Integrative Systems Biology (I2SysBio,
+      University of Valencia - CSIC), FISABIO Joint Research
+      Unit “Infection and Public Health”, Paterna, Spain
+    email: paula.ruiz.rodriguez@csic.es
+  - family-names: Coscolla
+    given-names: Mireia
+    orcid: &#x27;https://orcid.org/0000-0003-0752-0538&#x27;
+    affiliation: &gt;-
+      Institute for Integrative Systems Biology (I2SysBio,
+      University of Valencia - CSIC), FISABIO Joint Research
+      Unit “Infection and Public Health”, Paterna, Spain
+    email: mireia.coscolla@csic.es
+url: &#x27;https://github.com/PathoGenOmics-Lab/AMAP&#x27;
+license: GPL-3.0
+version: 1.0.1
+date-released: &#x27;2026-07-25&#x27;
+doi: 10.5281/zenodo.8024446</pre></div></div></div>
+<p>The CITATION.cff tab is the repository's own file, which GitHub reads to offer a formatted citation from the sidebar.</p>
 <h2 id="authors">Authors<a class="anchor" href="#authors" aria-label="Link to this section">#</a></h2>
 <p><strong>Paula Ruiz-Rodriguez</strong> and <strong>Mireia Coscolla</strong></p>
-<p>I<sup>2</sup>SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Valencia, Spain.</p>
+<p>Institute for Integrative Systems Biology (I<sup>2</sup>SysBio, University of Valencia-CSIC), FISABIO Joint Research Unit "Infection and Public Health", Paterna, Spain.</p>
 <h2 id="cite-the-tools-too">Cite the tools too<a class="anchor" href="#cite-the-tools-too" aria-label="Link to this section">#</a></h2>
 <p>AMAP orchestrates other people's work. If a result depends on one of these, cite it as well.</p>
-<div class="table-wrap"><table><thead><tr><th>Tool</th><th>What it does here</th></tr></thead><tbody><tr><td><a href="https://www.nextflow.io/">Nextflow</a></td><td>Runs the pipeline</td></tr><tr><td><a href="https://github.com/oschwengers/bakta">Bakta</a></td><td>Baseline annotation</td></tr><tr><td><a href="https://github.com/lh3/miniprot">Miniprot</a></td><td>Reference proteome alignment</td></tr><tr><td><a href="https://github.com/eggnogdb/eggnog-mapper">eggNOG-mapper</a></td><td>Functional annotation</td></tr><tr><td><a href="https://github.com/bbuchfink/diamond">Diamond</a></td><td>Duplication searches</td></tr><tr><td><a href="https://github.com/lh3/pangene">pangene</a></td><td>Pangenome graph</td></tr><tr><td><a href="https://github.com/PathoGenOmics-Lab/pathotypr">pathotypr</a></td><td>MTBC lineage typing</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>What it does here</th><th>Paper</th></tr></thead><tbody><tr><td><a href="https://www.nextflow.io/">Nextflow</a></td><td>Runs the pipeline</td><td>Di Tommaso et al., <em>Nature Biotechnology</em> 35, 316-319 (2017). <a href="https://doi.org/10.1038/nbt.3820">10.1038/nbt.3820</a></td></tr><tr><td><a href="https://github.com/oschwengers/bakta">Bakta</a></td><td>Baseline annotation</td><td>Schwengers et al., <em>Microbial Genomics</em> 7, 000685 (2021). <a href="https://doi.org/10.1099/mgen.0.000685">10.1099/mgen.0.000685</a></td></tr><tr><td><a href="https://github.com/lh3/miniprot">miniprot</a></td><td>Reference proteome alignment</td><td>Li, <em>Bioinformatics</em> 39, btad014 (2023). <a href="https://doi.org/10.1093/bioinformatics/btad014">10.1093/bioinformatics/btad014</a></td></tr><tr><td><a href="https://github.com/eggnogdb/eggnog-mapper">eggNOG-mapper</a></td><td>Functional annotation</td><td>Cantalapiedra et al., <em>Molecular Biology and Evolution</em> 38, 5825-5829 (2021). <a href="https://doi.org/10.1093/molbev/msab293">10.1093/molbev/msab293</a></td></tr><tr><td><a href="https://github.com/bbuchfink/diamond">Diamond</a></td><td>Duplication searches, and eggNOG's</td><td>Buchfink et al., <em>Nature Methods</em> 18, 366-368 (2021). <a href="https://doi.org/10.1038/s41592-021-01101-x">10.1038/s41592-021-01101-x</a></td></tr><tr><td><a href="https://github.com/lh3/pangene">pangene</a></td><td>Pangenome graph</td><td>Li et al., <em>Bioinformatics</em> 40, btae456 (2024). <a href="https://doi.org/10.1093/bioinformatics/btae456">10.1093/bioinformatics/btae456</a></td></tr><tr><td><a href="https://github.com/PathoGenOmics-Lab/pathotypr">pathotypr</a></td><td>MTBC lineage typing</td><td>Its repository, and its lineage markers below</td></tr></tbody></table></div>
+<p>All of them in one block, for a reference manager:</p>
+<div class="code" data-lang="bibtex"><pre>@article{DiTommaso_Nextflow_2017,
+  author = {Di Tommaso, Paolo and Chatzou, Maria and Floden, Evan W. and Barja, Pablo Prieto and Palumbo, Emilio and Notredame, Cedric},
+  title = {Nextflow enables reproducible computational workflows},
+  journal = {Nature Biotechnology},
+  volume = {35},
+  number = {4},
+  pages = {316--319},
+  year = {2017},
+  doi = {10.1038/nbt.3820}}
+
+@article{Schwengers_Bakta_2021,
+  author = {Schwengers, Oliver and Jelonek, Lukas and Dieckmann, Marius Alfred and Beyvers, Sebastian and Blom, Jochen and Goesmann, Alexander},
+  title = {Bakta: rapid and standardized annotation of bacterial genomes via alignment-free sequence identification},
+  journal = {Microbial Genomics},
+  volume = {7},
+  number = {11},
+  pages = {000685},
+  year = {2021},
+  doi = {10.1099/mgen.0.000685}}
+
+@article{Li_miniprot_2023,
+  author = {Li, Heng},
+  title = {Protein-to-genome alignment with miniprot},
+  journal = {Bioinformatics},
+  volume = {39},
+  number = {1},
+  pages = {btad014},
+  year = {2023},
+  doi = {10.1093/bioinformatics/btad014}}
+
+@article{Cantalapiedra_eggNOGmapper_2021,
+  author = {Cantalapiedra, Carlos P. and Hern{\&#x27;a}ndez-Plaza, Ana and Letunic, Ivica and Bork, Peer and Huerta-Cepas, Jaime},
+  title = {{eggNOG-mapper} v2: Functional Annotation, Orthology Assignments, and Domain Prediction at the Metagenomic Scale},
+  journal = {Molecular Biology and Evolution},
+  volume = {38},
+  number = {12},
+  pages = {5825--5829},
+  year = {2021},
+  doi = {10.1093/molbev/msab293}}
+
+@article{Buchfink_DIAMOND_2021,
+  author = {Buchfink, Benjamin and Reuter, Klaus and Drost, Hajk-Georg},
+  title = {Sensitive protein alignments at tree-of-life scale using {DIAMOND}},
+  journal = {Nature Methods},
+  volume = {18},
+  number = {4},
+  pages = {366--368},
+  year = {2021},
+  doi = {10.1038/s41592-021-01101-x}}
+
+@article{Li_pangene_2024,
+  author = {Li, Heng and Marin, Maximillian and Farhat, Maha R.},
+  title = {Exploring gene content with pangene graphs},
+  journal = {Bioinformatics},
+  volume = {40},
+  number = {7},
+  pages = {btae456},
+  year = {2024},
+  doi = {10.1093/bioinformatics/btae456}}</pre></div>
 <p>The exact version of each one used by a given run is recorded in <code>results/pipeline_info/software_versions.yml</code>.</p>
 <h2 id="reference-data">Reference data<a class="anchor" href="#reference-data" aria-label="Link to this section">#</a></h2>
 <p>The MTBC reference files bundled in the container come from public repositories. The pathotypr lineage markers are archived on Zenodo under <a href="https://doi.org/10.5281/zenodo.19210044">10.5281/zenodo.19210044</a>, and Mycobrowser functional categories come from <a href="https://mycobrowser.epfl.ch/">mycobrowser.epfl.ch</a>.</p>

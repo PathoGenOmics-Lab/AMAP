@@ -3,40 +3,121 @@
    are the whole visual language: what Bakta called, where the reference
    protein aligned, and what AMAP keeps. */
 
-/* Dark by default, whatever the system says; light only when chosen with the
-   toggle (its key is amap.theme). */
+/* ── Design tokens ──
+   One system for every page. Type: a modular scale, 17px x 1.125^n (a major
+   second), named by its step. Space: a 4px grid. Radii: five steps, the
+   inner of two nested shapes one step under the outer. Surfaces: the page,
+   then three levels up and one down (code). Ink: four levels. The three
+   track colours are data: they mean Bakta, the reference and AMAP, and are
+   not used to decorate. Dark ("Noche") by default, whatever the system says;
+   light only when chosen with the toggle (its key is amap.theme). */
 :root {
-  --bg: #0b0f0e;
-  --bg-elev: #121716;
-  --bg-subtle: #19201e;
-  --ink: #eef4f2;
-  --ink-soft: #cdd7d4;
-  --muted: #98a6a2;
-  --line: #222b29;
-  --line-strong: #34413e;
-  /* The edge of a field you type in: 3:1 against the page and the field. */
-  --line-input: #5f6e6a;
+  /* Type scale, 17px x 1.125^n. */
+  --fs-n3: 0.7465rem; /* 11.9px  caps labels: kickers, table heads, tags */
+  --fs-n2: 0.8398rem; /* 13.4px  captions, legends, meta, code blocks */
+  --fs-n1: 0.9448rem; /* 15.1px  interface: nav, buttons, cards, tables */
+  --fs-0: 1.0625rem; /* 17px    body */
+  --fs-1: 1.1953rem; /* 19.1px  lead, card titles, h4 */
+  --fs-2: 1.3447rem; /* 21.5px  h3 */
+  --fs-3: 1.5128rem; /* 24.2px  stepper title */
+  --fs-4: 1.7019rem; /* 27.2px  docs h2 */
+  --fs-6: 2.1540rem; /* 34.5px  h2 and h1 on a phone */
+  --fs-7: 2.4233rem; /* 38.8px  section h2, docs h1 */
+  --fs-10: 3.4504rem; /* 55.2px */
+  --fs-11: 3.8817rem; /* 62.1px  the front page's h1 */
+  /* Display sizes move with the screen between two steps: a title from 27px
+     on a phone to 38.8px from 1000px; the front page's h1 from 34.5px to
+     62.1px. */
+  --fs-title: clamp(var(--fs-4), 1.32rem + 1.77vw, var(--fs-7));
+  --fs-hero: clamp(var(--fs-6), 5.2vw, var(--fs-11));
+  --lh-display: 1.06;
+  --lh-heading: 1.2;
+  --lh-ui: 1.45;
+  --lh-body: 1.6;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-display: 760;
+  --tr-display: -0.032em;
+  --tr-heading: -0.016em;
+  --tr-caps: 0.1em;
+  /* Space, a 4px grid. */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 40px;
+  --sp-9: 48px;
+  --sp-10: 64px;
+  --sp-11: 80px;
+  --sp-12: 96px;
+  /* Radii: marks, small controls, controls, cards, plates. */
+  --r-1: 4px;
+  --r-2: 6px;
+  --r-3: 8px;
+  --r-4: 12px;
+  --r-5: 16px;
+  --r-pill: 999px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Surfaces: sunk (code) < page < card < plate < fill. */
+  --surface-sunk: #070a09;
+  --surface-0: #0a0e0d;
+  --surface-1: #101615;
+  --surface-2: #141b1a;
+  --surface-3: #1b2422;
+  /* Ink: headings, body, captions, decoration (never text). */
+  --ink-1: #eef4f2;
+  --ink-2: #c3cfcb;
+  --ink-3: #93a29e;
+  --ink-4: #6b7975;
+  /* Lines: hairline, edge, and the 3:1 edge of a field you type in. */
+  --line-1: #1c2523;
+  --line-2: #29332f;
+  --line-3: #5c6b67;
+  /* The one accent, and its wash (12% over a card, opaque). */
+  --accent: #4fd6bf;
+  --accent-hover: #86e8d7;
+  --accent-wash: #182d29;
+  --accent-line: #2c6f63;
+  --on-accent: #04201a;
+  /* Brand: the logo's own colours, for the headline and the logo only. */
   --brand-teal: #39baa3;
   --brand-aqua: #68e9d4;
   --brand-slate: #8faeb7;
   --grad-a: #7ff0dc;
   --grad-b: #39baa3;
   --grad-c: #8faeb7;
-  --accent: #4fd6bf;
-  --accent-hover: #86e8d7;
-  --accent-soft: #10292a;
-  --on-accent: #062019;
-  --code-bg: #080b0a;
-  --code-border: #1f2826;
+  /* Elevation: 1 a card (edge, no shadow), 2 a plate, 3 an overlay. */
+  --shadow-1: none;
+  --shadow-2: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 1px 2px rgba(0, 0, 0, 0.5), 0 18px 40px -18px rgba(0, 0, 0, 0.7);
+  --shadow-3: 0 1px 2px rgba(0, 0, 0, 0.5), 0 24px 56px -12px rgba(0, 0, 0, 0.6);
+  --glow: 0 0 0 1px rgba(79, 214, 191, 0.5), 0 6px 20px -6px rgba(79, 214, 191, 0.55);
+  /* Context: what a control sits on decides its fill (one level up), and a
+     drawing's halos take the colour of the surface under them. */
+  --control: var(--surface-1);
+  --control-raised: var(--surface-3);
+  --halo: var(--surface-1);
+  --overlay: var(--surface-3);
+
+  /* Code. */
+  --code-bg: var(--surface-sunk);
+  --code-border: var(--line-1);
   --code-ink: #e3ebe8;
   --code-muted: #889692;
   --code-flag: #7ee2cf;
   --code-value: #f2c47c;
-  --copy-border: rgba(255, 255, 255, 0.16);
-  --copy-bg: rgba(255, 255, 255, 0.06);
-  --copy-hover: rgba(255, 255, 255, 0.14);
+  --copy-border: rgba(255, 255, 255, 0.14);
+  --copy-bg: rgba(255, 255, 255, 0.05);
+  --copy-hover: rgba(255, 255, 255, 0.12);
   --copy-done: #8ef0bf;
-  /* The tracks: Bakta's calls, the reference protein aligned, what AMAP keeps. */
+  /* Data: the tracks (Bakta's calls, the reference protein aligned, what AMAP
+     keeps) and the states a drawing marks. */
   --bakta: #f3a84a;
   --ref: #a99cff;
   --amap: #3fd6bb;
@@ -54,50 +135,67 @@
   --m-db: #f3a84a;
   --m-dup: #6fb6ff;
   --m-pan: #e889d8;
-  --radius: 12px;
-  --radius-sm: 8px;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* The names the rest of this sheet uses, kept as aliases of the system. */
+  --bg: var(--surface-0);
+  --bg-elev: var(--surface-1);
+  --bg-subtle: var(--surface-3);
+  --ink: var(--ink-1);
+  --ink-soft: var(--ink-2);
+  --muted: var(--ink-3);
+  --line: var(--line-1);
+  --line-strong: var(--line-2);
+  --line-input: var(--line-3);
+  --accent-soft: var(--accent-wash);
+  --radius: var(--r-4);
+  --radius-sm: var(--r-3);
+  --shadow: var(--shadow-2);
   color-scheme: dark;
 }
 
 :root[data-theme="light"] {
-  --bg: #fbfcfb;
-  --bg-elev: #ffffff;
-  --bg-subtle: #f1f5f4;
-  --ink: #121a18;
-  --ink-soft: #36423f;
-  --muted: #5a6763;
-  --line: #e0e7e5;
-  --line-strong: #c8d2cf;
-  --line-input: #808d89;
-  --grad-a: #0b8a75;
-  --grad-b: #2f9e8a;
-  --grad-c: #4f7682;
-  --accent: #087a67;
+  --surface-sunk: #eef2f1;
+  --surface-0: #f5f7f6;
+  --surface-1: #ffffff;
+  --surface-2: #ffffff;
+  --surface-3: #ebf0ee;
+  --ink-1: #0f1715;
+  --ink-2: #2e3a37;
+  --ink-3: #53605c;
+  --ink-4: #7a8783;
+  --line-1: #e2e8e6;
+  --line-2: #d0d9d6;
+  --line-3: #7c8985;
+  --accent: #07725f;
   --accent-hover: #055c4d;
-  --accent-soft: #e2f3ef;
+  --accent-wash: #e6f1ef;
+  --accent-line: #8cc5ba;
   --on-accent: #ffffff;
-  --code-bg: #f3f6f5;
-  --code-border: #dfe6e4;
+  --grad-a: #0b8a75;
+  --grad-b: #238b78;
+  --grad-c: #4f7682;
+  --shadow-2: 0 1px 2px rgba(16, 27, 24, 0.06), 0 16px 36px -18px rgba(16, 27, 24, 0.22);
+  --shadow-3: 0 1px 3px rgba(16, 27, 24, 0.08), 0 24px 56px -16px rgba(16, 27, 24, 0.24);
+  --glow: 0 1px 2px rgba(7, 114, 95, 0.25), 0 6px 18px -8px rgba(7, 114, 95, 0.6);
+  --control-raised: #ffffff;
+  --overlay: #ffffff;
   --code-ink: #1a2422;
-  --code-muted: #67736f;
-  --code-flag: #087a67;
-  --code-value: #9a4f00;
-  --copy-border: rgba(16, 27, 24, 0.14);
-  --copy-bg: rgba(255, 255, 255, 0.8);
+  --code-muted: #616e6a;
+  --code-flag: #07725f;
+  --code-value: #8f4a00;
+  --copy-border: rgba(16, 27, 24, 0.16);
+  --copy-bg: rgba(255, 255, 255, 0.85);
   --copy-hover: #ffffff;
   --copy-done: #0f7a52;
   --bakta: #a85a06;
   --ref: #5845cc;
-  --amap: #08806b;
+  --amap: #07796a;
   --drop: #7d8986;
   --on-track: #ffffff;
   --pseudo: #c0244a;
   --ok: #0f7a52;
   --note: #b7791f;
-  --warn: #a8600a;
+  --warn: #9a5808;
   --danger: #c0244a;
   --info: #1f68c4;
   --m-main: #0b8a75;
@@ -105,7 +203,6 @@
   --m-db: #b5650d;
   --m-dup: #1f68c4;
   --m-pan: #a6338f;
-  --shadow: 0 1px 2px rgba(16, 27, 24, 0.06), 0 8px 24px rgba(16, 27, 24, 0.07);
   color-scheme: light;
 }
 
@@ -123,63 +220,80 @@ html {
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font: 17px/1.55 var(--font);
+  background: var(--surface-0);
+  color: var(--ink-1);
+  font: var(--fw-regular) var(--fs-0)/var(--lh-body) var(--font);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-kerning: normal;
 }
 
+/* Links: accent ink, a quiet underline that takes the full colour on hover. */
 a {
   color: var(--accent);
+  text-decoration-line: underline;
   text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 0.22em;
 }
 
 a:hover {
   color: var(--accent-hover);
+  text-decoration-color: currentColor;
 }
 
 :focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--r-1);
 }
 
+/* Mono runs one step under the text around it (1/1.125). */
 code,
 kbd,
 pre {
   font-family: var(--mono);
-  font-size: 0.88em;
+  font-size: 0.889em;
+  font-variant-ligatures: none;
 }
 
 /* A chip of code never splits inside a word: short ones (.nw) do not wrap at
    all, and the docs builder lets a long one wrap only after a /, _ or .
    (see the Code section). */
 :not(pre) > code {
-  background: var(--bg-subtle);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 0.08em 0.38em;
+  background: var(--surface-3);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-1);
+  padding: 0.06em 0.36em;
+  color: var(--ink-1);
   overflow-wrap: normal;
 }
 
+/* Headings: display (h1, h2) tight and heavy, the rest bold and a little
+   tight; all in the first ink. */
 h1,
 h2,
 h3 {
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tr-heading);
   margin: 0;
+  color: var(--ink-1);
+}
+
+h1,
+h2 {
+  font-weight: var(--fw-display);
+  letter-spacing: var(--tr-display);
+  line-height: 1.1;
 }
 
 h2 {
-  font-size: clamp(1.6rem, 3.4vw, 2.2rem);
-  font-weight: 750;
+  font-size: var(--fs-title);
 }
 
 h3 {
-  font-size: 1.08rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-size: var(--fs-1);
+  font-weight: var(--fw-bold);
 }
 
 p {
@@ -190,9 +304,9 @@ p {
   position: absolute;
   left: -999px;
   top: 8px;
-  background: var(--bg-elev);
-  padding: 8px 12px;
-  border-radius: 8px;
+  background: var(--surface-1);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-3);
   z-index: 100;
 }
 
@@ -210,6 +324,22 @@ p {
   .wrap {
     padding: 0 16px;
   }
+}
+
+/* ── Surfaces ──
+   Level 0 the page; 1 a card (its own fill and an edge, no shadow, 12px
+   corners); 2 a plate, what a showcase drawing stands on (a lighter fill, an
+   edge, a soft shadow, 16px corners); 3 an overlay (search, tips). Code sits
+   below the page. Inside a plate, controls rise one more level and the
+   drawings' halos take the plate's colour. */
+.demo,
+.case,
+.metro-wrap,
+.how-stage-card,
+.excerpt,
+.report-frame {
+  --halo: var(--surface-2);
+  --control: var(--control-raised);
 }
 
 /* Headings break into lines of even length rather than leave one word. */
@@ -247,10 +377,10 @@ h3 {
   transform: translateY(-50%);
   padding: 3px 9px;
   border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
-  border-radius: 7px;
+  border-radius: var(--r-2);
   background: var(--accent-soft);
   color: var(--accent);
-  font: 650 0.78rem/1.3 var(--font);
+  font: var(--fw-semibold) var(--fs-n2)/1.3 var(--font);
   letter-spacing: 0;
   white-space: nowrap;
   pointer-events: none;
@@ -317,15 +447,15 @@ mark.search-hit {
 /* More contrast on request: quieter text and edges step up. */
 @media (prefers-contrast: more) {
   :root {
-    --muted: #b4c0bd;
-    --line-strong: #56645f;
-    --line-input: #7d8b87;
+    --ink-3: #b4c0bd;
+    --line-2: #56645f;
+    --line-3: #7d8b87;
   }
 
   :root[data-theme="light"] {
-    --muted: #3f4b48;
-    --line-strong: #93a09c;
-    --line-input: #66736f;
+    --ink-3: #3f4b48;
+    --line-2: #93a09c;
+    --line-3: #66736f;
   }
 }
 
@@ -335,26 +465,37 @@ mark.search-hit {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: color-mix(in srgb, var(--bg) 86%, transparent);
-  -webkit-backdrop-filter: saturate(1.4) blur(10px);
-  backdrop-filter: saturate(1.4) blur(10px);
-  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-0) 80%, transparent);
+  -webkit-backdrop-filter: saturate(1.6) blur(14px);
+  backdrop-filter: saturate(1.6) blur(14px);
+  border-bottom: 1px solid var(--line-1);
 }
 
 .top .wrap {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--sp-4);
   height: 60px;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-3);
   flex: none;
   text-decoration: none;
-  color: var(--ink);
+  color: var(--ink-1);
+}
+
+/* The logo is drawn for a dark ground; the light theme takes the variant
+   made from it (same shapes, its greys turned to ink and its teals deepened). */
+.brand .logo-light,
+:root[data-theme="light"] .brand .logo-dark {
+  display: none;
+}
+
+:root[data-theme="light"] .brand .logo-light {
+  display: block;
 }
 
 .brand img {
@@ -364,9 +505,9 @@ mark.search-hit {
 }
 
 .brand span {
-  font-weight: 750;
+  font-weight: var(--fw-display);
   letter-spacing: -0.01em;
-  font-size: 1.02rem;
+  font-size: var(--fs-0);
 }
 
 /* The logo already says AMAP: its text is the first thing to go when the
@@ -386,26 +527,27 @@ mark.search-hit {
 }
 
 .nav a {
-  color: var(--ink-soft);
+  color: var(--ink-2);
   text-decoration: none;
-  font-size: 0.93rem;
+  font-size: var(--fs-n1);
+  font-weight: var(--fw-medium);
   padding: 7px 10px;
-  border-radius: 8px;
+  border-radius: var(--r-3);
   white-space: nowrap;
 }
 
 .nav a:hover {
-  color: var(--ink);
-  background: var(--bg-subtle);
+  color: var(--ink-1);
+  background: var(--surface-3);
 }
 
 /* Where you are, apart from where the pointer is: accent text on an accent
    bar. */
 .nav a[aria-current] {
   color: var(--accent);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   box-shadow: inset 0 -2px 0 var(--accent);
-  border-radius: 8px 8px 2px 2px;
+  border-radius: var(--r-3) var(--r-3) 0 0;
 }
 
 .nav a[aria-current]:hover {
@@ -419,19 +561,20 @@ mark.search-hit {
   height: 36px;
   padding: 0 12px !important;
   margin-left: 4px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--bg-elev);
-  color: var(--ink-soft);
-  font-size: 0.9rem;
-  font-weight: 600;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-3);
+  background: var(--control);
+  color: var(--ink-1);
+  font-size: var(--fs-n2);
+  font-weight: var(--fw-semibold);
   text-decoration: none;
   flex: none;
 }
 
 .gh-link:hover {
-  color: var(--ink);
-  border-color: var(--line-strong);
+  color: var(--ink-1);
+  border-color: var(--line-3);
+  background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
 }
 
 .gh-link svg {
@@ -445,17 +588,18 @@ mark.search-hit {
   width: 36px;
   height: 36px;
   margin-left: 4px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--bg-elev);
-  color: var(--ink-soft);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-3);
+  background: var(--control);
+  color: var(--ink-2);
   cursor: pointer;
   flex: none;
 }
 
 .icon-btn:hover {
-  color: var(--ink);
-  border-color: var(--line-strong);
+  color: var(--ink-1);
+  border-color: var(--line-3);
+  background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
 }
 
 .icon-btn svg {
@@ -485,10 +629,10 @@ mark.search-hit {
   margin-left: 6px;
   padding: 0 7px 0 11px;
   border: 1px solid var(--line-input);
-  border-radius: 9px;
-  background: var(--bg-elev);
+  border-radius: var(--r-3);
+  background: var(--control);
   color: var(--muted);
-  font: 0.88rem var(--font);
+  font: var(--fs-n2) var(--font);
   cursor: pointer;
   flex: none;
 }
@@ -634,19 +778,26 @@ mark.search-hit {
 
 /* ── Buttons ── */
 
+/* One button, three looks: primary (the accent, one per view), secondary
+   (a card's surface and edge) and the small one inside drawings and code.
+   Heights sit on the 4px grid: 44, 36 and 28. */
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 11px 18px;
-  border-radius: 10px;
-  font-weight: 650;
-  font-size: 0.98rem;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  padding: 0 var(--sp-5);
+  border-radius: var(--r-3);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-n1);
+  letter-spacing: -0.005em;
   text-decoration: none;
   border: 1px solid transparent;
   cursor: pointer;
   line-height: 1.2;
   font-family: var(--font);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .btn svg {
@@ -658,6 +809,7 @@ mark.search-hit {
 .btn-primary {
   background: var(--accent);
   color: var(--on-accent);
+  box-shadow: var(--glow);
 }
 
 .btn-primary:hover {
@@ -666,29 +818,32 @@ mark.search-hit {
 }
 
 .btn-ghost {
-  background: var(--bg-elev);
-  color: var(--ink);
-  border-color: var(--line-strong);
+  background: var(--control);
+  color: var(--ink-1);
+  border-color: var(--line-2);
 }
 
 .btn-ghost:hover {
-  color: var(--ink);
-  border-color: var(--ink-soft);
+  color: var(--ink-1);
+  background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+  border-color: var(--line-3);
 }
 
 .mini-btn {
-  border: 1px solid var(--line-strong);
-  background: var(--bg-elev);
-  color: var(--ink-soft);
-  font: 600 0.8rem var(--font);
-  padding: 5px 10px;
-  border-radius: 7px;
+  min-height: 28px;
+  border: 1px solid var(--line-2);
+  background: var(--control);
+  color: var(--ink-1);
+  font: var(--fw-semibold) var(--fs-n2) var(--font);
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-2);
   cursor: pointer;
 }
 
 .mini-btn:hover {
-  color: var(--ink);
-  border-color: var(--ink-soft);
+  color: var(--ink-1);
+  border-color: var(--line-3);
+  background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
 }
 
 /* ── Search sheet ── */
@@ -705,10 +860,10 @@ mark.search-hit {
   max-height: calc(100dvh - 61px);
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 16px 0 22px;
-  background: var(--bg-elev);
-  border-bottom: 1px solid var(--line-strong);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+  padding: var(--sp-4) 0 var(--sp-6);
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--line-2);
+  box-shadow: var(--shadow-3);
 }
 
 .search-sheet[hidden],
@@ -744,8 +899,8 @@ mark.search-hit {
 .search-sheet .sheet-search input {
   height: 48px;
   padding: 0 70px 0 42px;
-  font-size: 1rem;
-  border-radius: 11px;
+  font-size: var(--fs-n1);
+  border-radius: var(--r-4);
   background: var(--bg);
 }
 
@@ -756,10 +911,10 @@ mark.search-hit {
   height: 32px;
   padding: 0 10px;
   border: 1px solid var(--line-strong);
-  border-radius: 7px;
-  background: var(--bg-elev);
+  border-radius: var(--r-2);
+  background: var(--control);
   color: var(--muted);
-  font: 600 0.78rem var(--font);
+  font: var(--fw-semibold) var(--fs-n2) var(--font);
   cursor: pointer;
 }
 
@@ -821,9 +976,9 @@ mark.search-hit {
 .sheet-label {
   margin: 0 0 8px;
   color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tr-caps);
   text-transform: uppercase;
 }
 
@@ -851,7 +1006,7 @@ mark.search-hit {
   border-left-color: var(--accent);
   background: var(--accent-soft);
   color: var(--ink);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .sheet-links {
@@ -865,7 +1020,7 @@ mark.search-hit {
   height: 100%;
   padding: 10px 13px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-3);
   background: var(--bg);
   color: var(--ink);
   text-decoration: none;
@@ -877,14 +1032,14 @@ mark.search-hit {
 
 .sheet-links b {
   display: block;
-  font-size: 0.95rem;
+  font-size: var(--fs-n1);
 }
 
 .sheet-links small {
   display: block;
   margin-top: 1px;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: var(--fs-n2);
 }
 
 .sheet-links .sheet-last {
@@ -919,7 +1074,7 @@ mark.search-hit {
     -webkit-backdrop-filter: saturate(1.4) blur(10px);
     backdrop-filter: saturate(1.4) blur(10px);
     color: var(--ink-soft);
-    font: 600 0.86rem var(--font);
+    font: var(--fw-semibold) var(--fs-n2) var(--font);
     text-align: left;
     cursor: pointer;
     transform: translateY(-100%);
@@ -1068,59 +1223,134 @@ label,
 
 /* ── Hero ── */
 
+/* The statement spans the column; under it the words take the left and the
+   drawing the right, at the width at which every gene of the hero is named
+   (542 px; 563 at 1280). A faint wash of the accent sits behind the drawing. */
 .hero {
-  padding: 60px 0 44px;
+  position: relative;
+  padding: var(--sp-11) 0 var(--sp-12);
+  overflow: clip;
 }
 
-/* The drawing keeps the width at which every gene of the hero is named
-   (542 px of the 1,072 at 1280); the headline takes the rest. */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(42% 60% at 78% 62%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
+    radial-gradient(30% 40% at 8% 0%, color-mix(in srgb, var(--brand-slate) 6%, transparent), transparent 70%);
+  pointer-events: none;
+}
+
+:root[data-theme="light"] .hero::before {
+  background: radial-gradient(42% 60% at 78% 62%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%);
+}
+
 .hero .wrap {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
-  gap: 40px;
-  align-items: center;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1fr);
+  grid-template-areas:
+    "eyebrow eyebrow"
+    "title   title"
+    "lead    demo"
+    "actions demo"
+    "proof   demo"
+    "spec    demo"
+    ".       demo";
+  grid-template-rows: auto auto auto auto auto auto 1fr;
+  column-gap: var(--sp-9);
+  align-items: start;
 }
 
+.hero-text {
+  display: contents;
+}
+
+.hero .eyebrow {
+  grid-area: eyebrow;
+}
+
+.hero h1 {
+  grid-area: title;
+}
+
+.hero .lead {
+  grid-area: lead;
+}
+
+.hero .actions {
+  grid-area: actions;
+}
+
+.hero-proof {
+  grid-area: proof;
+}
+
+.hero .spec {
+  grid-area: spec;
+}
+
+.hero .demo {
+  grid-area: demo;
+  margin-top: var(--sp-2);
+}
+
+/* One column: the words, the drawing, then the spec. */
 @media (max-width: 940px) {
   .hero {
-    padding-top: 36px;
+    padding: var(--sp-9) 0 var(--sp-10);
   }
 
   .hero .wrap {
     grid-template-columns: minmax(0, 1fr);
-    gap: 32px;
+    grid-template-areas: "eyebrow" "title" "lead" "actions" "proof" "demo" "spec";
+    grid-template-rows: none;
+  }
+
+  .hero .demo {
+    margin-top: var(--sp-8);
   }
 }
 
+/* The kicker of the page: the same caps label as a section's, with the
+   brand's dot. */
 .eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  font-weight: 650;
-  color: var(--muted);
-  margin-bottom: 18px;
+  gap: var(--sp-2);
+  justify-self: start;
+  margin-bottom: var(--sp-5);
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tr-caps);
+  text-transform: uppercase;
+  color: var(--accent);
 }
 
 .eyebrow .dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand-aqua), var(--brand-slate));
+  background: linear-gradient(135deg, var(--brand-aqua), var(--brand-teal));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
   flex: none;
 }
 
-/* One sentence per line: the second, in the gradient, starts its own. */
+/* One sentence per line: the second, in the gradient, starts its own. The
+   gradient belongs to this line alone. */
 .hero h1 {
-  font-size: clamp(2.2rem, 4vw, 3.2rem);
-  font-weight: 800;
-  letter-spacing: -0.035em;
-  line-height: 1.04;
+  font-size: var(--fs-hero);
+  font-weight: var(--fw-display);
+  letter-spacing: -0.038em;
+  line-height: 1.02;
   text-wrap: balance;
+  margin-bottom: var(--sp-7);
 }
 
 .hero h1 .grad {
   display: block;
+  padding-bottom: 0.06em;
 }
 
 .grad {
@@ -1131,108 +1361,107 @@ label,
 }
 
 .lead {
-  font-size: 1.14rem;
-  color: var(--ink-soft);
-  margin-top: 20px;
+  font-size: var(--fs-1);
+  line-height: 1.55;
+  color: var(--ink-2);
   max-width: 34em;
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 28px;
+  gap: var(--sp-3);
+  margin-top: var(--sp-7);
 }
 
 /* The case against Bakta alone, in the numbers of a real run. */
 .hero-proof {
-  margin-top: 22px;
-  font-size: 0.92rem;
-  color: var(--muted);
+  margin-top: var(--sp-7);
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--line-1);
+  font-size: var(--fs-n1);
+  line-height: var(--lh-body);
+  color: var(--ink-3);
   max-width: 34em;
 }
 
 .hero-proof b {
-  color: var(--ink);
-  font-weight: 700;
+  color: var(--ink-1);
+  font-weight: var(--fw-bold);
   font-variant-numeric: tabular-nums;
 }
 
 .hero-proof a {
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   white-space: nowrap;
 }
 
 /* What goes in and what comes out, as a spec rather than a sentence. */
 .spec {
   display: grid;
-  gap: 4px;
-  margin: 18px 0 0;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-  font-size: 0.88rem;
+  gap: var(--sp-2);
+  margin: var(--sp-5) 0 0;
+  font-size: var(--fs-n1);
+  line-height: var(--lh-ui);
   max-width: 34em;
 }
 
 .spec div {
   display: grid;
-  grid-template-columns: 3.4em minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 3.6rem minmax(0, 1fr);
+  gap: var(--sp-3);
   align-items: baseline;
 }
 
 .spec dt {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tr-caps);
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink-3);
 }
 
 .spec dd {
   margin: 0;
-  color: var(--ink-soft);
+  color: var(--ink-2);
 }
 
 /* On a phone the drawing comes into the first screen: a shorter lead, no
    second GitHub button (the header has one), and the spec after the
    drawing rather than before it. */
 @media (max-width: 600px) {
-  .hero .wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
+  .hero {
+    padding: var(--sp-7) 0 var(--sp-9);
+  }
+
+  .hero h1 {
+    margin-bottom: var(--sp-4);
   }
 
   .eyebrow {
-    align-self: start;
+    margin-bottom: var(--sp-4);
+    letter-spacing: 0.06em;
   }
 
   .hero .actions {
-    margin-top: 24px;
+    margin-top: var(--sp-5);
   }
 
   .hero-proof {
-    margin-top: 18px;
-  }
-
-  .hero-text {
-    display: contents;
+    margin-top: var(--sp-5);
+    padding-top: var(--sp-4);
   }
 
   .hero .demo {
-    order: 1;
-    margin-top: 28px;
+    margin-top: var(--sp-6);
   }
 
   .hero .spec {
-    order: 2;
-    margin-top: 18px;
+    margin-top: var(--sp-6);
   }
 
   .lead {
-    font-size: 17px;
+    font-size: var(--fs-0);
   }
 
   .hero .btn-gh {
@@ -1258,9 +1487,9 @@ label,
 }
 
 .trk .row-label {
-  fill: var(--muted);
+  fill: var(--ink-2);
   font-size: 11px;
-  font-weight: 650;
+  font-weight: var(--fw-semibold);
   letter-spacing: 0.02em;
 }
 
@@ -1322,7 +1551,7 @@ label,
 
 .trk .gname {
   font-size: 11.5px;
-  font-weight: 650;
+  font-weight: var(--fw-semibold);
   fill: var(--ink);
 }
 
@@ -1333,7 +1562,7 @@ label,
 .trk .gname-above {
   font-size: 10.5px;
   paint-order: stroke;
-  stroke: var(--bg-elev);
+  stroke: var(--halo);
   stroke-width: 3px;
   stroke-linejoin: round;
 }
@@ -1372,9 +1601,9 @@ label,
 .trk .diff-label {
   fill: var(--warn);
   font-size: 10.5px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   paint-order: stroke;
-  stroke: var(--bg-elev);
+  stroke: var(--halo);
   stroke-width: 3px;
   stroke-linejoin: round;
 }
@@ -1526,14 +1755,14 @@ label,
   position: absolute;
   z-index: 5;
   max-width: 290px;
-  padding: 9px 11px;
-  border-radius: 9px;
-  background: var(--bg);
-  border: 1px solid var(--line-strong);
-  box-shadow: var(--shadow);
-  font-size: 0.82rem;
-  line-height: 1.4;
-  color: var(--ink-soft);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-3);
+  background: var(--overlay);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--shadow-3);
+  font-size: var(--fs-n2);
+  line-height: var(--lh-ui);
+  color: var(--ink-2);
 }
 
 .demo-tip::after {
@@ -1544,8 +1773,8 @@ label,
   width: 10px;
   height: 10px;
   margin-left: -5px;
-  background: var(--bg);
-  border: solid var(--line-strong);
+  background: var(--overlay);
+  border: solid var(--line-2);
   border-width: 0 1px 1px 0;
   transform: rotate(45deg);
 }
@@ -1561,7 +1790,7 @@ label,
 }
 
 .demo-tip code {
-  font-size: 0.78rem;
+  font-size: var(--fs-n2);
 }
 
 .fig-readout {
@@ -1577,9 +1806,9 @@ label,
   min-height: calc(3 * 1.4em + 14px);
   margin: 8px 0 0;
   padding: 7px 10px;
-  border-radius: 8px;
+  border-radius: var(--r-3);
   background: var(--bg-subtle);
-  font-size: 0.82rem;
+  font-size: var(--fs-n2);
   line-height: 1.4;
   color: var(--ink-soft);
 }
@@ -1609,12 +1838,14 @@ label,
 
 /* ── The animated stretch of genome in the hero ── */
 
+/* A plate: the surface every drawing stands on (level 2: its own fill, an
+   edge and a shadow, 16px corners, 24px in). */
 .demo {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 18px 18px 14px;
-  box-shadow: var(--shadow);
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-5);
+  padding: var(--sp-5) var(--sp-6) var(--sp-5);
+  box-shadow: var(--shadow-2);
   margin: 0;
 }
 
@@ -1622,15 +1853,22 @@ label,
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 8px;
-  font-size: 0.86rem;
-  color: var(--muted);
+  gap: var(--sp-3);
+  margin: 0 0 var(--sp-3);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--line-1);
+  font-size: var(--fs-n2);
+  line-height: var(--lh-ui);
+  color: var(--ink-3);
+}
+
+.demo-head > span:first-child {
+  text-wrap: pretty;
 }
 
 .demo-head b {
-  color: var(--ink);
-  font-weight: 650;
+  color: var(--ink-1);
+  font-weight: var(--fw-semibold);
 }
 
 .demo-ctrl {
@@ -1643,6 +1881,7 @@ label,
 .demo-ctrl .mini-btn {
   display: inline-grid;
   justify-items: center;
+  align-content: center;
   min-width: 4.4em;
 }
 
@@ -1671,7 +1910,7 @@ label,
   gap: 2px 12px;
   min-height: 1.6em;
   color: var(--ink);
-  font-weight: 650;
+  font-weight: var(--fw-semibold);
 }
 
 .hero-segs {
@@ -1686,7 +1925,7 @@ label,
   height: 24px;
   padding: 0;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--r-1);
   background: none;
   cursor: pointer;
 }
@@ -1748,7 +1987,7 @@ label,
 @media (max-width: 600px) {
   .demo-step {
     min-height: calc(24px + 2px + 1.55em);
-    font-size: 0.95rem;
+    font-size: var(--fs-n1);
   }
 }
 
@@ -1759,10 +1998,11 @@ label,
 .legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 16px;
-  margin-top: 10px;
-  font-size: 0.8rem;
-  color: var(--muted);
+  gap: var(--sp-2) var(--sp-5);
+  margin-top: var(--sp-3);
+  font-size: var(--fs-n2);
+  line-height: var(--lh-ui);
+  color: var(--ink-3);
 }
 
 .legend span {
@@ -1867,27 +2107,29 @@ label,
   clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
+/* The counts: figures set large, each over what it counts. */
 .tally {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-  font-size: 0.82rem;
-  color: var(--muted);
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--line-1);
+  font-size: var(--fs-n2);
+  line-height: var(--lh-ui);
+  color: var(--ink-3);
 }
 
 .tally > div {
-  margin: -4px -6px;
-  padding: 4px 6px;
-  border-radius: 8px;
+  margin: -6px -8px;
+  padding: 6px 8px;
+  border-radius: var(--r-3);
   transition: background 0.2s ease;
 }
 
 .tally > .lit {
-  background: var(--bg-subtle);
-  color: var(--ink-soft);
+  background: var(--surface-3);
+  color: var(--ink-2);
 }
 
 .tally > [role="button"] {
@@ -1901,9 +2143,12 @@ label,
 
 .tally b {
   display: block;
-  font-size: 1.35rem;
+  margin-bottom: var(--sp-1);
+  font-size: var(--fs-4);
+  font-weight: var(--fw-display);
+  letter-spacing: -0.02em;
   line-height: 1.1;
-  color: var(--ink);
+  color: var(--ink-1);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1949,12 +2194,19 @@ label,
   transition-delay: 0s;
 }
 
-/* The rows still to come show their names faintly. */
-[data-phase="1"] .fr-ref,
-[data-phase="1"] .fr-amap,
-[data-phase="2"] .fr-amap,
-[data-phase="3"] .fr-amap {
-  opacity: 0.25;
+/* The rows still to come show their names a step quieter (still 4.5:1 and
+   more) and their lines faintly, so the reader sees where they will come. */
+[data-phase="1"] :is(.fr-ref, .fr-amap) .row-label,
+[data-phase="2"] .fr-amap .row-label,
+[data-phase="3"] .fr-amap .row-label {
+  fill: var(--ink-3);
+  font-weight: var(--fw-medium);
+}
+
+[data-phase="1"] :is(.fr-ref, .fr-amap) .row-line,
+[data-phase="2"] .fr-amap .row-line,
+[data-phase="3"] .fr-amap .row-line {
+  opacity: 0.35;
 }
 
 [data-phase="4"] .ph-dim {
@@ -1963,14 +2215,22 @@ label,
 
 /* ── Sections ── */
 
+/* A section is a chapter: 96px above and below on a wide screen, a hairline
+   between chapters, and a head of kicker, title and lead. */
 .section {
-  padding: 72px 0;
-  border-top: 1px solid var(--line);
+  padding: var(--sp-12) 0;
+  border-top: 1px solid var(--line-1);
+}
+
+@media (max-width: 940px) {
+  .section {
+    padding: var(--sp-11) 0;
+  }
 }
 
 @media (max-width: 600px) {
   .section {
-    padding: 44px 0;
+    padding: var(--sp-10) 0;
   }
 }
 
@@ -1984,37 +2244,71 @@ label,
 }
 
 .section-head {
-  margin-bottom: 30px;
+  margin-bottom: var(--sp-8);
 }
 
 @media (max-width: 600px) {
   .section-head {
-    margin-bottom: 22px;
+    margin-bottom: var(--sp-6);
   }
 }
 
+.section-head h2 {
+  max-width: 20em;
+}
+
+/* The kicker: a caps label in the accent. On the front page each carries its
+   chapter's number, drawn (not read), and a short rule. */
 .kicker {
-  font-size: 0.8rem;
-  font-weight: 750;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tr-caps);
   color: var(--accent);
-  margin-bottom: 10px;
+  margin-bottom: var(--sp-4);
+}
+
+main {
+  counter-reset: chapter;
+}
+
+.section-head .kicker::before {
+  counter-increment: chapter;
+  content: counter(chapter, decimal-leading-zero);
+  content: counter(chapter, decimal-leading-zero) / "";
+  padding-right: calc(var(--sp-6) + var(--sp-3));
+  background: linear-gradient(var(--accent-line), var(--accent-line)) right center / var(--sp-6) 1px no-repeat;
+  font-family: var(--mono);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
 }
 
 /* Not the kicker: a paragraph of the head would otherwise outrank it and turn
    it grey and full size. */
 .section-head p:not(.kicker) {
-  color: var(--muted);
-  font-size: 1.04rem;
-  margin-top: 10px;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
+  line-height: 1.55;
+  margin-top: var(--sp-4);
   max-width: var(--measure);
+}
+
+@media (max-width: 600px) {
+  .section-head p:not(.kicker) {
+    font-size: var(--fs-0);
+    line-height: var(--lh-body);
+  }
 }
 
 .cols-2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: var(--sp-5);
 }
 
 @media (max-width: 820px) {
@@ -2023,27 +2317,28 @@ label,
   }
 }
 
+/* A card: level 1, an edge on the page's own dark, 12px corners, 24px in. */
 .card {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 22px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
+  padding: var(--sp-6);
 }
 
 .card h3 {
-  margin-bottom: 8px;
+  margin-bottom: var(--sp-2);
 }
 
 .card p {
-  color: var(--ink-soft);
-  font-size: 0.97rem;
+  color: var(--ink-2);
+  font-size: var(--fs-n1);
 }
 
 .note {
-  font-size: 0.9rem;
-  line-height: 1.5;
-  color: var(--muted);
-  margin-top: 12px;
+  font-size: var(--fs-n1);
+  line-height: 1.55;
+  color: var(--ink-3);
+  margin-top: var(--sp-3);
 }
 
 /* Words for the pointer the reader has: "point at" with a mouse, "tap" on a
@@ -2073,8 +2368,8 @@ label,
 }
 
 .steps {
-  --step-num: 44px;
-  --step-gap: 18px;
+  --step-num: 40px;
+  --step-gap: 20px;
 }
 
 .steps > li {
@@ -2082,7 +2377,7 @@ label,
   display: grid;
   grid-template-columns: var(--step-num) minmax(0, 1fr);
   gap: 0 var(--step-gap);
-  padding-bottom: 40px;
+  padding-bottom: var(--sp-10);
 }
 
 .steps > li:last-child {
@@ -2093,47 +2388,47 @@ label,
 .steps > li::before {
   content: "";
   position: absolute;
-  left: 21px;
-  top: 46px;
-  bottom: 6px;
+  left: calc(var(--step-num) / 2 - 1px);
+  top: calc(var(--step-num) + var(--sp-2));
+  bottom: var(--sp-2);
   width: 2px;
-  background: linear-gradient(var(--line-strong), var(--line));
+  border-radius: 1px;
+  background: linear-gradient(var(--accent-line), var(--line-1));
 }
 
 .steps > li:last-child::before {
   display: none;
 }
 
+/* A step's number: the accent, flat, in a ring of the page's colour. */
 .step-num {
-  width: 44px;
-  height: 44px;
+  width: var(--step-num);
+  height: var(--step-num);
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-weight: 800;
-  font-size: 1.05rem;
+  font-weight: var(--fw-display);
+  font-size: var(--fs-n1);
+  font-variant-numeric: tabular-nums;
   color: var(--on-accent);
-  background: linear-gradient(135deg, var(--brand-aqua), var(--brand-teal));
-}
-
-:root[data-theme="light"] .step-num {
-  background: linear-gradient(135deg, #0b7a68, #05594c);
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--surface-0), var(--glow);
 }
 
 .step-body h3 {
-  font-size: 1.25rem;
-  margin: 8px 0 6px;
+  font-size: var(--fs-2);
+  margin: 6px 0 var(--sp-3);
 }
 
 .step-body > p {
-  color: var(--ink-soft);
-  margin-bottom: 14px;
+  color: var(--ink-2);
+  margin-bottom: var(--sp-4);
   max-width: calc(var(--measure, 42rem) - var(--step-num) - var(--step-gap));
 }
 
 .step-body > .code + .code,
 .step-body > .code + .out {
-  margin-top: 10px;
+  margin-top: var(--sp-3);
 }
 
 .step-body .cols-2 {
@@ -2142,20 +2437,20 @@ label,
 
 /* What the end of a good run looks like, said before it is shown. */
 .step-body > .out-head {
-  margin: 16px 0 0;
-  color: var(--muted);
-  font-size: 0.9rem;
+  margin: var(--sp-5) 0 0;
+  color: var(--ink-3);
+  font-size: var(--fs-n1);
 }
 
 .step-body > .out-head + .out {
-  margin-top: 8px;
+  margin-top: var(--sp-2);
 }
 
 /* The sample sheet, and what its columns take. */
 .sheet {
   display: grid;
   grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
-  gap: 10px 20px;
+  gap: var(--sp-3) var(--sp-6);
   align-items: center;
 }
 
@@ -2179,28 +2474,26 @@ label,
 
 @media (max-width: 600px) {
   .steps {
-    --step-num: 34px;
+    --step-num: 32px;
     --step-gap: 12px;
   }
 
   .steps > li {
-    padding-bottom: 30px;
+    padding-bottom: var(--sp-9);
   }
 
   .step-num {
-    width: 34px;
-    height: 34px;
-    font-size: 0.95rem;
+    font-size: var(--fs-n2);
   }
 
-  .steps > li::before {
-    left: 16px;
-    top: 36px;
+  .step-body h3 {
+    font-size: var(--fs-1);
+    margin-top: 3px;
   }
 
   /* What a run prints, smaller: it is there to be recognised, not read. */
   .step-body .out {
-    font-size: 0.74rem;
+    font-size: var(--fs-n3);
     line-height: 1.45;
     padding: 10px 12px;
   }
@@ -2212,7 +2505,7 @@ label,
   position: relative;
   background: var(--code-bg);
   color: var(--code-ink);
-  border-radius: var(--radius-sm);
+  border-radius: var(--r-4);
   border: 1px solid var(--code-border);
   /* The colour a block's sideways scroll shadow covers with, and the shadow. */
   --cover: var(--code-bg);
@@ -2225,13 +2518,13 @@ label,
 
 .code pre {
   margin: 0;
-  padding: 16px 64px 16px 18px;
+  padding: var(--sp-4) var(--sp-10) var(--sp-4) var(--sp-5);
   overflow-x: auto;
-  line-height: 1.6;
-  font-size: 0.86rem;
+  line-height: 1.7;
+  font-size: var(--fs-n2);
   tab-size: 8;
   /* The block's own corners, so its background does not square them off. */
-  border-radius: calc(var(--radius-sm) - 1px);
+  border-radius: calc(var(--r-4) - 1px);
   /* A block wider than its box shades the edge it continues past. The covers
      scroll with the text and the shadows stay put, so a shadow shows only
      where there is more to see. */
@@ -2346,7 +2639,7 @@ code .brk,
   top: 50%;
   transform: translateY(-50%);
   padding: 0 0.35em;
-  border-radius: 4px;
+  border-radius: var(--r-1);
   font-size: 0.85em;
   line-height: 1.35;
   color: var(--code-value);
@@ -2360,14 +2653,15 @@ code .brk,
 
 .copy {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: var(--sp-2);
+  right: var(--sp-2);
   border: 1px solid var(--copy-border);
   background: var(--copy-bg);
   color: var(--code-ink);
-  font: 600 0.78rem var(--font);
-  padding: 6px 10px;
-  border-radius: 7px;
+  font: var(--fw-semibold) var(--fs-n2) var(--font);
+  min-height: 28px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-2);
   cursor: pointer;
 }
 
@@ -2385,29 +2679,28 @@ code .brk,
 .code-title {
   display: flex;
   align-items: center;
-  min-height: 36px;
-  padding: 0 128px 0 18px;
+  min-height: 40px;
+  padding: 0 128px 0 var(--sp-5);
   border-bottom: 1px solid var(--code-border);
-  font: 600 0.76rem var(--font);
+  font: var(--fw-semibold) var(--fs-n2) var(--font);
   letter-spacing: 0.02em;
   color: var(--code-muted);
 }
 
 .code-title.fname {
-  font: 600 0.8rem var(--mono);
+  font: var(--fw-semibold) var(--fs-n2) var(--mono);
   letter-spacing: 0;
   color: var(--code-ink);
 }
 
 .code-title + pre {
-  padding-top: 12px;
-  padding-right: 18px;
+  padding-top: var(--sp-3);
+  padding-right: var(--sp-5);
 }
 
 .code-title ~ .copy {
-  top: 4px;
+  top: 5px;
   right: 6px;
-  padding: 4px 10px;
 }
 
 /* A tab-separated file says what Copy keeps. */
@@ -2417,12 +2710,12 @@ code .brk,
 
 /* What a command prints: the front page's dashed frame, and nothing to copy. */
 .code.out {
-  --cover: var(--bg-subtle);
+  --cover: var(--surface-1);
   margin-top: 0;
   padding: 0;
-  background: var(--bg-subtle);
-  border: 1px dashed var(--line-strong);
-  color: var(--ink-soft);
+  background: var(--surface-1);
+  border: 1px dashed var(--line-2);
+  color: var(--ink-2);
   white-space: normal;
 }
 
@@ -2431,7 +2724,7 @@ code .brk,
 }
 
 .code.out .code-title {
-  border-bottom: 1px dashed var(--line-strong);
+  border-bottom: 1px dashed var(--line-2);
   color: var(--muted);
 }
 
@@ -2471,23 +2764,23 @@ kbd {
   display: inline-block;
   min-width: 1.6em;
   padding: 0.05em 0.45em;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line-2);
   border-bottom-width: 2px;
-  border-radius: 6px;
-  background: var(--bg-subtle);
-  font: 600 0.8em var(--mono);
+  border-radius: var(--r-1);
+  background: var(--surface-3);
+  font: var(--fw-semibold) 0.8em var(--mono);
   text-align: center;
   color: var(--ink);
 }
 
 .out {
-  margin-top: 10px;
-  background: var(--bg-subtle);
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius-sm);
-  padding: 12px 16px;
+  margin-top: var(--sp-3);
+  background: var(--surface-1);
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-4);
+  padding: var(--sp-4) var(--sp-5);
   font-family: var(--mono);
-  font-size: 0.84rem;
+  font-size: var(--fs-n2);
   line-height: 1.55;
   color: var(--ink-soft);
   white-space: pre;
@@ -2496,7 +2789,7 @@ kbd {
 
 .out .ok {
   color: var(--ok);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
 }
 
 .out .cm {
@@ -2507,29 +2800,31 @@ kbd {
 
 .tabs {
   display: flex;
-  gap: 4px;
-  margin-bottom: 10px;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-3);
   flex-wrap: wrap;
 }
 
 .tab {
-  border: 1px solid var(--line);
-  background: var(--bg-elev);
+  border: 1px solid var(--line-2);
+  background: var(--control);
   color: var(--ink-soft);
-  font: 600 0.86rem var(--font);
-  padding: 6px 12px;
-  border-radius: 8px;
+  font: var(--fw-semibold) var(--fs-n2) var(--font);
+  min-height: 32px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-3);
   cursor: pointer;
 }
 
 .tab:hover {
   color: var(--ink);
-  border-color: var(--line-strong);
+  border-color: var(--line-3);
+  background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
 }
 
 .tab[aria-selected="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: var(--accent-wash);
+  border-color: var(--accent-line);
   color: var(--accent);
 }
 
@@ -2564,53 +2859,66 @@ html:not(.js) .builder {
 }
 
 .q {
-  margin-bottom: 18px;
+  margin-bottom: var(--sp-5);
 }
 
 .q-title {
-  font-weight: 700;
-  margin-bottom: 8px;
-  font-size: 0.95rem;
+  font-weight: var(--fw-semibold);
+  margin-bottom: var(--sp-2);
+  font-size: var(--fs-n1);
+  color: var(--ink-1);
 }
 
 .seg {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .seg button {
-  border: 1px solid var(--line-strong);
-  background: var(--bg-elev);
-  color: var(--ink);
-  font: 600 0.88rem var(--font);
-  padding: 7px 12px;
-  border-radius: 9px;
+  min-height: 36px;
+  border: 1px solid var(--line-2);
+  background: var(--control);
+  color: var(--ink-1);
+  font: var(--fw-semibold) var(--fs-n2) var(--font);
+  padding: 0 var(--sp-4);
+  border-radius: var(--r-3);
   cursor: pointer;
 }
 
 /* A one-of-many choice (role=radio) or a switch between drawings. */
 .seg button:is([aria-pressed="true"], [aria-checked="true"]) {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+  background: var(--accent-wash);
+  border-color: var(--accent-line);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+
+.seg button:not([aria-pressed="true"], [aria-checked="true"]):hover {
+  border-color: var(--line-3);
+  background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
 }
 
 .opt {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 2px 10px;
+  gap: 2px var(--sp-3);
   align-items: start;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--bg-elev);
-  margin-bottom: 8px;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-3);
+  background: var(--control);
+  margin-bottom: var(--sp-2);
   cursor: pointer;
 }
 
 .opt:hover {
-  border-color: var(--line-strong);
+  border-color: var(--line-3);
+}
+
+.opt:has(input:checked) {
+  border-color: var(--accent-line);
+  background: var(--accent-wash);
 }
 
 .opt input[type="checkbox"] {
@@ -2621,15 +2929,15 @@ html:not(.js) .builder {
 }
 
 .opt b {
-  font-weight: 650;
-  font-size: 0.93rem;
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-n1);
 }
 
 .opt small {
   grid-column: 2;
-  color: var(--muted);
-  font-size: 0.84rem;
-  line-height: 1.4;
+  color: var(--ink-3);
+  font-size: var(--fs-n2);
+  line-height: var(--lh-ui);
 }
 
 /* An option that does not apply to the choices above, such as a laptop's
@@ -2645,13 +2953,13 @@ html:not(.js) .builder {
 
 /* The two commands: the check, then the run. */
 .cmd-head {
-  margin: 0 0 8px;
-  font-size: 0.93rem;
-  font-weight: 700;
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-n1);
+  font-weight: var(--fw-semibold);
 }
 
 .cmd-head ~ .cmd-head {
-  margin-top: 20px;
+  margin-top: var(--sp-6);
 }
 
 .cmd-head code {
@@ -2679,7 +2987,7 @@ html:not(.js) .builder {
   display: grid;
   grid-template-columns: fit-content(15em) minmax(0, 1fr);
   gap: 6px 14px;
-  font-size: 0.87rem;
+  font-size: var(--fs-n2);
 }
 
 .explain li {
@@ -2719,7 +3027,7 @@ html:not(.js) .builder {
   }
 
   .opt small {
-    font-size: 0.8rem;
+    font-size: var(--fs-n2);
   }
 
   .explain {
@@ -2736,7 +3044,7 @@ html:not(.js) .builder {
 .cases {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  gap: var(--sp-5);
 }
 
 @media (max-width: 860px) {
@@ -2746,13 +3054,14 @@ html:not(.js) .builder {
 }
 
 .case {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 18px 18px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-5);
+  box-shadow: var(--shadow-2);
+  padding: var(--sp-6) var(--sp-6) var(--sp-5);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--sp-3);
   min-width: 0;
 }
 
@@ -2762,8 +3071,8 @@ html:not(.js) .builder {
 
 .case-head {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
+  align-items: center;
+  gap: var(--sp-3);
   flex-wrap: wrap;
 }
 
@@ -2771,17 +3080,19 @@ html:not(.js) .builder {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font: 750 0.74rem var(--font);
-  letter-spacing: 0.05em;
+  min-height: 22px;
+  font: var(--fw-bold) var(--fs-n3)/1 var(--font);
+  letter-spacing: var(--tr-caps);
   text-transform: uppercase;
-  padding: 3px 9px;
-  border-radius: 999px;
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-pill);
   border: 1px solid;
+  background: color-mix(in srgb, currentColor 9%, transparent);
 }
 
 .case-tag.c1 {
-  color: var(--muted);
-  border-color: var(--line-strong);
+  color: var(--ink-3);
+  border-color: var(--line-3);
 }
 
 .case-tag.c2,
@@ -2801,13 +3112,14 @@ html:not(.js) .builder {
 }
 
 .case-head h3 {
-  font-size: 1.12rem;
+  font-size: var(--fs-1);
 }
 
 .case > p,
 .case-caps > p {
-  color: var(--ink-soft);
-  font-size: 0.95rem;
+  color: var(--ink-2);
+  font-size: var(--fs-n1);
+  line-height: 1.55;
 }
 
 /* The captions a switcher chooses between share one cell, so the tallest
@@ -2827,12 +3139,12 @@ html:not(.js) .builder {
 
 .case .keeps {
   display: flex;
-  gap: 8px;
+  gap: var(--sp-2);
   align-items: baseline;
-  font-size: 0.92rem;
-  color: var(--ink-soft);
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
+  font-size: var(--fs-n1);
+  color: var(--ink-2);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line-1);
   margin-top: auto;
 }
 
@@ -2842,13 +3154,14 @@ html:not(.js) .builder {
 }
 
 .case .example {
-  font-size: 0.8rem;
+  font-size: var(--fs-n2);
   color: var(--muted);
 }
 
 .case .seg button {
-  font-size: 0.82rem;
-  padding: 5px 10px;
+  min-height: 30px;
+  font-size: var(--fs-n2);
+  padding: 0 var(--sp-3);
 }
 
 .case-fig {
@@ -2859,7 +3172,7 @@ html:not(.js) .builder {
 .cases-hint {
   display: none;
   margin: -14px 0 10px;
-  font-size: 0.85rem;
+  font-size: var(--fs-n2);
   color: var(--muted);
 }
 
@@ -2895,36 +3208,38 @@ html:not(.js) .builder {
 /* ── The metro map ── */
 
 .metro-wrap {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-5);
+  box-shadow: var(--shadow-2);
+  padding: var(--sp-5) var(--sp-5) var(--sp-4);
 }
 
 .metro-opts {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 10px;
+  gap: var(--sp-2);
   align-items: center;
-  margin-bottom: 8px;
-  font-size: 0.86rem;
-  color: var(--muted);
+  margin-bottom: var(--sp-3);
+  font-size: var(--fs-n2);
+  color: var(--ink-3);
 }
 
 .metro-opts label {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--bg);
+  min-height: 36px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-3);
+  background: var(--control);
   cursor: pointer;
   color: var(--ink-soft);
 }
 
 .metro-opts label:hover {
-  border-color: var(--line-strong);
+  border-color: var(--line-3);
 }
 
 .metro-opts input {
@@ -2933,7 +3248,7 @@ html:not(.js) .builder {
 }
 
 .metro-opts code {
-  font-size: 0.8rem;
+  font-size: var(--fs-n2);
 }
 
 /* On a narrow screen the map keeps its size and scrolls sideways, rather
@@ -2987,7 +3302,7 @@ html:not(.js) .builder {
 
 .metro-hint {
   display: none;
-  font-size: 0.8rem;
+  font-size: var(--fs-n2);
   color: var(--muted);
   margin: 0 0 4px;
 }
@@ -3049,13 +3364,13 @@ html:not(.js) .builder {
 }
 
 .metro .stn .dot {
-  fill: var(--bg-elev);
+  fill: var(--halo);
   stroke: var(--ink);
   stroke-width: 3;
 }
 
 .metro .stn .hub {
-  fill: var(--bg-elev);
+  fill: var(--halo);
   stroke: var(--ink);
   stroke-width: 3;
 }
@@ -3067,7 +3382,7 @@ html:not(.js) .builder {
 /* A halo of the card's colour, so a line that crosses a name never cuts it. */
 .metro .stn text {
   paint-order: stroke;
-  stroke: var(--bg-elev);
+  stroke: var(--halo);
   stroke-width: 4px;
   stroke-linejoin: round;
 }
@@ -3075,7 +3390,7 @@ html:not(.js) .builder {
 .metro .stn text.name {
   fill: var(--ink);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
 }
 
 .metro .stn text.proc {
@@ -3143,12 +3458,12 @@ html:not(.js) .builder {
 .metro-info {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px 24px;
-  margin-top: 10px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: var(--bg);
-  border: 1px solid var(--line);
+  gap: var(--sp-3) var(--sp-6);
+  margin-top: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--r-4);
+  background: var(--surface-0);
+  border: 1px solid var(--line-1);
   min-height: 112px;
 }
 
@@ -3159,18 +3474,18 @@ html:not(.js) .builder {
 }
 
 .metro-info h3 {
-  font-size: 1.05rem;
+  font-size: var(--fs-0);
   margin-bottom: 4px;
 }
 
 .metro-info h3 code {
-  font-size: 0.78rem;
+  font-size: var(--fs-n2);
   margin-left: 6px;
   color: var(--muted);
 }
 
 .metro-info p {
-  font-size: 0.92rem;
+  font-size: var(--fs-n1);
   color: var(--ink-soft);
 }
 
@@ -3185,12 +3500,12 @@ html:not(.js) .builder {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   gap: 4px 12px;
-  font-size: 0.86rem;
+  font-size: var(--fs-n2);
 }
 
 .metro-info dt {
   color: var(--muted);
-  font-weight: 650;
+  font-weight: var(--fw-semibold);
 }
 
 .metro-info dd {
@@ -3200,27 +3515,27 @@ html:not(.js) .builder {
 
 .metro-info .hint {
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: var(--fs-n1);
   align-self: center;
 }
 
 .metro-writes {
-  margin-top: 10px;
-  font-size: 0.86rem;
-  color: var(--muted);
+  margin-top: var(--sp-3);
+  font-size: var(--fs-n2);
+  color: var(--ink-3);
 }
 
 .metro-writes code {
-  font-size: 0.8rem;
+  font-size: var(--fs-n2);
 }
 
 .metro-lines {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 16px;
-  margin: 8px 0 2px;
-  font-size: 0.8rem;
-  color: var(--muted);
+  gap: var(--sp-2) var(--sp-5);
+  margin: var(--sp-2) 0 var(--sp-1);
+  font-size: var(--fs-n2);
+  color: var(--ink-3);
 }
 
 .metro-lines span {
@@ -3247,7 +3562,7 @@ html:not(.js) .builder {
 .files {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: var(--sp-4);
 }
 
 @media (max-width: 980px) {
@@ -3264,13 +3579,13 @@ html:not(.js) .builder {
 }
 
 .file {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 18px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
+  padding: var(--sp-5) var(--sp-6) var(--sp-5);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 /* A short stretch of the metro line of the step that writes the file: the
@@ -3279,9 +3594,10 @@ html:not(.js) .builder {
 .file .lane {
   display: block;
   flex: none;
-  width: 44px;
-  height: 6px;
-  border-radius: 3px;
+  width: 40px;
+  height: 4px;
+  margin-bottom: var(--sp-2);
+  border-radius: 2px;
   background: var(--m-main);
 }
 
@@ -3291,13 +3607,13 @@ html:not(.js) .builder {
 
 /* A path breaks where it has a <wbr>, after its folder, before anywhere else. */
 .file code {
-  font-size: 0.8rem;
+  font-size: var(--fs-n2);
   overflow-wrap: anywhere;
   background: none;
   border: none;
   padding: 0;
   color: var(--ink);
-  font-weight: 650;
+  font-weight: var(--fw-semibold);
 }
 
 .file code span {
@@ -3305,15 +3621,16 @@ html:not(.js) .builder {
 }
 
 .file p {
-  font-size: 0.9rem;
-  color: var(--muted);
-  line-height: 1.45;
+  font-size: var(--fs-n1);
+  color: var(--ink-2);
+  line-height: 1.55;
 }
 
 .file .when {
   margin-top: auto;
-  font-size: 0.78rem;
-  color: var(--muted);
+  padding-top: var(--sp-2);
+  font-size: var(--fs-n2);
+  color: var(--ink-3);
 }
 
 /* On a phone a card is a row: the line down its side, then the file, what
@@ -3321,15 +3638,16 @@ html:not(.js) .builder {
 @media (max-width: 520px) {
   .file {
     display: grid;
-    grid-template-columns: 6px minmax(0, 1fr);
-    gap: 2px 12px;
-    padding: 10px 12px;
+    grid-template-columns: 4px minmax(0, 1fr);
+    gap: 2px var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
   }
 
   .file .lane {
     grid-row: 1 / span 3;
-    width: 6px;
+    width: 4px;
     height: auto;
+    margin: 0;
   }
 
   .file.full-run .lane {
@@ -3337,7 +3655,7 @@ html:not(.js) .builder {
   }
 
   .file p {
-    font-size: 0.84rem;
+    font-size: var(--fs-n2);
     line-height: 1.4;
   }
 
@@ -3349,24 +3667,25 @@ html:not(.js) .builder {
 
 /* Real lines of a real run, with the marks AMAP writes picked out. */
 .excerpt {
-  margin-top: 22px;
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px;
+  margin-top: var(--sp-6);
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-5);
+  box-shadow: var(--shadow-2);
+  padding: var(--sp-5);
 }
 
 .excerpt-head {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 8px 16px;
+  gap: var(--sp-2) var(--sp-4);
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: var(--sp-3);
 }
 
 .excerpt-head p {
-  font-size: 0.86rem;
+  font-size: var(--fs-n2);
   color: var(--muted);
 }
 
@@ -3378,12 +3697,12 @@ html:not(.js) .builder {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   margin: 0;
-  padding: 14px 16px;
-  border-radius: 10px;
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--r-4);
   background: var(--code-bg);
   border: 1px solid var(--code-border);
   color: var(--code-ink);
-  font: 0.8rem/1.6 var(--mono);
+  font: var(--fs-n2)/1.6 var(--mono);
   overflow-x: auto;
 }
 
@@ -3434,15 +3753,15 @@ html:not(.js) .builder {
 .excerpt .key {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 18px;
-  margin-top: 10px;
-  font-size: 0.82rem;
-  color: var(--muted);
+  gap: var(--sp-2) var(--sp-5);
+  margin-top: var(--sp-3);
+  font-size: var(--fs-n2);
+  color: var(--ink-3);
 }
 
 .excerpt .key mark {
   font-family: var(--mono);
-  font-size: 0.78rem;
+  font-size: var(--fs-n2);
   color: var(--ink);
 }
 
@@ -3487,14 +3806,14 @@ html:not(.js) .builder {
 }
 
 .gloss {
-  font-size: 0.8rem;
+  font-size: var(--fs-n2);
   color: var(--muted);
 }
 
 .gloss-head {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tr-caps);
   text-transform: uppercase;
   margin-bottom: 4px;
 }
@@ -3562,21 +3881,41 @@ html:not(.js) .builder {
 /* ── Report preview ── */
 
 .report-frame {
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-5);
   overflow: hidden;
   box-shadow: var(--shadow);
-  background: var(--bg-elev);
+  background: var(--surface-2);
 }
 
 .report-bar {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--line);
-  font-size: 0.82rem;
-  color: var(--muted);
+  gap: var(--sp-2);
+  min-height: 44px;
+  padding: 0 var(--sp-4) 0 var(--sp-5);
+  border-bottom: 1px solid var(--line-1);
+  font-size: var(--fs-n2);
+  color: var(--ink-3);
+}
+
+/* On the narrowest phones the window's dots go and the link takes a line of
+   its own when the name and it do not fit side by side. */
+@media (max-width: 420px) {
+  .report-bar {
+    flex-wrap: wrap;
+    row-gap: 2px;
+    padding: var(--sp-2) var(--sp-3);
+  }
+
+  .report-bar i {
+    display: none;
+  }
+
+  .report-bar > span {
+    margin-left: 0;
+  }
 }
 
 .report-bar i {
@@ -3594,8 +3933,8 @@ html:not(.js) .builder {
 
 .report-bar a {
   margin-left: auto;
-  font-weight: 600;
-  font-size: 0.85rem;
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-n2);
   white-space: nowrap;
 }
 
@@ -3605,10 +3944,10 @@ html:not(.js) .builder {
   align-items: center;
   padding: 2px 8px;
   border: 1px solid color-mix(in srgb, var(--note) 60%, transparent);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: color-mix(in srgb, var(--note) 14%, transparent);
   color: var(--ink-soft);
-  font: 650 0.72rem/1.35 var(--font);
+  font: var(--fw-semibold) var(--fs-n3)/1.35 var(--font);
   font-style: normal;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -3679,8 +4018,8 @@ html:not(.js) .builder {
   right: 0;
   bottom: 0;
   height: 104px;
-  border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg-elev) 90%, transparent);
+  border-top: 1px solid var(--line-1);
+  background: color-mix(in srgb, var(--surface-2) 90%, transparent);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
@@ -3689,9 +4028,12 @@ html:not(.js) .builder {
   position: relative;
   background: var(--accent);
   color: var(--on-accent);
-  padding: 11px 18px;
-  border-radius: 10px;
-  font-weight: 650;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--sp-5);
+  border-radius: var(--r-3);
+  font-weight: var(--fw-semibold);
   box-shadow: var(--shadow);
 }
 
@@ -3716,10 +4058,10 @@ html:not(.js) .builder {
   display: none;
   padding: 8px 16px;
   border: 1px solid var(--line-strong);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--bg-elev);
   color: var(--ink);
-  font: 650 0.88rem var(--font);
+  font: var(--fw-semibold) var(--fs-n2) var(--font);
   box-shadow: var(--shadow);
   cursor: pointer;
 }
@@ -3759,10 +4101,18 @@ html:not(.js) .builder {
 
 /* ── Where the project lives ── */
 
+/* The last word before the footer: the accent's wash in a corner, the slate
+   of the logo in the other. */
 .cta {
   background:
-    radial-gradient(60% 120% at 0% 0%, color-mix(in srgb, var(--brand-teal) 20%, transparent), transparent 70%),
-    radial-gradient(60% 120% at 100% 100%, color-mix(in srgb, var(--brand-slate) 18%, transparent), transparent 70%);
+    radial-gradient(55% 140% at 0% 0%, color-mix(in srgb, var(--brand-teal) 18%, transparent), transparent 70%),
+    radial-gradient(50% 140% at 100% 100%, color-mix(in srgb, var(--brand-slate) 14%, transparent), transparent 70%);
+}
+
+:root[data-theme="light"] .cta {
+  background:
+    radial-gradient(55% 140% at 0% 0%, color-mix(in srgb, var(--brand-teal) 12%, transparent), transparent 70%),
+    radial-gradient(50% 140% at 100% 100%, color-mix(in srgb, var(--brand-slate) 12%, transparent), transparent 70%);
 }
 
 .cta-wrap {
@@ -3770,12 +4120,13 @@ html:not(.js) .builder {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: var(--sp-6);
 }
 
 .cta p {
-  color: var(--ink-soft);
-  margin-top: 8px;
+  color: var(--ink-2);
+  font-size: var(--fs-1);
+  margin-top: var(--sp-3);
 }
 
 .cta .actions {
@@ -3784,27 +4135,59 @@ html:not(.js) .builder {
 
 /* ── FAQ ── */
 
+/* On a wide screen the head holds the left and the questions the right; the
+   questions are one list in one card, a hairline between them. */
+@media (min-width: 941px) {
+  #faq > .wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    column-gap: var(--sp-10);
+    align-items: start;
+  }
+
+  #faq .section-head {
+    position: sticky;
+    top: calc(60px + var(--sp-7));
+    margin-bottom: 0;
+  }
+}
+
 .faq {
   display: grid;
-  gap: 10px;
   max-width: var(--measure, 42rem);
+  background: var(--surface-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
+}
+
+#faq .faq {
+  max-width: none;
 }
 
 .faq details {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 0 16px;
+  padding: 0 var(--sp-6);
+}
+
+.faq details + details {
+  border-top: 1px solid var(--line-1);
 }
 
 .faq summary {
   cursor: pointer;
-  padding: 14px 0;
-  font-weight: 650;
+  padding: var(--sp-5) 0;
+  font-size: var(--fs-0);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-ui);
+  color: var(--ink-1);
   list-style: none;
   display: flex;
   justify-content: space-between;
-  gap: 14px;
+  align-items: flex-start;
+  gap: var(--sp-4);
+}
+
+.faq summary:hover {
+  color: var(--accent);
 }
 
 .faq summary > span {
@@ -3820,29 +4203,45 @@ html:not(.js) .builder {
 .faq summary::after {
   content: "+";
   content: "+" / "";
-  color: var(--muted);
-  font-weight: 500;
-  font-size: 1.2rem;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  color: var(--ink-3);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-n1);
   line-height: 1;
 }
 
 .faq details[open] summary::after {
   content: "\2212";
   content: "\2212" / "";
+  border-color: var(--accent-line);
+  background: var(--accent-wash);
+  color: var(--accent);
 }
 
 @media (max-width: 600px) {
+  .faq details {
+    padding: 0 var(--sp-4);
+  }
+
   .faq summary {
-    padding: 11px 0;
+    padding: var(--sp-4) 0;
+    font-size: var(--fs-n1);
   }
 }
 
 .faq .ans {
-  padding: 0 0 16px;
-  color: var(--ink-soft);
-  font-size: 0.95rem;
+  padding: 0 0 var(--sp-5);
+  color: var(--ink-2);
+  font-size: var(--fs-n1);
+  line-height: 1.55;
   display: grid;
-  gap: 10px;
+  gap: var(--sp-3);
 }
 
 /* Measured times, each with what was run. */
@@ -3856,43 +4255,49 @@ html:not(.js) .builder {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 16px;
-  padding: 6px 0;
-  border-bottom: 1px dashed var(--line);
+  gap: var(--sp-4);
+  padding: var(--sp-2) 0;
+  border-bottom: 1px dashed var(--line-2);
 }
 
 .faq .times b {
   flex: none;
-  color: var(--ink);
+  color: var(--ink-1);
   font-variant-numeric: tabular-nums;
 }
 
 /* ── Footer ── */
 
+/* The base of every page: one level under the page, columns of quiet links
+   under caps labels, and a bottom row under a hairline. */
 .foot {
-  border-top: 1px solid var(--line);
-  padding: 40px 0 56px;
-  font-size: 0.9rem;
-  color: var(--muted);
+  border-top: 1px solid var(--line-1);
+  background: var(--surface-sunk);
+  padding: var(--sp-10) 0 var(--sp-11);
+  font-size: var(--fs-n1);
+  line-height: var(--lh-ui);
+  color: var(--ink-3);
 }
 
 /* A footer that ends in the bottom row needs less room under it. */
 .foot:has(> .foot-base) {
-  padding-bottom: 28px;
+  padding-bottom: var(--sp-7);
 }
 
 .foot .wrap {
   display: grid;
   grid-template-columns: 1.4fr 1fr 1fr;
-  gap: 28px;
+  gap: var(--sp-7);
 }
 
 .foot h3 {
-  font-size: 0.85rem;
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-soft);
-  margin-bottom: 10px;
+  letter-spacing: var(--tr-caps);
+  color: var(--ink-3);
+  margin-bottom: var(--sp-4);
 }
 
 .foot ul {
@@ -3900,12 +4305,12 @@ html:not(.js) .builder {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 /* Quiet links: the footer is a list of ways out, not a paragraph. */
 .foot a {
-  color: var(--ink-soft);
+  color: var(--ink-2);
   text-decoration: none;
 }
 
@@ -3916,44 +4321,46 @@ html:not(.js) .builder {
 
 .foot blockquote {
   margin: 0;
-  color: var(--ink-soft);
+  color: var(--ink-2);
+  max-width: 30em;
 }
 
 .foot .doi {
-  margin: 10px 0 0;
+  margin: var(--sp-3) 0 0;
 }
 
 /* The bottom row, under a hairline: who makes it, its licence, its version. */
 .foot .wrap.foot-base {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 20px;
-  margin-top: 30px;
-  font-size: 0.8rem;
+  gap: var(--sp-1) var(--sp-5);
+  margin-top: var(--sp-8);
+  font-size: var(--fs-n2);
 }
 
 .foot .wrap.foot-base::before {
   content: "";
   flex: 1 0 100%;
-  border-top: 1px solid var(--line);
-  margin-bottom: 14px;
+  border-top: 1px solid var(--line-1);
+  margin-bottom: var(--sp-4);
 }
 
 /* The switch for the / key, at the end of the footer's last line. */
 .slash-toggle {
   margin-left: auto;
-  padding: 4px 0;
+  padding: var(--sp-1) 0;
   border: 0;
   background: none;
   font: inherit;
   color: inherit;
   text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
   text-underline-offset: 3px;
   cursor: pointer;
 }
 
 .slash-toggle:hover {
-  color: var(--ink);
+  color: var(--ink-1);
 }
 
 /* A docs page has its search box in the sidebar, which stays in view, so
@@ -3978,24 +4385,36 @@ html:not(.js) .builder {
 /* ── Pages other than the front page ── */
 
 .ref-hero {
-  padding: 48px 0 8px;
+  padding: var(--sp-10) 0 var(--sp-2);
 }
 
 .ref-hero h1 {
-  font-size: clamp(2rem, 4.6vw, 3rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-size: var(--fs-title);
+  font-weight: var(--fw-display);
+  letter-spacing: var(--tr-display);
 }
 
 .ref-hero p {
-  color: var(--muted);
-  margin-top: 10px;
-  font-size: 1.06rem;
-  max-width: 46em;
+  color: var(--ink-2);
+  margin-top: var(--sp-4);
+  font-size: var(--fs-1);
+  line-height: 1.55;
+  max-width: 42rem;
+}
+
+@media (max-width: 600px) {
+  .ref-hero {
+    padding-top: var(--sp-8);
+  }
+
+  .ref-hero p {
+    font-size: var(--fs-0);
+    line-height: var(--lh-body);
+  }
 }
 
 .ref-section {
-  padding: 56px 0 72px;
+  padding: var(--sp-10) 0 var(--sp-12);
 }
 
 .ref-section .note + .deep {
@@ -4006,16 +4425,16 @@ html:not(.js) .builder {
    (the same covers and shadows as a block of code). */
 .table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  --cover: var(--bg-elev);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
+  --cover: var(--surface-1);
   --shade: rgba(255, 255, 255, 0.16);
   background:
     linear-gradient(to right, var(--cover) 40%, transparent) left / 28px 100% no-repeat local,
     linear-gradient(to left, var(--cover) 40%, transparent) right / 28px 100% no-repeat local,
     radial-gradient(farthest-side at 0 50%, var(--shade), transparent) left / 12px 100% no-repeat scroll,
     radial-gradient(farthest-side at 100% 50%, var(--shade), transparent) right / 12px 100% no-repeat scroll,
-    var(--bg-elev);
+    var(--surface-1);
 }
 
 :root[data-theme="light"] .table-wrap {
@@ -4025,24 +4444,37 @@ html:not(.js) .builder {
 table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 0.92rem;
+  font-size: var(--fs-n1);
+  line-height: 1.55;
 }
 
 th,
 td {
   text-align: left;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--line);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--line-1);
   vertical-align: top;
 }
 
+td {
+  padding-block: 14px;
+}
+
+tbody tr:hover > td {
+  background: color-mix(in srgb, var(--ink-1) 2.5%, transparent);
+}
+
 th {
-  font-size: 0.78rem;
+  font-size: var(--fs-n3);
+  line-height: 1.3;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-  background: var(--bg-subtle);
-  font-weight: 700;
+  letter-spacing: var(--tr-caps);
+  color: var(--ink-3);
+  background: color-mix(in srgb, var(--ink-1) 3.5%, var(--surface-1));
+  border-bottom-color: var(--line-2);
+  font-weight: var(--fw-bold);
+  vertical-align: bottom;
+  white-space: nowrap;
 }
 
 tr:last-child td {
@@ -4058,7 +4490,7 @@ th.num {
 .deep {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 @media (max-width: 860px) {
@@ -4070,15 +4502,17 @@ th.num {
 .deep a {
   display: block;
   text-decoration: none;
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 14px 16px;
-  color: var(--ink);
+  background: var(--surface-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
+  padding: var(--sp-4) var(--sp-5);
+  color: var(--ink-1);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .deep a:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--surface-2);
 }
 
 .deep a b {
@@ -4088,9 +4522,9 @@ th.num {
 
 .deep a span {
   display: block;
-  font-size: 0.86rem;
-  line-height: 1.45;
-  color: var(--muted);
+  font-size: var(--fs-n2);
+  line-height: var(--lh-ui);
+  color: var(--ink-3);
 }
 
 /* ── Documentation pages ── */
@@ -4106,9 +4540,9 @@ th.num {
 .docs-layout {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr) 200px;
-  column-gap: 40px;
-  padding-top: 32px;
-  padding-bottom: 72px;
+  column-gap: var(--sp-9);
+  padding-top: var(--sp-8);
+  padding-bottom: var(--sp-12);
 }
 
 .wrap.docs-home {
@@ -4129,8 +4563,8 @@ th.num {
   .wrap.docs-layout,
   .wrap.docs-home {
     grid-template-columns: minmax(0, 1fr);
-    gap: 18px;
-    padding-top: 18px;
+    gap: var(--sp-5);
+    padding-top: var(--sp-5);
   }
 }
 
@@ -4139,7 +4573,7 @@ th.num {
   position: sticky;
   top: 80px;
   align-self: start;
-  font-size: 0.92rem;
+  font-size: var(--fs-n1);
 }
 
 /* A sticky box stacks on its own, so the sidebar sits above the text it
@@ -4177,16 +4611,17 @@ th.num {
 
 .docs-search input {
   width: 100%;
-  font: 0.92rem var(--font);
-  padding: 9px 34px 9px 12px;
-  border: 1px solid var(--line-input);
-  border-radius: 9px;
-  background: var(--bg-elev);
-  color: var(--ink);
+  font: var(--fs-n1) var(--font);
+  height: 40px;
+  padding: 0 34px 0 var(--sp-3);
+  border: 1px solid var(--line-3);
+  border-radius: var(--r-3);
+  background: var(--control);
+  color: var(--ink-1);
 }
 
 .docs-search input::placeholder {
-  color: var(--muted);
+  color: var(--ink-3);
   opacity: 1;
 }
 
@@ -4204,12 +4639,12 @@ th.num {
   min-width: 20px;
   height: 20px;
   padding: 0 5px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line-2);
   border-bottom-width: 2px;
-  border-radius: 5px;
-  background: var(--bg-subtle);
-  color: var(--muted);
-  font: 600 0.72rem/1 var(--mono);
+  border-radius: var(--r-1);
+  background: var(--surface-3);
+  color: var(--ink-3);
+  font: var(--fw-semibold) var(--fs-n3)/1 var(--mono);
 }
 
 .docs-search > .search-key {
@@ -4237,10 +4672,10 @@ th.num {
   left: 0;
   right: -160px;
   top: calc(100% + 6px);
-  background: var(--bg-elev);
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  box-shadow: var(--shadow);
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
+  box-shadow: var(--shadow-3);
   padding: 0 6px;
   max-height: min(70vh, 600px);
   overflow: auto;
@@ -4260,16 +4695,16 @@ th.num {
   z-index: 1;
   margin: 0 -6px 2px;
   padding: 9px 16px 7px;
-  border-bottom: 1px solid var(--line);
-  background: var(--bg-elev);
-  color: var(--muted);
-  font-size: 0.78rem;
+  border-bottom: 1px solid var(--line-1);
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font-size: var(--fs-n2);
 }
 
 .docs-results a {
   display: block;
-  padding: 7px 10px;
-  border-radius: 7px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-2);
   text-decoration: none;
   color: var(--ink);
 }
@@ -4292,19 +4727,19 @@ th.num {
 }
 
 .docs-results .r-title {
-  font-size: 0.9rem;
-  font-weight: 650;
+  font-size: var(--fs-n1);
+  font-weight: var(--fw-semibold);
 }
 
 .docs-results .r-page .r-title {
-  font-weight: 750;
+  font-weight: var(--fw-bold);
 }
 
 .docs-results .r-meta {
   float: right;
   margin-left: 10px;
   color: var(--muted);
-  font-size: 0.75rem;
+  font-size: var(--fs-n3);
   line-height: 1.6;
 }
 
@@ -4324,7 +4759,7 @@ th.num {
 
 .docs-results .r-suggest {
   margin: 4px 0;
-  font-size: 0.9rem;
+  font-size: var(--fs-n1);
 }
 
 .docs-results .r-suggest b {
@@ -4334,7 +4769,7 @@ th.num {
 .docs-results small {
   display: block;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: var(--fs-n2);
   line-height: 1.4;
   margin-top: 2px;
 }
@@ -4351,14 +4786,14 @@ th.num {
   bottom: 0;
   margin: 6px -6px 0;
   padding: 7px 16px 8px;
-  border-top: 1px solid var(--line);
-  background: var(--bg-elev);
-  color: var(--muted);
-  font-size: 0.75rem;
+  border-top: 1px solid var(--line-1);
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font-size: var(--fs-n3);
 }
 
 .docs-results .r-foot kbd {
-  font-size: 0.68rem;
+  font-size: var(--fs-n3);
   color: var(--ink-soft);
 }
 
@@ -4377,7 +4812,7 @@ th.num {
 .docs-results .none {
   padding: 8px 10px;
   color: var(--muted);
-  font-size: 0.88rem;
+  font-size: var(--fs-n2);
 }
 
 .docs-menu summary {
@@ -4386,28 +4821,34 @@ th.num {
 
 @media (max-width: 860px) {
   .docs-menu {
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: var(--bg-elev);
-    padding: 4px 14px 8px;
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-4);
+    background: var(--surface-1);
+    padding: var(--sp-1) var(--sp-4) var(--sp-2);
   }
 
   .docs-menu summary {
     display: list-item;
     cursor: pointer;
-    font-weight: 650;
+    font-weight: var(--fw-semibold);
     padding: 8px 0;
   }
 }
 
 .docs-section {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
   line-height: 1.3;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  margin: 10px 0 2px;
+  letter-spacing: var(--tr-caps);
+  color: var(--ink-3);
+  margin: var(--sp-3) 0 var(--sp-1);
+  padding-left: var(--sp-3);
+}
+
+.docs-menu > .docs-section:first-of-type,
+.docs-menu > summary + .docs-section {
+  margin-top: var(--sp-2);
 }
 
 .docs-nav ul,
@@ -4417,57 +4858,79 @@ th.num {
   padding: 0;
 }
 
-/* Rows of about 28 px, so the whole list fits a laptop's screen. */
+/* Rows of 28 px, so the whole list fits a laptop's screen. The page you are
+   on: the accent's wash, its ink and a bar at its edge. */
 .docs-nav li a {
+  position: relative;
   display: block;
-  padding: 3px 10px;
+  padding: 3px var(--sp-3);
   line-height: 1.45;
-  border-radius: 7px;
-  color: var(--ink-soft);
+  border-radius: var(--r-2);
+  color: var(--ink-2);
   text-decoration: none;
 }
 
 .docs-nav li a:hover {
-  background: var(--bg-subtle);
-  color: var(--ink);
+  background: var(--surface-3);
+  color: var(--ink-1);
 }
 
 .docs-nav li a[aria-current="page"] {
-  background: var(--accent-soft);
+  background: var(--accent-wash);
   color: var(--accent);
-  font-weight: 650;
+  font-weight: var(--fw-semibold);
 }
 
+.docs-nav li a[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+/* The contents: a rail of hairline, the section in view on an accent stretch
+   of it. */
 .docs-toc p {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  margin-bottom: 8px;
+  letter-spacing: var(--tr-caps);
+  color: var(--ink-3);
+  margin-bottom: var(--sp-3);
 }
 
 .docs-toc li a {
   display: block;
-  padding: 3px 0 3px 10px;
-  border-left: 2px solid var(--line);
-  color: var(--muted);
+  padding: 5px 0 5px var(--sp-3);
+  border-left: 1px solid var(--line-2);
+  color: var(--ink-3);
+  font-size: var(--fs-n2);
   text-decoration: none;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .docs-toc li.toc-3 a {
-  padding-left: 22px;
-  font-size: 0.86rem;
+  padding-left: calc(var(--sp-3) + var(--sp-3));
+  font-size: var(--fs-n2);
 }
 
 .docs-toc li a:hover {
-  color: var(--ink);
+  color: var(--ink-1);
 }
 
 .docs-toc li a.active {
-  border-left-color: var(--accent);
-  color: var(--ink);
+  border-left: 2px solid var(--accent);
+  padding-left: 11px;
+  color: var(--ink-1);
+}
+
+.docs-toc li.toc-3 a.active {
+  padding-left: 23px;
 }
 
 /* The contents where the contents column does not show: folded under the
@@ -4480,26 +4943,26 @@ th.num {
   .prose .toc-inline {
     display: block;
     max-width: 68ch;
-    margin: 0 0 1.6em;
-    padding: 0 14px;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: var(--bg-elev);
-    font-size: 0.92rem;
+    margin: 0 0 var(--sp-7);
+    padding: 0 var(--sp-4);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-4);
+    background: var(--surface-1);
+    font-size: var(--fs-n1);
   }
 }
 
 .toc-inline summary {
   cursor: pointer;
-  padding: 9px 0;
-  font-weight: 650;
-  color: var(--ink);
+  padding: var(--sp-3) 0;
+  font-weight: var(--fw-semibold);
+  color: var(--ink-1);
 }
 
 .prose .toc-inline ul {
   list-style: none;
   margin: 0;
-  padding: 0 0 10px;
+  padding: 0 0 var(--sp-3);
 }
 
 .prose .toc-inline li {
@@ -4508,17 +4971,17 @@ th.num {
 
 .toc-inline a {
   display: block;
-  padding: 4px 0 4px 10px;
-  border-left: 2px solid var(--line);
-  color: var(--ink-soft);
+  padding: var(--sp-1) 0 var(--sp-1) var(--sp-3);
+  border-left: 1px solid var(--line-2);
+  color: var(--ink-2);
   text-decoration: none;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .toc-inline a:hover,
 .toc-inline a.active {
   border-left-color: var(--accent);
-  color: var(--ink);
+  color: var(--ink-1);
 }
 
 /* Long-form text: headings, bold and table heads in full ink, the rest a
@@ -4527,12 +4990,12 @@ th.num {
 .prose {
   min-width: 0;
   max-width: 820px;
-  color: var(--ink-soft);
-  line-height: 1.62;
+  color: var(--ink-2);
+  line-height: var(--lh-body);
 }
 
 .prose :is(h1, h2, h3, h4, h5, h6, strong, b, th) {
-  color: var(--ink);
+  color: var(--ink-1);
 }
 
 /* A reading measure for running text; code, tables and drawings take the
@@ -4551,10 +5014,10 @@ th.num {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: 2px 18px;
-  margin-bottom: 8px;
-  font-size: 0.85rem;
-  color: var(--muted);
+  gap: 2px var(--sp-5);
+  margin-bottom: var(--sp-4);
+  font-size: var(--fs-n2);
+  color: var(--ink-3);
 }
 
 .prose .crumb-row p {
@@ -4562,7 +5025,7 @@ th.num {
 }
 
 .prose .crumb-row a {
-  color: var(--muted);
+  color: var(--ink-3);
 }
 
 .prose .crumb-row a:hover {
@@ -4570,37 +5033,48 @@ th.num {
 }
 
 .prose .ver {
-  font-size: 0.8rem;
+  font-size: var(--fs-n2);
 }
 
 .prose h1 {
-  font-size: clamp(2rem, 4vw, 2.6rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  margin-bottom: 10px;
+  font-size: var(--fs-title);
+  font-weight: var(--fw-display);
+  letter-spacing: var(--tr-display);
+  line-height: 1.1;
+  margin-bottom: var(--sp-4);
 }
 
 .prose .doc-meta {
-  margin-bottom: 18px;
-  font-size: 0.85rem;
-  color: var(--muted);
+  max-width: none;
+  margin-bottom: var(--sp-7);
+  padding-bottom: var(--sp-6);
+  border-bottom: 1px solid var(--line-1);
+  font-size: var(--fs-n2);
+  color: var(--ink-3);
 }
 
+/* Docs headings: h2 a chapter (27px bold, under a hairline), h3 a section
+   (21.5px), h4 a run-in title (17px). */
 .prose h2 {
-  font-size: 1.5rem;
-  margin: 2.2em 0 0.7em;
+  font-size: var(--fs-4);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tr-heading);
+  line-height: var(--lh-heading);
+  margin: var(--sp-10) 0 var(--sp-4);
 }
 
 .prose h3 {
-  font-size: 1.15rem;
-  margin: 1.8em 0 0.6em;
+  font-size: var(--fs-2);
+  line-height: var(--lh-heading);
+  margin: var(--sp-8) 0 var(--sp-3);
 }
 
 .prose h4,
 .prose h5,
 .prose h6 {
-  font-size: 1rem;
-  margin: 1.5em 0 0.5em;
+  font-size: var(--fs-0);
+  letter-spacing: 0;
+  margin: var(--sp-7) 0 var(--sp-2);
 }
 
 /* An old anchor of a heading, just before it; site.js moves the address on
@@ -4622,18 +5096,34 @@ th.num {
 }
 
 .prose .hx-2 {
-  font-size: 1.5rem;
-  margin: 2.2em 0 0.7em;
+  font-size: var(--fs-4);
+  margin: var(--sp-9) 0 var(--sp-4);
+  padding-top: var(--sp-6);
+  border-top: 1px solid var(--line-1);
 }
 
 .prose .hx-3 {
-  font-size: 1.15rem;
-  margin: 1.8em 0 0.6em;
+  font-size: var(--fs-2);
+  margin: var(--sp-8) 0 var(--sp-3);
 }
 
 .prose :is(.hx-4, .hx-5, .hx-6) {
-  font-size: 1rem;
-  margin: 1.5em 0 0.5em;
+  font-size: var(--fs-0);
+  margin: var(--sp-7) 0 var(--sp-2);
+}
+
+/* A chapter that opens the page needs no rule over it: the head has one. */
+.prose .doc-meta + .hx-2,
+.prose .doc-meta + .toc-inline + .hx-2 {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+@media (min-width: 861px) {
+  .prose .hx-2 > .anchor {
+    top: var(--sp-6) !important;
+  }
 }
 
 .prose .hx > :is(h2, h3, h4, h5, h6) {
@@ -4653,7 +5143,7 @@ th.num {
   flex: none;
   color: var(--muted);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: var(--fw-medium);
   line-height: 1.15;
   opacity: 0;
 }
@@ -4692,7 +5182,7 @@ th.num {
 .prose .tabset,
 .prose .fig,
 .prose .figure {
-  margin: 0 0 1.1em;
+  margin: 0 0 var(--sp-5);
 }
 
 .prose ul,
@@ -4701,7 +5191,7 @@ th.num {
 }
 
 .prose li {
-  margin: 0.3em 0;
+  margin: var(--sp-1) 0;
 }
 
 .prose li > ul,
@@ -4712,16 +5202,17 @@ th.num {
 
 .prose hr {
   border: 0;
-  border-top: 1px solid var(--line);
-  margin: 2em 0;
+  border-top: 1px solid var(--line-1);
+  margin: var(--sp-9) 0;
 }
 
 .prose blockquote {
-  border-left: 3px solid var(--accent);
-  background: var(--bg-subtle);
-  border-radius: 0 10px 10px 0;
-  padding: 12px 16px;
-  color: var(--ink-soft);
+  border: 1px solid var(--line-2);
+  box-shadow: inset 3px 0 0 var(--accent);
+  background: var(--surface-1);
+  border-radius: var(--r-3);
+  padding: var(--sp-4) var(--sp-5);
+  color: var(--ink-2);
   margin-left: 0;
   margin-right: 0;
 }
@@ -4731,19 +5222,19 @@ th.num {
 }
 
 .prose .table-wrap {
-  font-size: 0.9rem;
+  font-size: var(--fs-n1);
 }
 
 /* A type is a word to read, not a chip of code. */
 .prose td.type {
-  color: var(--muted);
-  font-size: 0.86rem;
+  color: var(--ink-3);
+  font-size: var(--fs-n2);
   white-space: nowrap;
 }
 
 /* An option's row, opened from a link to it. */
-.prose tr:target {
-  background: var(--accent-soft);
+.prose tr:target > td {
+  background: var(--accent-wash);
 }
 
 .prose tr:target > td:first-child {
@@ -4804,9 +5295,9 @@ th.num {
   .prose table.cards tr {
     margin-bottom: 10px;
     padding: 12px 14px;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: var(--bg-elev);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-3);
+    background: var(--surface-1);
   }
 
   .prose table.cards tr:target {
@@ -4821,7 +5312,7 @@ th.num {
 
   .prose table.cards td:first-child {
     margin-bottom: 4px;
-    font-weight: 600;
+    font-weight: var(--fw-semibold);
     color: var(--ink);
   }
 
@@ -4836,7 +5327,7 @@ th.num {
   .prose table.cards td:nth-child(n + 3) {
     display: inline;
     margin-right: 14px;
-    font-size: 0.82rem;
+    font-size: var(--fs-n2);
     color: var(--muted);
   }
 
@@ -4846,7 +5337,7 @@ th.num {
 
   .prose table.cards td:nth-child(n + 3)::before {
     content: attr(data-label) ": ";
-    font-weight: 600;
+    font-weight: var(--fw-semibold);
   }
 }
 
@@ -4869,12 +5360,12 @@ th.num {
 
 .prose .to-top {
   margin-top: 2em;
-  font-size: 0.9rem;
+  font-size: var(--fs-n1);
 }
 
 .prose .edit {
   margin-top: 2.5em;
-  font-size: 0.9rem;
+  font-size: var(--fs-n1);
 }
 
 .prose .to-top + .edit {
@@ -4895,11 +5386,11 @@ th.num {
 /* GitHub's alerts (> [!WARNING]) as callouts, which say their kind in words
    as well as in colour. */
 .callout {
-  border: 1px solid color-mix(in srgb, var(--c) 30%, var(--line));
-  border-left: 4px solid var(--c);
-  background: color-mix(in srgb, var(--c) 5%, var(--bg-elev));
-  border-radius: 0 10px 10px 0;
-  padding: 12px 16px 2px;
+  border: 1px solid color-mix(in srgb, var(--c) 32%, var(--line-2));
+  box-shadow: inset 3px 0 0 var(--c);
+  background: color-mix(in srgb, var(--c) 6%, var(--surface-1));
+  border-radius: var(--r-3);
+  padding: var(--sp-4) var(--sp-5) var(--sp-1);
   --c: var(--info);
 }
 
@@ -4920,24 +5411,24 @@ th.num {
 }
 
 .callout-title {
-  font-weight: 700;
-  color: var(--ink);
-  margin-bottom: 6px !important;
+  font-weight: var(--fw-semibold);
+  color: var(--ink-1);
+  margin-bottom: var(--sp-2) !important;
 }
 
 .callout-kind {
   display: block;
-  margin-bottom: 1px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  margin-bottom: var(--sp-1);
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tr-caps);
   text-transform: uppercase;
   color: var(--c);
 }
 
 .callout > p:last-child,
 .callout > .code:last-child {
-  margin-bottom: 12px;
+  margin-bottom: var(--sp-3);
 }
 
 /* A block with no head row shows Copy when pointed at; with a head row, or
@@ -4971,12 +5462,12 @@ th.num {
 }
 
 .prose .hub-label {
-  margin-bottom: 8px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  margin-bottom: var(--sp-3);
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tr-caps);
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink-3);
 }
 
 .prose .hub-tasks ul {
@@ -4994,18 +5485,19 @@ th.num {
 
 .prose .hub-tasks a {
   display: inline-block;
-  padding: 7px 14px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--bg-elev);
-  color: var(--ink);
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding: 7px var(--sp-4);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-pill);
+  background: var(--control);
+  color: var(--ink-1);
+  font-size: var(--fs-n1);
+  font-weight: var(--fw-semibold);
   text-decoration: none;
 }
 
 .prose .hub-tasks a:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--accent-wash);
   color: var(--accent);
 }
 
@@ -5013,6 +5505,22 @@ th.num {
    that leaves the site. */
 @media print {
   .docs {
+    --surface-sunk: #f5f7f6;
+    --surface-0: #ffffff;
+    --surface-1: #ffffff;
+    --surface-2: #ffffff;
+    --surface-3: #f3f5f4;
+    --ink-1: #111816;
+    --ink-2: #242e2b;
+    --ink-3: #4f5b58;
+    --line-1: #d5dcda;
+    --line-2: #b9c3c0;
+    --line-3: #7c8985;
+    --accent-wash: #e2f3ef;
+    --accent-line: #8cc5ba;
+    --control: #ffffff;
+    --halo: #ffffff;
+    --shadow-2: none;
     --bg: #ffffff;
     --bg-elev: #ffffff;
     --bg-subtle: #f3f5f4;
@@ -5091,39 +5599,46 @@ th.num {
 }
 
 .prose figcaption {
-  font-size: 0.86rem;
-  color: var(--muted);
-  margin-top: 6px;
+  font-size: var(--fs-n2);
+  line-height: var(--lh-ui);
+  color: var(--ink-3);
+  margin-top: var(--sp-2);
 }
 
 .pager {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-top: 18px;
+  gap: var(--sp-4);
+  margin-top: var(--sp-6);
 }
 
 .pager a {
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--bg-elev);
-  padding: 12px 16px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
+  background: var(--surface-1);
+  padding: var(--sp-4) var(--sp-5);
   text-decoration: none;
-  color: var(--ink);
-  font-weight: 650;
+  color: var(--ink-1);
+  font-size: var(--fs-1);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tr-heading);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .pager a:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--surface-2);
+  color: var(--accent);
 }
 
 .pager a span {
   display: block;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--muted);
+  margin-bottom: var(--sp-1);
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  color: var(--ink-3);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--tr-caps);
 }
 
 .pager .next {
@@ -5132,7 +5647,7 @@ th.num {
 }
 
 .docs-group {
-  font-size: 1.1rem !important;
+  font-size: var(--fs-0) !important;
   margin: 1.6em 0 0.7em !important;
 }
 
@@ -5141,9 +5656,9 @@ th.num {
 .fig.case-bars,
 .fig.results-map,
 .fig.prepare-ref {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
   padding: 16px;
 }
 
@@ -5159,12 +5674,12 @@ th.num {
 }
 
 .cb-name {
-  font-weight: 650;
-  font-size: 0.9rem;
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-n1);
 }
 
 .cb-total {
-  font-size: 0.82rem;
+  font-size: var(--fs-n2);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -5178,7 +5693,7 @@ th.num {
 
 .cb-seg {
   position: relative;
-  border-radius: 4px;
+  border-radius: var(--r-1);
   min-width: 3px;
   display: flex;
   align-items: center;
@@ -5187,7 +5702,7 @@ th.num {
 }
 
 .cb-n {
-  font: 650 0.74rem var(--mono);
+  font: var(--fw-semibold) var(--fs-n3) var(--mono);
   color: var(--on-track);
   white-space: nowrap;
   padding: 0 4px;
@@ -5247,7 +5762,7 @@ th.num {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 14px;
-  font-size: 0.8rem;
+  font-size: var(--fs-n2);
   color: var(--muted);
 }
 
@@ -5269,7 +5784,7 @@ th.num {
   align-items: baseline;
   padding: 9px 0;
   border-bottom: 1px solid var(--line);
-  font-size: 0.88rem;
+  font-size: var(--fs-n2);
 }
 
 .rm-row:last-of-type {
@@ -5300,7 +5815,7 @@ th.num {
 }
 
 .rm-folder {
-  font-weight: 650;
+  font-weight: var(--fw-semibold);
   justify-self: start;
 }
 
@@ -5310,13 +5825,13 @@ th.num {
 }
 
 .rm-by {
-  font: 0.8rem var(--mono);
+  font: var(--fs-n2) var(--mono);
   color: var(--ink-soft);
 }
 
 .rm-when {
   color: var(--muted);
-  font-size: 0.84rem;
+  font-size: var(--fs-n2);
 }
 
 .rm-when code {
@@ -5335,7 +5850,7 @@ th.num {
 
 .pr-in,
 .pr-out {
-  font-size: 0.86rem;
+  font-size: var(--fs-n2);
   color: var(--ink-soft);
   text-align: center;
 }
@@ -5357,7 +5872,7 @@ th.num {
 .pr-step {
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-3);
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -5365,11 +5880,11 @@ th.num {
 }
 
 .pr-step b {
-  font-size: 0.95rem;
+  font-size: var(--fs-n1);
 }
 
 .pr-step p {
-  font-size: 0.85rem !important;
+  font-size: var(--fs-n2) !important;
   color: var(--muted);
   margin: 0 !important;
 }
@@ -5382,26 +5897,33 @@ th.num {
   border-radius: 50%;
   background: var(--m-ref);
   color: var(--on-track);
-  font-weight: 750;
-  font-size: 0.8rem;
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-n2);
 }
 
 .pr-count {
   margin-top: auto;
-  font: 650 0.85rem var(--mono);
+  font: var(--fw-semibold) var(--fs-n2) var(--mono);
   color: var(--ref);
 }
 
 /* ── How it works: one story through seven steps ── */
 
 .how-hero {
-  padding-bottom: 20px;
+  padding-top: var(--sp-9);
+  padding-bottom: var(--sp-5);
+}
+
+@media (max-width: 600px) {
+  .how-hero {
+    padding-top: var(--sp-7);
+  }
 }
 
 .how-hero .crumb {
-  font-size: 0.85rem;
-  color: var(--muted);
-  margin-bottom: 8px;
+  font-size: var(--fs-n2);
+  color: var(--ink-3);
+  margin-bottom: var(--sp-4);
 }
 
 .how-hero .crumb a {
@@ -5409,7 +5931,7 @@ th.num {
 }
 
 .how {
-  padding: 8px 0 40px;
+  padding: var(--sp-2) 0 var(--sp-12);
 }
 
 .how:focus {
@@ -5419,16 +5941,17 @@ th.num {
 .how-pick {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
-  margin-bottom: 22px;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-6);
 }
 
 .how-group .q-title {
-  font-size: 0.8rem;
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  margin: 0 0 6px;
+  letter-spacing: var(--tr-caps);
+  color: var(--ink-3);
+  margin: 0 0 var(--sp-2);
 }
 
 /* The stories are links (#key), so each can be opened, copied or shared. */
@@ -5436,18 +5959,20 @@ th.num {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--bg-elev);
-  color: var(--ink);
-  font: 600 0.88rem var(--font);
-  padding: 7px 12px;
-  border-radius: 9px;
+  min-height: 36px;
+  border: 1px solid var(--line-2);
+  background: var(--control);
+  color: var(--ink-1);
+  font: var(--fw-semibold) var(--fs-n2) var(--font);
+  padding: 0 var(--sp-3) 0 var(--sp-4);
+  border-radius: var(--r-3);
   text-decoration: none;
 }
 
 .how-group .seg a:hover {
-  border-color: var(--muted);
-  color: var(--ink);
+  border-color: var(--line-3);
+  background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+  color: var(--ink-1);
 }
 
 /* A gene, a station or a link of a drawing that the keyboard reaches is
@@ -5466,16 +5991,16 @@ th.num {
 }
 
 .how-group .seg a[aria-current="true"] {
-  background: var(--accent);
+  background: var(--accent-wash);
   border-color: var(--accent);
-  color: var(--on-accent);
+  color: var(--accent);
 }
 
 .how-tag {
-  font: 650 0.68rem var(--font);
-  letter-spacing: 0.04em;
+  font: var(--fw-bold) var(--fs-n3)/1 var(--font);
+  letter-spacing: var(--tr-caps);
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink-3);
 }
 
 .seg a[aria-current="true"] .how-tag {
@@ -5520,8 +6045,8 @@ th.num {
 
 .how-layout {
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
-  gap: 22px;
+  grid-template-columns: 248px minmax(0, 1fr);
+  gap: var(--sp-7);
   align-items: start;
 }
 
@@ -5536,9 +6061,9 @@ th.num {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 4px;
+  gap: var(--sp-1);
   position: sticky;
-  top: 80px;
+  top: 84px;
 }
 
 @media (max-width: 900px) {
@@ -5555,7 +6080,7 @@ th.num {
   }
 
   .how-steps .how-n {
-    font-size: 0.85rem;
+    font-size: var(--fs-n2);
   }
 }
 
@@ -5567,22 +6092,24 @@ th.num {
   text-align: left;
   border: 1px solid transparent;
   background: none;
-  color: var(--ink-soft);
-  font: 600 0.92rem var(--font);
-  padding: 9px 10px;
-  border-radius: 10px;
+  color: var(--ink-2);
+  font: var(--fw-semibold) var(--fs-n1)/1.3 var(--font);
+  padding: var(--sp-2) var(--sp-3);
+  min-height: 44px;
+  border-radius: var(--r-3);
   cursor: pointer;
 }
 
 .how-steps button:hover {
-  background: var(--bg-subtle);
-  color: var(--ink);
+  background: var(--surface-3);
+  color: var(--ink-1);
 }
 
 .how-steps button[aria-current="step"] {
-  background: var(--bg-elev);
-  border-color: var(--line-strong);
-  color: var(--ink);
+  background: var(--surface-2);
+  border-color: var(--line-2);
+  box-shadow: var(--shadow-2);
+  color: var(--ink-1);
 }
 
 .how-n {
@@ -5591,9 +6118,10 @@ th.num {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 1.5px solid var(--line-strong);
-  font-size: 0.8rem;
-  font-weight: 750;
+  border: 1.5px solid var(--line-3);
+  font-size: var(--fs-n2);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
   flex: none;
 }
 
@@ -5606,11 +6134,12 @@ th.num {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);
+  box-shadow: var(--glow);
 }
 
 /* A step that changes nothing in this story: hollow, dashed and quieter. */
 .how-steps button.same {
-  color: var(--muted);
+  color: var(--ink-3);
 }
 
 .how-steps button.same .how-n {
@@ -5633,9 +6162,10 @@ th.num {
 
 .how-stage-card {
   position: relative;
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-5);
+  box-shadow: var(--shadow-2);
   min-width: 0;
 }
 
@@ -5643,8 +6173,8 @@ th.num {
    rounds its own corners instead. */
 .how-progress {
   height: 3px;
-  background: var(--line);
-  border-radius: 15px 15px 0 0;
+  background: var(--line-1);
+  border-radius: calc(var(--r-5) - 1px) calc(var(--r-5) - 1px) 0 0;
   overflow: hidden;
 }
 
@@ -5654,23 +6184,23 @@ th.num {
   display: block;
   height: 100%;
   width: 0;
-  background: linear-gradient(90deg, var(--brand-aqua), var(--brand-teal));
+  background: var(--accent);
   transition: width 0.35s ease;
 }
 
 .how-genome {
-  margin: 14px 18px 0;
+  margin: var(--sp-5) var(--sp-6) 0;
   min-height: 1.3em;
-  font-size: 0.82rem;
-  font-weight: 650;
-  color: var(--muted);
+  font-size: var(--fs-n2);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
 }
 
 /* Room for the first story's drawing before the script draws it. */
 .how-stage {
-  padding: 6px 18px 0;
+  padding: var(--sp-2) var(--sp-6) 0;
   display: grid;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .how-stage:empty {
@@ -5685,8 +6215,8 @@ th.num {
 
 .how-panel-title {
   margin: 6px 0 0;
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: var(--fs-n2);
+  font-weight: var(--fw-bold);
   color: var(--ink-soft);
 }
 
@@ -5695,8 +6225,8 @@ th.num {
 }
 
 .how-legend {
-  padding: 0 18px;
-  margin-top: 4px;
+  padding: 0 var(--sp-6);
+  margin-top: var(--sp-2);
 }
 
 /* An element waits for its step hidden: it fades, then leaves the pointer
@@ -5711,9 +6241,15 @@ th.num {
   transition: opacity 0.4s ease, visibility 0s linear 0.4s;
 }
 
-/* The name of a row still to come, fainter, and still readable. */
-.trk .ghost {
-  opacity: 0.7;
+/* The name of a row still to come, quieter, and still readable: the same
+   treatment as the front page's rows to come. */
+.trk .ghost .row-label {
+  fill: var(--ink-3);
+  font-weight: var(--fw-medium);
+}
+
+.trk .ghost .row-line {
+  opacity: 0.35;
 }
 
 /* Back and Next sit right under the drawing, where the text under them
@@ -5721,22 +6257,27 @@ th.num {
 .how-nav {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-3);
   justify-content: flex-end;
-  margin-top: 12px;
-  padding: 12px 18px;
-  border-top: 1px solid var(--line);
+  margin-top: var(--sp-4);
+  padding: var(--sp-4) var(--sp-6);
+  border-top: 1px solid var(--line-1);
 }
 
+/* A button that cannot be pressed yet: no fill, a hairline edge, its words
+   in the third ink (still 4.5:1 and more, unlike a faded button). */
 .how-nav .btn[aria-disabled="true"] {
-  opacity: 0.45;
+  background: transparent;
+  border-color: var(--line-1);
+  color: var(--ink-3);
+  box-shadow: none;
   cursor: default;
 }
 
 .how-hint {
   margin-right: auto;
-  font-size: 0.78rem;
-  color: var(--muted);
+  font-size: var(--fs-n2);
+  color: var(--ink-3);
   visibility: hidden;
 }
 
@@ -5746,8 +6287,8 @@ th.num {
   padding: 0 4px;
   border: 1px solid var(--line-strong);
   border-bottom-width: 2px;
-  border-radius: 5px;
-  font-size: 0.74rem;
+  border-radius: var(--r-1);
+  font-size: var(--fs-n3);
   text-align: center;
   color: var(--ink-soft);
 }
@@ -5817,35 +6358,39 @@ html:not(.js) .how-nav {
 }
 
 .how-text {
-  padding: 14px 18px 8px;
+  padding: var(--sp-5) var(--sp-6) var(--sp-3);
 }
 
 .how-kicker {
-  font-size: 0.75rem;
-  font-weight: 750;
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tr-caps);
   color: var(--accent);
 }
 
 .how-text h2 {
-  font-size: 1.35rem;
-  margin: 6px 0 8px;
+  font-size: var(--fs-3);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tr-heading);
+  line-height: var(--lh-heading);
+  margin: var(--sp-2) 0 var(--sp-3);
 }
 
 .how-text p[data-step-text] {
-  color: var(--ink-soft);
+  color: var(--ink-2);
   max-width: 60em;
 }
 
 .how-out pre {
-  margin: 12px 0 4px;
-  padding: 12px 14px;
-  border-radius: 10px;
+  margin: var(--sp-3) 0 var(--sp-1);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-3);
   background: var(--code-bg);
   border: 1px solid var(--code-border);
   color: var(--code-ink);
-  font: 0.78rem/1.6 var(--mono);
+  font: var(--fs-n2)/1.6 var(--mono);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -5858,9 +6403,9 @@ html:not(.js) .how-nav {
 /* ── The container: what you install, and what the image brings ── */
 
 .fig.image-fig {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
   padding: 16px;
 }
 
@@ -5873,14 +6418,14 @@ html:not(.js) .how-nav {
 
 .img-host,
 .img-box {
-  border-radius: 12px;
+  border-radius: var(--r-3);
   padding: 12px 14px;
   min-width: 0;
 }
 
 .img-host {
   border: 1px dashed var(--line-strong);
-  font-size: 0.86rem;
+  font-size: var(--fs-n2);
 }
 
 .prose .img-host ul {
@@ -5899,10 +6444,10 @@ html:not(.js) .how-nav {
 
 .prose .img-title {
   margin: 0 0 8px;
-  font-size: 0.76rem;
-  font-weight: 750;
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tr-caps);
   color: var(--muted);
   display: flex;
   justify-content: space-between;
@@ -5914,14 +6459,14 @@ html:not(.js) .how-nav {
 }
 
 .img-box .img-title code {
-  font-size: 0.86rem;
+  font-size: var(--fs-n2);
   text-transform: none;
   letter-spacing: 0;
   color: var(--ink);
 }
 
 .img-box .img-title span {
-  font: 600 0.72rem/1.4 var(--mono);
+  font: var(--fw-semibold) var(--fs-n3)/1.4 var(--mono);
   text-transform: none;
   letter-spacing: 0;
 }
@@ -5933,8 +6478,8 @@ html:not(.js) .how-nav {
 
 .prose .img-layer p {
   margin: 0 0 6px;
-  font-size: 0.74rem;
-  font-weight: 700;
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
   color: var(--muted);
 }
 
@@ -5947,17 +6492,17 @@ html:not(.js) .how-nav {
 .img-pill {
   display: inline-block;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid var(--line-strong);
   background: var(--bg);
-  font-size: 0.78rem;
+  font-size: var(--fs-n2);
   color: var(--ink-soft);
   line-height: 1.45;
 }
 
 .img-pill b {
   color: var(--ink);
-  font-weight: 650;
+  font-weight: var(--fw-semibold);
 }
 
 .img-arrow {
@@ -5965,15 +6510,15 @@ html:not(.js) .how-nav {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  font-size: 0.74rem;
-  font-weight: 650;
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-semibold);
   color: var(--m-dup);
   text-align: center;
 }
 
 .img-arrow i {
   font-style: normal;
-  font-size: 1.5rem;
+  font-size: var(--fs-3);
   line-height: 1;
 }
 
@@ -5982,7 +6527,7 @@ html:not(.js) .how-nav {
 }
 
 .img-note {
-  border-radius: 10px;
+  border-radius: var(--r-3);
 }
 
 .img-host code {
@@ -6012,9 +6557,9 @@ html:not(.js) .how-nav {
 /* ── A run on a cluster ── */
 
 .fig.hpc-fig {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
   padding: 16px;
 }
 
@@ -6026,9 +6571,9 @@ html:not(.js) .how-nav {
 }
 
 .hpc-box {
-  border-radius: 12px;
+  border-radius: var(--r-3);
   padding: 11px 13px;
-  font-size: 0.82rem;
+  font-size: var(--fs-n2);
   line-height: 1.5;
   border: 1px solid var(--line-strong);
   background: var(--bg);
@@ -6044,10 +6589,10 @@ html:not(.js) .how-nav {
 }
 
 .prose .hpc-title {
-  font-size: 0.72rem;
-  font-weight: 750;
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-bold);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tr-caps);
   color: var(--muted);
 }
 
@@ -6064,12 +6609,12 @@ html:not(.js) .how-nav {
 }
 
 .prose .hpc-small {
-  font-size: 0.76rem;
+  font-size: var(--fs-n3);
   color: var(--muted);
 }
 
 .hpc-small code {
-  font-size: 0.72rem;
+  font-size: var(--fs-n3);
 }
 
 .hpc-arrow {
@@ -6091,9 +6636,9 @@ html:not(.js) .how-nav {
 .hpc-tasks span {
   display: block;
   padding: 3px 8px;
-  border-radius: 7px;
+  border-radius: var(--r-2);
   background: color-mix(in srgb, var(--m-dup) 12%, transparent);
-  font-size: 0.76rem;
+  font-size: var(--fs-n3);
 }
 
 .hpc-shared {
@@ -6108,14 +6653,14 @@ html:not(.js) .how-nav {
 }
 
 .hpc-places span {
-  font-size: 0.76rem;
+  font-size: var(--fs-n3);
   color: var(--ink-soft);
 }
 
 .hpc-places .hpc-key {
   display: block;
   width: fit-content;
-  font-size: 0.74rem;
+  font-size: var(--fs-n3);
   margin-bottom: 2px;
 }
 
@@ -6140,9 +6685,9 @@ html:not(.js) .how-nav {
 /* ── The report, section by section ── */
 
 .fig.report-map {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
   padding: 14px 16px 12px;
 }
 
@@ -6152,7 +6697,7 @@ html:not(.js) .how-nav {
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  font: 600 0.8rem/1.3 var(--mono);
+  font: var(--fw-semibold) var(--fs-n2)/1.3 var(--mono);
   color: var(--muted);
 }
 
@@ -6166,7 +6711,7 @@ html:not(.js) .how-nav {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-3);
   overflow: hidden;
   text-decoration: none;
   color: var(--ink-soft);
@@ -6196,21 +6741,21 @@ html:not(.js) .how-nav {
   flex-direction: column;
   gap: 3px;
   padding: 10px 12px 12px;
-  font-size: 0.8rem;
+  font-size: var(--fs-n2);
   line-height: 1.45;
 }
 
 .rp-text b {
   color: var(--ink);
-  font-size: 0.9rem;
+  font-size: var(--fs-n1);
 }
 
 /* ── The command builder, in a page of the docs ── */
 
 .fig.builder-fig {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
   padding: 16px;
 }
 
@@ -6240,9 +6785,9 @@ html:not(.js) .how-nav {
 /* ── When a task fails ── */
 
 .fig.fail-fig {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
   padding: 16px;
 }
 
@@ -6253,12 +6798,12 @@ html:not(.js) .how-nav {
 }
 
 .fail-lane {
-  border-radius: 12px;
+  border-radius: var(--r-3);
   padding: 12px 14px;
   background: var(--bg);
   border: 1px solid var(--line-strong);
   border-top: 3px solid var(--warn);
-  font-size: 0.84rem;
+  font-size: var(--fs-n2);
 }
 
 .fail-lane.fail-other {
@@ -6267,7 +6812,7 @@ html:not(.js) .how-nav {
 
 .prose .fail-when {
   margin: 0 0 8px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   color: var(--ink);
 }
 
@@ -6299,7 +6844,7 @@ html:not(.js) .how-nav {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font: 700 0.72rem/1 var(--font);
+  font: var(--fw-bold) var(--fs-n3)/1 var(--font);
   background: color-mix(in srgb, var(--warn) 22%, transparent);
   color: var(--ink);
 }
@@ -6320,7 +6865,7 @@ html:not(.js) .how-nav {
 
 .prose .fail-except {
   margin: 12px 0 0;
-  font-size: 0.82rem;
+  font-size: var(--fs-n2);
   color: var(--ink-soft);
 }
 
@@ -6333,9 +6878,9 @@ html:not(.js) .how-nav {
 /* ── The overview: the five outcomes, drawn small ── */
 
 .fig.outcomes {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
   padding: 14px 16px 12px;
 }
 
@@ -6355,7 +6900,7 @@ html:not(.js) .how-nav {
   gap: 8px;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-3);
   background: var(--bg);
   color: var(--ink-soft);
   text-decoration: none;
@@ -6373,7 +6918,7 @@ html:not(.js) .how-nav {
   align-items: center;
   gap: 8px;
   color: var(--ink);
-  font-size: 0.92rem;
+  font-size: var(--fs-n1);
 }
 
 .oc-fig {
@@ -6383,14 +6928,14 @@ html:not(.js) .how-nav {
 }
 
 .oc-text {
-  font-size: 0.82rem;
+  font-size: var(--fs-n2);
   line-height: 1.45;
 }
 
 .oc-more {
   margin-top: auto;
-  font-size: 0.8rem;
-  font-weight: 650;
+  font-size: var(--fs-n2);
+  font-weight: var(--fw-semibold);
   color: var(--accent);
 }
 
@@ -6406,8 +6951,8 @@ html:not(.js) .how-nav {
   gap: 8px;
   padding: 12px;
   border: 1px dashed var(--line-strong);
-  border-radius: 12px;
-  font-size: 0.86rem;
+  border-radius: var(--r-3);
+  font-size: var(--fs-n2);
 }
 
 .prose .oc-harder ul {
@@ -6423,9 +6968,9 @@ html:not(.js) .how-nav {
 
 .fig.sheet-fig,
 .fig.gauges {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
   padding: 16px;
 }
 
@@ -6437,17 +6982,17 @@ html:not(.js) .how-nav {
 .sheet-file {
   border: 1px solid var(--code-border);
   background: var(--code-bg);
-  border-radius: 10px;
+  border-radius: var(--r-3);
   padding: 10px 12px 12px;
   min-width: 0;
 }
 
 .prose .sheet-name {
   margin: 0 0 8px;
-  font: 600 0.74rem/1 var(--mono);
+  font: var(--fw-semibold) var(--fs-n3)/1 var(--mono);
   color: var(--code-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tr-caps);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -6456,7 +7001,7 @@ html:not(.js) .how-nav {
 .prose .sheet-table {
   margin: 0;
   border: 0;
-  font: 0.8rem/1.5 var(--mono);
+  font: var(--fs-n2)/1.5 var(--mono);
   color: var(--code-ink);
   width: 100%;
   border-collapse: collapse;
@@ -6477,7 +7022,7 @@ html:not(.js) .how-nav {
 
 .prose .sheet-table th {
   color: var(--code-flag);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
 }
 
 .prose .sheet-table .sheet-tab {
@@ -6485,7 +7030,7 @@ html:not(.js) .how-nav {
   background: color-mix(in srgb, var(--code-value) 14%, transparent);
   text-align: center;
   width: 2.2em;
-  border-radius: 4px;
+  border-radius: var(--r-1);
 }
 
 .sheet-path {
@@ -6505,7 +7050,7 @@ html:not(.js) .how-nav {
   border-radius: 50%;
   background: var(--accent);
   color: var(--on-accent);
-  font: 700 0.68rem/1 var(--font);
+  font: var(--fw-bold) var(--fs-n3)/1 var(--font);
   vertical-align: 1px;
 }
 
@@ -6519,7 +7064,7 @@ html:not(.js) .how-nav {
   padding: 0;
   list-style: none;
   counter-reset: note;
-  font-size: 0.86rem;
+  font-size: var(--fs-n2);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
@@ -6544,7 +7089,7 @@ html:not(.js) .how-nav {
   place-items: center;
   background: var(--accent);
   color: var(--on-accent);
-  font: 700 0.68rem/1 var(--font);
+  font: var(--fw-bold) var(--fs-n3)/1 var(--font);
 }
 
 .prose .sheet-notes li:nth-child(2)::before {
@@ -6560,7 +7105,7 @@ html:not(.js) .how-nav {
 
 .prose .sheet-when {
   margin: 0 0 6px;
-  font-size: 0.82rem;
+  font-size: var(--fs-n2);
   color: var(--muted);
 }
 
@@ -6571,12 +7116,12 @@ html:not(.js) .how-nav {
 .prose .sheet-check pre {
   margin: 0;
   padding: 10px 12px;
-  border-radius: 9px;
+  border-radius: var(--r-3);
   background: var(--code-bg);
   border: 1px solid var(--code-border);
   border-left: 3px solid var(--danger);
   color: var(--code-ink);
-  font: 0.74rem/1.55 var(--mono);
+  font: var(--fs-n3)/1.55 var(--mono);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -6587,7 +7132,7 @@ html:not(.js) .how-nav {
 
 .prose .gauge-name {
   margin: 0 0 30px;
-  font-size: 0.88rem;
+  font-size: var(--fs-n2);
   display: flex;
   gap: 8px;
   align-items: baseline;
@@ -6595,13 +7140,13 @@ html:not(.js) .how-nav {
 
 .gauge-name span {
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: var(--fs-n2);
 }
 
 .gauge-track {
   position: relative;
   height: 12px;
-  border-radius: 6px;
+  border-radius: var(--r-2);
   background: var(--bg-subtle);
 }
 
@@ -6612,11 +7157,11 @@ html:not(.js) .how-nav {
 }
 
 .gauge-zone:first-child {
-  border-radius: 6px 0 0 6px;
+  border-radius: var(--r-2) 0 0 var(--r-2);
 }
 
 .gauge-zone:nth-last-child(1 of .gauge-zone) {
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 var(--r-2) var(--r-2) 0;
 }
 
 .gz-ok {
@@ -6665,8 +7210,8 @@ html:not(.js) .how-nav {
   transform: translateX(-50%);
   white-space: nowrap;
   font-style: normal;
-  font-size: 0.74rem;
-  font-weight: 600;
+  font-size: var(--fs-n3);
+  font-weight: var(--fw-semibold);
   color: var(--ink-soft);
 }
 
@@ -6690,7 +7235,7 @@ html:not(.js) .how-nav {
   position: relative;
   height: 16px;
   margin-top: 4px;
-  font: 0.7rem/1 var(--mono);
+  font: var(--fs-n3)/1 var(--mono);
   color: var(--muted);
 }
 
@@ -6743,7 +7288,7 @@ html:not(.js) .how-nav {
     margin: 8px 0 0;
     padding: 0;
     list-style: none;
-    font-size: 0.78rem;
+    font-size: var(--fs-n2);
     color: var(--ink-soft);
   }
 
@@ -6781,12 +7326,12 @@ html:not(.js) .how-nav {
 .pf-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.25fr);
-  gap: 16px;
+  gap: var(--sp-4);
   align-items: start;
-  padding: 10px 14px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--bg-elev);
+  padding: var(--sp-3) var(--sp-5);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
+  background: var(--surface-1);
 }
 
 .pf-headrow {
@@ -6794,9 +7339,9 @@ html:not(.js) .how-nav {
   background: none;
   padding-top: 0;
   padding-bottom: 0;
-  font-size: 0.85rem;
-  font-weight: 650;
-  color: var(--muted);
+  font-size: var(--fs-n2);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
 }
 
 .pf-name {
@@ -6806,12 +7351,13 @@ html:not(.js) .how-nav {
 }
 
 .pf-name b {
-  font-size: 0.95rem;
+  font-size: var(--fs-n1);
+  color: var(--ink-1);
 }
 
 .pf-name small {
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: var(--fs-n2);
 }
 
 .pf-bar {
@@ -6823,9 +7369,9 @@ html:not(.js) .how-nav {
 .pf-track {
   position: relative;
   display: block;
-  height: 26px;
-  border-radius: 7px;
-  background: var(--bg-subtle);
+  height: 28px;
+  border-radius: var(--r-2);
+  background: var(--surface-3);
   overflow: hidden;
 }
 
@@ -6857,22 +7403,22 @@ html:not(.js) .how-nav {
   position: relative;
   display: block;
   padding: 0 10px;
-  font: 650 0.8rem/26px var(--mono);
+  font: var(--fw-semibold) var(--fs-n2)/28px var(--mono);
   color: var(--ink);
 }
 
 .pf-bar small {
   padding-left: 2px;
-  font-size: 0.78rem;
+  font-size: var(--fs-n2);
   color: var(--muted);
 }
 
 .pf-none .pf-track {
   background: none;
-  border: 1px dashed var(--line);
+  border: 1px dashed var(--line-2);
   padding: 0 10px;
-  line-height: 24px;
-  font-size: 0.8rem;
+  line-height: 26px;
+  font-size: var(--fs-n2);
   color: var(--muted);
 }
 
@@ -6902,14 +7448,14 @@ html:not(.js) .how-nav {
   max-width: 560px;
   margin: 26px 0 30px;
   padding: 16px 18px 10px;
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
 }
 
 .lost figcaption {
   margin-top: 6px;
-  font-size: 0.84rem;
+  font-size: var(--fs-n2);
   color: var(--muted);
 }
 
@@ -6931,12 +7477,12 @@ html:not(.js) .how-nav {
 
 .lost-hero .nearest {
   margin-top: 18px;
-  font-size: 1.1rem;
+  font-size: var(--fs-0);
   color: var(--ink-soft);
 }
 
 .lost-hero .nearest a {
-  font-weight: 650;
+  font-weight: var(--fw-semibold);
 }
 
 .lost-search {
@@ -6947,9 +7493,9 @@ html:not(.js) .how-nav {
 /* ── Duplications: a family and a pair of communities, as networks ── */
 
 .fig.dup-fig {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-4);
   padding: 16px 16px 12px;
 }
 
@@ -7050,7 +7596,7 @@ html:not(.js) .how-nav {
 }
 
 .net-pill {
-  fill: var(--bg-elev);
+  fill: var(--halo);
   stroke-width: 1px;
 }
 
@@ -7064,7 +7610,7 @@ html:not(.js) .how-nav {
 
 .net-pct {
   font-size: 10.5px;
-  font-weight: 650;
+  font-weight: var(--fw-semibold);
   fill: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
@@ -7079,7 +7625,7 @@ html:not(.js) .how-nav {
 }
 
 .net-node.out circle {
-  fill: var(--bg-elev);
+  fill: var(--halo);
   stroke: var(--drop);
   stroke-dasharray: 3 3;
 }
@@ -7111,17 +7657,17 @@ html:not(.js) .how-nav {
 
 .net-name {
   font-size: 11.5px;
-  font-weight: 650;
+  font-weight: var(--fw-semibold);
   fill: var(--ink);
   paint-order: stroke;
-  stroke: var(--bg-elev);
+  stroke: var(--halo);
   stroke-width: 3px;
   stroke-linejoin: round;
 }
 
 .net-node.out .net-name {
   fill: var(--muted);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .chip.link-kept,
@@ -7163,7 +7709,7 @@ html:not(.js) .how-nav {
 
 .dup-head {
   margin: 0 0 4px !important;
-  font-size: 0.86rem;
+  font-size: var(--fs-n2);
   color: var(--muted);
   display: flex;
   flex-wrap: wrap;
@@ -7173,15 +7719,15 @@ html:not(.js) .how-nav {
 
 .dup-head b {
   color: var(--ink);
-  font-weight: 650;
+  font-weight: var(--fw-semibold);
 }
 
 .dup-bridge {
   grid-column: 1 / -1;
   position: relative;
   text-align: center;
-  font-size: 0.82rem;
-  font-weight: 650;
+  font-size: var(--fs-n2);
+  font-weight: var(--fw-semibold);
   color: var(--m-dup);
   padding-top: 14px;
 }
@@ -7195,7 +7741,7 @@ html:not(.js) .how-nav {
   height: 10px;
   border: 2px dashed color-mix(in srgb, var(--m-dup) 70%, transparent);
   border-top: 0;
-  border-radius: 0 0 10px 10px;
+  border-radius: 0 0 var(--r-3) var(--r-3);
 }
 
 .dup-metrics {
@@ -7224,8 +7770,8 @@ html:not(.js) .how-nav {
 
 .dup-metrics .th-sub {
   display: block;
-  font-weight: 500;
-  font-size: 0.74rem;
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-n3);
   color: var(--muted);
 }
 

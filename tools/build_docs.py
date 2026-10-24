@@ -1656,7 +1656,8 @@ def header(root: str, current: str, this_page: str = "") -> str:
     return (
         '<header class="top">\n  <div class="wrap">\n'
         f'    <a class="brand" href="{root}index.html" aria-label="AMAP home">\n'
-        f'      <img src="{root}assets/amap-logo.png" alt="" width="57" height="40"><span>AMAP</span>\n'
+        f'      <img class="logo-dark" src="{root}assets/amap-logo.png" alt="" width="57" height="40">'
+        f'<img class="logo-light" src="{root}assets/amap-logo-light.png" alt="" width="57" height="40"><span>AMAP</span>\n'
         "    </a>\n"
         '    <nav class="nav" aria-label="Site">\n'
         + nav(f"{root}index.html#start", "Start here", "start")

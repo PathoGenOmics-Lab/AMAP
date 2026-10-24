@@ -239,7 +239,6 @@ html {
 
 body {
   margin: 0;
-  background: var(--surface-0);
   color: var(--ink-1);
   font: var(--fw-regular) var(--fs-0)/var(--lh-body) var(--font);
   -webkit-font-smoothing: antialiased;
@@ -249,15 +248,15 @@ body {
 
 /* ── The graticule ──
    The pages sit on a grid, the way a plot or an instrument's screen does:
-   minor lines every 16px, major ones every 80. It is one fixed layer behind
-   everything, painted once and never on scroll, so nothing that moves or
-   reflows moves it; cards, plates, code and tables cover it. Its major lines
-   fall on the column's left edge, at every width: the 24px margin, 16px on a
-   phone, and from 1216px the edge of the centred column (half the screen less
-   584px; a background's percentage is taken of the room left by its tile,
-   hence the two offsets). The docs keep only the major lines, quieter in the
-   light theme, so long reading stays calm; the sticky header, the sidebar
-   and the front page's rail sit on its rows. */
+   minor lines every 16px, major ones every 80. It is the page's own
+   background, drawn from the top of the page and scrolled with it, so it
+   needs no layer of its own and nothing that moves or reflows moves it;
+   cards, plates, code and tables cover it. Its major lines fall on the
+   column's left edge, at every width: the 24px margin, 16px on a phone, and
+   from 1216px the edge of the centred column (half the screen less 584px; a
+   background's percentage is taken of the room left by its tile, hence the
+   two offsets). The docs keep only the major lines, quieter in the light
+   theme, so long reading stays calm. */
 :root {
   --grid-x-major: 24px;
   --grid-x-minor: 8px;
@@ -277,17 +276,13 @@ body {
   }
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
+body {
   background:
     linear-gradient(90deg, var(--grid-major) 1px, transparent 1px) var(--grid-x-major) 0 / 80px 80px,
     linear-gradient(var(--grid-major) 1px, transparent 1px) 0 0 / 80px 80px,
     linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px) var(--grid-x-minor) 0 / 16px 16px,
-    linear-gradient(var(--grid-minor) 1px, transparent 1px) 0 0 / 16px 16px;
+    linear-gradient(var(--grid-minor) 1px, transparent 1px) 0 0 / 16px 16px,
+    var(--surface-0);
 }
 
 body.docs {
@@ -296,6 +291,25 @@ body.docs {
 
 :root[data-theme="light"] body.docs {
   --grid-major: rgba(8, 92, 80, 0.045);
+}
+
+/* Between 861 and 1215px the docs' sidebar and gap come to 272px, not a
+   whole number of squares, so the grid moves by the difference (32px) and
+   the text column keeps its edge on a major line, as on a wider screen. The
+   header's ruler follows. */
+@media (min-width: 861px) and (max-width: 1215px) {
+  body.docs {
+    --grid-x-major: 56px;
+  }
+}
+
+/* In the light theme the front page's chapters of reading (the steps, the
+   benchmark, the files, the questions) lay a veil of the page's colour over
+   the grid, from their own top rule: the lines go quieter there than behind
+   Figure 1 and the other drawings, and the rules of a table or a list stay
+   apart from them. */
+:root[data-theme="light"] :is(#start, #proof, #outputs, #faq) {
+  background-color: color-mix(in srgb, var(--surface-0) 50%, transparent);
 }
 
 /* Links: accent ink, a quiet underline that takes the full colour on hover. */
@@ -2796,21 +2810,23 @@ main {
 }
 
 /* ── The front page's rail of chapters ──
-   Where there is room beside the column (from 1440px: 104px of rail, 20px
-   from the column, 12px or more from the screen's edge), the page's figure
-   and chapters stand in the margin as a ruler: a tick for each, numbered as
-   the page numbers them, on rows of two grid squares that sit on the
-   graticule from its second major line down. The one being read takes the
+   Where there is room beside the column, the page's figure and chapters
+   stand in the margin as a ruler: a tick for each, numbered as the page
+   numbers them, on rows of two grid squares. The one being read takes the
    accent on the rule and its name in full ink (site.js, as the docs'
-   contents). Narrower, the rail goes: the header's search lists the same
-   chapters, and on a phone the bar under the header names the one in view. */
+   contents). The room is 6.5rem of rail, 20px from the column and 12px or
+   more from the screen's edge: from 90em, which is 1440px with the usual
+   16px text and wider when the reader sets larger text, so the names never
+   reach the column. Narrower, the rail goes: the header's search lists the
+   same chapters, and on a phone the bar under the header names the one in
+   view. */
 .rail {
   display: none;
 }
 
-@media (min-width: 1440px) {
+@media (min-width: 90em) {
   .rail {
-    --rail-w: 104px;
+    --rail-w: 6.5rem;
     display: block;
     position: fixed;
     z-index: 40;
@@ -2851,6 +2867,15 @@ main {
   width: 6px;
   height: 1px;
   background: var(--tick-major);
+}
+
+/* A name may run 12px into the gutter (a semibold one does, by a pixel or
+   two), never further: past that it is cut short rather than run into the
+   column. */
+.rail a > span:last-child {
+  margin-right: calc(-1 * var(--sp-3));
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rail-n {
@@ -5563,6 +5588,12 @@ th.num {
   text-decoration: none;
 }
 
+/* The list scrolls, and would cut a focus ring drawn outside a link: the
+   ring is drawn just inside it instead. */
+.docs-menu a:focus-visible {
+  outline-offset: -3px;
+}
+
 .docs-nav li a:hover {
   background: var(--surface-3);
   color: var(--ink-1);
@@ -5572,6 +5603,17 @@ th.num {
   background: var(--accent-wash);
   color: var(--accent);
   font-weight: var(--fw-semibold);
+}
+
+/* Where the list scrolls, the page you are on stays at its top while its
+   contents scroll under it, so a long page's sections never carry its name
+   out of sight. */
+@media (min-width: 861px) {
+  .docs-menu a[aria-current="page"] {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
 }
 
 .docs-nav li a[aria-current="page"]::before {
@@ -5587,9 +5629,10 @@ th.num {
 
 /* The page's contents, under its entry: a rail of hairline in line with the
    page names, the section being read on an accent stretch of it, in full
-   ink. The h3s of that section unfold under it (site.js; with no script all
-   of them show). On a phone, where the list is folded at the top, the
-   contents are the box under the h1 instead. */
+   ink. The h3s stay listed under their h2 all the time, so the list never
+   folds or unfolds, and nothing under it moves, as you read. On a phone,
+   where the list is folded at the top, the contents are the box under the
+   h1 instead. */
 .docs-nav .page-toc {
   margin: var(--sp-1) 0 var(--sp-2) var(--sp-3);
 }
@@ -5611,9 +5654,10 @@ th.num {
   color: var(--ink-1);
 }
 
+/* Marked by its colour and the bar, not by weight, which would rewrap a long
+   name and move the list under it. */
 .docs-nav .page-toc a[aria-current="location"] {
   color: var(--ink-1);
-  font-weight: var(--fw-medium);
 }
 
 .docs-nav .page-toc a[aria-current="location"]::before {
@@ -5630,10 +5674,6 @@ th.num {
 /* The section an h3 being read is in: its name in the second ink. */
 .docs-nav .page-toc .in > a:not([aria-current]) {
   color: var(--ink-2);
-}
-
-html.js .page-toc .toc-2:not(.open) > ul {
-  display: none;
 }
 
 @media (max-width: 860px) {
@@ -6248,20 +6288,30 @@ html.js .page-toc .toc-2:not(.open) > ul {
 
 /* On paper: light colours, the text alone, and the address of every link
    that leaves the site. */
-/* On paper, and in a high-contrast theme, the graticule, its ruler, the
-   plates' corner marks and the rail of chapters step out: they are drawn for
-   a screen, and a forced palette would turn them into lines of text colour. */
+/* On paper, and in a high-contrast theme, the graticule, its ruler and the
+   plates' corner marks step out: they are drawn for a screen, and a forced
+   palette would turn them into lines of text colour. The rail of chapters
+   and the bar that names the section being read step out on paper only; in
+   forced colours the rail stays, its chapter marked in the system's
+   highlight. */
 @media print {
-  body::before,
+  body {
+    background-image: none;
+  }
+
   .top::after,
   .rail,
+  .here-bar,
   :is(.demo, .cases, .case, .metro-wrap, .how-stage-card, .excerpt, .report-frame)::after {
     display: none !important;
   }
 }
 
 @media (forced-colors: active) {
-  body::before,
+  body {
+    background-image: none;
+  }
+
   .top::after,
   :is(.demo, .cases, .case, .metro-wrap, .how-stage-card, .excerpt, .report-frame)::after {
     display: none;
@@ -8770,8 +8820,8 @@ html:not(.js) .how-nav {
   .how-steps button[aria-current="step"],
   .tally > [aria-pressed="true"],
   .docs-results a.active,
-  .page-toc a.active,
-  .rail a.active,
+  .docs-nav .page-toc a.active[aria-current],
+  .rail a.active[aria-current],
   .toc-inline a.active,
   .sheet-toc a.active,
   .docs-nav li a[aria-current="page"],
@@ -8785,7 +8835,8 @@ html:not(.js) .how-nav {
   .seg button:is([aria-pressed="true"], [aria-checked="true"]) *,
   .how-group .seg a[aria-current="true"] *,
   .how-steps button[aria-current="step"] *,
-  .docs-results a.active * {
+  .docs-results a.active *,
+  .rail a.active * {
     color: HighlightText;
   }
 }

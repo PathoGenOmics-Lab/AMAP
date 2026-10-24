@@ -1635,7 +1635,15 @@
     var el = id && !seenTarget[id] ? document.getElementById(id) : null;
     if (!el) return;
     seenTarget[id] = true;
-    tocTargets.push({ id: id, el: el, text: link.textContent.trim(), level: link.closest(".toc-3") ? 3 : 2 });
+    var text = link.textContent.trim();
+    // The rail's names are cut short to fit the margin; the bar and the
+    // sheet have room for the name the chapter gives itself, its kicker.
+    var kicker = link.closest(".rail") ? el.querySelector(".section-head .kicker") : null;
+    if (kicker) {
+      var number = link.querySelector(".rail-n");
+      text = (number ? number.textContent.trim() + " " : "") + kicker.textContent.trim();
+    }
+    tocTargets.push({ id: id, el: el, text: text, level: link.closest(".toc-3") ? 3 : 2 });
   });
 
   var hereBar = null;
@@ -1690,32 +1698,59 @@
     });
   }
 
-  // The sidebar's contents: the section being read unfolds its h3s, the h2
-  // an h3 being read is in is marked too, and the sidebar scrolls (itself,
-  // never the page) to keep the mark in view.
+  // The sidebar's contents: the h2 an h3 being read is in is marked too, and
+  // the sidebar scrolls (itself, never the page) to keep the mark in view.
   var sideToc = document.querySelector(".docs-nav .page-toc");
   var sideMenu = sideToc ? sideToc.closest(".docs-menu") : null;
   // Until the list has opened where it was (below), only the marks move.
   var menuReady = false;
 
+  // The current page's entry sticks at the top of the list over its own
+  // contents (site.css), so those are brought in below it.
+  var sideEntry = sideToc ? sideToc.parentElement.querySelector('a[aria-current="page"]') : null;
+
   function revealInMenu(el, whole) {
     if (!sideMenu || !el || sideMenu.scrollHeight <= sideMenu.clientHeight + 1) return;
     var m = sideMenu.getBoundingClientRect();
     if (!m.height) return;
+    var top = m.top;
+    if (sideEntry && sideToc.contains(el) && getComputedStyle(sideEntry).position === "sticky") top += sideEntry.offsetHeight;
     var r = el.getBoundingClientRect();
     var pad = whole ? 8 : 40;
     var by = 0;
-    if (r.height > m.height - 2 * pad || r.top < m.top + pad) by = r.top - m.top - pad;
+    if (r.height > m.bottom - top - 2 * pad || r.top < top + pad) by = r.top - top - pad;
     else if (r.bottom > m.bottom - pad) by = r.bottom - m.bottom + pad;
     if (Math.abs(by) < 1) return;
     sideMenu.scrollTo({ top: sideMenu.scrollTop + by, behavior: reducedMotion() || whole ? "auto" : "smooth" });
+  }
+
+  // Near the foot of the page the end of the layout would push the sticky
+  // sidebar up and carry the mark out of sight; the list is cut short
+  // instead, so the sidebar stays whole and the mark stays in view. (150 is
+  // the room the stylesheet leaves around the list, calc(100vh - 150px).)
+  var sideNav = sideMenu ? sideMenu.closest(".docs-nav") : null;
+  var sideLayout = sideMenu ? sideMenu.closest(".docs-layout") : null;
+  var sideCap = "";
+  function fitSide() {
+    if (!sideNav || !sideLayout) return;
+    var cap = "";
+    if (getComputedStyle(sideNav).position === "sticky") {
+      var end = sideLayout.getBoundingClientRect().bottom - parseFloat(getComputedStyle(sideLayout).paddingBottom);
+      var natural = Math.min(sideMenu.scrollHeight, window.innerHeight - 150);
+      var bottom = parseFloat(getComputedStyle(sideNav).top) + sideNav.offsetHeight - sideMenu.offsetHeight + natural;
+      if (bottom > end) cap = Math.max(160, Math.floor(natural - (bottom - end))) + "px";
+    }
+    if (cap === sideCap) return;
+    sideCap = cap;
+    sideMenu.style.maxHeight = cap;
+    var mark = sideToc.querySelector('a[aria-current="location"]');
+    if (mark && menuReady) revealInMenu(mark, true);
   }
 
   function markSide(link) {
     if (!sideToc) return;
     var group = link ? link.closest(".toc-2") : null;
     sideToc.querySelectorAll(".toc-2").forEach(function (li) {
-      li.classList.toggle("open", li === group);
       li.classList.toggle("in", li === group && !!link.closest(".toc-3"));
     });
     if (link && menuReady) revealInMenu(link, false);
@@ -1735,8 +1770,10 @@
     updateHere();
   }
 
+  // The bar shows on a phone only; on a wider screen a scroll leaves it be.
+  var phoneWidth = window.matchMedia ? window.matchMedia("(max-width: 860px)") : null;
   function updateHere() {
-    if (!hereBar) return;
+    if (!hereBar || (phoneWidth && !phoneWidth.matches)) return;
     var title = document.querySelector("main h1");
     var past = title ? title.getBoundingClientRect().bottom < HEADER_GAP : window.scrollY > 240;
     hereBar.classList.toggle("on", past);
@@ -1773,6 +1810,7 @@
     var markCurrent = function () {
       ticking = false;
       updateHere();
+      fitSide();
       if (locked) return;
       var doc = document.documentElement;
       var scrolls = doc.scrollHeight > window.innerHeight + 2;

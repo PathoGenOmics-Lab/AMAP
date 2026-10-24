@@ -48,7 +48,8 @@ fails when it drifts. This does, in seventeen parts:
   front       the pages the command builder links to exist, the front
               page's report frame and the picture standing in for it are
               there, the picture light, and its rail lists Figure 1 and every
-              chapter in order, under the numbers the page gives them;
+              chapter in order, under the numbers the page gives them and by
+              words each chapter shows;
   dashes      no em-dashes.
 
 Run from the repository root, with what requirements-test.txt installs (the
@@ -1206,17 +1207,63 @@ def check_front(pages: dict[str, Page]) -> list[str]:
     return problems
 
 
+class Chapters(HTMLParser):
+    """The front page's chapters as its stylesheet counts them: every kicker
+    inside a section head counts one, wherever it sits in the head and
+    whatever order the section's attributes come in, and belongs to the
+    section around it. For each, its id (None if it has none, which the rail
+    cannot link to), and the words each section shows."""
+
+    VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.chapters: list[str | None] = []
+        self.words: dict[str | None, list[str]] = {}
+        self._open: list[tuple[str, set[str], str | None, bool]] = []  # (tag, classes, id, hides its text)
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.VOID:
+            return
+        a = dict(attrs)
+        classes = set((a.get("class") or "").split())
+        hides = tag in ("script", "style", "template") or "hidden" in a or a.get("aria-hidden") == "true"
+        self._open.append((tag, classes, a.get("id"), hides))
+        if "kicker" in classes and any("section-head" in c for _, c, _, _ in self._open[:-1]):
+            section = self._section()
+            if section is not False:
+                self.chapters.append(section)
+
+    def handle_endtag(self, tag):
+        if any(t == tag for t, _, _, _ in self._open):
+            while self._open and self._open.pop()[0] != tag:
+                pass
+
+    def handle_data(self, data):
+        if not any(h for _, _, _, h in self._open):
+            self.words.setdefault(self._section() or None, []).append(data)
+
+    def _section(self):
+        """The id of the innermost open section (None if it has none), or
+        False outside any section."""
+        return next((i for t, _, i, _ in reversed(self._open) if t == "section"), False)
+
+
 def check_rail(front: str) -> list[str]:
     """The rail beside the front page lists Figure 1, then every chapter, in
     the page's order, each under the number the page gives it (the page counts
-    its chapters in CSS; the rail writes the numbers out, so they can drift)."""
+    its chapters in CSS; the rail writes the numbers out, so they can drift),
+    and names each by words its chapter shows (the rail's names are short, to
+    fit the margin, but never ones the reader cannot find in the chapter)."""
     rail = re.search(r'<nav class="rail"[^>]*>(.*?)</nav>', front, re.S)
     if not rail:
         return ["index.html: the rail of chapters is missing"]
     links = re.findall(r'<a\b[^>]*href="#([\w-]+)"[^>]*>(.*?)</a>', rail.group(1), re.S)
-    hero = re.search(r'<section class="hero" id="([\w-]+)"', front)
-    chapters = re.findall(r'<section class="section(?: [\w-]+)*" id="([\w-]+)">\s*<div class="wrap">\s*<div class="section-head">\s*<p class="kicker">', front)
-    expected = ([hero.group(1)] if hero else []) + chapters
+    hero = re.search(r'<section\b[^>]*\bclass="hero"[^>]*>', front)
+    hero_id = re.search(r'\bid="([\w-]+)"', hero.group(0)) if hero else None
+    page = Chapters()
+    page.feed(front)
+    expected = ([hero_id.group(1)] if hero_id else []) + [c or "(a chapter with no id)" for c in page.chapters]
     problems = []
     if [target for target, _ in links] != expected:
         problems.append(f"index.html: the rail lists {[t for t, _ in links]}, the page's figure and chapters are {expected}")
@@ -1224,6 +1271,10 @@ def check_rail(front: str) -> list[str]:
         number = re.search(r'<span class="rail-n"[^>]*>(\d+)</span>', label)
         if not number or int(number.group(1)) != n:
             problems.append(f"index.html: the rail numbers #{target} {number.group(1) if number else 'not at all'}, the page numbers it {n:02d}")
+        name = re.sub(r"<[^>]+>", " ", re.sub(r'<span class="rail-n"[^>]*>.*?</span>', "", label)).split()
+        shown = " ".join(" ".join(page.words.get(target, [])).split()).lower()
+        if name and not re.search(r"\b" + re.escape(" ".join(name).lower()) + r"\b", shown):
+            problems.append(f"index.html: the rail calls #{target} \"{' '.join(name)}\", a name the chapter does not show")
     return problems
 
 

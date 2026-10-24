@@ -1739,8 +1739,9 @@ def section_id(section: str) -> str:
 
 def page_contents(headings: list[tuple[int, str, str]], levels: tuple[int, ...]) -> str:
     """The page's own contents for the sidebar, nested under its entry: each
-    h2, and the h3s under it in a list of their own (site.js unfolds those of
-    the section being read; with no script they all show)."""
+    h2, and the h3s under it in a list of their own, always shown, so the
+    list stays still as the reader scrolls (site.js marks the one being
+    read)."""
     groups: list[tuple[str, str, list[tuple[str, str]]]] = []
     for level, text, slug in headings:
         if level not in levels:

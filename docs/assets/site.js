@@ -220,22 +220,81 @@
 
   /* ── Embedded report ── */
 
-  // The report takes the mouse wheel for its own plots, so it only takes the
-  // mouse after a click, and gives it back when the pointer leaves.
+  // The example report is 1.9 MB of scripts and plots, so the page shows a
+  // picture of it until the reader asks for it. Once open it takes the mouse
+  // and the keyboard for its own plots, and gives them back when the pointer
+  // or focus leaves it, a touch lands outside it, Escape is pressed or Done
+  // is tapped. Until then it is inert: none of its links is a tab stop.
   document.querySelectorAll("[data-report-stage]").forEach(function (stage) {
     var cover = stage.querySelector(".report-cover");
     var frame = stage.querySelector("iframe");
+    var done = stage.querySelector(".report-done");
     if (!cover || !frame) return;
-    cover.addEventListener("click", function () {
+    frame.inert = true;
+
+    function rest(refocus) {
+      if (!stage.classList.contains("live")) return;
+      stage.classList.remove("live");
+      frame.inert = true;
+      if (done) done.hidden = true;
+      if (refocus) cover.focus();
+    }
+
+    function onEscape(event) {
+      if (event.key === "Escape") rest(true);
+    }
+
+    function open() {
+      if (!frame.getAttribute("src") && frame.getAttribute("data-src")) {
+        frame.addEventListener(
+          "load",
+          function () {
+            stage.classList.add("loaded");
+            var label = cover.querySelector("span");
+            if (label) label.textContent = "Explore the example report";
+            // Escape inside the report, where the page can reach it (not
+            // from a file:// address, which Chrome keeps apart).
+            try {
+              frame.contentWindow.document.addEventListener("keydown", onEscape);
+            } catch (e) {
+              /* another origin: Escape works from the page only */
+            }
+          },
+          { once: true }
+        );
+        frame.setAttribute("src", frame.getAttribute("data-src"));
+      }
       stage.classList.add("live");
+      frame.inert = false;
+      if (done) done.hidden = false;
       try {
         frame.focus();
       } catch (e) {
         /* nothing to focus yet */
       }
-    });
+    }
+
+    cover.addEventListener("click", open);
+    if (done) {
+      done.addEventListener("click", function () {
+        rest(true);
+      });
+    }
     stage.addEventListener("mouseleave", function () {
-      stage.classList.remove("live");
+      rest(false);
+    });
+    stage.addEventListener("focusout", function (event) {
+      if (event.relatedTarget && !stage.contains(event.relatedTarget)) rest(false);
+    });
+    document.addEventListener(
+      "touchstart",
+      function (event) {
+        if (!stage.contains(event.target)) rest(false);
+      },
+      { passive: true }
+    );
+    document.addEventListener("keydown", function (event) {
+      if (stage.classList.contains("live")) onEscape(event);
     });
   });
 

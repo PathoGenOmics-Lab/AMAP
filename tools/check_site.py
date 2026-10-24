@@ -993,6 +993,36 @@ def check_readme(pages: dict[str, Page]) -> list[str]:
     return problems
 
 
+# ── front ──
+
+
+POSTER_BYTES = 80_000
+
+
+def check_front(pages: dict[str, Page]) -> list[str]:
+    """What the front page loads or links to outside its HTML: the pages the
+    command builder's notes link to (site.js writes them, from the front page
+    and from the quickstart's copy), the report its frame loads on request,
+    and the picture that stands in for it, which has to stay light."""
+    problems = []
+    js = SITE_JS.read_text(encoding="utf-8")
+    block = js[js.index("/* ── Command builder ── */"):js.index("/* ── Embedded report ── */")]
+    for target, anchor in re.findall(r"builderRoot \+ '([\w./-]+\.html)(?:#([\w-]+))?", block):
+        if target not in pages:
+            problems.append(f"site.js: the command builder links to {target}, which does not exist")
+        elif anchor and anchor not in pages[target].ids:
+            problems.append(f"site.js: the command builder links to {target}#{anchor}, which no element there has")
+    front = (SITE / "index.html").read_text(encoding="utf-8")
+    for src in re.findall(r'<iframe[^>]*\sdata-src="([^"]+)"', front):
+        if not (SITE / src).exists():
+            problems.append(f"index.html: the report frame loads {src}, which does not exist")
+    for src in re.findall(r'<img class="report-poster"[^>]*\ssrc="([^"]+)"', front):
+        size = (SITE / src).stat().st_size if (SITE / src).exists() else 0
+        if size > POSTER_BYTES:
+            problems.append(f"index.html: {src} is {size:,} bytes, over the {POSTER_BYTES:,} it may weigh")
+    return problems
+
+
 # ── dashes ──
 
 
@@ -1033,6 +1063,7 @@ def main() -> int:
         ("benchmark", lambda: check_benchmark(pages)),
         ("metro", check_metro),
         ("readme", lambda: check_readme(pages)),
+        ("front", lambda: check_front(pages)),
         ("dashes", check_dashes),
     ]
     failed = 0

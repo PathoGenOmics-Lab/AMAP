@@ -2,6 +2,8 @@
 title: "AMAP: Assisted Microbial Annotation Pipeline Report"
 author: "`r paste0('AMAP ', params$version)`"
 date: "`r format(Sys.time(), '%d/%m/%Y')`"
+# The page's language, for screen readers and the browser's own tools.
+lang: en
 
 output:
   html_document:
@@ -16,6 +18,9 @@ output:
     # Everything is inlined, so the file opens with no network and survives
     # being emailed around. Nothing here may reference a remote URL.
     self_contained: true
+    # No maths in the report, and MathJax cannot be inlined: left on, every
+    # report carried a script that fetched it from mathjax.rstudio.com.
+    mathjax: null
     includes:
       before_body: header.html
 params:
@@ -51,6 +56,7 @@ params:
     overlay.className = "zoomDiv";
     var big = document.createElement("img");
     big.className = "zoomImg";
+    big.alt = "";
     overlay.appendChild(big);
     document.body.insertBefore(overlay, document.body.firstChild);
 
@@ -64,6 +70,7 @@ params:
       if (t.tagName !== "IMG") return;
       if (t.classList.contains("zoomImg")) { close(); return; }
       big.src = t.getAttribute("src");
+      big.alt = t.getAttribute("alt") || "";
       big.style.width = "100%";
       Object.assign(overlay.style, {
         opacity: "1", width: "auto", border: "1px solid white",
@@ -167,7 +174,7 @@ interactive_plot <- function(p) {
 }
 
 # ------------- GLOBAL VARIABLES -------------
-# Lineage color palette — includes MTBC lineages and a broad auto-extension
+# Lineage color palette: includes MTBC lineages and a broad auto-extension
 # mechanism for any organism. Unknown lineage names get colors from a
 # qualitative palette, ensuring the report works out-of-the-box for non-MTBC.
 mtbc_colors <- c("L5"="#995200","L6"="#1eb040","A1"="#d1ae00","A4"="#ff9cdb","A2"="#8ef5c8",
@@ -290,7 +297,7 @@ if (length(unknown_lineages) > 0) {
   colors <- c(colors, extra_cols)
 }
 
-# Mycobrowser — may be empty for non-MTBC organisms
+# Mycobrowser: may be empty for non-MTBC organisms
 has_mycobrowser_data <- file.exists(params$myco_file) && file.info(params$myco_file)$size > 10
 if (has_mycobrowser_data) {
   myco_content <- tryCatch(readLines(params$myco_file, n=2), error=function(e) "")
@@ -344,7 +351,7 @@ if (nrow(datos_myco) > 0) {
   merged_data <- data.frame()
 }
 } else {
-  # No Mycobrowser data — create empty placeholders
+  # No Mycobrowser data: create empty placeholders
   merged_data <- data.frame()
 }
 
@@ -448,7 +455,7 @@ if (has_dups) {
 
 This section provides a general overview of the dataset, showing the distribution of sequences across lineages/groups.
 
-```{r lineage_summary, echo=FALSE, fig.align='center', fig.width=14, message=FALSE, warning=FALSE}
+```{r lineage_summary, echo=FALSE, fig.align='center', fig.width=14, message=FALSE, warning=FALSE, fig.alt='Bar chart of how many genomes each lineage has, next to a ring of each lineage\'s share of the genomes.'}
 lineage_summary <- data %>%
   rename(Lineages = V4) %>%
   mutate(Lineages = ifelse(is.na(Lineages) | Lineages == "", "NA", as.character(Lineages))) %>%
@@ -528,7 +535,7 @@ if (has_qc) {
 ```
 
 ### Coding Density
-```{r qc_coding_density, echo=FALSE, fig.align='center', fig.width=10, fig.height=5, message=FALSE, warning=FALSE}
+```{r qc_coding_density, echo=FALSE, fig.align='center', fig.width=10, fig.height=5, message=FALSE, warning=FALSE, fig.alt='Bar chart of each sample\'s coding density, in percent, with the mean as a dashed red line.'}
 if (has_qc && !is.null(qc_data) && nrow(qc_data) > 0 && "coding_density_pct" %in% colnames(qc_data)) {
   p <- ggplot(qc_data, aes(x=reorder(sample, coding_density_pct), y=coding_density_pct)) +
     geom_col(fill="#2196F3", alpha=0.7) +
@@ -541,7 +548,7 @@ if (has_qc && !is.null(qc_data) && nrow(qc_data) > 0 && "coding_density_pct" %in
 ```
 
 ### Hypothetical %
-```{r qc_hypothetical, echo=FALSE, fig.align='center', fig.width=10, fig.height=5, message=FALSE, warning=FALSE}
+```{r qc_hypothetical, echo=FALSE, fig.align='center', fig.width=10, fig.height=5, message=FALSE, warning=FALSE, fig.alt='Bar chart of each sample\'s share of hypothetical proteins, in percent, with the mean as a dashed red line.'}
 if (has_qc && !is.null(qc_data) && nrow(qc_data) > 0 && "hypothetical_pct" %in% colnames(qc_data)) {
   p <- ggplot(qc_data, aes(x=reorder(sample, -hypothetical_pct), y=hypothetical_pct)) +
     geom_col(fill="#FF9800", alpha=0.7) +
@@ -554,7 +561,7 @@ if (has_qc && !is.null(qc_data) && nrow(qc_data) > 0 && "hypothetical_pct" %in% 
 ```
 
 ### Genome Size Distribution
-```{r qc_genome_size, echo=FALSE, fig.align='center', fig.width=10, fig.height=5, message=FALSE, warning=FALSE}
+```{r qc_genome_size, echo=FALSE, fig.align='center', fig.width=10, fig.height=5, message=FALSE, warning=FALSE, fig.alt='Histogram of the genome sizes in megabases, with the mean as a dashed red line.'}
 if (has_qc && !is.null(qc_data) && nrow(qc_data) > 0 && "genome_size" %in% colnames(qc_data)) {
   qc_data$genome_mb <- qc_data$genome_size / 1e6
   p <- ggplot(qc_data, aes(x=genome_mb)) +
@@ -569,7 +576,7 @@ if (has_qc && !is.null(qc_data) && nrow(qc_data) > 0 && "genome_size" %in% colna
 
 ## CDS Distribution per Lineage
 
-```{r lineage_cds_distribution, echo=FALSE, fig.align='center', fig.width=12, message=FALSE, warning=FALSE}
+```{r lineage_cds_distribution, echo=FALSE, fig.align='center', fig.width=12, message=FALSE, warning=FALSE, fig.alt='Box plot of the number of CDS per genome in each lineage, each genome a point.'}
 p_cds_dist <- ggplot(data %>% filter(V1 == "total_cds"), aes(x = V4, y = V2, color = V4)) +
   geom_boxplot(outlier.shape = NA, fill = NA) +
   geom_jitter(alpha = 0.4, width = 0.2) +
@@ -581,7 +588,7 @@ print(p_cds_dist)
 
 ## CDS not in Reference
 
-```{r cds_NoH37Rv, echo=FALSE, fig.align='center', fig.width=12, message=FALSE, warning=FALSE}
+```{r cds_NoH37Rv, echo=FALSE, fig.align='center', fig.width=12, message=FALSE, warning=FALSE, fig.alt='Box plot of how many CDS of each genome name no reference gene, by lineage, each genome a point.'}
 # Genome (the sample ID) and lineage of every gene not in the reference.
 # REPORT_INPUTS strips each file's header, so every line is a gene.
 datos_noH <- read.table(params$empty_file, sep="\t", dec=".", header=F, fill=T, stringsAsFactors=F, quote="", col.names=paste0("V",1:2))
@@ -609,7 +616,7 @@ if (sum(resultado$n) == 0) {
 
 ## CDS Correction Summary
 
-```{r cds_correction_summary, echo=FALSE, fig.align='center', fig.width=12, message=FALSE, warning=FALSE}
+```{r cds_correction_summary, echo=FALSE, fig.align='center', fig.width=12, message=FALSE, warning=FALSE, fig.alt='Stacked bars, one per lineage, splitting its CDS into those that matched the reference and those AMAP corrected, in percent.'}
 correction_data <- data %>%
   filter(V1 %in% c("case4","case2","case3","rv_missing")) %>%
   mutate(CorrectionStatus = case_when(
@@ -639,7 +646,7 @@ Reference genes absent from the Bakta annotation and recovered by AMAP.
 
 Which Rv genes are missing in which lineages? Darker = missing in more genomes of that lineage.
 
-```{r rvmissing_heatmap, echo=FALSE, fig.align='center', fig.height=12, fig.width=14, message=FALSE, warning=FALSE}
+```{r rvmissing_heatmap, echo=FALSE, fig.align='center', fig.height=12, fig.width=14, message=FALSE, warning=FALSE, fig.alt='Horizontal bars for the 50 reference genes missing from the most genomes, coloured by lineage, each bar as long as the number of genomes missing that gene.'}
 if (has_rvmissing) {
   # Count how many genomes are missing each Rv gene, broken down by lineage
   rv_counts <- rvmissing_raw %>%
@@ -720,7 +727,7 @@ make_dt(stats_cog, "cog_statistics")
 ```
 
 ### Per COG (% Percentage) {.tabset}
-```{r scatter_cogs_pct, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+```{r scatter_cogs_pct, echo=FALSE, results='asis', message=FALSE, warning=FALSE, fig.alt=paste0('Box plot of the percentage of CDS in COG category ', cog_names, ', per genome and by lineage, with Dunn\'s tests between lineages.')}
 for (cat_code in names(cog_names)) {
   cat(paste("####", cat_code, "\n\n"))
   print(create_scatter_plot(datos_cog1, cat_code, 'Percentage', 'Percentage', cog_names[cat_code]))
@@ -729,7 +736,7 @@ for (cat_code in names(cog_names)) {
 ```
 
 ### Per COG (Nº CDS) {.tabset}
-```{r scatter_cogs_count, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+```{r scatter_cogs_count, echo=FALSE, results='asis', message=FALSE, warning=FALSE, fig.alt=paste0('Box plot of the number of CDS in COG category ', cog_names, ', per genome and by lineage, with Dunn\'s tests between lineages.')}
 for (cat_code in names(cog_names)) {
   cat(paste("####", cat_code, "\n\n"))
   print(create_scatter_plot(datos_cog1, cat_code, 'Count', 'Number of CDS', cog_names[cat_code]))
@@ -753,7 +760,7 @@ interactive_plot(ggplotly(p) %>% layout(autosize=F, width=800, height=450))
 ```
 
 ### Per Category (%) {.tabset}
-```{r myco_split_pct, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+```{r myco_split_pct, echo=FALSE, results='asis', message=FALSE, warning=FALSE, fig.alt='Box plot of the percentage of CDS in the Mycobrowser category named in its title, per genome and by lineage, with Dunn\'s tests between lineages.'}
 if (!has_mycobrowser_data) { cat("Not available.\n") } else {
 myco_cats <- setdiff(unique(na.omit(datos_myco$Functional_Category)), "NA")
 for (cat_name in myco_cats) {
@@ -765,7 +772,7 @@ for (cat_name in myco_cats) {
 ```
 
 ### Per Category (Nº CDS) {.tabset}
-```{r myco_split_count, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+```{r myco_split_count, echo=FALSE, results='asis', message=FALSE, warning=FALSE, fig.alt='Box plot of the number of CDS in the Mycobrowser category named in its title, per genome and by lineage, with Dunn\'s tests between lineages.'}
 if (!has_mycobrowser_data) { cat("Not available.\n") } else {
 for (cat_name in myco_cats) {
   cat(paste("####", cat_name, "\n\n"))
@@ -802,7 +809,7 @@ interactive_plot(ggplotly(p) %>% layout(autosize=F, width=800, height=450))
 ```
 
 ### Per Category {.tabset}
-```{r ref_comparison_split, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+```{r ref_comparison_split, echo=FALSE, results='asis', message=FALSE, warning=FALSE, fig.alt='Box plot of each genome\'s share of the Mycobrowser category named in its title, as a percentage of the median of all samples, by lineage.'}
 if (!has_mycobrowser_data || nrow(merged_data) == 0) { cat("Not available.\n") } else {
 ref_cats <- setdiff(unique(na.omit(merged_data$Functional_Category)), "NA")
 for (cat_name in ref_cats) {
@@ -829,7 +836,7 @@ make_dt(stats_ref, "reference_comparison")
 *PE/PPE genes are characteristic of Mycobacteria. This section is only shown when Mycobrowser functional categories are available.*
 
 ### Distribution per Lineage
-```{r peppe, echo=FALSE, fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE}
+```{r peppe, echo=FALSE, fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE, fig.alt='Bar chart of the share of each lineage\'s CDS that are PE/PPE genes, with how many they are.'}
 if (!has_mycobrowser_data) { cat("PE/PPE analysis requires functional category data (Mycobrowser).\n") } else if (has_mastertable && "Functional_Category" %in% colnames(mastertable)) {
   peppe_count <- mastertable %>%
     
@@ -866,7 +873,7 @@ if (has_mastertable && exists("peppe_count")) {
 Distribution of KEGG pathway annotations across lineages.
 
 ### Top Pathways
-```{r kegg_top, echo=FALSE, fig.align='center', fig.width=14, fig.height=8, message=FALSE, warning=FALSE}
+```{r kegg_top, echo=FALSE, fig.align='center', fig.width=14, fig.height=8, message=FALSE, warning=FALSE, fig.alt='Horizontal bars for the 25 KEGG pathways with the most genes, one bar per lineage.'}
 if (has_mastertable && "KEGG_Pathway" %in% colnames(mastertable)) {
   kegg_data <- mastertable %>%
     filter(!is.na(KEGG_Pathway) & KEGG_Pathway != "" & KEGG_Pathway != "-") %>%
@@ -913,7 +920,7 @@ if (has_mastertable && exists("kegg_data")) {
 The genes AMAP calls pseudogenes in each sample, by lineage: internal stop codons, a frameshift or lost stop that makes the frame run on past the end of the reference protein, no stop codon within reach, or a stop the reference itself lacks. They are the genes the GFF3 marks `pseudo=true` and the QC table counts, and the master table's `note` column says why each one is a pseudogene. A sample with none counts 0. Mycobrowser's `Is_Pseudogene` says whether a gene is a pseudogene in H37Rv, not in the sample, and is not counted.
 
 ### By Lineage
-```{r pseudogenes, echo=FALSE, fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE}
+```{r pseudogenes, echo=FALSE, fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE, fig.alt='Box plot of the pseudogenes AMAP called per sample, by lineage, each sample a point.'}
 if (!has_mastertable) {
   cat("Master table not available.\n")
 } else if (!all(c("sample", "pseudogene") %in% colnames(mastertable))) {
@@ -965,7 +972,7 @@ Gene duplications detected by all-vs-all Diamond BLASTp within and across genome
 
 ## Duplication Summary
 
-```{r dup_summary, echo=FALSE, results='asis', fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE}
+```{r dup_summary, echo=FALSE, results='asis', fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE, fig.alt='Histogram of community sizes: how many communities have each number of genes.'}
 if (has_dups && nrow(dup_data) > 0) {
   cat(paste0("**", nrow(dup_data), "** homologous community pairs detected across all genomes.\n\n"))
   
@@ -1014,7 +1021,7 @@ Gene presence/absence across samples based on pangene analysis.
 
 ## Core vs Accessory Genes
 
-```{r pangene_core, echo=FALSE, fig.align='center', fig.width=12, fig.height=8, message=FALSE, warning=FALSE}
+```{r pangene_core, echo=FALSE, fig.align='center', fig.width=12, fig.height=8, message=FALSE, warning=FALSE, fig.alt='Bar chart of the pangenome\'s gene families split into core, soft core, shell and cloud, with counts and percentages.'}
 if (has_pangene) {
   # Rtab is a presence/absence matrix: gene × sample
   gene_names <- pangene_raw[, 1]
@@ -1056,7 +1063,7 @@ if (has_pangene) {
 
 ## Gene Frequency Spectrum
 
-```{r pangene_spectrum, echo=FALSE, fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE}
+```{r pangene_spectrum, echo=FALSE, fig.align='center', fig.width=12, fig.height=6, message=FALSE, warning=FALSE, fig.alt='Histogram of gene families by how many samples have them, with a dashed red line at all samples, the core.'}
 if (has_pangene) {
   freq_df <- data.frame(frequency = gene_freq)
   
@@ -1074,7 +1081,7 @@ if (has_pangene) {
 
 ## Presence/Absence Heatmap
 
-```{r pangene_heatmap, echo=FALSE, fig.align='center', fig.height=10, fig.width=14, message=FALSE, warning=FALSE}
+```{r pangene_heatmap, echo=FALSE, fig.align='center', fig.height=10, fig.width=14, message=FALSE, warning=FALSE, fig.alt='Heatmap of which samples have each variable gene family, present in green and absent in white, rows and columns clustered.'}
 if (has_pangene && ncol(pa_matrix) >= 2 && nrow(pa_matrix) >= 2) {
   # Show only shell + cloud genes (variable genes are more interesting)
   variable_idx <- which(gene_freq < n_samples & gene_freq >= 1)
@@ -1093,7 +1100,7 @@ if (has_pangene && ncol(pa_matrix) >= 2 && nrow(pa_matrix) >= 2) {
                clustering_distance_rows="binary", clustering_distance_cols="binary")
     }, error = function(e) cat("Could not generate heatmap.\n"))
   } else {
-    cat("Fewer than 2 variable genes — no heatmap needed.\n")
+    cat("Fewer than 2 variable genes, so no heatmap.\n")
   }
 } else {
   cat("No pangene data available or too few samples.\n")
@@ -1106,7 +1113,7 @@ Detailed breakdown of the CDS-correction cases identified by AMAP.
 
 **Classification:**
 
-- **Case 1 keep:** CDS missing from the reference — potentially real novel genes
+- **Case 1 keep:** CDS missing from the reference, potentially real novel genes
 - **Case 1 remove:** CDS falsely introduced by Bakta, absent from reference
 - **Case 2:** Perfect coordinate match with reference
 - **Case 3:** Same start/end but containing mismatches
@@ -1114,7 +1121,7 @@ Detailed breakdown of the CDS-correction cases identified by AMAP.
 - **Missing Genes:** Reference genes recovered by AMAP (not annotated by Bakta)
 
 ## Boxplot
-```{r cds_boxplot, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r cds_boxplot, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE, fig.alt='Box plots of the number of CDS in each case, one panel per case and a box per lineage, with Dunn\'s tests between lineages.'}
 counts <- data %>% group_by(V4, V1) %>% summarise(n=n(), y_pos=max(V2)+1, .groups='drop')
 
 valid_groups <- data %>%
@@ -1146,7 +1153,7 @@ print(p)
 ```
 
 ## Violinplot
-```{r cds_violin, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE}
+```{r cds_violin, echo=FALSE, fig.align='center', fig.height=5, fig.width=14, message=FALSE, warning=FALSE, fig.alt='Violin plots of the number of CDS in each case, one panel per case and a violin per lineage, with the mean and its confidence interval.'}
 means <- data %>% group_by(V4, V1) %>% summarise(mean_value=mean(V2), y_pos=max(V2)+1, .groups='drop')
 
 p <- ggplot(data, aes(x=V4, y=V2, color=V4)) +
@@ -1161,7 +1168,7 @@ print(p)
 ```
 
 ## Histogram Cases
-```{r cds_histo, echo=FALSE, fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE}
+```{r cds_histo, echo=FALSE, fig.align='center', fig.height=4, fig.width=8, message=FALSE, warning=FALSE, fig.alt='Stacked bars, one per lineage, of the share of its mean CDS count in each case.'}
 filtered_data <- means %>% filter(str_starts(V1, "case"))
 colores_cases <- c("case1_kept"="#13ff03","case1_removed"="#377eb8",
                     "case2"="#984ea3","case3"="#ffff33","case4"="#ff7f00")
@@ -1174,7 +1181,7 @@ ggplot(filtered_data, aes(x=V4, y=mean_value, fill=V1)) +
 ```
 
 ## Heatmap
-```{r cds_heatmap, echo=FALSE, fig.align='center', fig.height=5, fig.width=7, message=FALSE, warning=FALSE}
+```{r cds_heatmap, echo=FALSE, fig.align='center', fig.height=5, fig.width=7, message=FALSE, warning=FALSE, fig.alt='Heatmap of the log mean number of CDS in each case, lineage by lineage.'}
 ggplot(means, aes(x=V4, y=V1, fill=log(mean_value))) +
   geom_tile() + scale_fill_viridis_c(option="C", name="Log Mean Value") +
   theme_minimal() +

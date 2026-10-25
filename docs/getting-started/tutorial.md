@@ -4,9 +4,14 @@ Every command spelled out, nothing assumed. It uses a real genome you can
 download in one line, so you can follow along and compare your numbers against
 the ones printed here. They come from actual runs of these commands, made on
 18 October 2026 with AMAP at commit `947a99d`. For exactly these numbers, add
-`-r 947a99dee49d2a2429e014296ac35ba08e911108` to each `nextflow run`
-([pinning the pipeline](../user-guide/running.md#pinning-the-pipeline) says
-why the whole hash).
+this to each `nextflow run`:
+
+```text
+-r 947a99dee49d2a2429e014296ac35ba08e911108
+```
+
+[Pinning the pipeline](../user-guide/running.md#pinning-the-pipeline) says why
+the whole hash.
 
 The runs skipped eggNOG, with `--skip_functional_annotation`, and no number
 here depends on it. The one table eggNOG's step writes, in

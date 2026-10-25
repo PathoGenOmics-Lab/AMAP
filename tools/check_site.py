@@ -698,7 +698,7 @@ def check_thresholds() -> list[str]:
                         f"{values.get('piece_edge_bp_pass')} bp in contig_end_pieces.py")
     # What the pages say each number is.
     said = {
-        "single_bp": [("index.html", r"longer by more than ([\d,]+) bp")],
+        "single_bp": [("index.html", r"longer by more than ([\d,]+)(?: |&nbsp;|\u00a0)bp")],
         "false_positive_pct": [("index.html", r"genome at (\d+)% identity")],
         "dup_cover_pct": [("how-it-works/duplications.html", r"(\d+)% or more"), ("how-it-works/duplications.html", r"under (\d+)%")],
         "dup_cover_pct_all": [("how-it-works/duplications.html", r"(\d+)% or more")],

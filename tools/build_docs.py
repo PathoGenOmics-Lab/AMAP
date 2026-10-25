@@ -112,12 +112,12 @@ def case_figure(name: str, caption: str) -> str:
 
 
 FIGURES = {
-    "small-protein": case_figure("small-protein", "E. coli K-12 against its own annotation. miniprot placed IbsC (b4665), 19 residues, only on its neighbour IbsD's locus; the exact search finds it here, between fau and serA, where Bakta called nothing."),
+    "small-protein": case_figure("small-protein", "<i>E.&nbsp;coli</i> K-12 against its own annotation. miniprot placed IbsC (b4665), 19 residues, only on its neighbour IbsD's locus; the exact search finds it here, between fau and serA, where Bakta called nothing."),
     "paralogs-1": case_figure("paralogs-1", "CDC1551 near 400 kb: Rv0336's own locus. Its paralog Rv0515 is placed here too, and that placement is dropped."),
     "paralogs-2": case_figure("paralogs-2", "Near 608 kb: Rv0515's own locus, where Rv0336's placement is dropped."),
-    "copies-1": case_figure("copies-1", "E. coli O157:H7 Sakai against K-12: the first of two whole copies of RhsD (b0497)."),
+    "copies-1": case_figure("copies-1", "<i>E.&nbsp;coli</i> O157:H7 Sakai against K-12: the first of two whole copies of RhsD (b0497)."),
     "copies-2": case_figure("copies-2", "The second copy, 1.4 Mb away, is a further copy and stays, as b0497_2."),
-    "frameshift": case_figure("frameshift", "M. bovis: Rv0590's frame runs on 67 residues past its protein, through Rv0590A, to the end of Bakta's one long call. It keeps its extent as a pseudogene, and Rv0590A is a gene of its own."),
+    "frameshift": case_figure("frameshift", "<i>M.&nbsp;bovis</i>: Rv0590's frame runs on 67 residues past its protein, through Rv0590A, to the end of Bakta's one long call. It keeps its extent as a pseudogene, and Rv0590A is a gene of its own."),
     "contig-end": case_figure("contig-end", "CDC1551 in 40 contigs: Rv1239c's frame reaches the end of contig_10 with no stop codon, and this piece of the gene, Rv1239c_2, is marked partial at its 3' end. The other piece, at the end of contig_9, is marked partial at its 5' end."),
     "contig-end-2": case_figure("contig-end-2", "The other piece of Rv1239c in the CDC1551 draft: its last 144 residues, placed by the second pass at the very end of contig_9. Bakta's short call over it is case 4, and the piece wins."),
     "case2": case_figure("case2", "Case 2 in CDC1551: dnaN, where Bakta and the aligned protein agree base for base."),
@@ -320,7 +320,7 @@ def prepare_reference(numbers: dict[str, int]) -> str:
         '<figure class="fig prepare-ref"><div class="pr-in"><code>--ref_annotation</code> + <code>--ref_genome</code></div>'
         f'<div class="pr-steps">{"".join(out)}</div>'
         '<div class="pr-out"><span>The proteome is aligned onto every sample; the false positives rule out case 1 calls.</span></div>'
-        "<figcaption>What happens to E. coli K-12 MG1655 given as the reference, once, before any sample is touched.</figcaption></figure>"
+        "<figcaption>What happens to <i>E.&nbsp;coli</i> K-12 MG1655 given as the reference, once, before any sample is touched.</figcaption></figure>"
     )
 
 
@@ -381,6 +381,48 @@ def plain(markdown_inline: str) -> str:
     text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
     text = re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"\1", text)
     return re.sub(r"(?<!\w)_(?!\s)(.+?)(?<!\s)_(?!\w)", r"\1", text)
+
+
+# ── Words that stay together ──
+#
+# A number never ends a line apart from its unit, nor an initial apart from
+# its species, nor a word from the number it names (case 4, Java 17), nor one
+# end of a range from the other (67 to 90%). U+00A0 holds each pair together.
+
+NBSP = "\u00a0"
+UNITS = r"(?:bp|kb|Mb|GB|MB|KB|ms|s|min|h|%|CPUs?|cores|residues|bytes)"
+SPECIES = r"(?:tuberculosis|bovis|coli|africanum|canettii)"
+
+
+def tie(text: str) -> str:
+    text = re.sub(rf"\b([A-Z])\. (?={SPECIES}\b)", rf"\1.{NBSP}", text)
+    text = re.sub(rf"(?<=\d) (?={UNITS}(?!\w))", NBSP, text)
+    text = re.sub(r"\b(case|Case|step|Step|Figure|version|Nextflow|Java) (?=\d)", rf"\1{NBSP}", text)
+    return re.sub(r"(?<=\d) to (?=\d)", f"{NBSP}to{NBSP}", text)
+
+
+def on_text(fragment: str, change) -> str:
+    """change() applied to the text of an HTML fragment: never to a tag, and
+    never inside code, which is copied as it reads."""
+    out, inside = [], 0
+    for part in re.split(r"(<[^>]+>)", fragment):
+        if part.startswith("<"):
+            tag = re.match(r"<(/?)(code|pre|kbd|script|style)\b", part, re.I)
+            if tag:
+                inside = max(inside + (-1 if tag.group(1) else 1), 0)
+            out.append(part)
+        else:
+            out.append(part if inside else change(part))
+    return "".join(out)
+
+
+def toc_label(markdown_inline: str) -> str:
+    """A heading's name in the page's contents, as HTML: its text, with each
+    span of code whole, so a file name never splits at a hyphen; a path may
+    still come apart after a /, to fit the sidebar."""
+    parts = re.split(r"`([^`]*)`", markdown_inline)
+    whole = lambda code: "<wbr>".join(f'<span class="nw">{html.escape(q)}</span>' for q in re.findall(r"[^/]*/+|[^/]+", code))
+    return "".join(whole(p) if k % 2 else html.escape(plain(p)) for k, p in enumerate(parts))
 
 
 def strip_front_matter(lines: list[str]) -> list[str]:
@@ -673,7 +715,7 @@ class Renderer:
         self.seen: dict[str, int] = {}
         self.gh_seen: dict[str, int] = {}  # GitHub's anchors, for the changelog's aliases
         self.legacy = {new: old for old, new in LEGACY_IDS.get(source, {}).items()}
-        self.headings: list[tuple[int, str, str]] = []  # (level, text, slug)
+        self.headings: list[tuple[int, str, str]] = []  # (level, its contents entry as HTML, slug)
         self.sections: list[dict] = []  # for the search index
         self.extra: list[dict] = []  # search entries of their own: callouts
         self.figures: list[str] = []
@@ -740,6 +782,8 @@ class Renderer:
         text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
         text = re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"<em>\1</em>", text)
         text = re.sub(r"(?<![\w])_(?!\s)(.+?)(?<!\s)_(?![\w])", r"<em>\1</em>", text)
+        # The code is stashed, so only the words are tied.
+        text = tie(text)
         while "\x00" in text:
             text = re.sub(r"\x00(\d+)\x00", lambda m: keep[int(m.group(1))], text)
         return text
@@ -762,12 +806,12 @@ class Renderer:
             if figure:
                 name = figure.group(1)
                 if name in DERIVED:
-                    out.append(chips_in(DERIVED[name](self, lines)))
+                    out.append(on_text(chips_in(DERIVED[name](self, lines)), tie))
                 elif name in FIGURES:
                     # Only a drawing that figures.js draws needs it loaded.
                     if FIGURE_HOOK.search(FIGURES[name]):
                         self.figures.append(name)
-                    out.append(chips_in(FIGURES[name]))
+                    out.append(on_text(chips_in(FIGURES[name]), tie))
                 else:
                     raise SystemExit(f"docs/{self.source}: no figure called {name!r}")
                 i += 1
@@ -872,7 +916,10 @@ class Renderer:
         else:
             slug = slugify(label, self.seen)
             rendered = self.inline(text, links=False)
-        self.headings.append((level, label, slug))
+        # Its name in the contents keeps a file name whole, and the heading
+        # itself keeps an article with the word after it.
+        self.headings.append((level, toc_label(text) if not self.changelog else html.escape(label), slug))
+        rendered = on_text(rendered, lambda t: re.sub(r"\b(a|an) ", rf"\1{NBSP}", t))
         section = label
         if self.changelog and level > 2 and self.version:
             section = f"{self.version[1]} / {label}"
@@ -916,7 +963,8 @@ class Renderer:
             self.note(plain(body[0].strip()))
             label = f'<span class="callout-kind">{ALERTS[kind]}</span>'
             body = body[1:]
-        name = html.unescape(re.sub(r"<[^>]+>", "", title))
+        # Its name, for its id and for search, with plain spaces.
+        name = html.unescape(re.sub(r"<[^>]+>", "", title)).replace(NBSP, " ")
         cid = slugify("note " + name, self.seen)
         if label:
             self.extra.append({
@@ -1549,6 +1597,8 @@ def ranges_figure() -> str:
     import math
 
     th = validation_ranges()
+    # A label, escaped, with each species in italics.
+    italic = lambda label: re.sub(rf"\b([A-Z])\. ({SPECIES})\b", r"<i>\1.&nbsp;\2</i>", html.escape(label))
 
     def gauge(name: str, unit: str, lo: float, hi: float, log: bool, zones: list, ticks: list, marks: list, fmt) -> str:
         to = (lambda v: math.log10(v)) if log else (lambda v: v)
@@ -1561,7 +1611,7 @@ def ranges_figure() -> str:
             # A label near either end of the scale reads inward from its mark.
             edge = " gm-start" if pos(value) < 12 else " gm-end" if pos(value) > 88 else ""
             out.append(
-                f'<span class="gauge-mark gm-{side}{edge}" style="left:{pos(value):.2f}%"><i></i><em>{html.escape(label)}</em></span>'
+                f'<span class="gauge-mark gm-{side}{edge}" style="left:{pos(value):.2f}%"><i></i><em>{italic(label)}</em></span>'
             )
         out.append('</div><div class="gauge-ticks">')
         # A tick at either end of the scale reads inward from it; the rest are
@@ -1577,7 +1627,7 @@ def ranges_figure() -> str:
                 shown = pos(value)
         out.append("</div>")
         # On a phone the labels go under the scale, as a list.
-        out.append('<ul class="gauge-list">' + "".join(f"<li>{html.escape(label)}</li>" for _value, label in marks) + "</ul></div>")
+        out.append('<ul class="gauge-list">' + "".join(f"<li>{italic(label)}</li>" for _value, label in marks) + "</ul></div>")
         return "".join(out)
 
     def size(v: float) -> str:
@@ -1692,7 +1742,7 @@ def footer(root: str) -> str:
     version = released()
     return (
         '<footer class="foot">\n  <div class="wrap">\n    <div>\n      <h3>Cite</h3>\n'
-        f"      <blockquote>Ruiz-Rodriguez, P., &amp; Coscolla, M. (2026). AMAP (Version {version}) [Computer software].</blockquote>\n"
+        f"      <blockquote>Ruiz-Rodriguez,&nbsp;P., &amp; Coscolla,&nbsp;M. (2026). AMAP (Version&nbsp;{version}) [Computer&nbsp;software].</blockquote>\n"
         '      <p class="doi">Software: <a href="https://doi.org/10.5281/zenodo.8024446">doi:10.5281/zenodo.8024446</a></p>\n    </div>\n'
         "    <div>\n      <h3>Learn more</h3>\n      <ul>\n"
         f'        <li><a href="{root}getting-started/tutorial.html">Tutorial</a></li>\n'
@@ -1772,11 +1822,11 @@ def page_contents(headings: list[tuple[int, str, str]], levels: tuple[int, ...])
         return ""
     out = ['\n        <ul class="page-toc" aria-label="On this page">\n']
     for text, slug, subs in groups:
-        out.append(f'          <li class="toc-2"><a href="#{slug}">{html.escape(text)}</a>')
+        out.append(f'          <li class="toc-2"><a href="#{slug}">{text}</a>')
         if subs:
             out.append(
                 "<ul>"
-                + "".join(f'<li class="toc-3"><a href="#{s}">{html.escape(t)}</a></li>' for t, s in subs)
+                + "".join(f'<li class="toc-3"><a href="#{s}">{t}</a></li>' for t, s in subs)
                 + "</ul>"
             )
         out.append("</li>\n")
@@ -1908,7 +1958,7 @@ def doc_page(position: int) -> tuple[Path, str, list[dict]]:
     if h2s:
         under += (
             '<details class="toc-inline"><summary>On this page</summary><ul>'
-            + "".join(f'<li><a href="#{slug}">{html.escape(text)}</a></li>' for text, slug in h2s)
+            + "".join(f'<li><a href="#{slug}">{text}</a></li>' for text, slug in h2s)
             + "</ul></details>\n"
         )
     end = content.find("</h1>")
@@ -1993,7 +2043,7 @@ def index_page() -> tuple[Path, str]:
         + sidebar("", None)
         + '<main class="prose" id="content">\n<h1>Documentation</h1>\n'
         + "<p>The long versions: every option, every file, and how each decision is made. "
-        + 'New to AMAP? <a href="index.html#start">Start here</a>, then follow <a href="getting-started/tutorial.html">the tutorial</a>.</p>\n'
+        + 'New to AMAP? <a href="index.html#start">Start&nbsp;here</a>, then follow <a href="getting-started/tutorial.html">the tutorial</a>.</p>\n'
         + "".join(cards)
         + "</main>\n</div>\n"
         + footer("")

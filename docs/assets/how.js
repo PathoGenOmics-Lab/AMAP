@@ -192,9 +192,9 @@
       key: "contig-end", group: "The harder ones", label: "Cut by a contig end", tag: "Partial",
       panels: [
         { key: "contig-end", from: 100250, to: 102146, tick: 500, title: "The end of contig_10", edges: [{ at: 102146.5, label: "end of contig_10", side: "left", from: 1 }],
-          marks: [{ s: 102120, e: 102146, rows: [3, 3], label: "partial: 3′ end", labelAt: "left", from: 5 }] },
+          marks: [{ s: 102120, e: 102146, rows: [3, 3], label: "partial: 3' end", labelAt: "left", from: 5 }] },
         { key: "contig-end-2", from: 3700, to: 4591, tick: 250, title: "The end of contig_9", edges: [{ at: 4591.5, label: "end of contig_9", side: "left", from: 1 }],
-          marks: [{ s: 4565, e: 4591, rows: [3, 3], label: "partial: 5′ end", labelAt: "left", from: 5 }] }
+          marks: [{ s: 4565, e: 4591, rows: [3, 3], label: "partial: 5' end", labelAt: "left", from: 5 }] }
       ],
       text: [
         "CDC1551 cut into 40 contigs. Near the end of contig_10 Bakta calls Rv1240's gene and two short genes on the minus strand, and nothing on the plus strand. At the end of contig_9 it calls sugC and a short hypothetical protein.",
@@ -397,7 +397,8 @@
     return ch;
   }
 
-  // A step's text, with the species named in italics as everywhere else.
+  // A step's text, with the species named in italics as everywhere else,
+  // and the words that stay together as the docs keep them (F.tie).
   function setText(el, text) {
     el.textContent = "";
     String(text).split(/\b([A-Z]\. (?:tuberculosis|bovis|coli))\b/).forEach(function (part, i) {
@@ -407,7 +408,7 @@
         em.textContent = part.replace(" ", "\u00a0");
         el.appendChild(em);
       } else {
-        el.appendChild(document.createTextNode(part));
+        el.appendChild(document.createTextNode(F.tie(part)));
       }
     });
   }
@@ -614,7 +615,7 @@
     });
     var win = DATA.windows[story.panels[0].key];
     // Species in italics, as everywhere else on the site.
-    genomeLabel.innerHTML = F.esc(win.genome).replace(/^([A-Z]\. [a-z]+)/, "<i>$1</i>") + (/coli/.test(win.genome) ? ", against K-12" : ", against H37Rv");
+    genomeLabel.innerHTML = F.esc(win.genome).replace(/^([A-Z]\.) ([a-z]+)/, "<i>$1&nbsp;$2</i>") + (/coli/.test(win.genome) ? ", against K-12" : ", against H37Rv");
     if (legendBox) legendBox.innerHTML = F.legend(used, /coli/.test(win.genome) ? "K-12" : "H37Rv");
     outBox.querySelector("pre").textContent = story.out.join("\n");
     picker.querySelectorAll("[data-story]").forEach(function (b) {

@@ -6089,6 +6089,13 @@ th.num {
   padding-left: calc(var(--sp-3) * 2);
 }
 
+/* A file name in the contents stays whole: a name wraps at its spaces, never
+   at a file name's hyphen. */
+.page-toc .nw,
+.toc-inline .nw {
+  white-space: nowrap;
+}
+
 @media (hover: hover) {
   .docs-nav .page-toc a:hover {
     color: var(--ink-1);
@@ -8714,7 +8721,8 @@ html:not(.js) .how-nav {
   width: 0;
 }
 
-.gauge-mark i {
+/* The mark's dot; an i inside its label is a species' italics. */
+.gauge-mark > i {
   position: absolute;
   left: -6px;
   top: -6px;
@@ -8734,6 +8742,11 @@ html:not(.js) .how-nav {
   font-size: var(--fs-n3);
   font-weight: var(--fw-semibold);
   color: var(--ink-soft);
+}
+
+/* The label is set upright; a species in it keeps its italics. */
+.gauge-mark em i {
+  font-style: italic;
 }
 
 .gm-up em {

@@ -45,7 +45,7 @@
 
 <nav class="rail" aria-label="Chapters">
   <ol>
-    <li><a class="rail-fig" href="#top">Figure 1</a></li>
+    <li><a class="rail-fig" href="#top">Figure&nbsp;1</a></li>
     <li><a href="#start"><span class="rail-n" aria-hidden="true">01</span> <span>Start here</span></a></li>
     <li><a href="#cases"><span class="rail-n" aria-hidden="true">02</span> <span>Cases</span></a></li>
     <li><a href="#proof"><span class="rail-n" aria-hidden="true">03</span> <span>Benchmark</span></a></li>
@@ -96,7 +96,7 @@
           <div class="t-drop"><b data-tally="drop">3</b>calls are dropped</div>
         </div>
         <figcaption class="demo-cap">
-          <p><b>The first 12.4 kb of <i>M.&nbsp;tuberculosis</i> CDC1551, against H37Rv.</b> Twelve calls by Bakta, the eight H37Rv proteins aligned there, and the eight genes AMAP keeps. <span class="when-hover">Point at a gene.</span><span class="when-touch">Tap a gene.</span></p>
+          <p><b>The first 12.4&nbsp;kb of <i>M.&nbsp;tuberculosis</i> CDC1551, against H37Rv.</b> Twelve calls by Bakta, the eight H37Rv proteins aligned there, and the eight genes AMAP keeps. <span class="when-hover">Point at a gene.</span><span class="when-touch">Tap a gene.</span></p>
         </figcaption>
       </figure>
     </div>
@@ -122,7 +122,7 @@
     <div class="wrap">
       <div class="section-head">
         <p class="kicker">Start here</p>
-        <h2>From nothing to a corrected genome</h2>
+        <h2>From nothing to a&nbsp;corrected genome</h2>
         <p>Every tool AMAP calls lives in one container image, so Nextflow and a container engine are all you install. Four steps; once the image is in, the slowest takes minutes.</p>
       </div>
       <ol class="steps">
@@ -130,11 +130,11 @@
           <span class="step-num" aria-hidden="true">1</span>
           <div class="step-body">
             <h3>Install Nextflow and a container engine</h3>
-            <p>Nextflow needs Java 17 or newer, and conda brings both. Then Docker on a laptop, or Singularity or Apptainer on a cluster.</p>
+            <p>Nextflow needs Java&nbsp;17 or newer, and conda brings both. Then Docker on a laptop, or Singularity or Apptainer on a cluster.</p>
             <div class="code"><pre><span class="ln"><span class="p">$ </span><span class="t">conda</span> <span class="t">create</span> <span class="f">-n</span> <span class="v">nextflow-env</span> <span class="f">-c</span> <span class="v">conda-forge</span> <span class="f">-c</span> <span class="v">bioconda</span> <span class="t">nextflow</span>
 </span><span class="ln"><span class="p">$ </span><span class="t">conda</span> <span class="t">activate</span> <span class="t">nextflow-env</span>
 </span><span class="ln"><span class="p">$ </span><span class="t">docker</span> <span class="t">info</span> <span class="f">--format</span> <span class="v">'Docker</span> <span class="v">can</span> <span class="v">give</span> <span class="v">containers</span> <span class="v">{{.NCPU}}</span> <span class="v">CPUs</span> <span class="v">and</span> <span class="v">{{.MemTotal}}</span> <span class="v">bytes'</span></span></pre></div>
-            <p class="note">The last line fails if Docker is not running, and says what a container may use; Docker Desktop's 8 GB prints as 8217014272 bytes. Under 8 GB? Raise it in Docker Desktop, Settings, Resources. On Apple Silicon the image runs emulated; every timing on this site was measured that way. <a href="getting-started/installation.html">Installation, in full</a>.</p>
+            <p class="note">The last line fails if Docker is not running, and says what a container may use; Docker Desktop's 8&nbsp;GB prints as 8217014272&nbsp;bytes. Under 8&nbsp;GB? Raise it in Docker Desktop, Settings, Resources. On Apple Silicon the image runs emulated; every timing on this site was measured that way. <a href="getting-started/installation.html">Installation, in full</a>.</p>
           </div>
         </li>
         <li>
@@ -159,7 +159,7 @@ Output      : amap-test
 Work dir    : /Users/you/amap-check/work
 Command     : nextflow run PathoGenOmics-Lab/AMAP -profile docker,test --skip_functional_annotation --outdir amap-test
 <span class="cm">=======================================</span></div>
-            <p class="note">The first run pulls the image: about 3.4 GB compressed, 12 GB on disk, once.</p>
+            <p class="note">The first run pulls the image: about 3.4&nbsp;GB compressed, 12&nbsp;GB on disk, once.</p>
           </div>
         </li>
         <li>
@@ -192,7 +192,7 @@ Erdman<span class="tsv-tab">	</span>/data/erdman.fna</pre><button class="copy" t
                 </div>
                 <div class="q">
                   <div class="q-title">Anything else?</div>
-                  <label class="opt"><input type="checkbox" data-opt="small"><b>A laptop or a small machine</b><small>Caps every task at 4 CPUs and 8 GB.</small></label>
+                  <label class="opt"><input type="checkbox" data-opt="small"><b>A laptop or a small machine</b><small>Caps every task at 4&nbsp;CPUs and 8&nbsp;GB.</small></label>
                   <label class="opt"><input type="checkbox" data-opt="only"><b>Only the corrected genes</b><small>Much faster: stops after the correction.</small></label>
                   <label class="opt"><input type="checkbox" data-opt="db"><b>Keep the eggNOG database</b><small>Built on the first run, reused on every run after.</small></label>
                 </div>
@@ -221,7 +221,7 @@ Total: 0 error(s), 0 warning(s)</div>
           <span class="step-num" aria-hidden="true">4</span>
           <div class="step-body">
             <h3>Open what came out</h3>
-            <p>Open <code class="nw">results/amap_report.html</code> first: every run writes it (the test of step 2, in <code class="nw">amap-test/</code>), and it answers the first questions genome by genome. A full run, with eggNOG, also writes <code><span class="nw">results/</span><wbr><span class="nw">final_</span><wbr><span class="nw">report.</span><wbr><span class="nw">html</span></code>, the whole run on one page. The corrected files are listed <a href="#outputs">under What you get</a>.</p>
+            <p>Open <code class="nw">results/amap_report.html</code> first: every run writes it (the test of step&nbsp;2, in <code class="nw">amap-test/</code>), and it answers the first questions genome by genome. A full run, with eggNOG, also writes <code><span class="nw">results/</span><wbr><span class="nw">final_</span><wbr><span class="nw">report.</span><wbr><span class="nw">html</span></code>, the whole run on one page. The corrected files are listed <a href="#outputs">under What you get</a>.</p>
           </div>
         </li>
       </ol>
@@ -239,34 +239,34 @@ Total: 0 error(s), 0 warning(s)</div>
       <p class="cases-hint">Five cards: swipe for the next.</p>
       <div class="cases">
         <article class="case" data-fig="case2">
-          <div class="case-head"><span class="case-tag c2">Case 2</span><h3>Perfect match</h3></div>
+          <div class="case-head"><span class="case-tag c2">Case&nbsp;2</span><h3>Perfect match</h3></div>
           <p>Same start, same end, same strand and the same length as the aligned protein.</p>
           <div class="case-fig" data-fig-stage></div>
           <p class="keeps"><b>AMAP keeps</b><span>Bakta's call, named after the protein: Rv0002, dnaN.</span></p>
         </article>
         <article class="case" data-fig="case3">
-          <div class="case-head"><span class="case-tag c3">Case 3</span><h3>Imperfect match</h3></div>
-          <p>The same coordinates, but the alignment's length differs: H37Rv's fhaA has 6 residues that CDC1551's lacks.</p>
+          <div class="case-head"><span class="case-tag c3">Case&nbsp;3</span><h3>Imperfect match</h3></div>
+          <p>The same coordinates, but the alignment's length differs: H37Rv's fhaA has 6&nbsp;residues that CDC1551's lacks.</p>
           <div class="case-fig" data-fig-stage></div>
           <p class="keeps"><b>AMAP keeps</b><span>Bakta's call, named Rv0020c.</span></p>
         </article>
         <article class="case case-wide" data-fig="case4-start">
-          <div class="case-head"><span class="case-tag c4">Case 4</span><h3>Conflicting overlap</h3></div>
+          <div class="case-head"><span class="case-tag c4">Case&nbsp;4</span><h3>Conflicting overlap</h3></div>
           <div class="seg" role="group" aria-label="Three conflicts" data-fig-switch>
             <button type="button" data-show="case4-start" aria-pressed="true">A late start</button>
             <button type="button" data-show="case4-split" aria-pressed="false">One gene, two calls</button>
             <button type="button" data-show="case4-longer" aria-pressed="false">A much longer call</button>
           </div>
           <div class="case-caps">
-            <p data-fig-caption data-for="case4-start">Bakta's dnaA starts 33 bp after the aligned protein does. Where the two disagree, the reference wins by default.</p>
+            <p data-fig-caption data-for="case4-start">Bakta's dnaA starts 33&nbsp;bp after the aligned protein does. Where the two disagree, the reference wins by default.</p>
             <p data-for="case4-split" hidden>Bakta calls two short genes where H37Rv's Rv0007 aligns end to end. The reference is longer than either call, so it wins.</p>
-            <p data-for="case4-longer" hidden>Bakta's call is 3,303 bp longer than the alignment, which stops before the end of its protein. A call longer by more than 550 bp wins over an alignment that is not complete.</p>
+            <p data-for="case4-longer" hidden>Bakta's call is 3,303&nbsp;bp longer than the alignment, which stops before the end of its protein. A call longer by more than 550&nbsp;bp wins over an alignment that is not complete.</p>
           </div>
           <div class="case-fig" data-fig-stage></div>
-          <p class="keeps"><b>AMAP keeps</b><span class="case-caps"><span data-for="case4-start">the reference's coordinates, 1 to 1,524.</span><span data-for="case4-split" hidden>one gene, 9,914 to 10,828.</span><span data-for="case4-longer" hidden>Bakta's call, 2,267,753 to 2,272,573, named Rv2024c.</span></span></p>
+          <p class="keeps"><b>AMAP keeps</b><span class="case-caps"><span data-for="case4-start">the reference's coordinates, 1&nbsp;to&nbsp;1,524.</span><span data-for="case4-split" hidden>one gene, 9,914&nbsp;to&nbsp;10,828.</span><span data-for="case4-longer" hidden>Bakta's call, 2,267,753&nbsp;to&nbsp;2,272,573, named Rv2024c.</span></span></p>
         </article>
         <article class="case" data-fig="case1-kept">
-          <div class="case-head"><span class="case-tag c1">Case 1</span><h3>Potentially novel</h3></div>
+          <div class="case-head"><span class="case-tag c1">Case&nbsp;1</span><h3>Potentially novel</h3></div>
           <div class="seg" role="group" aria-label="Two outcomes" data-fig-switch>
             <button type="button" data-show="case1-kept" aria-pressed="true">Kept</button>
             <button type="button" data-show="case1-dropped" aria-pressed="false">Dropped</button>
@@ -282,7 +282,7 @@ Total: 0 error(s), 0 warning(s)</div>
           <div class="case-head"><span class="case-tag cm">Missing</span><h3>A reference gene Bakta missed</h3></div>
           <p>H37Rv has a 71-residue protein, Rv0031, between two of Bakta's calls, and Bakta called nothing there. No gene accounts for the alignment.</p>
           <div class="case-fig" data-fig-stage></div>
-          <p class="keeps"><b>AMAP keeps</b><span>the gene, put back at the alignment: 33,526 to 33,738.</span></p>
+          <p class="keeps"><b>AMAP keeps</b><span>the gene, put back at the alignment: 33,526&nbsp;to&nbsp;33,738.</span></p>
         </article>
       </div>
       <p class="note">Then come the harder ones: a protein placed on its paralog's locus, proteins too small for miniprot, genes a contig end cuts, frameshifts and lost stops, and the real copies of a gene. <a href="how-it-works.html">How it works, step by step</a>.</p>
@@ -294,8 +294,8 @@ Total: 0 error(s), 0 warning(s)</div>
       <div class="section-head">
         <p class="kicker">Does it work?</p>
         <h2>Checked against genomes whose answer is known</h2>
-        <p>Seven genomes, scored against genes AMAP did not annotate: the reference's own, carried onto each genome by a whole-genome alignment. AMAP finds every unchanged gene at exactly its coordinates, under its name; Bakta alone, scored the same way, finds 67 to 90% of them.</p>
-        <p class="pull"><b>100%</b>of unchanged genes found at exactly their coordinates, in all seven genomes. Bakta alone: 67 to 90%.</p>
+        <p>Seven genomes, scored against genes AMAP did not annotate: the reference's own, carried onto each genome by a whole-genome alignment. AMAP finds every unchanged gene at exactly its coordinates, under its name; Bakta alone, scored the same way, finds 67&nbsp;to&nbsp;90% of them.</p>
+        <p class="pull"><b>100%</b>of unchanged genes found at exactly their coordinates, in all seven genomes. Bakta alone: 67&nbsp;to&nbsp;90%.</p>
       </div>
       <p class="fig-title"><span class="fig-n" aria-hidden="true"></span><span>Genes found per genome, by AMAP and by Bakta alone</span></p>
       <div class="proof" role="table" aria-label="Accuracy benchmark: genes found per genome, by AMAP and by Bakta alone">
@@ -345,7 +345,7 @@ Total: 0 error(s), 0 warning(s)</div>
     <div class="wrap">
       <div class="section-head">
         <p class="kicker">What you get</p>
-        <h2>Files you can open, and the reasons behind them</h2>
+        <h2>Files you can open, and&nbsp;the&nbsp;reasons behind them</h2>
         <p>Everything lands under <code class="nw">results/</code>, one folder per step. Typing puts the lineage in front of each sample, so CDC1551 becomes L4_CDC1551; <code class="nw">--skip_typing</code> leaves it out. <a href="user-guide/outputs.html">Outputs</a> lists every file.</p>
       </div>
       <div class="files">
@@ -461,7 +461,7 @@ case1_kept     11</pre>
         <div class="report-stage" data-report-stage>
           <img class="report-poster" src="assets/report/poster.webp" width="1070" height="680" alt="" decoding="async" loading="lazy">
           <iframe data-src="examples/demo_report.html" title="Example AMAP report, on synthetic data" inert></iframe>
-          <button class="report-cover" type="button"><span>Explore the example report (4.5 MB)</span></button>
+          <button class="report-cover" type="button"><span>Explore the example report (4.5&nbsp;MB)</span></button>
           <button class="report-done" type="button" hidden>Done</button>
         </div>
         <div class="report-mobile">
@@ -483,14 +483,14 @@ case1_kept     11</pre>
         <details>
           <summary><span>How long does a run take?</span></summary>
           <div class="ans">
-            <p>Minutes for a genome, without eggNOG. Measured on a MacBook Pro with an M4 Pro, 14 cores, Docker Desktop given 8 GB, the image under emulation and already pulled:</p>
+            <p>Minutes for a genome, without eggNOG. Measured on a MacBook Pro with an M4 Pro, 14&nbsp;cores, Docker Desktop given 8&nbsp;GB, the image under emulation and already pulled:</p>
             <ul class="times">
-              <li><span>The check of step 3, one genome</span><b>9 s</b></li>
-              <li><span>The test of step 2</span><b>3 min</b></li>
-              <li><span><i>M.&nbsp;tuberculosis</i> CDC1551 without eggNOG, the tutorial's run</span><b>2 min 16 s</b></li>
-              <li><span><i>E.&nbsp;coli</i> Sakai against K-12, your own reference, without eggNOG</span><b>5 min 47 s</b></li>
+              <li><span>The check of step&nbsp;3, one genome</span><b>9&nbsp;s</b></li>
+              <li><span>The test of step&nbsp;2</span><b>3&nbsp;min</b></li>
+              <li><span><i>M.&nbsp;tuberculosis</i> CDC1551 without eggNOG, the tutorial's run</span><b>2&nbsp;min 16&nbsp;s</b></li>
+              <li><span><i>E.&nbsp;coli</i> Sakai against K-12, your own reference, without eggNOG</span><b>5&nbsp;min 47&nbsp;s</b></li>
             </ul>
-            <p>Bakta takes most of a run: 1 min 46 s of the CDC1551 one. With your own reference it runs on the reference too, 2 min 36 s for K-12. The eggNOG steps are not timed here: they ask for 45 and 50 GB of memory, more than a laptop gives Docker. The database is built once, on the first full run, and kept where <code class="nw">--eggnog_db</code> points. <a href="getting-started/tutorial.html#the-machine">What each step needs</a>.</p>
+            <p>Bakta takes most of a run: 1&nbsp;min 46&nbsp;s of the CDC1551 one. With your own reference it runs on the reference too, 2&nbsp;min 36&nbsp;s for K-12. The eggNOG steps are not timed here: they ask for 45 and 50&nbsp;GB of memory, more than a laptop gives Docker. The database is built once, on the first full run, and kept where <code class="nw">--eggnog_db</code> points. <a href="getting-started/tutorial.html#the-machine">What each step needs</a>.</p>
           </div>
         </details>
         <details>
@@ -499,18 +499,18 @@ case1_kept     11</pre>
         </details>
         <details>
           <summary><span>Nextflow will not start: "Cannot find Java or it's a wrong version"</span></summary>
-          <div class="ans"><p>Nextflow needs Java 17 or newer (up to 26), and <code class="nw">java -version</code> shows the one it found. Install one with <code><span class="nw">conda</span> <span class="nw">install</span> <span class="nw">-c</span> <span class="nw">conda-forge</span> <span class="nw">openjdk=17</span></code>, or point <code class="nw">JAVA_HOME</code> at a newer JDK.</p></div>
+          <div class="ans"><p>Nextflow needs Java&nbsp;17 or newer (up to 26), and <code class="nw">java -version</code> shows the one it found. Install one with <code><span class="nw">conda</span> <span class="nw">install</span> <span class="nw">-c</span> <span class="nw">conda-forge</span> <span class="nw">openjdk=17</span></code>, or point <code class="nw">JAVA_HOME</code> at a newer JDK.</p></div>
         </details>
         <details>
           <summary><span>A task dies with exit code 137</span></summary>
-          <div class="ans"><p>On macOS and Windows, Docker runs inside a virtual machine with a memory limit of its own, often 8 GB; <code class="nw">docker info</code>, from step 1, prints it. Raise it in Docker Desktop under Settings, Resources, Memory, and keep <code class="nw">--max_memory</code> at or below it. <a href="getting-started/tutorial.html#the-machine">What each step needs</a>.</p></div>
+          <div class="ans"><p>On macOS and Windows, Docker runs inside a virtual machine with a memory limit of its own, often 8&nbsp;GB; <code class="nw">docker info</code>, from step&nbsp;1, prints it. Raise it in Docker Desktop under Settings, Resources, Memory, and keep <code class="nw">--max_memory</code> at or below it. <a href="getting-started/tutorial.html#the-machine">What each step needs</a>.</p></div>
         </details>
         <details>
           <summary><span>The first run seems stuck</span></summary>
-          <div class="ans"><p>The first run pulls a 12 GB image and builds the eggNOG database, which dominates the wall clock; both happen once. A long silence during the database build is not a failure. Point <code class="nw">--eggnog_db</code> somewhere you keep, and <code class="nw">-resume</code> picks a stopped run up where it left off.</p></div>
+          <div class="ans"><p>The first run pulls a 12&nbsp;GB image and builds the eggNOG database, which dominates the wall clock; both happen once. A long silence during the database build is not a failure. Point <code class="nw">--eggnog_db</code> somewhere you keep, and <code class="nw">-resume</code> picks a stopped run up where it left off.</p></div>
         </details>
         <details>
-          <summary><span>Case 2 is at or near zero</span></summary>
+          <summary><span>Case&nbsp;2 is at or near zero</span></summary>
           <div class="ans"><p>Every gene disagreeing with the reference by a few bases means something systematic is wrong with the reference, not with 4000 genes. The usual cause is a reference annotation from another assembly than the genome given with it. <a href="user-guide/outputs.html#what-a-healthy-summary-looks-like">What a healthy summary looks like</a>.</p></div>
         </details>
         <details>
@@ -543,7 +543,7 @@ case1_kept     11</pre>
   <div class="wrap">
     <div>
       <h3>Cite</h3>
-      <blockquote>Ruiz-Rodriguez, P., &amp; Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software].</blockquote>
+      <blockquote>Ruiz-Rodriguez,&nbsp;P., &amp; Coscolla,&nbsp;M. (2026). AMAP (Version&nbsp;1.0.1) [Computer&nbsp;software].</blockquote>
       <p class="doi">Software: <a href="https://doi.org/10.5281/zenodo.8024446">doi:10.5281/zenodo.8024446</a></p>
     </div>
     <div>

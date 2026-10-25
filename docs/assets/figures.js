@@ -21,6 +21,16 @@
       .replace(/"/g, "&quot;");
   }
 
+  // The words that stay together, as tools/build_docs.py keeps them in the
+  // docs: a number and its unit, a word and the number it names (case 4),
+  // and the two ends of a range (67 to 90%).
+  function tie(text) {
+    return String(text)
+      .replace(/(\d) (?=(?:bp|kb|Mb|GB|MB|KB|ms|s|min|h|%|CPUs?|cores|residues|bytes)(?!\w))/g, "$1\u00a0")
+      .replace(/\b(case|Case|step|Step|Figure|version|Nextflow|Java) (?=\d)/g, "$1\u00a0")
+      .replace(/(\d) to (?=\d)/g, "$1\u00a0to\u00a0");
+  }
+
   function fmt(n) {
     return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
@@ -1877,7 +1887,7 @@
     if (stationOff(key, state)) status = '<p class="note">Not run with the switches above.</p>';
     if (key === "PANGENE" && state.skipTyping && !state.skipFunctional) status = '<p class="note">With <code>--skip_typing</code> it searches the genomes of the sample sheet, each under its sample ID.</p>';
     return (
-      "<div><h3>" + esc(s.name) + "<code>" + esc(proc) + "</code></h3><p>" + esc(text) + "</p>" + status +
+      "<div><h3>" + esc(s.name) + "<code>" + esc(proc) + "</code></h3><p>" + esc(tie(text)) + "</p>" + status +
       (s.doc ? '<p class="note"><a href="' + s.doc + '">More on this step</a></p>' : "") + "</div>" +
       "<dl>" +
       (s.reads ? "<dt>Reads</dt><dd>" + esc(s.reads) + "</dd>" : "") +
@@ -2449,7 +2459,7 @@
   document.querySelectorAll('[data-dup="communities"]').forEach(mountDupCommunities);
 
   window.AMAPFigures = {
-    draw: draw, render: render, tickLabel: tickLabel, attachTips: attachTips, rowsFor: rowsFor, windowSpec: windowSpec, fmt: fmt, esc: esc,
+    draw: draw, render: render, tickLabel: tickLabel, attachTips: attachTips, rowsFor: rowsFor, windowSpec: windowSpec, fmt: fmt, esc: esc, tie: tie,
     legend: legend, refocus: refocus, isShown: isShown, nameSubjects: nameSubjects, overlap: overlap,
     stations: STATIONS, metroOrder: METRO_ORDER
   };

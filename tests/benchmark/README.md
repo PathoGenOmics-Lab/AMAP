@@ -106,6 +106,12 @@ For each genome:
 - for the draft, how many proteins are the translation of their gene on the
   contig the table puts it on, and for the genes the cuts run through, how many
   of their pieces are annotated under the gene's name and marked partial
+- **Bakta alone**: exact and changed genes found again, for Bakta's own calls
+  of the same genome (the TSV it writes, kept with the inputs) instead of
+  AMAP's table. Bakta names a call after the reference where it annotated it
+  from the reference proteins AMAP gives it with `--proteins`: its DbXrefs then
+  hold `UserProtein:Rv0001`. That is the name scored, so the two are measured
+  against the same truth by the same rules
 
 A reference can give one gene several proteins from alternative start codons,
 all ending at its stop; K-12 does for cheA, infB, clpB and five more. AMAP
@@ -121,15 +127,21 @@ other, and whether a gene of the other run sits on the same reading frame there
 
 With the changes up to `changed-genes` and `contig-end-pieces` (October 2026):
 
-| Genome | exact | changed genes found | genes in the table | ORFs twice |
-| :--- | ---: | ---: | ---: | ---: |
-| H37Rv against itself | 4026 / 4026 | | 4031 | 0 |
-| H37Rv CP110619 | 3986 / 3986 | 50 / 50 | 4036 | 0 |
-| CDC1551 | 3097 / 3097 | 860 / 862 | 4014 | 2 |
-| M. bovis | 2391 / 2391 | 1515 / 1515 | 3947 | 3 |
-| CDC1551, 40 contigs | 3072 / 3072 | | 4050 | 2 |
-| E. coli K-12 against itself | 4286 / 4286 | | 4313 | 2 |
-| E. coli Sakai | 220 / 220 | 3363 / 3367 | 5334 | 11 |
+| Genome | exact | changed genes found | genes in the table | ORFs twice | Bakta alone: exact | Bakta alone: changed genes found |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| H37Rv against itself | 4026 / 4026 | | 4031 | 0 | 2905 | |
+| H37Rv CP110619 | 3986 / 3986 | 50 / 50 | 4036 | 0 | 2880 | 29 |
+| CDC1551 | 3097 / 3097 | 860 / 862 | 4014 | 2 | 2245 | 705 |
+| M. bovis | 2391 / 2391 | 1515 / 1515 | 3947 | 3 | 1742 | 1290 |
+| CDC1551, 40 contigs | 3072 / 3072 | | 4050 | 2 | 2231 | |
+| E. coli K-12 against itself | 4286 / 4286 | | 4313 | 2 | 3841 | |
+| E. coli Sakai | 220 / 220 | 3363 / 3367 | 5334 | 11 | 148 | 3202 |
+
+Bakta alone, scored by the same rules, finds 67 to 73% of the unchanged genes
+of each genome at exactly their coordinates and under their name (K-12, 90%),
+and AMAP all of them. What Bakta misses it misses by its coordinates: of the
+852 unchanged genes of CDC1551 it does not find, 836 have no call at their
+coordinates and 16 have one under another name.
 
 CDC1551 has one gene `deleted`, PPE50 (Rv3135). The six changed genes not
 found:

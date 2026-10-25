@@ -1,4 +1,4 @@
-# How it works
+# Overview
 
 AMAP does not annotate genomes from scratch. It takes an annotation that already
 exists, compares it against one that is trusted, and adjudicates the
@@ -11,14 +11,14 @@ curated reference for a close relative exists, those errors are visible: align
 the reference proteins onto the new genome, and where the two disagree, decide
 which is more likely right.
 
-On MTBC genomes that adjudication changes roughly 30% of genes.
+On genomes of the *Mycobacterium tuberculosis* complex (MTBC) that adjudication changes roughly 30% of genes.
 
 ## The three inputs to a decision
 
 **The Bakta annotation.** Every CDS Bakta called on your genome, with
 coordinates and a locus tag.
 
-**The Miniprot alignments.** Every reference protein aligned onto your genome,
+**The miniprot alignments.** Every reference protein aligned onto your genome,
 with the coordinates where it landed. The reference proteins carry their own
 coordinates in their headers (`Rv0001_1-1524`), which lets a later step tell a
 real locus from a paralogous placement.
@@ -33,18 +33,19 @@ annotating the reference and taking the difference.
 
 ## The pipeline
 
-Ten steps, from genomes to report:
+Eleven steps, from genomes to reports:
 
 1. **eggNOG database setup**, skipped if it is already built
 2. **Lineage typing** with pathotypr, MTBC only
 3. **Annotation** with Bakta
-4. **Protein alignment** with Miniprot
+4. **Protein alignment** with miniprot
 5. **Case classification**: every CDS sorted by how it relates to the reference
 6. **Correction**: conflicts resolved, missing genes rescued, stop codons checked
 7. **Functional annotation** with eggNOG-mapper
 8. **Duplication analysis**: within and across genomes
 9. **Pangenome** with pangene
-10. **Report**
+10. **The full report**, `final_report.html`, after eggNOG
+11. **The report by question**, `amap_report.html`, in every run
 
 [The workflow page](workflow.md) walks through each with its inputs and outputs.
 
@@ -68,8 +69,8 @@ which set of coordinates wins a conflict.
 [The correction algorithm](correction-algorithm.md) gives the rules and the
 thresholds.
 
-## In this section
+## Next steps
 
-- [The workflow](workflow.md): the ten steps in detail
-- [The correction algorithm](correction-algorithm.md): case classification, conflict resolution, quality control
+- [The workflow](workflow.md): the eleven steps in detail
+- [The correction algorithm](correction-algorithm.md): case classification, conflict resolution, stop codon check
 - [Duplication metrics](duplications.md): what the network numbers mean

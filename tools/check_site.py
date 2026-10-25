@@ -2,7 +2,7 @@
 """Check the website in docs/ against the pipeline it describes.
 
 The site is plain HTML with no build step, so nothing renders it and nothing
-fails when it drifts. This does, in nine parts:
+fails when it drifts. This does, in seventeen parts:
 
   links       every internal link and #anchor resolves (the stories how.js
               opens and the sections of the example report included), no page
@@ -26,9 +26,30 @@ fails when it drifts. This does, in nine parts:
   benchmark   the front page's scores are tests/benchmark's expected results;
   metro       the metro map's stations are main.nf's processes, in the order
               its workflow runs them;
+  words       no page says --skip_functional_annotation leaves no report
+              (amap_report.html is always written), or that a gene a contig
+              end cuts is lost (it comes back in pieces);
+  install     the front page, the installation page, the tutorial and
+              README.md install Nextflow with the same command;
+  citation    the citation page shows CITATION.cff as it is, and its APA line
+              and BibTeX give the version and date CITATION.cff does;
+  report      the example report, and the Rmd every final_report.html comes
+              from, load nothing from another host (MathJax included), and
+              the example has lang="en" and alt text on every image;
   readme      README.md's links land on a page and an anchor that exist, its
               pictures are in the repository, and its scores are the
               benchmark's;
+  stories     the story chips written into how-it-works.html are how.js's
+              stories, and no drawing hides a tab stop inside an image;
+  figures     a page that loads figures.js has something for it to draw;
+  search      the search index has the shape the search box reads, every
+              option has an entry that lands on its row, and the index stays
+              under its size budget;
+  front       the pages the command builder links to exist, the front
+              page's report frame and the picture standing in for it are
+              there, the picture light, and its rail lists Figure 1 and every
+              chapter in order, under the numbers the page gives them and by
+              words each chapter shows;
   dashes      no em-dashes.
 
 Run from the repository root, with what requirements-test.txt installs (the
@@ -677,7 +698,7 @@ def check_thresholds() -> list[str]:
                         f"{values.get('piece_edge_bp_pass')} bp in contig_end_pieces.py")
     # What the pages say each number is.
     said = {
-        "single_bp": [("index.html", r"longer by more than ([\d,]+) bp")],
+        "single_bp": [("index.html", r"longer by more than ([\d,]+)(?: |&nbsp;|\u00a0)bp")],
         "false_positive_pct": [("index.html", r"genome at (\d+)% identity")],
         "dup_cover_pct": [("how-it-works/duplications.html", r"(\d+)% or more"), ("how-it-works/duplications.html", r"under (\d+)%")],
         "dup_cover_pct_all": [("how-it-works/duplications.html", r"(\d+)% or more")],
@@ -767,10 +788,10 @@ def check_thresholds() -> list[str]:
         (running, r"(?P<cpus>\d+) CPUs, (?P<memory>\d+) GB and (?P<time>\d+) h with an executor profile", "scheduler"),
         (running, r"otherwise the machine's CPUs, (?P<memory>\d+) GB and (?P<time>\d+) h", "machine"),
         (quickstart, r"the machine's CPUs and (?P<memory>\d+) GB", "machine"),
-        (quickstart, r"scheduler profiles at (?P<cpus>\d+) CPUs and (?P<memory>\d+) GB", "scheduler"),
+        (quickstart, r"executor profiles at (?P<cpus>\d+) CPUs and (?P<memory>\d+) GB", "scheduler"),
         (parameters, r"\| `--max_memory` \|[^|]*\|[^|]*\| `(?P<memory>\d+)\.GB` \|", "machine"),
         (parameters, r"\| `--max_time` \|[^|]*\|[^|]*\| `(?P<time>\d+)\.h` \|", "machine"),
-        (parameters, r"HPC profiles raise them to (?P<cpus>\d+) CPUs and (?P<memory>\d+) GB", "scheduler"),
+        (parameters, r"executor profiles raise them to (?P<cpus>\d+) CPUs and (?P<memory>\d+) GB", "scheduler"),
         (parameters, r"`-profile highmem` to (?P<cpus>\d+) CPUs, (?P<memory>\d+) GB and (?P<time>\d+) h", "highmem"),
         (parameters, r"`-profile test` sets (?P<cpus>\d+) CPUs, (?P<memory>\d+) GB and (?P<time>\d+) h", "test"),
     ]
@@ -818,10 +839,10 @@ def check_thresholds() -> list[str]:
         ("Share of its protein an alignment spans to name a longer call", "rescuing missing genes"): ("name_share", "{:g}%", 0.01),
         ("Cover by another reference gene that rules a copy out", "final deduplication"): ("copy_cover", "{:g}%", 0.01),
         ("Length of a gene's pieces together, next to the reference gene", "final deduplication"): ("pieces_length", "{:g}%", 0.01),
-        ("Identity to restore a clipped N-terminus", "quality control"): ("nterm_identity", "{:g}%", 0.01),
+        ("Identity to restore a clipped N-terminus", "stop codon check"): ("nterm_identity", "{:g}%", 0.01),
         ("Cover for a gene to account for a placement", "rescuing missing genes"): ("account_cover", "{:g}%", 0.01),
         ("Length of a further copy, next to the first", "final deduplication"): ("copy_length", "{:g}%", 0.01),
-        ("Residues an extension may run past the end of the reference protein", "quality control"): ("past_reference_residues", "{:g}"),
+        ("Residues an extension may run past the end of the reference protein", "stop codon check"): ("past_reference_residues", "{:g}"),
     }
     for line in ALGORITHM_MD.read_text(encoding="utf-8").splitlines():
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
@@ -845,25 +866,60 @@ BENCHMARK = Path("tests/benchmark/README.md")
 
 
 def check_benchmark(pages: dict[str, Page]) -> list[str]:
-    """The front page's scores are the benchmark's expected results, row by row."""
+    """The front page's scores are the benchmark's expected results, row by row:
+    AMAP's bars, and Bakta alone drawn behind each of them, with the numbers
+    and the lengths the page shows."""
     text = BENCHMARK.read_text(encoding="utf-8")
     table = text[text.index("## Expected results"):]
     expected = []
+    header: list[str] = []
     for line in table.splitlines():
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if len(cells) == 5 and re.match(r"\d+ / \d+", cells[1]):
+        if not header and cells and cells[0] == "Genome":
+            header = cells
+        if len(cells) >= 5 and re.match(r"\d+ / \d+", cells[1]):
             pair = lambda c: tuple(int(n) for n in c.split(" / ")) if c else None
-            expected.append((cells[0], pair(cells[1]), pair(cells[2])))
+            row = dict(zip(header, cells))
+            alone = lambda name: int(row[name]) if row.get(name) else None
+            expected.append((cells[0], pair(cells[1]), pair(cells[2]),
+                             alone("Bakta alone: exact"), alone("Bakta alone: changed genes found")))
+    if "Bakta alone: exact" not in header:
+        return [f"{BENCHMARK}: the expected results have no 'Bakta alone: exact' column"]
     front = (SITE / "index.html").read_text(encoding="utf-8")
-    rows = re.findall(r'<div class="pf-row"><span class="pf-name"><b>([^<]+)</b>.*?</div>', front, re.S)
-    bars = re.findall(r'<div class="pf-row"><span class="pf-name">.*?</div>', front, re.S)
+    bars = re.findall(r'<div class="pf-row"[^>]*>\s*<span class="pf-name"[^>]*>.*?</div>', front, re.S)
     problems = []
     if len(bars) != len(expected):
         return [f"index.html: shows {len(bars)} genomes of the benchmark, {BENCHMARK} has {len(expected)}"]
-    for (genome, exact, changed), row, label in zip(expected, bars, rows):
-        got = {cls: (int(f), int(n)) for cls, f, n in re.findall(r'class="pf-bar (pf-\w+)" data-found="(\d+)" data-total="(\d+)"', row)}
+    for (genome, exact, changed, alone_exact, alone_changed), row in zip(expected, bars):
+        label = re.sub(r"<[^>]+>", "", re.search(r"<b>(.*?)</b>", row, re.S).group(1)).replace("&nbsp;", " ")
+        got, alone = {}, {}
+        for cls, attrs, inner in re.findall(r'<span class="pf-bar (pf-\w+)"([^>]*)>(.*?)</span>(?=\s*<span class="pf-bar|\s*</div>)', row, re.S):
+            if cls == "pf-none" or "pf-none" in attrs:
+                continue
+            found, total = (int(re.search(rf'data-{k}="(\d+)"', attrs).group(1)) for k in ("found", "total"))
+            got[cls] = (found, total)
+            # What the bar draws and prints is what its data says.
+            fill = re.search(r'class="pf-fill" style="width:([\d.]+)%"', inner)
+            shown = re.search(r"<b>([\d,]+) / ([\d,]+)</b>", inner)
+            if not fill or float(fill.group(1)) != round(100 * found / total, 2):
+                problems.append(f"index.html: {label}: the {cls} bar is not drawn at {100 * found / total:.2f}%")
+            if not shown or (shown.group(1), shown.group(2)) != (f"{found:,}", f"{total:,}"):
+                problems.append(f"index.html: {label}: the {cls} bar does not print {found:,} / {total:,}")
+            b = re.search(r'data-bakta="(\d+)"', attrs)
+            alone[cls] = int(b.group(1)) if b else None
+            if b:
+                n = int(b.group(1))
+                ghost = re.search(r'class="pf-ghost" style="width:([\d.]+)%"', inner)
+                said = re.search(r"Bakta alone: ([\d,]+)<", inner)
+                if not ghost or float(ghost.group(1)) != round(100 * n / total, 2):
+                    problems.append(f"index.html: {label}: Bakta alone is not drawn at {100 * n / total:.2f}% of the {cls} bar")
+                if not said or said.group(1) != f"{n:,}":
+                    problems.append(f"index.html: {label}: the {cls} bar does not print Bakta alone: {n:,}")
         if got.get("pf-exact") != exact or got.get("pf-changed") != changed:
             problems.append(f"index.html: {label} shows {got}, {BENCHMARK} expects exact {exact} and changed {changed} ({genome})")
+        if alone.get("pf-exact") != alone_exact or alone.get("pf-changed") != alone_changed:
+            problems.append(f"index.html: {label} shows Bakta alone {alone}, {BENCHMARK} expects exact {alone_exact} "
+                            f"and changed {alone_changed} ({genome})")
     return problems
 
 
@@ -913,6 +969,165 @@ def check_metro() -> list[str]:
     return problems
 
 
+# ── words ──
+#
+# Sentences the pages once got wrong about the pipeline, and the one command
+# every way in has to give the same.
+
+
+def doc_markdown() -> list[Path]:
+    """The markdown the documentation pages are built from."""
+    return [SITE / path for _section, path, _title, _line in build_docs.PAGES if path.endswith(".md")]
+
+
+def passages(text: str) -> list[str]:
+    """The paragraphs, list items and table rows of a page of markdown,
+    outside its code blocks, each on one line."""
+    text = re.sub(r"^\s*```.*?^\s*```", "", text, flags=re.S | re.M)
+    text = re.sub(r"^[ \t]*>[ \t]?", "", text, flags=re.M)
+    out = []
+    for block in re.split(r"\n\s*\n", text):
+        lines = block.splitlines()
+        if lines and all(line.lstrip().startswith("|") for line in lines):
+            out += lines
+        else:
+            out += re.split(r"\n(?=\s*(?:[-*]|\d+\.)\s)", block)
+    return [re.sub(r"\s+", " ", p).strip() for p in out if p.strip()]
+
+
+def check_words() -> list[str]:
+    problems = []
+    for path in doc_markdown():
+        for passage in passages(path.read_text(encoding="utf-8")):
+            where = passage[:90]
+            # AMAP_REPORT runs in every run, with or without eggNOG (main.nf),
+            # so a run that skips it still has a report: amap_report.html.
+            if re.search(r"no report at all", passage, re.I):
+                problems.append(f"{path}: says {where!r}, but every run writes amap_report.html")
+            elif "skip_functional_annotation" in passage and re.search(r"\b(the|no) report\b(?! by question)", passage, re.I):
+                problems.append(f"{path}: {where!r}: --skip_functional_annotation leaves amap_report.html; "
+                                "say final_report.html, not 'the report'")
+            # A gene a contig end cuts comes back in pieces (bin/classify/pieces.py).
+            if re.search(r"cannot be recovered|loses genes across contig", passage, re.I):
+                problems.append(f"{path}: {where!r}: a gene a contig end cuts comes back in pieces")
+    return problems
+
+
+def check_install(pages: dict[str, Page]) -> list[str]:
+    """The command that installs Nextflow is the same on the front page, the
+    installation page, the tutorial and README.md."""
+    found: dict[str, list[str]] = {}
+    if "index.html" in pages:
+        for tag, text in pages["index.html"].code_elems:
+            if tag == "pre":
+                for line in text.splitlines():
+                    line = line.strip().removeprefix("$ ")
+                    if line.startswith("conda create"):
+                        found.setdefault("index.html", []).append(line)
+    markdown = {
+        "getting-started/installation.md": SITE / "getting-started" / "installation.md",
+        "getting-started/tutorial.md": SITE / "getting-started" / "tutorial.md",
+        "README.md": README,
+    }
+    for page, path in markdown.items():
+        for block in re.findall(r"```[^\n]*\n(.*?)```", path.read_text(encoding="utf-8"), re.S):
+            for line in block.splitlines():
+                if line.strip().startswith("conda create -n nextflow-env"):
+                    found.setdefault(page, []).append(line.strip())
+    problems = []
+    for page in ["index.html", *markdown]:
+        if len(set(found.get(page, []))) != 1:
+            problems.append(f"{page}: has {len(set(found.get(page, [])))} commands that install Nextflow with conda, not one")
+    commands = {line for lines in found.values() for line in lines}
+    if len(commands) > 1:
+        problems.append("the pages install Nextflow differently: " + "; ".join(f"{page}: {lines[0]}" for page, lines in sorted(found.items())))
+    return problems
+
+
+CITATION_CFF = Path("CITATION.cff")
+MONTHS = "jan feb mar apr may jun jul aug sep oct nov dec".split()
+
+
+def check_citation() -> list[str]:
+    """The citation page shows CITATION.cff as it is, and its APA line and
+    BibTeX give the version, year and month CITATION.cff does."""
+    page = SITE / "about" / "citation.md"
+    text = page.read_text(encoding="utf-8")
+    cff = CITATION_CFF.read_text(encoding="utf-8")
+    problems = []
+    shown = re.search(r"^\*\*CITATION\.cff\*\*\s*```yaml\n(.*?)```", text, re.S | re.M)
+    body = "\n".join(line for line in cff.splitlines() if not line.startswith("#")).strip()
+    if not shown or shown.group(1).strip() != body:
+        problems.append(f"{page}: its CITATION.cff tab is not {CITATION_CFF} as it is")
+    version = re.search(r"^version: ([\d.]+)", cff, re.M).group(1)
+    year, month = re.search(r"^date-released: '(\d{4})-(\d{2})", cff, re.M).groups()
+    bib = re.search(r"^@software\{.*?^```", text, re.S | re.M)
+    bib = bib.group(0) if bib else ""
+    for key, value in (("version", version), ("year", year), ("month", MONTHS[int(month) - 1])):
+        if not re.search(rf"^\s*{key} = \{{?{re.escape(value)}\}}?,?\s*\}}?$", bib, re.M):
+            problems.append(f"{page}: the BibTeX's {key} is not {value}, as in {CITATION_CFF}")
+    if f"({year}). AMAP (Version {version})" not in text:
+        problems.append(f"{page}: the APA line does not say ({year}) and Version {version}, as {CITATION_CFF} does")
+    # The README cites it too, with the same BibTeX.
+    readme = README.read_text(encoding="utf-8")
+    bib = re.search(r"^@software\{.*?^```", readme, re.S | re.M)
+    bib = bib.group(0) if bib else ""
+    for key, value in (("version", version), ("year", year), ("month", MONTHS[int(month) - 1])):
+        if not re.search(rf"^\s*{key} = \{{?{re.escape(value)}\}}?,?\s*\}}?$", bib, re.M):
+            problems.append(f"README.md: the BibTeX's {key} is not {value}, as in {CITATION_CFF}")
+    return problems
+
+
+# ── report ──
+#
+# The example report is the report's own output and is not checked as a page,
+# but it has to open with no network, as every final_report.html has to.
+
+DEMO_REPORT = SITE / "examples" / "demo_report.html"
+REPORT_DIR = Path("bin/report")
+# What makes a browser fetch from another host: a script or stylesheet tag, a
+# script that sets a src, or an import.
+REMOTE_LOAD = re.compile(
+    r"<script\b[^>]*\bsrc\s*=\s*[\"']?(?:https?:)?//"
+    r"|<link\b[^>]*\bhref\s*=\s*[\"']?(?:https?:)?//"
+    r"|\.src\s*=\s*[\"'](?:https?:)?//"
+    r"|\b(?:importScripts|import)\s*\(\s*[\"'](?:https?:)?//"
+    r"|@import\s+(?:url\()?[\"']?(?:https?:)?//",
+    re.I,
+)
+
+
+def check_report() -> list[str]:
+    problems = []
+    demo = DEMO_REPORT.read_text(encoding="utf-8")
+    name = DEMO_REPORT.relative_to(SITE).as_posix()
+    if "mathjax.rstudio.com" in demo:
+        problems.append(f"{name}: loads MathJax from mathjax.rstudio.com; render it again from bin/report/report_AMAP.Rmd")
+    for m in REMOTE_LOAD.finditer(demo):
+        problems.append(f"{name}: loads from another host: {m.group(0)[:80]!r}")
+    if not re.search(r"<html\b[^>]*\blang=\"en\"", demo):
+        problems.append(f"{name}: <html> has no lang=\"en\"")
+    # The images of the page, not the "<img>" strings of the libraries it carries.
+    markup = re.sub(r"<script\b.*?</script>", "", demo, flags=re.S | re.I)
+    unnamed = [img for img in re.findall(r"<img\b[^>]*>", markup) if not re.search(r"\balt\b", img)]
+    if unnamed:
+        problems.append(f"{name}: {len(unnamed)} images without alt text")
+    # What every final_report.html is rendered from.
+    rmd = (REPORT_DIR / "report_AMAP.Rmd").read_text(encoding="utf-8")
+    front = rmd.split("\n---", 1)[0]
+    if not re.search(r"^    mathjax: null$", front, re.M):
+        problems.append("bin/report/report_AMAP.Rmd: html_document has no 'mathjax: null', so every report loads MathJax from the internet")
+    if not re.search(r"^lang: en$", front, re.M):
+        problems.append("bin/report/report_AMAP.Rmd: no 'lang: en' in its YAML")
+    for path in (REPORT_DIR / "header.html", REPORT_DIR / "styles.css", REPORT_DIR / "report_AMAP.Rmd"):
+        text = path.read_text(encoding="utf-8")
+        # A link the reader follows is not a load; the Rmd ends with one.
+        text = re.sub(r"\[[^\]]*\]\(https?://[^)\s]*\)", "", text)
+        for url in re.findall(r"https?://[^\s\"')<>]+", text):
+            problems.append(f"{path}: points at {url}; nothing in the report may come from another host")
+    return problems
+
+
 # ── readme ──
 
 
@@ -931,6 +1146,9 @@ def check_readme(pages: dict[str, Page]) -> list[str]:
             problems.append(f"README.md: links to {url}, and docs/{target} has no #{anchor}")
     if "mkdocs" in text.lower():
         problems.append("README.md: still mentions MkDocs")
+    # Typing puts the lineage in front of a sample's folder name.
+    for folder in sorted(set(re.findall(r"results/\w+/\{sampleId\}/", text))):
+        problems.append(f"README.md: names {folder}, where the folder is {{lineage}}_{{sampleId}}")
     # Its pictures are files of the repository.
     for src in re.findall(r'(?:src|srcset)="([^"]+)"', text) + re.findall(r"!\[[^\]]*\]\(([^)\s]+)", text):
         if not re.match(r"^https?:", src) and not Path(src).exists():
@@ -946,7 +1164,7 @@ def check_readme(pages: dict[str, Page]) -> list[str]:
     expected = [
         (pair(cells[1]), pair(cells[2]))
         for cells in ([c.strip() for c in line.strip().strip("|").split("|")] for line in bench[bench.index("## Expected results"):].splitlines())
-        if len(cells) == 5 and re.match(r"\d+ / \d+", cells[1])
+        if len(cells) >= 5 and re.match(r"\d+ / \d+", cells[1])
     ]
     shown = [
         (pair(cells[1]), pair(cells[2]))
@@ -958,10 +1176,226 @@ def check_readme(pages: dict[str, Page]) -> list[str]:
     return problems
 
 
+# ── front ──
+
+
+POSTER_BYTES = 80_000
+
+
+def check_front(pages: dict[str, Page]) -> list[str]:
+    """What the front page loads or links to outside its HTML: the pages the
+    command builder's notes link to (site.js writes them, from the front page
+    and from the quickstart's copy), the report its frame loads on request,
+    and the picture that stands in for it, which has to stay light."""
+    problems = []
+    js = SITE_JS.read_text(encoding="utf-8")
+    block = js[js.index("/* ── Command builder ── */"):js.index("/* ── Embedded report ── */")]
+    for target, anchor in re.findall(r"builderRoot \+ '([\w./-]+\.html)(?:#([\w-]+))?", block):
+        if target not in pages:
+            problems.append(f"site.js: the command builder links to {target}, which does not exist")
+        elif anchor and anchor not in pages[target].ids:
+            problems.append(f"site.js: the command builder links to {target}#{anchor}, which no element there has")
+    front = (SITE / "index.html").read_text(encoding="utf-8")
+    for src in re.findall(r'<iframe[^>]*\sdata-src="([^"]+)"', front):
+        if not (SITE / src).exists():
+            problems.append(f"index.html: the report frame loads {src}, which does not exist")
+    for src in re.findall(r'<img class="report-poster"[^>]*\ssrc="([^"]+)"', front):
+        size = (SITE / src).stat().st_size if (SITE / src).exists() else 0
+        if size > POSTER_BYTES:
+            problems.append(f"index.html: {src} is {size:,} bytes, over the {POSTER_BYTES:,} it may weigh")
+    problems += check_rail(front)
+    return problems
+
+
+class Chapters(HTMLParser):
+    """The front page's chapters as its stylesheet counts them: every kicker
+    inside a section head counts one, wherever it sits in the head and
+    whatever order the section's attributes come in, and belongs to the
+    section around it. For each, its id (None if it has none, which the rail
+    cannot link to), and the words each section shows."""
+
+    VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.chapters: list[str | None] = []
+        self.words: dict[str | None, list[str]] = {}
+        self._open: list[tuple[str, set[str], str | None, bool]] = []  # (tag, classes, id, hides its text)
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.VOID:
+            return
+        a = dict(attrs)
+        classes = set((a.get("class") or "").split())
+        hides = tag in ("script", "style", "template") or "hidden" in a or a.get("aria-hidden") == "true"
+        self._open.append((tag, classes, a.get("id"), hides))
+        if "kicker" in classes and any("section-head" in c for _, c, _, _ in self._open[:-1]):
+            section = self._section()
+            if section is not False:
+                self.chapters.append(section)
+
+    def handle_endtag(self, tag):
+        if any(t == tag for t, _, _, _ in self._open):
+            while self._open and self._open.pop()[0] != tag:
+                pass
+
+    def handle_data(self, data):
+        if not any(h for _, _, _, h in self._open):
+            self.words.setdefault(self._section() or None, []).append(data)
+
+    def _section(self):
+        """The id of the innermost open section (None if it has none), or
+        False outside any section."""
+        return next((i for t, _, i, _ in reversed(self._open) if t == "section"), False)
+
+
+def check_rail(front: str) -> list[str]:
+    """The rail beside the front page lists Figure 1, then every chapter, in
+    the page's order, each under the number the page gives it (the page counts
+    its chapters in CSS; the rail writes the numbers out, so they can drift),
+    and names each by words its chapter shows (the rail's names are short, to
+    fit the margin, but never ones the reader cannot find in the chapter)."""
+    rail = re.search(r'<nav class="rail"[^>]*>(.*?)</nav>', front, re.S)
+    if not rail:
+        return ["index.html: the rail of chapters is missing"]
+    links = re.findall(r'<a\b[^>]*href="#([\w-]+)"[^>]*>(.*?)</a>', rail.group(1), re.S)
+    hero = re.search(r'<section\b[^>]*\bclass="hero"[^>]*>', front)
+    hero_id = re.search(r'\bid="([\w-]+)"', hero.group(0)) if hero else None
+    page = Chapters()
+    page.feed(front)
+    expected = ([hero_id.group(1)] if hero_id else []) + [c or "(a chapter with no id)" for c in page.chapters]
+    problems = []
+    if [target for target, _ in links] != expected:
+        problems.append(f"index.html: the rail lists {[t for t, _ in links]}, the page's figure and chapters are {expected}")
+    for n, (target, label) in enumerate(links[1:], 1):
+        number = re.search(r'<span class="rail-n"[^>]*>(\d+)</span>', label)
+        if not number or int(number.group(1)) != n:
+            problems.append(f"index.html: the rail numbers #{target} {number.group(1) if number else 'not at all'}, the page numbers it {n:02d}")
+        name = re.sub(r"<[^>]+>", " ", re.sub(r'<span class="rail-n"[^>]*>.*?</span>', "", label)).split()
+        shown = " ".join(" ".join(page.words.get(target, [])).split()).lower()
+        if name and not re.search(r"\b" + re.escape(" ".join(name).lower()) + r"\b", shown):
+            problems.append(f"index.html: the rail calls #{target} \"{' '.join(name)}\", a name the chapter does not show")
+    return problems
+
+
+# ── stories ──
+
+
+def check_stories(pages: dict[str, Page]) -> list[str]:
+    """The story chips written into how-it-works.html are how.js's stories, in
+    its order, so the page shows them before any script runs; and no drawing
+    hides a tab stop inside an image, where a screen reader names nothing."""
+    problems = []
+    keys = re.findall(r'^\s+key: "([\w-]+)", group:', HOW_JS.read_text(encoding="utf-8"), re.M)
+    page = (SITE / "how-it-works.html").read_text(encoding="utf-8")
+    chips = re.findall(r'<a\b[^>]*\bdata-story="([\w-]+)"', page)
+    if chips != keys:
+        problems.append(f"how-it-works.html: the story chips are {chips}, assets/how.js has the stories {keys}")
+    for href, key in re.findall(r'<a href="([^"]*)" data-story="([\w-]+)"', page):
+        if not href.endswith("#" + key):
+            problems.append(f"how-it-works.html: the chip of story {key} links to {href}")
+    # Pages: an <svg role="img"> with anything focusable inside.
+    for name in pages:
+        text = (SITE / name).read_text(encoding="utf-8")
+        for svg in re.finditer(r'<svg\b[^>]*\brole="img"[^>]*>(.*?)</svg>', text, re.S):
+            if "tabindex" in svg.group(1):
+                problems.append(f"{name}: an <svg role=\"img\"> holds an element with tabindex")
+    # Scripts: a function that writes an <svg role="img"> and gives anything a
+    # tabindex.
+    for script in (FIGURES_JS, HOW_JS):
+        source = script.read_text(encoding="utf-8")
+        for chunk in re.split(r"\n  function ", source):
+            if re.search(r"<svg[^\n]*role=\\?\"img", chunk) and "tabindex" in chunk:
+                problems.append(f"{script.relative_to(SITE)}: function {chunk.split('(')[0]} writes an <svg role=\"img\"> with a tabindex inside")
+    return problems
+
+
+# ── figures ──
+
+
+def check_figure_scripts(pages: dict[str, Page]) -> list[str]:
+    """A page that loads figures.js gives it something to draw: an element it
+    mounts a drawing on (the hooks are read off figures.js), or a script of
+    its own that draws with it, as how.js does."""
+    hooks = set(re.findall(r"""document\.querySelectorAll\(["']\[data-([\w-]+)""", FIGURES_JS.read_text(encoding="utf-8")))
+    if not hooks:
+        return ["assets/figures.js: no drawing hooks found; update check_figure_scripts()"]
+    hook = re.compile(r"\sdata-(?:" + "|".join(sorted(hooks)) + r")(?=[\s=>])")
+    problems = []
+    for name, page in pages.items():
+        scripts = [url for tag, url in page.links if tag == "script"]
+        if not any(url.endswith("assets/figures.js") for url in scripts):
+            continue
+        if any(url.endswith("assets/how.js") for url in scripts):
+            continue
+        if not hook.search((SITE / name).read_text(encoding="utf-8")):
+            problems.append(f"{name}: loads figures.js and its data, but has nothing for it to draw")
+    return problems
+
+
+# ── search ──
+
+
+SEARCH_INDEX = SITE / "assets" / "search-index.js"
+SEARCH_KINDS = {"page", "section", "option", "faq", "story", "changelog"}
+
+
+def check_search_index() -> list[str]:
+    """The search index has the shape the search box reads, every option of
+    the parameters page has an entry of its own that lands on its row, and the
+    file stays under its budget: it loads the first time a reader searches."""
+    text = SEARCH_INDEX.read_text(encoding="utf-8")
+    try:
+        entries = build_docs.read_index(text)
+    except (ValueError, KeyError, IndexError, TypeError) as error:
+        return [f"{SEARCH_INDEX}: not the packed index build_docs.py writes ({error})"]
+    problems = []
+    size = len(text.encode("utf-8"))
+    if size > build_docs.SEARCH_BUDGET:
+        problems.append(f"{SEARCH_INDEX}: {size:,} bytes, over the {build_docs.SEARCH_BUDGET:,} it may weigh")
+    for k, entry in enumerate(entries):
+        missing = {"page", "section", "url", "text", "kind"} - set(entry)
+        if missing:
+            problems.append(f"{SEARCH_INDEX}: entry {k} ({entry.get('url')}) has no {', '.join(sorted(missing))}")
+        elif entry["kind"] not in SEARCH_KINDS:
+            problems.append(f"{SEARCH_INDEX}: entry {k} ({entry['url']}) is of kind {entry['kind']!r}")
+    options = {e["section"]: e["url"] for e in entries if e.get("kind") == "option"}
+    for row in build_docs.parameter_rows():
+        flag = row["flag"]
+        want = f"user-guide/parameters.html#opt-{flag[2:]}"
+        if options.get(flag) != want:
+            problems.append(f"{SEARCH_INDEX}: {flag} has no search entry landing on {want}")
+    return problems
+
+
 # ── dashes ──
 
 
 EM_DASH = "\u2014"
+
+
+# ── anchors ──
+
+
+def check_anchors(pages: dict[str, Page]) -> list[str]:
+    """Links written before a heading was renamed still land: every old id
+    LEGACY_IDS keeps is on its page, and the changelog has GitHub's anchor for
+    every heading of CHANGELOG.md, as links to it from GitHub use them."""
+    problems = []
+    for source, ids in build_docs.LEGACY_IDS.items():
+        name = build_docs.href(source)
+        for old in ids:
+            if name in pages and old not in pages[name].ids:
+                problems.append(f"{name}: has no #{old}, which LEGACY_IDS keeps for links written before")
+    seen: dict[str, int] = {}
+    name = build_docs.href(build_docs.CHANGELOG[0])
+    for line in build_docs.CHANGELOG[1].read_text(encoding="utf-8").splitlines():
+        heading = re.match(r"^#{1,6}\s+(.*)$", line)
+        if heading:
+            slug = build_docs.slugify(build_docs.plain(heading.group(1)), seen)
+            if name in pages and slug not in pages[name].ids:
+                problems.append(f"{name}: has no #{slug}, GitHub's anchor for the changelog heading {heading.group(1)!r}")
+    return problems
 
 
 def check_dashes() -> list[str]:
@@ -997,7 +1431,16 @@ def main() -> int:
         ("thresholds", check_thresholds),
         ("benchmark", lambda: check_benchmark(pages)),
         ("metro", check_metro),
+        ("words", check_words),
+        ("install", lambda: check_install(pages)),
+        ("citation", check_citation),
+        ("report", check_report),
         ("readme", lambda: check_readme(pages)),
+        ("stories", lambda: check_stories(pages)),
+        ("figures", lambda: check_figure_scripts(pages)),
+        ("search", check_search_index),
+        ("front", lambda: check_front(pages)),
+        ("anchors", lambda: check_anchors(pages)),
         ("dashes", check_dashes),
     ]
     failed = 0

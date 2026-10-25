@@ -1,19 +1,20 @@
 # Outputs
 
 Everything lands under `--outdir`, `results/` by default, in one subdirectory
-per pipeline stage. `{sampleId}` below is the sample's name as lineage typing
-leaves it, `L4_G26689` for sample `G26689`, or the sample ID alone under
-`--skip_typing`.
+per pipeline stage. `{lineage}_{sampleId}` below is the sample's name as
+lineage typing leaves it, `L4_G26689` for sample `G26689`, or the sample ID
+alone under `--skip_typing`.
 
 ## Where to look first
 
 | What you want | File |
 | :--- | :--- |
-| The whole analysis, interactive | `results/final_report.html` |
-| Each genome and each gene, question by question | `results/amap_report.html` |
-| Corrected annotation for a sample | `results/AMAP/{sampleId}/*-AMAP.gff3` |
-| Proteins for downstream tools | `results/AMAP/{sampleId}/*-AMAP.clean.faa` |
-| Everything known about every gene | `results/AMAP/{sampleId}/*-AMAPmastertable.tsv` |
+| The whole analysis, after a run with eggNOG ([the full report](report.md)) | `results/final_report.html` |
+| Each genome and each gene, question by question, in every run ([the report by question](amap-report.md)) | `results/amap_report.html` |
+| Corrected annotation for a sample, after a run with eggNOG | `results/AMAP/{lineage}_{sampleId}/*-AMAP.gff3` |
+| Proteins for downstream tools, after a run with eggNOG | `results/AMAP/{lineage}_{sampleId}/*-AMAP.clean.faa` |
+| Everything known about every gene, after a run with eggNOG | `results/AMAP/{lineage}_{sampleId}/*-AMAPmastertable.tsv` |
+| The corrected genes, their proteins and sequences, in every run | `results/AMAP/{lineage}_{sampleId}/*.AMAP.tsv`, `.faa`, `.fna` |
 | Tool versions for your methods section | `results/pipeline_info/software_versions.yml` |
 
 ## The full tree
@@ -23,39 +24,47 @@ leaves it, `L4_G26689` for sample `G26689`, or the sample ID alone under
 ```text
 results/
 ├── AMAP/
-│   └── {sampleId}/
-│       ├── *-AMAP.faa                  # Corrected proteins, all genes including pseudogenes
+│   └── {lineage}_{sampleId}/
+│       ├── *.AMAP.tsv                  # Every run: the corrected genes, one row each
+│       ├── *.AMAP.faa                  # Every run: their proteins
+│       ├── *.AMAP.fna                  # Every run: their nucleotide sequences
+│       ├── *-AMAP.faa                  # Corrected proteins, pseudogenes included
 │       ├── *-AMAP.clean.faa            # No pseudogenes, no internal stops
 │       ├── *-AMAP.fna                  # Corrected nucleotide sequences
+│       ├── *-AMAP.tsv                  # The finished annotation, every feature
 │       ├── *-AMAP.gff3                 # Corrected annotation, GFF3
 │       ├── *-AMAP.gbk                  # Corrected annotation, GenBank
-│       ├── *-AMAP.qc.tsv               # Genome size, GC%, coding density, annotation rate
-│       ├── *-AMAPmastertable.tsv       # Coordinates plus eggNOG plus Mycobrowser, one row per gene
+│       ├── *-AMAP.qc.tsv               # Size, GC%, coding density, annotation rate
+│       ├── *-AMAPmastertable.tsv       # Every gene, with eggNOG and Mycobrowser
 │       ├── *-AMAP.COG.tsv              # COG category counts
-│       └── *-AMAP.MycoBrowser.tsv      # Mycobrowser category counts
+│       ├── *-AMAP.MycoBrowser.tsv      # Mycobrowser category counts
+│       └── *-AMAP.noRef.tsv            # The genes that name no reference gene
 │
 ├── BAKTA/
-│   └── {sampleId}/                     # The uncorrected Bakta annotation, for comparison
-│       ├── *.faa  *.gbff  *.gff3  *.tsv
+│   └── {lineage}_{sampleId}/           # Bakta's own annotation, uncorrected
+│       ├── *.gff3  *.gbff  *.embl  *.tsv  *.json
+│       ├── *.faa  *.ffn  *.fna
 │       ├── *.hypotheticals.faa  *.hypotheticals.tsv
-│       ├── *.png                       # Genome map
-│       └── *.txt                       # Bakta summary statistics
+│       ├── *.inference.tsv
+│       ├── *.png  *.svg                # Genome map
+│       └── *.txt  *.log                # Bakta summary statistics and log
 │
 ├── CDS_CASES/
 │   ├── summary/
 │   │   └── *-summary.tsv               # Case counts, all samples
-│   └── {sampleId}/
+│   └── {lineage}_{sampleId}/
 │       ├── *-case[1-4].tsv             # One table per case
-│       ├── *-rvmissing.tsv             # Reference genes Bakta did not find
+│       ├── *-rvmissing.tsv             # Reference genes Bakta missed, put back
 │       ├── *.html                      # Interactive overlap plots
-│       └── *_corrected.tsv             # Final corrected coordinates
+│       └── *_corrected.tsv             # As classified, before the stop codon check
 │
 ├── DUPLICATIONS/
-│   ├── {sampleId}/
-│   │   ├── duplications*               # Raw Diamond output, within-genome
+│   ├── {lineage}_{sampleId}/
+│   │   ├── duplications_*              # Diamond hits within the genome, sorted
 │   │   ├── duplications_*_groups.tsv   # Duplicated genes grouped into families
-│   │   └── *.dup                       # Duplicated protein sequences
-│   ├── homologous_communities.tsv      # Communities across all samples, with network metrics
+│   │   ├── duplications_*_network.png  # The families drawn
+│   │   └── *_interactive.html          # The same, interactive
+│   ├── homologous_communities.tsv      # Communities across samples, with metrics
 │   └── homologous_communities.html     # Interactive network
 │
 ├── PANGENE/
@@ -75,12 +84,18 @@ results/
 │   ├── execution_trace_*.txt           # Per-process resource usage
 │   ├── software_versions.yml / .tsv    # Exact tool versions
 │   ├── params.yml                      # Parameters used for this run
-│   ├── validation.log                  # Pre-flight validation results
-│   └── run_summary.txt                 # Status, duration, sample counts
+│   ├── validation.log                  # The checks' verdict, when they pass
+│   └── run_summary.txt                 # Status, duration, task counts and the command
 │
-├── final_report.html                   # The full interactive report
-└── amap_report.html                    # The report by question, also without eggNOG
+├── final_report.html                   # The full report, after eggNOG
+└── amap_report.html                    # The report by question, in every run
 ```
+
+The `.AMAP.` files, with a dot, are the correction's own output, written in
+every run, `--skip_functional_annotation` included. The `-AMAP.` files, with a
+hyphen, are the finished annotation, written after eggNOG. `*.AMAP.faa` and
+`*-AMAP.faa` hold the same proteins, and the two `.fna` files the same
+sequences.
 
 ## The key files
 
@@ -115,10 +130,10 @@ A gene across the origin of a circular sequence is written the way Bakta writes
 it. Bakta takes a sequence for a circular replicon when its FASTA description
 says `complete`, as NCBI's "complete genome" and "complete sequence" do, or
 `circular=true`, as Unicycler's does. In `*-AMAP.tsv` and the master table such
-a gene has its start after its end (stcE on plasmid pO157 of E. coli O157:H7
-Sakai is 92563 to 2502); in the GenBank it is `join(92563..92721,1..2502)` in a
+a gene has its start after its end (stcE on plasmid pO157 of *E. coli* O157:H7
+Sakai is 92,563 to 2,502); in the GenBank it is `join(92563..92721,1..2502)` in a
 record marked circular; and in the GFF3 it ends past the sequence's last base,
-by the sequence's length (92563 to 95223 on the 92721 bp plasmid), on a
+by the sequence's length (92,563 to 95,223 on the 92,721 bp plasmid), on a
 `region` feature marked `Is_circular=true`, as the GFF3 specification and
 Bakta's own GFF3 have it.
 
@@ -137,7 +152,7 @@ sequences than the GFF3 has genes, by design.
 
 One row per gene, joining the corrected coordinates, the Bakta annotation, the
 eggNOG assignment (COG category, description, preferred name, GO, EC, KEGG,
-PFAMs, CAZy) and, for MTBC, the Mycobrowser functional category. This is the
+PFAMs, CAZy) and, for the *Mycobacterium tuberculosis* complex (MTBC), the Mycobrowser functional category. This is the
 table to load when you want to ask a question about the annotation.
 
 ### `*-AMAP.qc.tsv`
@@ -165,14 +180,14 @@ calibrate expectations. On the left, *M. tuberculosis* CDC1551 against the
 bundled H37Rv reference. On the right, *E. coli* O157:H7 Sakai against K-12
 MG1655, using a custom reference.
 
-| Case | CDC1551 vs H37Rv | Sakai vs K-12 |
+| Case | CDC1551 against H37Rv | Sakai against K-12 |
 | :--- | ---: | ---: |
-| case2, exact match | 2813 | 3324 |
-| case3, length differs | 24 | 31 |
-| case4, resolved conflict | 1100 | 507 |
-| case1_kept, genuinely novel | 11 | 1387 |
+| case2, perfect match | 2,813 | 3,324 |
+| case3, imperfect match | 24 | 31 |
+| case4, conflicting overlap, resolved | 1,100 | 507 |
+| case1_kept, genuinely novel | 11 | 1,387 |
 | rv_missing, rescued | 97 | 133 |
-| total_cds before correction | 4077 | 5367 |
+| total_cds before correction | 4,077 | 5,367 |
 
 <!-- figure: case-table -->
 
@@ -183,7 +198,7 @@ does not have.
 
 What should worry you is the opposite: **case 2 at or near zero**. Every gene
 disagreeing with the reference by a few bases means something systematic is
-wrong with the reference, not with 4000 individual genes. The usual cause is a
+wrong with the reference, not with 4,000 individual genes. The usual cause is a
 reference proteome whose coordinates do not describe the sequence its proteins
 were translated from.
 
@@ -213,7 +228,7 @@ One self-contained file, organised by the questions a run raises: how each
 genome annotated, where genes are missing or broken on the reference, one gene
 in every genome, what the correction changed, the pseudogenes by lineage, what
 lies outside the reference, and the functional profile. Written with or without
-the functional annotation. [The interactive report](amap-report.md) goes
+the functional annotation. [The report by question](amap-report.md) goes
 through it.
 
 ## Effect of the skip options
@@ -224,12 +239,12 @@ through it.
   `final_report.html`, and `AMAP/` holds only the corrected table and sequences,
   `*.AMAP.tsv`, `*.AMAP.faa` and `*.AMAP.fna`, without the GFF3, the GenBank or
   the master table. You still get `BAKTA/` and `CDS_CASES/`, including
-  `*_corrected.tsv` with the corrected coordinates, and `amap_report.html`,
+  `*_corrected.tsv` with the classification's coordinates, and `amap_report.html`,
   without its eggNOG sections.
 - **`--skip_mycobrowser`**: `*-AMAP.MycoBrowser.tsv` is written empty and the Mycobrowser sections drop
   out of the report. Everything else is unaffected.
 
 ## Next steps
 
-- [How it works](../how-it-works/index.md): what produced all this
+- [Overview](../how-it-works/index.md): what produced all this
 - [Duplication metrics](../how-it-works/duplications.md): reading the network numbers

@@ -196,18 +196,25 @@ correct K-12 "$E" K12self "$E/custom_ref_ref_proteins.faa"
 correct Sakai "$E" Sakai "$E/custom_ref_ref_proteins.faa"
 
 # --- scores ------------------------------------------------------------------------
+# Bakta's own calls, cached with the inputs, are scored by the same rules: Bakta alone.
 echo
 echo "Run '$RUN' of $(cd "$REPO" && git rev-parse --short HEAD 2>/dev/null || echo 'this tree'):"
 S=$R/scores.tsv
-$BENCH score H37Rv-AL "$T/al.tsv" "$R/H37Rv-AL/L4_H37Rv.AMAP.tsv" --tsv "$S"
-$BENCH score H37Rv-CP "$T/cp.tsv" "$R/H37Rv-CP/L4_H37Rv.AMAP.tsv" --tsv "$S"
-$BENCH score CDC1551 "$T/cdc1551.tsv" "$R/CDC1551/L4_CDC1551.AMAP.tsv" --tsv "$S"
-$BENCH score M.bovis "$T/mbovis.tsv" "$R/M.bovis/La1_Mbovis.AMAP.tsv" --tsv "$S"
+$BENCH score H37Rv-AL "$T/al.tsv" "$R/H37Rv-AL/L4_H37Rv.AMAP.tsv" --tsv "$S" \
+    --bakta "$I/mtb_al/L4_H37Rv/L4_H37Rv.tsv"
+$BENCH score H37Rv-CP "$T/cp.tsv" "$R/H37Rv-CP/L4_H37Rv.AMAP.tsv" --tsv "$S" \
+    --bakta "$I/mtb_cp/L4_H37Rv/L4_H37Rv.tsv"
+$BENCH score CDC1551 "$T/cdc1551.tsv" "$R/CDC1551/L4_CDC1551.AMAP.tsv" --tsv "$S" \
+    --bakta "$I/mtb_cdc1551/L4_CDC1551/L4_CDC1551.tsv"
+$BENCH score M.bovis "$T/mbovis.tsv" "$R/M.bovis/La1_Mbovis.AMAP.tsv" --tsv "$S" \
+    --bakta "$I/mtb_mbovis/La1_Mbovis/La1_Mbovis.tsv"
 $BENCH score CDC1551-draft "$T/cdc1551.tsv" "$R/CDC1551-draft/L4_CDC1551d.AMAP.tsv" --tsv "$S" \
     --contig-map "$I/mtb_draft/contig_map.tsv" --fasta "$I/mtb_draft/L4_CDC1551d.fasta" \
-    --faa "$R/CDC1551-draft/L4_CDC1551d.AMAP.faa"
-$BENCH score K-12 "$T/k12.tsv" "$R/K-12/K12self.AMAP.tsv" --tsv "$S"
-$BENCH score Sakai "$T/sakai.tsv" "$R/Sakai/Sakai.AMAP.tsv" --tsv "$S"
+    --faa "$R/CDC1551-draft/L4_CDC1551d.AMAP.faa" --bakta "$I/mtb_draft/L4_CDC1551d/L4_CDC1551d.tsv"
+$BENCH score K-12 "$T/k12.tsv" "$R/K-12/K12self.AMAP.tsv" --tsv "$S" \
+    --bakta "$E/K12self/K12self.tsv"
+$BENCH score Sakai "$T/sakai.tsv" "$R/Sakai/Sakai.AMAP.tsv" --tsv "$S" \
+    --bakta "$E/Sakai/Sakai.tsv"
 echo "Scores in $S"
 
 if [ -n "$COMPARE" ]; then

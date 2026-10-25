@@ -1,12 +1,19 @@
-# The report
+# The full report: final_report.html
 
-Every run ends in one file, `results/final_report.html`. It is self-contained:
-all the figures, tables and JavaScript are embedded, so it opens with no
-network and survives being emailed to someone who has never heard of Nextflow.
+A run with the functional annotation ends in `results/final_report.html`, the
+whole analysis in one file, built after eggNOG, the duplications and the
+pangenome. Every run, with or without them, also writes
+[the report by question](amap-report.md), `results/amap_report.html`. So a run
+with `--skip_functional_annotation` has no `final_report.html`;
+`amap_report.html` is still written, without its eggNOG sections.
+
+It is self-contained: all the figures, tables and JavaScript are embedded, so
+it opens with no network and survives being emailed to someone who has never
+heard of Nextflow.
 
 To see what the sections look like before running anything, open the
 [example report](../examples/demo_report.html): a rendered report for twelve
-MTBC genomes across four lineages.
+genomes of the *Mycobacterium tuberculosis* complex (MTBC) across four lineages.
 
 > [!NOTE]
 > **The example uses generated data**
@@ -46,14 +53,14 @@ comparison against the reference distribution. Each has its own per-category
 breakdown in counts and percentages, with the statistical tests alongside.
 
 PE/PPE gene families get their own section, since they are both the hardest
-part of an MTBC genome to annotate and usually the most interesting. The
-pseudogenes close it: how many AMAP called in each sample, lineage by lineage,
-a sample with none at 0, the same genes the QC table counts and the GFF3 marks
-`pseudo=true`. The master table's `note` column says why each is a pseudogene.
+part of an MTBC genome to annotate and usually the most interesting. The KEGG
+pathways follow: the most represented metabolic pathways, and how they differ
+between lineages.
 
-### KEGG pathways
-
-The most represented metabolic pathways, and how they differ between lineages.
+The pseudogenes close it: how many AMAP called in each sample, lineage by
+lineage, a sample with none at 0, the same genes the QC table counts and the
+GFF3 marks `pseudo=true`. The master table's `note` column says why each is a
+pseudogene.
 
 ### Duplications
 
@@ -86,7 +93,8 @@ without leaving the report.
   drop out.
 - **`--skip_mycobrowser`**: The Mycobrowser and PE/PPE sections are omitted. COG, KEGG, pangenome and
   duplications are unaffected. This is automatic for non-MTBC organisms.
-- **`--skip_functional_annotation`**: No report at all. The run stops after correction.
+- **`--skip_functional_annotation`**: The run stops after correction: no `final_report.html`;
+  `amap_report.html` is still written, without its eggNOG sections.
 
 ## Rendering it yourself
 
@@ -99,24 +107,25 @@ python3 bin/report/demo/make_demo.py demo_inputs
 docker run --rm -v "$PWD:/w" -w /w paururo/amap:latest \
   Rscript -e 'rmarkdown::render("bin/report/report_AMAP.Rmd",
     output_file="/w/demo.html",
-    params=list(version="v1.0.1",
-                cog_file="/w/demo_inputs/input_cog.txt",
-                myco_file="/w/demo_inputs/input_myco.txt",
-                summary_file="/w/demo_inputs/input_summary.txt",
-                empty_file="/w/demo_inputs/input_noref.txt",
-                rvmissing_file="/w/demo_inputs/input_rvmissing.txt",
-                mastertable_file="/w/demo_inputs/input_mastertables.txt",
-                pangene_file="/w/demo_inputs/input_pangene.txt",
-                dup_file="/w/demo_inputs/homologous_communities.tsv",
-                qc_file="/w/demo_inputs/input_qc.txt"))'
+    params=list(
+      version="v1.0.1",
+      cog_file="/w/demo_inputs/input_cog.txt",
+      myco_file="/w/demo_inputs/input_myco.txt",
+      summary_file="/w/demo_inputs/input_summary.txt",
+      empty_file="/w/demo_inputs/input_noref.txt",
+      rvmissing_file="/w/demo_inputs/input_rvmissing.txt",
+      mastertable_file="/w/demo_inputs/input_mastertables.txt",
+      pangene_file="/w/demo_inputs/input_pangene.txt",
+      dup_file="/w/demo_inputs/homologous_communities.tsv",
+      qc_file="/w/demo_inputs/input_qc.txt"))'
 ```
 
 > [!WARNING]
 > **Keep it self-contained**
 >
 > Nothing in the Rmd, `header.html` or `styles.css` may point at a remote
-> URL. pandoc will fetch and inline a remote resource when the machine
-> rendering has a network, which hides the problem, and leave it dangling
+> URL. Pandoc fetches and inlines a remote resource when the machine
+> rendering has a network, which hides the problem, and leaves it dangling
 > when it does not. A report rendered on an isolated compute node then
 > arrives with a broken image and a browser trying to reach the internet.
 >

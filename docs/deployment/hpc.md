@@ -1,7 +1,7 @@
-# Running on a cluster
+# HPC clusters
 
-Past a couple of dozen genomes, a scheduler is worth the setup. Combine a
-container profile with an executor profile:
+Past about twenty genomes, a scheduler is worth the setup. Combine a container
+profile with an executor profile:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm --tsv samples.tsv
@@ -22,11 +22,17 @@ All four queue up to 200 jobs at once, default to 48 CPUs and 128 GB per job,
 and enable node-local scratch. SGE additionally requests memory through
 `-l h_vmem`, and uses the `smp` parallel environment.
 
-Tune the concurrency to your site's policy if 200 is too aggressive:
+Tune the concurrency to your site's policy if 200 is too aggressive. The
+queue size belongs to the executor, not to a process, so `-process.queueSize`
+changes nothing; set it in a config passed with `-c`:
+
+```groovy title="queue.config"
+executor.queueSize = 50
+```
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
-    --tsv samples.tsv -process.queueSize 50
+    -c queue.config --tsv samples.tsv
 ```
 
 ## Fitting your site
@@ -46,10 +52,11 @@ node constraints go.
 
 On SLURM, Bakta's jobs, the longest a run sends, also ask for `--qos=medium`.
 The `slurm` profile sets that for Bakta alone, and for Bakta it takes the place
-of `-process.clusterOptions`, so give Bakta your site's options in a config
-passed with `-c`:
+of `-process.clusterOptions`, so give Bakta your site's options in a config of
+your own, with `--qos=medium` if your cluster has that QoS and without it if
+not:
 
-```groovy
+```groovy title="bakta.config"
 process {
     withName: 'BAKTA_ANNOTATOR' {
         clusterOptions = '--qos=medium --account=mygroup'
@@ -57,9 +64,17 @@ process {
 }
 ```
 
+Then pass it with `-c`, next to the options for every other job:
+
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
+    -c bakta.config --tsv samples.tsv \
+    -process.clusterOptions '--account=mygroup'
+```
+
 ## Scratch
 
-`--scratch` is on by default in every HPC profile, and it matters. Without it,
+`--scratch` is on by default in every executor profile, and it matters. Without it,
 every process reads and writes directly on the shared filesystem, and Bakta and
 eggNOG in particular generate enough metadata traffic to slow a cluster down for
 everyone. With it, work happens on node-local disk and only the results are
@@ -74,14 +89,19 @@ nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
 
 ## Where to put things
 
-**The Singularity cache.** Set it once, somewhere shared:
+**The Singularity cache.** The `singularity` profile keeps the converted image
+in `<outdir>/singularity_cache`, so every results folder gets a copy of its
+own, and that setting wins over `NXF_SINGULARITY_CACHEDIR`: the variable alone
+changes nothing. Keep one shared copy with a config passed with `-c`:
 
-```bash
-export NXF_SINGULARITY_CACHEDIR=/shared/singularity_cache
+```groovy title="shared.config"
+singularity.cacheDir = '/shared/singularity_cache'
 ```
 
-Otherwise the `singularity` profile caches under `--outdir`, and a large run can
-have many jobs converting the same image at once.
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
+    -c shared.config --tsv samples.tsv
+```
 
 **The eggNOG database.** Large, built once, reused forever. Point it at
 persistent shared storage rather than somewhere per-run:
@@ -116,10 +136,10 @@ its own:
 #SBATCH --output=amap_%j.log
 
 module load singularity
-export NXF_SINGULARITY_CACHEDIR=/shared/singularity_cache
 
 nextflow run PathoGenOmics-Lab/AMAP \
     -profile singularity,slurm \
+    -c shared.config \
     --tsv samples.tsv \
     --eggnog_db /shared/databases/eggnog \
     -work-dir /scratch/$USER/amap_work \
@@ -135,6 +155,10 @@ to outlast everything it submits.
 A process killed by the out-of-memory killer is resubmitted with more memory,
 scaling with the attempt number up to `--max_memory`. That handles the occasional
 unusually large genome without you having to size everything for the worst case.
+
+A task run per sample that fails for another reason is tried twice more and
+then set aside, so the run finishes without that sample and says so under
+`Ignored`: see [a sample is missing](troubleshooting.md#a-sample-is-missing-from-the-results-ignored--1).
 
 eggNOG is the memory-hungry step. It runs once over all samples rather than once
 per sample, which keeps a shared filesystem from being hammered but does mean

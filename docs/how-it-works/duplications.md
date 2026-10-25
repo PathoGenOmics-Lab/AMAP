@@ -11,7 +11,7 @@ self-hits. A pair is kept when the identical residues of the alignment cover
 between two otherwise unrelated proteins is not counted as duplication. Kept
 pairs become links in a graph, and its connected pieces become the
 duplication families, listed in
-`DUPLICATIONS/{sample}/duplications_{sample}_groups.tsv`.
+`DUPLICATIONS/{lineage}_{sampleId}/duplications_{lineage}_{sampleId}_groups.tsv`.
 
 <!-- figure: dup-family -->
 
@@ -62,7 +62,7 @@ transposases of insertion sequences, the ESAT-6-like Esx proteins and PE
 proteins.
 
 **Lower density and longer paths** mean copies that have drifted apart, each
-still matching some of the others but not all, as M. bovis's copies of the
+still matching some of the others but not all, as *M. bovis*'s copies of the
 transposases above have. Or, less happily, an artefact of assembly
 fragmentation, where one gene broken across contigs looks like several partial
 copies. Cross-checking against the contig count in `*-AMAP.qc.tsv` tells the

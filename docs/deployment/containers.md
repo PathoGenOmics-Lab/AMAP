@@ -10,21 +10,23 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker --tsv samples.tsv
 nextflow run PathoGenOmics-Lab/AMAP -profile singularity --tsv samples.tsv
 ```
 
-Nextflow pulls the image on first use and caches it. Singularity converts it to
-a `.sif` on the way, which takes a few minutes once.
+Nextflow pulls the image on first use and caches it. Singularity converts it
+to an image file of its own on the way, which takes a few minutes once per
+cache folder: see [Singularity on a cluster](#singularity-on-a-cluster) for
+keeping one.
 
 ## What is inside
 
 <!-- figure: image -->
 
-**Tools**: Bakta 1.12.0, Miniprot 0.18, Diamond 2.1.24, eggNOG-mapper 2.1.13,
+**Tools**: Bakta 1.12.0, miniprot 0.18, Diamond 2.1.24, eggNOG-mapper 2.1.13,
 pangene 1.1, pathotypr 1.0.0, gfatools.
 
 **Runtimes**: Python 3.9 with pandas, NumPy, Biopython, matplotlib, plotly,
 NetworkX, intervaltree, pyvis and python-louvain. R 4.4 with the report
 packages.
 
-**Bundled data** under `/reference/`, so a standard MTBC run needs no downloads:
+**Bundled data** under `/reference/`, so a standard run on the *Mycobacterium tuberculosis* complex (MTBC) needs no downloads:
 
 | File | What it is |
 | :--- | :--- |
@@ -49,14 +51,21 @@ couple of genomes, use an amd64 machine or a cluster.
 
 ## Pinning a version
 
-`latest` tracks the newest release. For a reproducible analysis, pin the
-version in `nextflow.config` or on the command line:
+A tag can move: `latest` is whatever was pushed last. For a reproducible
+analysis, pin the image by its digest, and the pipeline's code with `-r`, since
+a pinned image under newer code is still a different run:
 
 ```bash
-nextflow run PathoGenOmics-Lab/AMAP -profile docker \
-    --tsv samples.tsv \
-    -process.container 'paururo/amap:1.0.1'
+nextflow run PathoGenOmics-Lab/AMAP \
+    -r 947a99dee49d2a2429e014296ac35ba08e911108 \
+    -profile docker --tsv samples.tsv \
+    -process.container 'paururo/amap@sha256:08bd17311ab323317ceecba6e5bc639a29f4c54c9d95f9a7c48ba80a9fc640ee'
 ```
+
+That digest is the image behind the runs on these pages;
+`docker image inspect paururo/amap:latest --format '{{index .RepoDigests 0}}'`
+prints the one you have. [Pinning the pipeline](../user-guide/running.md#pinning-the-pipeline)
+has the rest.
 
 `results/pipeline_info/software_versions.yml` records the exact version of every
 tool a run used, which is what belongs in a methods section.
@@ -96,19 +105,30 @@ smoke tests and pushes on a `v*` tag or on demand.
 
 ## Singularity on a cluster
 
-Set a shared cache so every job reuses one converted image instead of each
-building its own:
+The `singularity` profile keeps the converted image in
+`<outdir>/singularity_cache`, so each results folder gets a copy of its own,
+and that setting wins over `NXF_SINGULARITY_CACHEDIR`: the variable alone
+changes nothing. To keep one copy for every run, set the folder in a config
+and pass it with `-c`:
 
-```bash
-export NXF_SINGULARITY_CACHEDIR=/shared/singularity_cache
+```groovy title="shared.config"
+singularity.cacheDir = '/shared/singularity_cache'
 ```
 
-Put it in your shell profile or the launch script. Without it, a large run can
-have dozens of jobs converting the same image at once.
+```bash
+nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
+    -c shared.config --tsv samples.tsv
+```
 
-More cluster specifics in [deployment on HPC](hpc.md).
+With Nextflow 24.04 and 26.10 alike, `nextflow -c shared.config config
+PathoGenOmics-Lab/AMAP -profile singularity` then shows
+`cacheDir = '/shared/singularity_cache'`, where without it the profile's
+`results/singularity_cache` stays, whatever the variable says. The pipeline has
+to be pulled first: any run does it, or `nextflow pull PathoGenOmics-Lab/AMAP`.
+
+More cluster specifics in [HPC clusters](hpc.md).
 
 ## Next steps
 
-- [HPC deployment](hpc.md): scratch, shared filesystems, schedulers
+- [HPC clusters](hpc.md): scratch, shared filesystems, schedulers
 - [Troubleshooting](troubleshooting.md): when a run fails

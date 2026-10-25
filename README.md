@@ -14,7 +14,7 @@
 __Paula Ruiz-Rodriguez<sup>1</sup>__ 
 __and Mireia Coscolla<sup>1</sup>__
 <br>
-<sub> 1. I<sup>2</sup>SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Valencia, Spain </sub>  
+<sub> 1. I<sup>2</sup>SysBio, University of Valencia-CSIC, FISABIO Joint Research Unit Infection and Public Health, Paterna, Spain </sub>  
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/hero-dark.gif">
@@ -87,14 +87,14 @@ lines are what travels between them. On the website the map is
 
 1. **Database setup** ([eggNOG](https://github.com/eggnogdb/)): builds the eggNOG database if it is not already there.
 2. **MTBC lineage typing** ([pathotypr](https://github.com/PathoGenOmics-Lab/pathotypr)): assigns lineages from phylogenetic markers and renames the genomes accordingly. Turned off with `--skip_typing`.
-3. **Genome annotation** ([Bakta](https://github.com/oschwengers/bakta)): CDS, tRNAs and other features, the baseline that AMAP corrects.
+3. **Genome annotation** ([Bakta](https://github.com/oschwengers/bakta)): CDS, rRNAs and other features (tRNAs are skipped), the baseline that AMAP corrects.
 4. **Protein alignment** ([miniprot](https://github.com/lh3/miniprot)): the reference proteome aligned onto each genome.
 5. **CDS case classification**: every CDS sorted by how it relates to the reference (novel, perfect match, imperfect match, conflicting coordinates, or a reference gene the annotator missed).
 6. **Annotation correction**: conflicts resolved, coordinates adjusted and every gene translated into a corrected gene set.
 7. **Functional annotation** ([eggNOG-mapper](https://github.com/eggnogdb/eggnog-mapper)): COG, KEGG, GO, EC, PFAM and CAZy assignments, and the corrected GFF3 and GenBank.
 8. **Gene duplication analysis**: duplication families per genome, plus homologous communities across genomes with network metrics.
 9. **Pangenome analysis** ([pangene](https://github.com/lh3/pangene)): gene content compared across the whole set.
-10. **Report**: a single self-contained HTML file covering all of the above.
+10. **Reports**: `amap_report.html` in every run, and `final_report.html` after eggNOG, each one self-contained HTML file.
 
 Mycobrowser's functional categories describe tuberculosis genes, so they are
 skipped on their own when a custom reference is not a *Mycobacterium*; lineage
@@ -106,17 +106,20 @@ You need [Nextflow](https://www.nextflow.io/) 24.04 or newer and a container
 engine. Nothing else: every tool lives in the AMAP image, and there is no need
 to clone this repository.
 
+Nextflow needs Java 17 or newer, and Conda brings both:
+
 ```bash
-conda create -n nextflow-env
+conda create -n nextflow-env -c conda-forge -c bioconda nextflow
 conda activate nextflow-env
-conda install -c bioconda nextflow
 ```
 
-Check the installation. This annotates the reference genome bundled in the
-container, so you need no data of your own:
+Check the installation. The test profile annotates the H37Rv genome bundled in
+the image, so you need no data of your own, and `--skip_functional_annotation`
+leaves out eggNOG, so you need no database either:
 
 ```bash
-nextflow run PathoGenOmics-Lab/AMAP -profile docker,test
+nextflow run PathoGenOmics-Lab/AMAP -profile docker,test \
+    --skip_functional_annotation --outdir amap-test
 ```
 
 Write a tab-separated sample sheet:
@@ -152,14 +155,16 @@ for the full set of profiles and options.
 
 ## Results
 
-Everything lands under `--outdir`, `results/` by default. The three to open
-first:
+Everything lands under `--outdir`, `results/` by default. Lineage typing puts
+the lineage in front of each sample's name, so `CDC1551` becomes `L4_CDC1551`,
+and `--skip_typing` leaves the sample ID alone. The ones to open first:
 
 | What | Where |
 | :--- | :--- |
-| The full interactive report | `results/final_report.html` |
-| Corrected annotation, per sample | `results/AMAP/{sampleId}/*-AMAP.gff3` |
-| Proteins for downstream tools | `results/AMAP/{sampleId}/*-AMAP.clean.faa` |
+| Each genome and gene, question by question, in every run | `results/amap_report.html` |
+| The full report, after a run with eggNOG | `results/final_report.html` |
+| Corrected annotation, per sample, after eggNOG | `results/AMAP/{lineage}_{sampleId}/*-AMAP.gff3` |
+| Proteins for downstream tools, after eggNOG | `results/AMAP/{lineage}_{sampleId}/*-AMAP.clean.faa` |
 
 Alongside them, `results/pipeline_info/` holds `software_versions.yml` and
 `params.yml`, which are what belongs in a methods section. Every directory is
@@ -194,7 +199,7 @@ See
   author = {Ruiz-Rodriguez, Paula and Coscolla, Mireia},
   doi = {10.5281/zenodo.8024446},
   license = {GPL-3.0},
-  month = apr,
+  month = jul,
   title = {{AMAP}},
   url = {https://github.com/PathoGenOmics-Lab/AMAP},
   version = {1.0.1},

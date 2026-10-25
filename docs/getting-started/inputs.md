@@ -11,7 +11,7 @@ A tab-separated file with a header row and exactly two columns:
 sampleId	fasta
 G26689	/data/genomes/G26689.fasta
 G26690	/data/genomes/G26690.fasta
-L4_G12345	./assemblies/L4_G12345.fa
+G12345	./assemblies/G12345.fa
 ```
 
 <!-- figure: sample-sheet -->
@@ -28,21 +28,27 @@ common reason a sample sheet is rejected.
 > [!WARNING]
 > **Avoid dots in sample IDs**
 >
-> Several scripts derive the sample name by cutting at the first dot, so
-> `G26689.1` becomes `G26689` and two such samples would collide. Stick to
-> letters, digits and underscores.
+> The classification cuts names at the first dot, so for `G26689.1` it writes
+> its tables as `L4_G26689` while the pipeline waits for `L4_G26689.1`. The
+> step fails, is tried twice more and is set aside, and the run finishes
+> without that sample. Validation does not check this: stick to letters,
+> digits and underscores.
 
 ## Pre-flight validation
 
-`VALIDATE_INPUTS` runs before any computation, on every run. To run only the
-checks and stop:
+`VALIDATE_INPUTS` runs before any computation, on every run except
+`-profile test`, which has no sample sheet. To run only the checks and stop:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \
     --tsv samples.tsv --validate_only
 ```
 
-Results are written to `results/pipeline_info/validation.log`.
+A check that passes writes its results to
+`results/pipeline_info/validation.log`; one that fails stops the run and prints
+them. Two mistakes in the sheet itself stop it even earlier, before any task
+starts, with a message of the pipeline's own and no log at all: the drawing of
+the sheet above shows both.
 
 <!-- figure: validation-ranges -->
 
@@ -80,7 +86,7 @@ An eggNOG database that does not exist yet is neither: the first run that
 annotates builds it at `--eggnog_db`.
 
 The thresholds are deliberately wide, since AMAP is not restricted to
-tuberculosis. A 4.4 Mb MTBC genome at 65% GC sits comfortably inside them, and
+tuberculosis. A 4.4 Mb genome of the *Mycobacterium tuberculosis* complex (MTBC) at 65% GC sits comfortably inside them, and
 so does most of the bacterial world.
 
 ## Assembly quality
@@ -88,9 +94,13 @@ so does most of the bacterial world.
 The correction compares your annotation against a reference proteome, so
 assembly quality propagates directly into the result.
 
-**Contiguity matters.** A gene broken across two contigs cannot be recovered.
-The more fragmented the assembly, the more reference genes turn up as missing
-rather than corrected.
+**Contiguity matters.** A gene that a contig end cuts comes back in pieces,
+each under the gene's name and marked partial at its open end, the way NCBI
+marks it. A piece under 8 residues is too short to place: in CDC1551 cut into
+40 contigs, 22 of the 25 smaller pieces were placed, and the other three were
+five or six codons long. The more fragmented the assembly, the more partial
+genes; [pieces of cut genes](../how-it-works/correction-algorithm.md#pieces-of-cut-genes)
+has the rule.
 
 **Ns break coding sequences.** A run of Ns inside a gene stops it translating,
 so it is dropped or flagged as a pseudogene. The 1% warning is worth taking

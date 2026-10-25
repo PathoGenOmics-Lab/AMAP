@@ -30,7 +30,7 @@ appears to work until a test touches `classify_cases.py`, which pulls in
 plotly through `classify/plotting.py`.
 
 The suite covers ID handling, overlap arithmetic, case classification, the
-rules that resolve and recover genes, and the parsers, and it runs in about a second. Anything
+rules that resolve and recover genes, and the parsers, and it runs in about three minutes (some tests skip themselves when a tool such as R or Diamond is missing). Anything
 touching `bin/classify/` should come with a test, since the correction logic is
 where a silent change does the most damage.
 
@@ -61,8 +61,8 @@ the offending genes listed if anything is missing, misplaced or misnamed.
 
 H37Rv is one genome, and the one the defaults were tuned on. The accuracy
 benchmark in `tests/benchmark/` scores six more whose right answer is known:
-another H37Rv assembly, CDC1551 complete and cut into 40 contigs, M. bovis, and
-E. coli K-12 and Sakai against K-12 as a custom reference. Give a run a name,
+another H37Rv assembly, CDC1551 complete and cut into 40 contigs, *M. bovis*, and
+*E. coli* K-12 and Sakai against K-12 as a custom reference. Give a run a name,
 and the next one lists every gene that changed:
 
 ```bash
@@ -75,10 +75,12 @@ docker run --rm --platform linux/amd64 -v "$PWD:/amap" -w /amap \
 
 `tests/benchmark/README.md` explains how the truth is built and what to expect.
 
-The quickest way to run the whole pipeline is the test profile:
+The quickest check of the whole chain up to the correction is the test
+profile, without eggNOG, whose 45 GB database the test profile's 8 GB cap
+cannot hold:
 
 ```bash
-nextflow run . -profile docker,test
+nextflow run . -profile docker,test --skip_functional_annotation --outdir amap-test
 ```
 
 ### Pipeline code and `-resume`
@@ -161,7 +163,7 @@ arguments). The front page's benchmark scores are checked against
 `tests/benchmark/README.md`.
 
 The pictures, the example report's sections, the card a shared link shows and
-the README's light and dark drawings, are screenshots of the site taken by
+the README's light and dark drawings are screenshots of the site taken by
 headless Chrome; take them again after the report or a drawing changes:
 
 ```bash

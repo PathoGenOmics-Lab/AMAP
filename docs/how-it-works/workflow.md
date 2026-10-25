@@ -17,7 +17,7 @@ cluster. Skipped entirely under `--skip_functional_annotation`.
 ## 2. Lineage typing
 
 [pathotypr](https://github.com/PathoGenOmics-Lab/pathotypr) assigns each genome
-to an MTBC lineage using phylogenetic marker SNPs, and the genomes are renamed
+to a lineage of the *Mycobacterium tuberculosis* complex (MTBC) using phylogenetic marker SNPs, and the genomes are renamed
 after their sample ID with the lineage in front (`L4_G26689` for sample
 `G26689`). That prefix carries through every downstream file and is what lets
 the report group results by lineage.
@@ -37,15 +37,16 @@ IDs stay as you wrote them.
 ## 3. Annotation with Bakta
 
 [Bakta](https://github.com/oschwengers/bakta) produces the baseline annotation:
-CDS, tRNA, rRNA and other features. This is the annotation AMAP will correct,
+CDS, rRNA and other features (AMAP runs it with `--skip-trna`, so there are no
+tRNAs). This is the annotation AMAP will correct,
 and it is published unmodified under `BAKTA/` so you can compare.
 
 `--genus` and `--species` are passed through, so setting them correctly improves
 the starting point.
 
-## 4. Protein alignment with Miniprot
+## 4. Protein alignment with miniprot
 
-[Miniprot](https://github.com/lh3/miniprot) aligns the reference proteome onto
+[miniprot](https://github.com/lh3/miniprot) aligns the reference proteome onto
 each genome, spliced and frameshift-aware. Two alignments are produced: the
 reference proteome, and the false-positive set that will filter novel-gene
 candidates.
@@ -54,7 +55,7 @@ Output is PAF. Coordinates are converted from 0-based to 1-based on read, and
 for a protein hitting several positions, the best hit per position is kept so
 multi-copy families such as PE/PPE keep all their placements.
 
-In a draft assembly the genes a contig end cuts get a second pass. Miniprot
+In a draft assembly the genes a contig end cuts get a second pass. miniprot
 places the larger piece of such a gene only, so what that placement lacks is
 aligned again as a protein of its own, and its placement at the end of another
 contig is the rest of the gene
@@ -126,9 +127,10 @@ row of the matrix is then a gene, named after its reference gene or, outside
 the reference, after one sample's copy of it, and a column a sample, so the
 genes the samples share are the rows found in every column.
 
-## 10. Report
+## 10. The full report
 
-A single self-contained HTML file built from every output above. Sample quality,
+`final_report.html`, a single self-contained HTML file built from every output
+above, so only a run with the functional annotation has it. Sample quality,
 missing reference genes by lineage, PE/PPE families, KEGG pathways, duplication
 communities and topology, the pangenome, COG and Mycobrowser distributions, case
 statistics with the associated tests, and a searchable table of every gene.
@@ -137,14 +139,15 @@ Alongside it, `pipeline_info/` collects the Nextflow execution report, timeline,
 DAG and trace, plus `software_versions.yml` and `params.yml` for your methods
 section.
 
-## 11. Interactive report
+## 11. The report by question
 
-`amap_report.html`, one self-contained file organised by question: how each
+`amap_report.html`, one self-contained file organised by question, written in
+every run: how each
 genome annotated, where reference genes are missing or broken, one gene in
 every genome, what the correction changed and the pseudogenes by lineage. It
 reads the correction's outputs directly, so it is written with or without the
 functional annotation, and the functional steps add their sections when they
-run. [The interactive report](../user-guide/amap-report.md) goes through it.
+run. [The report by question](../user-guide/amap-report.md) goes through it.
 
 ## Next steps
 

@@ -13,7 +13,7 @@ heard of Nextflow.
 
 To see what the sections look like before running anything, open the
 [example report](../examples/demo_report.html): a rendered report for twelve
-MTBC genomes across four lineages.
+genomes of the *Mycobacterium tuberculosis* complex (MTBC) across four lineages.
 
 > [!NOTE]
 > **The example uses generated data**
@@ -53,14 +53,14 @@ comparison against the reference distribution. Each has its own per-category
 breakdown in counts and percentages, with the statistical tests alongside.
 
 PE/PPE gene families get their own section, since they are both the hardest
-part of an MTBC genome to annotate and usually the most interesting. The
-pseudogenes close it: how many AMAP called in each sample, lineage by lineage,
-a sample with none at 0, the same genes the QC table counts and the GFF3 marks
-`pseudo=true`. The master table's `note` column says why each is a pseudogene.
+part of an MTBC genome to annotate and usually the most interesting. The KEGG
+pathways follow: the most represented metabolic pathways, and how they differ
+between lineages.
 
-### KEGG pathways
-
-The most represented metabolic pathways, and how they differ between lineages.
+The pseudogenes close it: how many AMAP called in each sample, lineage by
+lineage, a sample with none at 0, the same genes the QC table counts and the
+GFF3 marks `pseudo=true`. The master table's `note` column says why each is a
+pseudogene.
 
 ### Duplications
 
@@ -123,8 +123,8 @@ docker run --rm -v "$PWD:/w" -w /w paururo/amap:latest \
 > **Keep it self-contained**
 >
 > Nothing in the Rmd, `header.html` or `styles.css` may point at a remote
-> URL. pandoc will fetch and inline a remote resource when the machine
-> rendering has a network, which hides the problem, and leave it dangling
+> URL. Pandoc fetches and inlines a remote resource when the machine
+> rendering has a network, which hides the problem, and leaves it dangling
 > when it does not. A report rendered on an isolated compute node then
 > arrives with a broken image and a browser trying to reach the internet.
 >

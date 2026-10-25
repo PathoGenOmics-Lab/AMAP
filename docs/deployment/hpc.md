@@ -74,7 +74,7 @@ nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
 
 ## Scratch
 
-`--scratch` is on by default in every HPC profile, and it matters. Without it,
+`--scratch` is on by default in every executor profile, and it matters. Without it,
 every process reads and writes directly on the shared filesystem, and Bakta and
 eggNOG in particular generate enough metadata traffic to slow a cluster down for
 everyone. With it, work happens on node-local disk and only the results are

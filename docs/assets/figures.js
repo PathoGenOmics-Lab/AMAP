@@ -235,7 +235,9 @@
       var my1 = ys[m.rows[0]] - 4;
       var my2 = ys[m.rows[1]] + geneH + (lanes[m.rows[1]].n - 1) * LANE + 4;
       frames.push({ x1: mx1 - 1, x2: Math.max(mx1 + 2, mx2) + 1, y1: my1 - 1, y2: my2 + 1 });
-      used[m.kind === "ref" ? "diff-ref" : "diff"] = 1;
+      // A mark with a label says what it is; only one without needs the key.
+      if (m.kind === "ref") used["diff-ref"] = 1;
+      else if (!m.label) used.diff = 1;
       out.push('<g class="mark' + (m.phase ? " ph-" + m.phase : "") + '"' + steps(m) + ">");
       out.push(
         '<rect class="diff' + (m.kind ? " diff-" + m.kind : "") + '" style="fill:url(#' + (m.kind === "ref" ? "dhr-" : "dh-") + id + ')" x="' + mx1.toFixed(1) + '" y="' + my1 +
@@ -843,7 +845,7 @@
     ["agree", "band-agree", "same coordinates"],
     ["conflict", "band-conflict", "coordinates differ"],
     ["moved", "moved", "an end AMAP moved"],
-    ["diff", "diff", "a marked stretch"],
+    ["diff", "diff", "the stretch the text names"],
     ["diff-ref", "diff-ref", "a reference gene with no call"]
   ];
 
@@ -1660,7 +1662,7 @@
     MINIPROT: {
       name: "miniprot", proc: "MINIPROT", x: 440, y: 170, label: "below", hub: true,
       text: "miniprot aligns the reference proteome onto each genome, plus the false-positive set, plus Bakta's proteins back onto the reference genome; then, for each placement a contig end cut, what it lacks, to find the gene's other piece.",
-      reads: "each genome, Bakta's proteins, the reference", writes: "nothing published: the alignments go on to Classify", flags: "", doc: "how-it-works/workflow.html#4-protein-alignment-with-miniprot"
+      reads: "each genome, Bakta's proteins, the reference", writes: "nothing published: the alignments go on to Cases", flags: "", doc: "how-it-works/workflow.html#4-protein-alignment-with-miniprot"
     },
     TYPE_CASES: {
       name: "Cases", proc: "TYPE_CASES", x: 535, y: 170, label: "above", hub: true,
@@ -1680,7 +1682,7 @@
     ANNOT_EGGNOGMAP_BATCH: {
       name: "eggNOG-mapper", proc: "ANNOT_EGGNOGMAP_BATCH", x: 735, y: 170, label: "below", labelDx: -10, hub: true, hubUp: 9, hubDown: 27,
       text: "eggNOG-mapper annotates the corrected proteins of all samples in one go: COG, KEGG, GO, EC, PFAM, CAZy.",
-      reads: "every sample's corrected proteins", writes: "nothing published: the annotations go on", flags: "--skip_functional_annotation stops before this", doc: "how-it-works/workflow.html#7-functional-annotation", functional: true
+      reads: "every sample's corrected proteins", writes: "nothing published: the annotations go on to GFF3, GenBank", flags: "--skip_functional_annotation stops before this", doc: "how-it-works/workflow.html#7-functional-annotation", functional: true
     },
     GET_OUTPUTS: {
       name: "GFF3, GenBank", proc: "GET_OUTPUTS", x: 860, y: 170, label: "above",
@@ -1695,7 +1697,7 @@
     GET_DUPLICATIONS: {
       name: "Duplications", proc: "GET_DUPLICATIONS", x: 890, y: 250, label: "below", labelDx: -6, lineOnly: "dup",
       text: "Each proteome against itself with Diamond: duplicated genes grouped into families.",
-      reads: "the corrected proteins and their functions", writes: "DUPLICATIONS/{sample}/", flags: "", doc: "how-it-works/duplications.html", exit: "DUPLICATIONS/", exitSide: "below", functional: true
+      reads: "the corrected proteins and their functions", writes: "DUPLICATIONS/{lineage}_{sampleId}/", flags: "", doc: "how-it-works/duplications.html", exit: "DUPLICATIONS/", exitSide: "below", functional: true
     },
     GET_ALLDUP: {
       name: "All genomes", proc: "GET_ALLDUP", x: 980, y: 250, label: "below", labelDx: 10, lineOnly: "dup",
@@ -1708,12 +1710,12 @@
       reads: "the reference proteome, the corrected genes, and every genome: as PATHOTYPR renamed it, or with --skip_typing as the sample sheet gives it, under its sample ID", writes: "PANGENE/pangenome.gfa, .bubbles.txt, .Rtab, .stat", flags: "", doc: "how-it-works/workflow.html#9-pangenome", exit: "PANGENE/", exitSide: "right", functional: true
     },
     FINAL_REPORT: {
-      name: "Report", proc: "FINAL_REPORT", x: 1050, y: 170, kind: "hub-end", label: "above", labelDx: -16,
+      name: "Full report", proc: "FINAL_REPORT", x: 1050, y: 170, kind: "hub-end", label: "above", labelDx: -16,
       text: "One self-contained HTML file from everything above: quality, cases, missing genes, functions, duplications, pangenome.",
       reads: "every summary (REPORT_INPUTS gathers them)", writes: "final_report.html", flags: "", doc: "user-guide/report.html", exit: "final_report.html", exitSide: "below", functional: true
     },
     AMAP_REPORT: {
-      name: "Interactive report", proc: "AMAP_REPORT", x: 1050, y: 100, kind: "hub-end", label: "above-end",
+      name: "Report by question", proc: "AMAP_REPORT", x: 1050, y: 100, kind: "hub-end", label: "above-end",
       text: "One self-contained HTML file organised by question: how each genome annotated, a map of the reference genes in every genome, one gene in every genome, what the correction changed, the pseudogenes by lineage. It needs only the correction, so it is written with or without eggNOG, whose steps add their own sections.",
       reads: "every genome's corrected genes, case tables and Bakta folder; the master tables, the pangenome and the communities when the run has them", writes: "amap_report.html", flags: "", doc: "user-guide/amap-report.html", exit: "amap_report.html", exitSide: "above"
     },

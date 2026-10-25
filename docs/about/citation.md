@@ -79,7 +79,7 @@ cite it as well.
 | [eggNOG-mapper](https://github.com/eggnogdb/eggnog-mapper) | Functional annotation | Cantalapiedra et al., *Molecular Biology and Evolution* 38, 5825-5829 (2021). [10.1093/molbev/msab293](https://doi.org/10.1093/molbev/msab293) |
 | [Diamond](https://github.com/bbuchfink/diamond) | Duplication searches, and eggNOG's | Buchfink et al., *Nature Methods* 18, 366-368 (2021). [10.1038/s41592-021-01101-x](https://doi.org/10.1038/s41592-021-01101-x) |
 | [pangene](https://github.com/lh3/pangene) | Pangenome graph | Li et al., *Bioinformatics* 40, btae456 (2024). [10.1093/bioinformatics/btae456](https://doi.org/10.1093/bioinformatics/btae456) |
-| [pathotypr](https://github.com/PathoGenOmics-Lab/pathotypr) | MTBC lineage typing | Its repository, and its lineage markers below |
+| [pathotypr](https://github.com/PathoGenOmics-Lab/pathotypr) | Lineage typing of the *Mycobacterium tuberculosis* complex (MTBC) | Its repository, and its lineage markers below |
 
 All of them in one block, for a reference manager:
 

@@ -150,7 +150,7 @@ it heavily, and the folder `--eggnog_db` names: `eggnog.db` alone is 41.4 GB.
 
 ### Everything is slow on a shared filesystem
 
-Confirm `--scratch` is on. It defaults to true in the HPC profiles, but a
+Confirm `--scratch` is on. It defaults to true in the executor profiles, but a
 `standard` or `docker` profile on a cluster will not have it.
 
 ### Cache misses on resume

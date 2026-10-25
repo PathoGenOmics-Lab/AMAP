@@ -17,7 +17,7 @@ Pipeline parameters take two dashes (`--tsv`). Nextflow's own options take one
 
 | Parameter | Description | Type | Default |
 | :--- | :--- | :--- | :--- |
-| `--skip_typing` | Skip pathotypr lineage typing. Required for non-MTBC organisms. | `boolean` | `false` |
+| `--skip_typing` | Skip pathotypr lineage typing. Required outside the *Mycobacterium tuberculosis* complex (MTBC). | `boolean` | `false` |
 | `--skip_functional_annotation` | Stop after the correction: no eggNOG, duplications, pangenome or `final_report.html`; `amap_report.html` is still written, without its eggNOG sections. | `boolean` | `false` |
 | `--skip_mycobrowser` | Skip Mycobrowser functional categories. Auto-enabled when `--genus` is not Mycobacterium and a custom reference is set. | `boolean` | `false` |
 
@@ -41,13 +41,13 @@ correctly improves the baseline annotation that AMAP then corrects.
 | `--max_cpus` | Ceiling on CPUs for any single process. | `integer` | the machine's CPUs |
 | `--max_memory` | Ceiling on memory for any single process. | `string` | `16.GB` |
 | `--max_time` | Ceiling on wall-clock time for any single process. | `string` | `72.h` |
-| `--scratch` | Use node-local scratch for I/O-heavy processes. On by default in the HPC profiles. | `boolean` | `false` |
+| `--scratch` | Use node-local scratch for I/O-heavy processes. On by default in the executor profiles. | `boolean` | `false` |
 
 These are ceilings, not requests. Each process asks for what it needs and is
 then clamped to these values, so lowering them makes AMAP fit a smaller machine
 rather than making it run faster.
 
-The defaults are a single machine's. The HPC profiles raise them to 48 CPUs
+The defaults are a single machine's. The executor profiles raise them to 48 CPUs
 and 128 GB, `-profile highmem` to 48 CPUs, 256 GB and 120 h, and
 `-profile test` sets 4 CPUs, 8 GB and 1 h, in whatever order `-profile` names
 them.

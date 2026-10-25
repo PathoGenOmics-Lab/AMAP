@@ -15,7 +15,7 @@ sections, which say that the run skipped them.
 
 It is self-contained: the data travels inside the file, compressed, and nothing
 is fetched from anywhere, so it opens with no network and survives being
-emailed. Fifteen MTBC genomes make a file of about half a megabyte, against
+emailed. Fifteen genomes of the *Mycobacterium tuberculosis* complex (MTBC) make a file of about half a megabyte, against
 4.5 MB for `final_report.html` with twelve. It is dark, like the website, with a
 switch to light at the top right.
 
@@ -94,7 +94,7 @@ the genomes whose name contains what is typed.
 ## Gene states
 
 Each reference gene gets one state in each genome, from the genes that name it
-in the genome's final annotation, `AMAP/<name>/<name>.AMAP.tsv`.
+in the genome's final annotation, `AMAP/{lineage}_{sampleId}/{lineage}_{sampleId}.AMAP.tsv`.
 
 | State | What it means |
 | :--- | :--- |
@@ -133,7 +133,7 @@ pseudogenes.
 
 | Input | From | Without it |
 | :--- | :--- | :--- |
-| `<name>.AMAP.tsv` | `FIX_CDS` | No report |
+| `*.AMAP.tsv` | `FIX_CDS` | No report |
 | The reference proteome | the reference | No report |
 | Case summaries and tables | `TYPE_CASES` | No lineages, no correction section |
 | Bakta's folder | `BAKTA_ANNOTATOR` | No genome sizes, contigs or products of Bakta's calls |
@@ -158,7 +158,7 @@ The data of each genome is a few kilobytes: its genes are stored as how far each
 lies from where the previous gene and the reference predict it, which for a
 genome collinear with its reference is mostly nothing. Up to 100 genomes, the
 report also lists every Bakta call AMAP did not keep, with its coordinates; past
-that it only counts them, to keep the file small, and `CDS_CASES/<name>/` has
+that it only counts them, to keep the file small, and `CDS_CASES/{lineage}_{sampleId}/` has
 them for any run.
 
 | Genomes | Report |

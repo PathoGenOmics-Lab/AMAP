@@ -26,7 +26,7 @@ pangene 1.1, pathotypr 1.0.0, gfatools.
 NetworkX, intervaltree, pyvis and python-louvain. R 4.4 with the report
 packages.
 
-**Bundled data** under `/reference/`, so a standard MTBC run needs no downloads:
+**Bundled data** under `/reference/`, so a standard run on the *Mycobacterium tuberculosis* complex (MTBC) needs no downloads:
 
 | File | What it is |
 | :--- | :--- |
@@ -126,9 +126,9 @@ PathoGenOmics-Lab/AMAP -profile singularity` then shows
 `results/singularity_cache` stays, whatever the variable says. The pipeline has
 to be pulled first: any run does it, or `nextflow pull PathoGenOmics-Lab/AMAP`.
 
-More cluster specifics in [deployment on HPC](hpc.md).
+More cluster specifics in [HPC clusters](hpc.md).
 
 ## Next steps
 
-- [HPC deployment](hpc.md): scratch, shared filesystems, schedulers
+- [HPC clusters](hpc.md): scratch, shared filesystems, schedulers
 - [Troubleshooting](troubleshooting.md): when a run fails

@@ -11,7 +11,7 @@ A tab-separated file with a header row and exactly two columns:
 sampleId	fasta
 G26689	/data/genomes/G26689.fasta
 G26690	/data/genomes/G26690.fasta
-L4_G12345	./assemblies/L4_G12345.fa
+G12345	./assemblies/G12345.fa
 ```
 
 <!-- figure: sample-sheet -->
@@ -86,7 +86,7 @@ An eggNOG database that does not exist yet is neither: the first run that
 annotates builds it at `--eggnog_db`.
 
 The thresholds are deliberately wide, since AMAP is not restricted to
-tuberculosis. A 4.4 Mb MTBC genome at 65% GC sits comfortably inside them, and
+tuberculosis. A 4.4 Mb genome of the *Mycobacterium tuberculosis* complex (MTBC) at 65% GC sits comfortably inside them, and
 so does most of the bacterial world.
 
 ## Assembly quality

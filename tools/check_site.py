@@ -788,10 +788,10 @@ def check_thresholds() -> list[str]:
         (running, r"(?P<cpus>\d+) CPUs, (?P<memory>\d+) GB and (?P<time>\d+) h with an executor profile", "scheduler"),
         (running, r"otherwise the machine's CPUs, (?P<memory>\d+) GB and (?P<time>\d+) h", "machine"),
         (quickstart, r"the machine's CPUs and (?P<memory>\d+) GB", "machine"),
-        (quickstart, r"scheduler profiles at (?P<cpus>\d+) CPUs and (?P<memory>\d+) GB", "scheduler"),
+        (quickstart, r"executor profiles at (?P<cpus>\d+) CPUs and (?P<memory>\d+) GB", "scheduler"),
         (parameters, r"\| `--max_memory` \|[^|]*\|[^|]*\| `(?P<memory>\d+)\.GB` \|", "machine"),
         (parameters, r"\| `--max_time` \|[^|]*\|[^|]*\| `(?P<time>\d+)\.h` \|", "machine"),
-        (parameters, r"HPC profiles raise them to (?P<cpus>\d+) CPUs and (?P<memory>\d+) GB", "scheduler"),
+        (parameters, r"executor profiles raise them to (?P<cpus>\d+) CPUs and (?P<memory>\d+) GB", "scheduler"),
         (parameters, r"`-profile highmem` to (?P<cpus>\d+) CPUs, (?P<memory>\d+) GB and (?P<time>\d+) h", "highmem"),
         (parameters, r"`-profile test` sets (?P<cpus>\d+) CPUs, (?P<memory>\d+) GB and (?P<time>\d+) h", "test"),
     ]
@@ -839,10 +839,10 @@ def check_thresholds() -> list[str]:
         ("Share of its protein an alignment spans to name a longer call", "rescuing missing genes"): ("name_share", "{:g}%", 0.01),
         ("Cover by another reference gene that rules a copy out", "final deduplication"): ("copy_cover", "{:g}%", 0.01),
         ("Length of a gene's pieces together, next to the reference gene", "final deduplication"): ("pieces_length", "{:g}%", 0.01),
-        ("Identity to restore a clipped N-terminus", "quality control"): ("nterm_identity", "{:g}%", 0.01),
+        ("Identity to restore a clipped N-terminus", "stop codon check"): ("nterm_identity", "{:g}%", 0.01),
         ("Cover for a gene to account for a placement", "rescuing missing genes"): ("account_cover", "{:g}%", 0.01),
         ("Length of a further copy, next to the first", "final deduplication"): ("copy_length", "{:g}%", 0.01),
-        ("Residues an extension may run past the end of the reference protein", "quality control"): ("past_reference_residues", "{:g}"),
+        ("Residues an extension may run past the end of the reference protein", "stop codon check"): ("past_reference_residues", "{:g}"),
     }
     for line in ALGORITHM_MD.read_text(encoding="utf-8").splitlines():
         cells = [c.strip() for c in line.strip().strip("|").split("|")]

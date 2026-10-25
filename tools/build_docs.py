@@ -41,7 +41,7 @@ REPO = "https://github.com/PathoGenOmics-Lab/AMAP"
 # only gets its place in the list.
 PAGES = [
     ("Getting started", "getting-started/installation.md", "Installation", "Nextflow, a container engine, and running without one."),
-    ("Getting started", "getting-started/quickstart.md", "Quickstart", "The front page's four steps as a page: the test, a sample sheet, the check and the run."),
+    ("Getting started", "getting-started/quickstart.md", "Quickstart", "From an installed Nextflow to an open report: the test, a sample sheet, the check, the run and the results."),
     ("Getting started", "getting-started/tutorial.md", "Tutorial", "One real genome, start to finish, with every number."),
     ("Getting started", "getting-started/inputs.md", "Preparing inputs", "The sample sheet, the genomes, and the checks run on them."),
     ("User guide", "user-guide/parameters.md", "Parameters", "Every option, its default, and when to change it."),
@@ -126,13 +126,13 @@ FIGURES = {
     "case4-split": case_figure("case4-split", "Multiple overlaps: two Bakta calls on Rv0007, which comes back as one gene."),
     "case4-longer": case_figure("case4-longer", "A much longer call: 3,303 bp past an alignment that stops short of its protein's end, so Bakta's call is kept, and it takes the protein's name, Rv2024c."),
     "case1-kept": case_figure("case1-kept", "Case 1 kept: four calls in a stretch CDC1551 has and H37Rv lacks."),
-    "case1-dropped": case_figure("case1-dropped", "Case 1 removed: a call that Bakta's known false positives cover end to end."),
+    "case1-dropped": case_figure("case1-dropped", "Case 1 dropped: a call that Bakta's known false positives cover end to end."),
     "missing": case_figure("missing", "A missing reference gene: Rv0031, put back between two of Bakta's calls."),
     "three-inputs": (
         '<figure class="fig case" data-inputs><div class="case-fig" data-fig-stage></div>'
         "<figcaption>The three inputs over the first 12.4 kb of CDC1551: Bakta's calls, the H37Rv proteins miniprot placed, and "
-        "two of the calls Bakta makes on H37Rv itself that its curated annotation does not have, aligned here. Point at a gene "
-        "for its coordinates.</figcaption></figure>"
+        "two of the calls Bakta makes on H37Rv itself that its curated annotation does not have, aligned here. "
+        '<span class="say-hover">Point at a gene for its coordinates.</span></figcaption></figure>'
     ),
     "outcomes": (
         '<figure class="fig outcomes" data-outcomes><div class="legend"><span><i class="chip bakta"></i>Bakta\'s call</span>'
@@ -144,7 +144,7 @@ FIGURES = {
             for key, tag, case, title, text, link, more in [
                 ("case2", "c2", "Case 2", "Perfect match", "Same start, end, strand and length as an aligned protein. Kept, tied to it.", "../how-it-works.html#agree", "Step through it"),
                 ("case3", "c3", "Case 3", "Imperfect match", "Same start, end and strand; the alignment's length differs. Kept, tied to the protein.", "../how-it-works.html#same-ends", "Step through it"),
-                ("case4-start", "c4", "Case 4", "Conflicting overlap", "Overlaps an aligned protein with other coordinates. The reference's win, unless the call is much longer.", "../how-it-works.html#late-start", "Step through it"),
+                ("case4-start", "c4", "Case 4", "Conflicting overlap", "Overlaps an aligned protein with other coordinates. The reference wins, unless the call is much longer.", "../how-it-works.html#late-start", "Step through it"),
                 ("case1-kept", "c1", "Case 1", "Potentially novel", "Nothing aligns. Kept, unless Bakta is known to call it wrongly or the reference genome has its protein.", "../how-it-works.html#new", "Step through it"),
                 ("missing", "cm", "Missing", "Put back", "A reference protein aligns where Bakta called nothing. It goes in at the alignment.", "../how-it-works.html#missed", "Step through it"),
             ]
@@ -157,8 +157,8 @@ FIGURES = {
                                ("copies", "Two real copies of a gene")]
         )
         + "</ul></div>"
-        + "</div><figcaption>The five outcomes, each on real genes of CDC1551: the same windows as the case pages, "
-        "drawn small. Each card opens its story, step by step.</figcaption></figure>"
+        + "</div><figcaption>The five outcomes, each on real genes of CDC1551: the same windows as the front page's cases and the "
+        "correction algorithm's figures, drawn small. Each card opens its story, step by step.</figcaption></figure>"
     ),
     "dup-family": (
         '<figure class="fig dup-fig" data-dup="family"><div class="case-fig" data-fig-stage></div>'
@@ -168,7 +168,7 @@ FIGURES = {
         '<span><i class="chip node-out"></i>a protein outside the family</span></div>'
         "<figcaption>CDC1551's corrected proteome against itself, run as GET_DUPLICATIONS runs it: six transposases make one "
         "family. Each line is a pair Diamond matched, with the larger of the two shares its identical residues cover; the "
-        "size of a protein is its length. Point at a protein or a line for its numbers.</figcaption></figure>"
+        'size of a protein is its length. <span class="say-hover">Point at a protein or a line for its numbers.</span></figcaption></figure>'
     ),
     "dup-communities": (
         '<figure class="fig dup-fig dup-pair" data-dup="communities"><div class="dup-sides">'
@@ -251,15 +251,20 @@ def results_map() -> str:
         ("main", "BAKTA/", "BAKTA_ANNOTATOR", ""),
         ("main", "CDS_CASES/", "TYPE_CASES", ""),
         ("main", "AMAP/", "FIX_CDS, then GET_OUTPUTS and GET_COUNT",
-         "with <code>--skip_functional_annotation</code> only FIX_CDS's <code>*.AMAP.tsv</code>, <code>.faa</code> and <code>.fna</code> are left"),
+         "With <code>--skip_functional_annotation</code>, only FIX_CDS's <code>*.AMAP.tsv</code>, <code>.faa</code> and <code>.fna</code> are written."),
         ("dup", "DUPLICATIONS/", "GET_DUPLICATIONS, GET_ALLDUP", "with <code>--skip_functional_annotation</code>"),
         ("pan", "PANGENE/", "PANGENE", "with <code>--skip_functional_annotation</code>"),
         ("main", "final_report.html", "FINAL_REPORT", "with <code>--skip_functional_annotation</code>"),
+        ("main", "amap_report.html", "AMAP_REPORT", ""),
         ("none", "pipeline_info/", "VALIDATE_INPUTS, SOFTWARE_VERSIONS, DUMP_PARAMS and Nextflow itself", ""),
     ]
     out = []
     for line, folder, by, when in rows:
-        gone = f'<span class="rm-when">Left out {when}.</span>' if when else '<span class="rm-when">Always written.</span>'
+        # A note of its own starts with a capital; otherwise it says what leaves the folder out.
+        if when[:1].isupper():
+            gone = f'<span class="rm-when">{when}</span>'
+        else:
+            gone = f'<span class="rm-when">Left out {when}.</span>' if when else '<span class="rm-when">Always written.</span>'
         out.append(
             f'<div class="rm-row"><i class="rm-line rm-{line}"></i><code class="rm-folder">{folder}</code>'
             f'<div class="rm-what"><span class="rm-by">{by}</span>{gone}</div></div>'
@@ -348,6 +353,7 @@ def slugify(text: str, seen: dict[str, int]) -> str:
 # GitHub's anchor for every heading of CHANGELOG.md on its own (see
 # Renderer.heading), since links to those are written on GitHub.
 LEGACY_IDS = {
+    "getting-started/tutorial.md": {"where-to-go-next": "next-steps"},
     "getting-started/quickstart.md": {
         "1-write-a-sample-sheet": "2-write-a-sample-sheet",
         "2-check-the-inputs": "3-check-the-inputs",
@@ -359,9 +365,9 @@ LEGACY_IDS = {
     "about/citation.md": {"citing-amap": "citation"},
     "deployment/hpc.md": {"running-on-a-cluster": "hpc-clusters"},
     "user-guide/custom-reference.md": {"using-your-own-reference": "custom-reference"},
-    "user-guide/report.md": {"the-report": "the-full-report-final_reporthtml"},
+    "user-guide/report.md": {"the-report": "the-full-report-final_reporthtml", "kegg-pathways": "functional-annotation"},
     "user-guide/amap-report.md": {"the-interactive-report": "the-report-by-question-amap_reporthtml"},
-    "how-it-works/index.md": {"how-it-works": "overview"},
+    "how-it-works/index.md": {"how-it-works": "overview", "in-this-section": "next-steps"},
 }
 
 
@@ -1227,7 +1233,7 @@ def reference_steps(renderer: "Renderer", lines: list[str]) -> str:
 
 VALIDATOR = Path("bin/validate_inputs.py")
 SHEET = [("sampleId", "fasta"), ("G26689", "/data/genomes/G26689.fasta"), ("G26690", "/data/genomes/G26690.fasta"),
-         ("L4_G12345", "./assemblies/L4_G12345.fa")]
+         ("G12345", "./assemblies/G12345.fa")]
 
 
 def sheet_error(title: str, values: dict[str, str]) -> list[str]:
@@ -1448,13 +1454,15 @@ REPORT_SECTIONS = [
     ("gene-duplications", "Duplications", "Community sizes, the communities shared across genomes and their network metrics."),
     ("pangenome-analysis", "Pangenome", "Core and accessory genes, the gene frequency spectrum and the presence and absence of every gene."),
     ("amap-cds-stats", "CDS statistics", "How many genes fall in each case, lineage by lineage: box and violin plots with Dunn's tests, the share of each case, a heatmap and a table per case."),
-    ("master-table-explorer", "Master table", "Every gene of every sample in one table to search, sort and export."),
+    ("master-table-explorer", "Master table explorer", "Every gene of every sample in one table to search, sort and export."),
 ]
 
 
 def report_map(_renderer: "Renderer", _lines: list[str]) -> str:
+    # A name in the middle of a sentence, its acronym kept: the CDS statistics section.
+    named = lambda title: title if title.split()[0].isupper() else title[0].lower() + title[1:]
     cards = "".join(
-        f'<a class="rp-card" href="../examples/demo_report.html#{key}"><img src="../assets/report/{key}.webp" alt="The {title.lower()} section of the example report" '
+        f'<a class="rp-card" href="../examples/demo_report.html#{key}"><img src="../assets/report/{key}.webp" alt="The {named(title)} section of the example report" '
         f'width="460" height="320" loading="lazy"><span class="rp-text"><b>{title}</b><span>{text}</span></span></a>'
         for key, title, text in REPORT_SECTIONS
     )
@@ -2018,10 +2026,10 @@ def doc_page(position: int) -> tuple[Path, str, list[dict]]:
 def index_page() -> tuple[Path, str]:
     tasks = [
         ("deployment/hpc.html", "Run on a SLURM cluster"),
-        ("user-guide/custom-reference.html", "Use another species"),
-        ("deployment/troubleshooting.html", "My run failed"),
-        ("user-guide/outputs.html", "Which file do I open"),
-        ("user-guide/parameters.html", "Every option"),
+        ("user-guide/custom-reference.html", "Annotate another species"),
+        ("deployment/troubleshooting.html", "Fix a failed run"),
+        ("user-guide/outputs.html", "Find the file to open"),
+        ("user-guide/parameters.html", "Look up an option"),
     ]
     cards = [
         '<nav class="hub-tasks" aria-labelledby="common-tasks"><p class="hub-label" id="common-tasks">Common tasks</p><ul>'

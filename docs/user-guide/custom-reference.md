@@ -1,7 +1,7 @@
 # Custom reference
 
-AMAP corrects an annotation by refereeing it against a trusted one. For MTBC
-that trusted annotation is H37Rv, bundled in the image. Point
+AMAP corrects an annotation by refereeing it against a trusted one. For the
+*Mycobacterium tuberculosis* complex (MTBC) that trusted annotation is H37Rv, bundled in the image. Point
 `--ref_annotation` and `--ref_genome` at your own and the same machinery works
 for any prokaryote.
 
@@ -56,10 +56,10 @@ gives the sequence the gene is on.
 > **Details**
 >
 > A CDS across the origin of a circular sequence ends past the sequence's last
-> base, the way GFF3 writes it: tagA on plasmid pO157 (92721 bp) of *E. coli*
+> base, the way GFF3 writes it: tagA on plasmid pO157 (92,721 bp) of *E. coli*
 > O157:H7 Sakai, `join(92527..92721,1..2502)` in its GenBank record, is
-> `pO157p01_92527-95223`. On *E. coli* K-12 the two formats give the same 4318
-> proteins, and on Sakai the same 5155.
+> `pO157p01_92527-95223`. On *E. coli* K-12 the two formats give the same 4,318
+> proteins, and on Sakai the same 5,155.
 
 **2. Annotates the reference genome with Bakta.** The same Bakta that will
 annotate your samples, run on a genome whose true annotation is known, keeping
@@ -119,12 +119,12 @@ final annotation                                     5335 genes
 ```
 
 The 142 are the automatically derived equivalent of the hand-curated MTBC
-false-positive list, and 1387 case 1 genes is what you would expect between two
+false-positive list, and 1,387 case 1 genes is what you would expect between two
 *E. coli* strains that genuinely differ.
 
 If your case 2 comes out at or near zero, stop and look at the reference rather
 than the sample. Every gene missing an exact match by a constant offset points
-at the reference, not at 4000 coincidences.
+at the reference, not at 4,000 coincidences.
 
 ## Worked example
 
@@ -173,5 +173,5 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
 
 ## Next steps
 
-- [How it works](../how-it-works/index.md): what the correction does with the reference
+- [Overview](../how-it-works/index.md): what the correction does with the reference
 - [Parameters](parameters.md): the full flag reference

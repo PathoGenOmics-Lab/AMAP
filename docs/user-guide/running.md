@@ -88,20 +88,20 @@ nextflow run PathoGenOmics-Lab/AMAP \
     -process.clusterOptions '--account=mygroup'
 ```
 
-[Deployment on HPC](../deployment/hpc.md) goes into the details that actually
+[HPC clusters](../deployment/hpc.md) goes into the details that actually
 bite: shared filesystems, scratch, and where the eggNOG database should live.
 
 > [!TIP]
 > **Large datasets**
 >
 > Past about twenty genomes, use a scheduler. The eggNOG step in particular
-> runs once over all samples at a time rather than once per sample, precisely
+> runs once over all the samples rather than once per sample, precisely
 > so a shared filesystem is not hammered by hundreds of jobs reading the same
 > Diamond database.
 
 ## Non-MTBC organisms
 
-Lineage typing and Mycobrowser categories are specific to tuberculosis. Turn
+Lineage typing and Mycobrowser categories are specific to the *Mycobacterium tuberculosis* complex (MTBC). Turn
 them off and bring your own reference:
 
 ```bash

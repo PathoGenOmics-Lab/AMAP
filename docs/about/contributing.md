@@ -163,7 +163,7 @@ arguments). The front page's benchmark scores are checked against
 `tests/benchmark/README.md`.
 
 The pictures, the example report's sections, the card a shared link shows and
-the README's light and dark drawings, are screenshots of the site taken by
+the README's light and dark drawings are screenshots of the site taken by
 headless Chrome; take them again after the report or a drawing changes:
 
 ```bash

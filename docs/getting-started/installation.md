@@ -64,7 +64,7 @@ Docker can give containers 14 CPUs and 8217014272 bytes
 
 Unlike `docker --version`, it fails when the Docker daemon is not running, and
 it prints the memory your containers can really have. Under 8 GB? Raise it in
-Docker Desktop, Settings, Resources. With Singularity or Apptainer,
+Docker Desktop under Settings, Resources, Memory. With Singularity or Apptainer,
 `singularity --version` is the check.
 
 ## 4. Run the test profile

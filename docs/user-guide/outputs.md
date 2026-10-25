@@ -131,9 +131,9 @@ it. Bakta takes a sequence for a circular replicon when its FASTA description
 says `complete`, as NCBI's "complete genome" and "complete sequence" do, or
 `circular=true`, as Unicycler's does. In `*-AMAP.tsv` and the master table such
 a gene has its start after its end (stcE on plasmid pO157 of *E. coli* O157:H7
-Sakai is 92563 to 2502); in the GenBank it is `join(92563..92721,1..2502)` in a
+Sakai is 92,563 to 2,502); in the GenBank it is `join(92563..92721,1..2502)` in a
 record marked circular; and in the GFF3 it ends past the sequence's last base,
-by the sequence's length (92563 to 95223 on the 92721 bp plasmid), on a
+by the sequence's length (92,563 to 95,223 on the 92,721 bp plasmid), on a
 `region` feature marked `Is_circular=true`, as the GFF3 specification and
 Bakta's own GFF3 have it.
 
@@ -152,7 +152,7 @@ sequences than the GFF3 has genes, by design.
 
 One row per gene, joining the corrected coordinates, the Bakta annotation, the
 eggNOG assignment (COG category, description, preferred name, GO, EC, KEGG,
-PFAMs, CAZy) and, for MTBC, the Mycobrowser functional category. This is the
+PFAMs, CAZy) and, for the *Mycobacterium tuberculosis* complex (MTBC), the Mycobrowser functional category. This is the
 table to load when you want to ask a question about the annotation.
 
 ### `*-AMAP.qc.tsv`
@@ -180,14 +180,14 @@ calibrate expectations. On the left, *M. tuberculosis* CDC1551 against the
 bundled H37Rv reference. On the right, *E. coli* O157:H7 Sakai against K-12
 MG1655, using a custom reference.
 
-| Case | CDC1551 vs H37Rv | Sakai vs K-12 |
+| Case | CDC1551 against H37Rv | Sakai against K-12 |
 | :--- | ---: | ---: |
-| case2, exact match | 2813 | 3324 |
-| case3, length differs | 24 | 31 |
-| case4, resolved conflict | 1100 | 507 |
-| case1_kept, genuinely novel | 11 | 1387 |
+| case2, perfect match | 2,813 | 3,324 |
+| case3, imperfect match | 24 | 31 |
+| case4, conflicting overlap, resolved | 1,100 | 507 |
+| case1_kept, genuinely novel | 11 | 1,387 |
 | rv_missing, rescued | 97 | 133 |
-| total_cds before correction | 4077 | 5367 |
+| total_cds before correction | 4,077 | 5,367 |
 
 <!-- figure: case-table -->
 
@@ -198,7 +198,7 @@ does not have.
 
 What should worry you is the opposite: **case 2 at or near zero**. Every gene
 disagreeing with the reference by a few bases means something systematic is
-wrong with the reference, not with 4000 individual genes. The usual cause is a
+wrong with the reference, not with 4,000 individual genes. The usual cause is a
 reference proteome whose coordinates do not describe the sequence its proteins
 were translated from.
 
@@ -246,5 +246,5 @@ through it.
 
 ## Next steps
 
-- [How it works](../how-it-works/index.md): what produced all this
+- [Overview](../how-it-works/index.md): what produced all this
 - [Duplication metrics](../how-it-works/duplications.md): reading the network numbers

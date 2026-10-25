@@ -74,8 +74,8 @@ nextflow run PathoGenOmics-Lab/AMAP \
     -profile singularity,slurm --tsv samples.tsv
 ```
 
-Without a scheduler profile every task is capped at the machine's CPUs and
-16 GB, and with the scheduler profiles at 48 CPUs and 128 GB, whichever order
+Without an executor profile every task is capped at the machine's CPUs and
+16 GB, and with the executor profiles at 48 CPUs and 128 GB, whichever order
 the profiles come in; a larger request is lowered to the cap. Nextflow refuses
 to start a task asking for more memory than the machine has, so on a smaller
 machine, lower the ceiling to what `docker info` says your containers can have,
@@ -133,8 +133,9 @@ work.
 
 ## Common variations
 
-**A non-MTBC organism.** Lineage typing and Mycobrowser are specific to
-tuberculosis, so turn them off and supply your own reference:
+**An organism outside the *Mycobacterium tuberculosis* complex (MTBC).**
+Lineage typing and Mycobrowser are specific to the complex, so turn them off
+and supply your own reference:
 
 ```bash
 nextflow run PathoGenOmics-Lab/AMAP -profile docker \
@@ -162,4 +163,4 @@ nextflow run PathoGenOmics-Lab/AMAP -profile docker \
 
 - [Running AMAP](../user-guide/running.md): profiles, schedulers and larger runs
 - [Parameters](../user-guide/parameters.md): the full reference
-- [How it works](../how-it-works/index.md): what the correction actually does
+- [Overview](../how-it-works/index.md): what the correction actually does

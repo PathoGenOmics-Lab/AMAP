@@ -1685,7 +1685,12 @@
       el.setAttribute("aria-keyshortcuts", (on ? "/ " : "") + "Control+K Meta+K");
     });
     if (slashToggle) {
-      slashToggle.textContent = on ? "The / key opens the search: turn it off" : "The / key does nothing: turn it on";
+      // The key in the keycap style it has everywhere else on the site.
+      var keycap = document.createElement("kbd");
+      keycap.textContent = "/";
+      slashToggle.textContent = "The ";
+      slashToggle.appendChild(keycap);
+      slashToggle.appendChild(document.createTextNode(on ? " key opens the search: turn it off" : " key does nothing: turn it on"));
     }
   }
   var foot = document.querySelector("footer.foot");

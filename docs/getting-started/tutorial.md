@@ -20,14 +20,15 @@ run.
 
 The genome is *Mycobacterium tuberculosis* CDC1551, corrected against the H37Rv
 reference that ships inside the AMAP container. At the end there is a second
-pass showing the same thing for a non-MTBC organism.
+pass showing the same thing for an organism outside the *Mycobacterium
+tuberculosis* complex (MTBC).
 
 The correction itself takes minutes on one genome: 2 min 16 s here, without
-eggNOG. What dominates the first full run is setup: pulling a 12 GB image and
-building the eggNOG database, both of which happen once and are reused
-afterwards. Expect the first run to take considerably longer than every run
-after it, and do not read a long silence during the database build as a
-failure.
+eggNOG. What dominates the first full run is setup: pulling the image, 3.4 GB
+compressed and 12 GB on disk, and building the eggNOG database, both of which
+happen once and are reused afterwards. Expect the first run to take
+considerably longer than every run after it, and do not read a long silence
+during the database build as a failure.
 
 ## 1. What you need
 
@@ -50,7 +51,7 @@ nextflow -version
 ```
 
 > [!WARNING]
-> **Java 8 is not enough**
+> **Nextflow needs Java 17 or newer**
 >
 > On Java 8 or 11, Nextflow stops with "Cannot find Java or it's a wrong
 > version". Install a newer JDK, for example
@@ -70,7 +71,7 @@ Docker can give containers 14 CPUs and 8217014272 bytes
 That is the machine behind this page: an Apple M4 Pro, with Docker Desktop
 given 8 GB of its 24. The command fails when the Docker daemon is not
 running, which `docker --version` does not catch. Under 8 GB? Raise it in
-Docker Desktop, Settings, Resources. On a cluster, `singularity --version`.
+Docker Desktop under Settings, Resources, Memory. On a cluster, `singularity --version`.
 
 Full details, including running without a container, are on the
 [installation page](installation.md).
@@ -348,19 +349,19 @@ which matters once the folder holds several samples. What each row means:
 
 | Case | Count | What it means |
 | :--- | ---: | :--- |
-| `case2` | 2813 | Coordinates matched the reference exactly |
+| `case2` | 2,813 | Coordinates matched the reference exactly |
 | `case3` | 24 | Coordinates matched, the alignment's length differed |
-| `case4` | 1100 | Overlapped the reference but disagreed, and was resolved |
+| `case4` | 1,100 | Overlapped the reference but disagreed, and was resolved |
 | `case1_initial` | 141 | Bakta called it, the reference has nothing there |
 | `rv_missing` | 97 | The reference has a gene there, Bakta missed it |
-| `total_cds` | 4077 | What Bakta called before the correction |
+| `total_cds` | 4,077 | What Bakta called before the correction |
 | `case1_removed` | 130 | "Novel" genes that were not really novel |
 | `case1_kept` | 11 | Kept as genuinely absent from H37Rv |
 
 <!-- figure: case-counts -->
 
-Read that as: of 4077 Bakta calls, 2813 already agreed with the reference,
-1100 had to be adjudicated, and 97 reference genes Bakta had missed were
+Read that as: of 4,077 Bakta calls, 2,813 already agreed with the reference,
+1,100 had to be adjudicated, and 97 reference genes Bakta had missed were
 rescued. Only 11 of the 141 apparently novel genes survived scrutiny, which is
 what you would expect for a strain of the same species as the reference.
 
@@ -369,7 +370,7 @@ One call, `L4_CDC1551_03643`, has the same ends as two reference proteins:
 Rv3478 at its own length, which makes it case 2, and Rv1361c, a PPE protein
 three residues longer, which makes it case 3 too.
 
-### Sanity check the sample
+### Sanity-check the sample
 
 ```bash
 column -t -s$'\t' results/AMAP/*/*-AMAP.qc.tsv
@@ -437,7 +438,7 @@ nextflow run PathoGenOmics-Lab/AMAP -profile singularity,slurm \
     --tsv samples.tsv --eggnog_db /shared/databases/eggnog
 ```
 
-[Deployment on HPC](../deployment/hpc.md) covers scratch, shared filesystems
+[HPC clusters](../deployment/hpc.md) covers scratch, shared filesystems
 and where things should live.
 
 ## 9. The same thing for another organism
@@ -500,7 +501,7 @@ case1_removed  122
 case1_kept     1387
 ```
 
-`case1_kept` counts the genes O157:H7 has and K-12 does not. Those 1387 are
+`case1_kept` counts the genes O157:H7 has and K-12 does not. Those 1,387 are
 the prophages and the LEE island that O157:H7 carries and K-12 lacks. Against a reference of your own species you should expect a large case 1
 when the strains genuinely differ, and a small one when they do not.
 
@@ -511,7 +512,7 @@ when the strains genuinely differ, and a small one when they do not.
 > annotation from a different assembly produces nonsense: proteins that do
 > not translate, and a nearly empty reference proteome. AMAP writes how many
 > proteins it extracted into the work directory, where
-> `grep -h 'Curated proteins' work/*/*/.command.out` finds it (4318 on this
+> `grep -h 'Curated proteins' work/*/*/.command.out` finds it (4,318 on this
 > pair), so check the number looks like a genome's worth.
 
 [Custom reference](../user-guide/custom-reference.md) goes into what makes a
@@ -532,8 +533,8 @@ work/ab/cd1234.../
 [Troubleshooting](../deployment/troubleshooting.md) is organised by the error
 you are looking at.
 
-## Where to go next
+## Next steps
 
 - [Parameters](../user-guide/parameters.md): every flag and its default
-- [How it works](../how-it-works/index.md): what the correction actually does, and the thresholds behind it
+- [Overview](../how-it-works/index.md): what the correction actually does, and the thresholds behind it
 - [Outputs](../user-guide/outputs.md): every file the run produces

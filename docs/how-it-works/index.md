@@ -11,7 +11,7 @@ curated reference for a close relative exists, those errors are visible: align
 the reference proteins onto the new genome, and where the two disagree, decide
 which is more likely right.
 
-On MTBC genomes that adjudication changes roughly 30% of genes.
+On genomes of the *Mycobacterium tuberculosis* complex (MTBC) that adjudication changes roughly 30% of genes.
 
 ## The three inputs to a decision
 
@@ -69,8 +69,8 @@ which set of coordinates wins a conflict.
 [The correction algorithm](correction-algorithm.md) gives the rules and the
 thresholds.
 
-## In this section
+## Next steps
 
 - [The workflow](workflow.md): the eleven steps in detail
-- [The correction algorithm](correction-algorithm.md): case classification, conflict resolution, quality control
+- [The correction algorithm](correction-algorithm.md): case classification, conflict resolution, stop codon check
 - [Duplication metrics](duplications.md): what the network numbers mean

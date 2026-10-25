@@ -17,7 +17,7 @@ cluster. Skipped entirely under `--skip_functional_annotation`.
 ## 2. Lineage typing
 
 [pathotypr](https://github.com/PathoGenOmics-Lab/pathotypr) assigns each genome
-to an MTBC lineage using phylogenetic marker SNPs, and the genomes are renamed
+to a lineage of the *Mycobacterium tuberculosis* complex (MTBC) using phylogenetic marker SNPs, and the genomes are renamed
 after their sample ID with the lineage in front (`L4_G26689` for sample
 `G26689`). That prefix carries through every downstream file and is what lets
 the report group results by lineage.

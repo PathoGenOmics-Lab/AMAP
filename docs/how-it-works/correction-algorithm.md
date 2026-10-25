@@ -7,7 +7,7 @@ gene and then applying a set of rules to resolve the disagreements.
 Coordinates throughout are 1-based inclusive, so a gene's length is
 `end - start + 1`. Every comparison is strand-aware and contig-aware: genes on
 opposite strands at the same position are different genes and never conflict,
-and nor are genes on different contigs of a draft assembly, where every contig
+and neither do genes on different contigs of a draft assembly, where every contig
 starts at 1. Bakta runs with `--keep-contig-headers` so that it names the
 contigs as the FASTA and miniprot do; by default it renames them `contig_N`.
 
@@ -148,7 +148,7 @@ is auditable.
 ## 2. Filtering case 1
 
 Novel-gene candidates are scrutinised before being believed. A candidate is
-**removed** if either holds:
+**dropped** if either holds:
 
 - it overlaps the [false-positive set](../user-guide/custom-reference.md) by
   **80% or more** of its own length, meaning it is a call the annotator is known
@@ -184,7 +184,7 @@ worse error. Beyond length:
 - **A complete alignment has not fragmented.** It covers the whole reference
   protein down to its stop codon, so a longer call in its frame ends at the same
   stop and only starts further upstream (plcD, Rv1755c, 843 bp in H37Rv and
-  1545 bp in Bakta's call on CDC1551).
+  1,545 bp in Bakta's call on CDC1551).
 - **A call in another frame is another gene**, and keeps its chance to win on
   length; the alignment then comes back in step 5.
 - **A call that wins in the alignment's frame is the protein's gene**, longer
@@ -247,9 +247,9 @@ carries the protein's name, that call takes it, as long as the alignment spans
 at least **half** of the protein; without this the gene came out with no name
 and the protein was missing from the table. Two calls named this way:
 
-- in *M. bovis*, H37Rv's mmpL6 (Rv1557) is the 3' end of a 2904 bp gene that
+- in *M. bovis*, H37Rv's mmpL6 (Rv1557) is the 3' end of a 2,904 bp gene that
   the TbD1 deletion cut short in H37Rv
-- CDC1551 and *M. bovis* carry a 4821 bp DNA methyltransferase gene whose first
+- CDC1551 and *M. bovis* carry a 4,821 bp DNA methyltransferase gene whose first
   506 residues are H37Rv's Rv2024c
 
 A remnant names nothing: the RD12 deletion of *M. bovis* leaves the last 67 of
@@ -385,12 +385,12 @@ FASTA files, so the two never disagree.
 | Length of a further copy, next to the first | final deduplication | 90% |
 | Cover by another reference gene that rules a copy out | final deduplication | 50% |
 | Length of a gene's pieces together, next to the reference gene | final deduplication | 110% |
-| Stop codon search | quality control | 300 bp, or what the reference protein is missing |
-| Residues an extension may run past the end of the reference protein | quality control | 10 |
-| Distance from a contig end within which a gene counts as cut | quality control | 30 bp at the 3' end, a codon at the 5' end |
-| Identity to restore a clipped N-terminus | quality control | 90% |
+| Stop codon search | stop codon check | 300 bp, or what the reference protein is missing |
+| Residues an extension may run past the end of the reference protein | stop codon check | 10 |
+| Distance from a contig end within which a gene counts as cut | stop codon check | 30 bp at the 3' end, a codon at the 5' end |
+| Identity to restore a clipped N-terminus | stop codon check | 90% |
 
-These are constants in `bin/classify/`, tuned on MTBC. Another organism may want
+These are constants in `bin/classify/`, tuned on the *Mycobacterium tuberculosis* complex (MTBC). Another organism may want
 different values, particularly the 550 bp length margins, which assume genes of
 roughly bacterial size.
 

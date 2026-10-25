@@ -217,11 +217,14 @@
       );
     });
 
+    // The frames of the marks, so a name set beside a gene keeps off them.
+    var frames = [];
     (spec.marks || []).forEach(function (m) {
       var mx1 = X(m.s - 0.5);
       var mx2 = X(m.e + 0.5);
       var my1 = ys[m.rows[0]] - 4;
       var my2 = ys[m.rows[1]] + geneH + (lanes[m.rows[1]].n - 1) * LANE + 4;
+      frames.push({ x1: mx1 - 1, x2: Math.max(mx1 + 2, mx2) + 1, y1: my1 - 1, y2: my2 + 1 });
       used[m.kind === "ref" ? "diff-ref" : "diff"] = 1;
       out.push('<g class="mark' + (m.phase ? " ph-" + m.phase : "") + '"' + steps(m) + ">");
       out.push(
@@ -231,14 +234,17 @@
       if (m.label) {
         var lx = m.labelAt === "left" ? mx1 - 4 : m.labelAt === "right" ? mx2 + 4 : (mx1 + mx2) / 2;
         var anchor = m.labelAt === "left" ? "end" : m.labelAt === "right" ? "start" : "middle";
-        // A label that would run off either side is pinned to that side.
+        // A label that would run off either side is pinned to that side. Over
+        // the first row it may start in the empty top of the names' column,
+        // so it keeps its end at what it marks.
         var lw = textWidth(m.label, 10.5);
         var left = anchor === "end" ? lx - lw : anchor === "middle" ? lx - lw / 2 : lx;
+        var floor = m.rows[0] === 0 ? 0 : x0;
         if (left + lw > W - 2) {
           lx = W - 2;
           anchor = "end";
-        } else if (left < x0) {
-          lx = x0;
+        } else if (left < floor) {
+          lx = floor;
           anchor = "start";
         }
         out.push('<text class="diff-label' + (m.kind ? " diff-label-" + m.kind : "") + '" x="' + lx.toFixed(1) + '" y="' + (my1 - 4) + '" text-anchor="' + anchor + '">' + esc(m.label) + "</text>");
@@ -257,6 +263,8 @@
       if (x1 < x0 || x2 > W - 2 || y1 < 0) return false;
       return boxes.every(function (b) {
         return (b.r === r && b.k === k) || b.x2 <= x1 || b.x1 >= x2 || b.y2 <= y1 || b.y1 >= y2;
+      }) && frames.every(function (f) {
+        return f.x2 <= x1 || f.x1 >= x2 || f.y2 <= y1 || f.y1 >= y2;
       });
     }
 
@@ -1173,8 +1181,17 @@
   // How long each phase stays before the next; the comparison is the densest.
   var DWELL = [2100, 2100, 3200];
 
+  // While the page prints, a count is set at once: paper shows no frames.
+  var printing = false;
+  window.addEventListener("beforeprint", function () {
+    printing = true;
+  });
+  window.addEventListener("afterprint", function () {
+    printing = false;
+  });
+
   function countUp(el, n, animate) {
-    if (!animate || reduceMotion || n < 2) {
+    if (!animate || reduceMotion || printing || n < 2) {
       el.textContent = String(n);
       return;
     }
@@ -1477,6 +1494,11 @@
         stopAuto();
         setPhase(+b.getAttribute("data-go"));
       });
+    });
+    // On paper the drawing is its end, every layer in, not a moment of it.
+    window.addEventListener("beforeprint", function () {
+      stopAuto();
+      setPhase(4);
     });
     // Still while the reader points at the drawing or moves through it.
     stage.addEventListener("pointerenter", function (event) {
@@ -2016,7 +2038,9 @@
   }
 
   // A small drawing of one window: its rows without their names, no axis.
-  // It sits inside a link, so it is a picture: no tab stops, no tips.
+  // It sits inside a link, so it is a picture: no tab stops, no tips. The
+  // gene it is about keeps its name, beside it where it is too narrow for
+  // it (the gene put back, in the card of the missing gene).
   function miniSpec(key) {
     var spec = windowSpec(key);
     spec.labelW = 0;
@@ -2032,7 +2056,6 @@
     spec.rows.forEach(function (row) {
       row.genes.forEach(function (g) {
         g.gapLabel = null;
-        g.nameAbove = false;
         g.moved = [];
       });
     });

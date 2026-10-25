@@ -3713,6 +3713,32 @@ html:not(.js) .builder-qs {
   display: none;
 }
 
+/* The same for every control that needs the script, and every drawing,
+   which the script makes: in its place, a line that says so, and none of
+   the room kept for it. */
+html:not(.js) :is([data-hero-replay], .hero-segs, [data-fig-switch], .metro-opts, .metro-hint, .metro-info, .how-pick, .how-steps, button.copy, [data-theme-toggle], .docs-search) {
+  display: none;
+}
+
+html:not(.js) :is([data-hero-stage], [data-fig-stage], [data-metro-stage], [data-stage])::before {
+  content: "This drawing of real genes is made in the browser: turn JavaScript on to see it.";
+  display: block;
+  padding: var(--sp-6);
+  color: var(--ink-3);
+  font-size: var(--fs-n2);
+  line-height: var(--lh-ui);
+}
+
+html:not(.js) .oc-fig::before {
+  padding: var(--sp-2) 0;
+}
+
+html:not(.js) :is(.case-fig, .oc-fig, .metro-scroll, .how-stage, .dup-fig > .case-fig, .dup-side > .case-fig) {
+  height: auto;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+
 html:not(.js) .builder {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -5008,6 +5034,13 @@ html:not(.js) .builder {
   background: color-mix(in srgb, var(--surface-2) 90%, transparent);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
+}
+
+/* In the light theme the band is a step darker than the white report, so
+   it shows as a bar there as it does in the dark. */
+:root[data-theme="light"] .report-cover::before {
+  background: color-mix(in srgb, var(--surface-3) 92%, transparent);
+  border-top-color: var(--line-2);
 }
 
 .report-cover span {
@@ -6740,6 +6773,8 @@ th.num {
 }
 
 @media print {
+  :root,
+  :root[data-theme],
   .docs {
     --surface-sunk: #f5f7f6;
     --surface-0: #ffffff;
@@ -6773,13 +6808,68 @@ th.num {
     --code-muted: #4f5b58;
     --code-flag: #055c4d;
     --code-value: #7a3f00;
+    --on-accent: #ffffff;
+    --glow: none;
+    --brand-teal: #155b4e;
+    --brand-aqua: #11978b;
+    --brand-slate: #4f7682;
+    /* The drawings in the light theme's inks, which hold on white. */
+    --bakta: #a85a06;
+    --ref: #5845cc;
+    --amap: #07796a;
+    --drop: #7d8986;
+    --on-track: #ffffff;
+    --pseudo: #c0244a;
+    --ok: #0c724d;
+    --note: #b7791f;
+    --warn: #9b5806;
+    --danger: #c0244a;
+    --info: #1f68c4;
+    --m-main: #0b8a75;
+    --m-ref: #5845cc;
+    --m-db: #b5650d;
+    --m-dup: #1f68c4;
+    --m-pan: #a6338f;
     color-scheme: light;
     background: #ffffff;
     color: var(--ink);
   }
 
-  .docs :is(.top, .docs-nav, .toc-inline, .copy, .docs-pager, .edit, .to-top, .foot, .skip, .crumb-row, .anchor) {
+  body {
+    background: #ffffff;
+  }
+
+  /* What is for a screen leaves the paper: the header and footer, the ways
+     round a page, and the controls of the drawings (a drawing prints as it
+     ends, every layer in). */
+  :is(.top, .docs-nav, .toc-inline, .copy, .docs-pager, .edit, .to-top, .foot, .skip, .crumb-row, .anchor, .demo-ctrl, .hero-segs, .how-pick, .how-steps, .how-nav, .builder-qs, .metro-opts, .metro-hint, .cases-hint) {
     display: none !important;
+  }
+
+  /* Paper shows no frames: every change is at its end at once. */
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* The headline's second sentence, in the accent: a gradient clipped to
+     text does not print. */
+  .grad {
+    background: none;
+    color: var(--accent);
+    -webkit-text-fill-color: currentColor;
+  }
+
+  .code pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  :is(.demo, .case, .how-stage-card, .metro-wrap, .excerpt) {
+    break-inside: avoid;
+    box-shadow: none;
   }
 
   .wrap.docs-layout {
@@ -7007,6 +7097,30 @@ th.num {
 /* A segment too narrow for its number shows it on hover, in its title. */
 .cb-seg:not(:hover) .cb-n {
   text-overflow: clip;
+}
+
+/* On a phone a number takes less room round it, and one its segment cannot
+   hold whole is not shown cut: the key under the bar gives every count. */
+@media (max-width: 600px) {
+  .cb-n {
+    padding: 0 2px;
+  }
+}
+
+.cb-seg {
+  container-type: inline-size;
+}
+
+@container (max-width: 25px) {
+  .cb-n {
+    visibility: hidden;
+  }
+}
+
+@container (max-width: 39px) {
+  .cb-n.cb-n-wide {
+    visibility: hidden;
+  }
 }
 
 .cb-agree,
@@ -7569,6 +7683,12 @@ th.num {
   position: relative;
 }
 
+/* A story drawn in two panels says "Tap a gene" once, under the last: the
+   first panel's line appears when one of its genes is tapped. */
+.how-panel:not(:last-child) .fig-readout:has(> .say-hint) {
+  display: none;
+}
+
 .how-legend {
   padding: 0 var(--sp-6);
   margin-top: var(--sp-2);
@@ -7655,7 +7775,7 @@ th.num {
 }
 
 html:not(.js) .how-nav {
-  visibility: hidden;
+  display: none;
 }
 
 @media (hover: none) {
@@ -8600,12 +8720,23 @@ html:not(.js) .how-nav {
   white-space: nowrap;
 }
 
-.gauge-ticks span:first-child {
+.gauge-ticks .t-start {
   transform: none;
 }
 
-.gauge-ticks span:last-child {
+.gauge-ticks .t-end {
   transform: translateX(-100%);
+}
+
+/* A gauge narrower than its ticks need shows the major ones only. */
+.gauge {
+  container-type: inline-size;
+}
+
+@container (max-width: 640px) {
+  .gauge-ticks .minor {
+    display: none;
+  }
 }
 
 .prose .gauge-list {
@@ -8620,8 +8751,7 @@ html:not(.js) .how-nav {
 }
 
 @media (max-width: 600px) {
-  .gauge-mark em,
-  .gauge-ticks .minor {
+  .gauge-mark em {
     display: none;
   }
 

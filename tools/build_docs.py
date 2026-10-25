@@ -200,6 +200,15 @@ CASE_PARTS = [
 ]
 
 
+def count_label(value: int) -> str:
+    """A count printed in its bar. A long one (1,100 and up) says so, so a
+    phone's bar too narrow for it hides it (the key under the bar repeats
+    every count)."""
+    text = f"{value:,}"
+    wide = " cb-n-wide" if len(text) > 3 else ""
+    return f'<span class="cb-n{wide}">{text}</span>'
+
+
 def case_bars(genomes: list[tuple[str, dict[str, int]]], caption: str) -> str:
     """Bakta's calls of each genome by case, and the reference genes put back."""
     longest = max(sum(n.get(k, 0) for k, _, _ in CASE_PARTS) + n.get("rv_missing", 0) for _, n in genomes)
@@ -209,11 +218,11 @@ def case_bars(genomes: list[tuple[str, dict[str, int]]], caption: str) -> str:
         for key, label, cls in CASE_PARTS:
             if key in n:
                 width = 100 * n[key] / longest
-                number = f'<span class="cb-n">{n[key]:,}</span>' if width >= 8 else ""
+                number = count_label(n[key]) if width >= 8 else ""
                 segs.append(f'<span class="cb-seg cb-{cls}" style="width:{width:.2f}%" title="{label}: {n[key]:,}">{number}</span>')
         if "rv_missing" in n:
             width = 100 * n["rv_missing"] / longest
-            number = f'<span class="cb-n">{n["rv_missing"]:,}</span>' if width >= 8 else ""
+            number = count_label(n["rv_missing"]) if width >= 8 else ""
             segs.append(f'<span class="cb-seg cb-missing" style="width:{width:.2f}%" title="reference genes put back: {n["rv_missing"]:,}">{number}</span>')
         total = f'<span class="cb-total">{n["total_cds"]:,} Bakta calls</span>' if "total_cds" in n else ""
         values = "".join(
@@ -1551,11 +1560,14 @@ def ranges_figure() -> str:
                 f'<span class="gauge-mark gm-{side}{edge}" style="left:{pos(value):.2f}%"><i></i><em>{html.escape(label)}</em></span>'
             )
         out.append('</div><div class="gauge-ticks">')
-        # A tick too close to the one before it is left out on a phone.
+        # A tick at either end of the scale reads inward from it; the rest are
+        # centred on their place. A tick too close to the one before it, or to
+        # the last one, is left out on a narrow gauge.
         shown = None
         for value in ticks:
-            minor = shown is not None and pos(value) - shown < 12
-            cls = ' class="minor"' if minor else ""
+            minor = (shown is not None and pos(value) - shown < 12) or (value != ticks[-1] and pos(ticks[-1]) - pos(value) < 22)
+            classes = (["minor"] if minor else []) + (["t-start"] if pos(value) <= 0.5 else ["t-end"] if pos(value) >= 99.5 else [])
+            cls = f' class="{" ".join(classes)}"' if classes else ""
             out.append(f'<span{cls} style="left:{pos(value):.2f}%">{fmt(value)}</span>')
             if not minor:
                 shown = pos(value)

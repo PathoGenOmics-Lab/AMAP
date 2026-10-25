@@ -709,7 +709,8 @@
   window.addEventListener("hashchange", followAlias);
 
   var header = document.querySelector("header.top");
-  var HEADER_GAP = 61; // the sticky header's height, its border included
+  // The sticky header's height, its border included, as the stylesheet sets it.
+  var HEADER_GAP = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 61;
 
   function escapeHtml(text) {
     return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

@@ -30,9 +30,11 @@
      62.1px. */
   --fs-title: clamp(var(--fs-4), 1.32rem + 1.77vw, var(--fs-7));
   --fs-hero: clamp(var(--fs-6), 5.2vw, var(--fs-11));
-  --lh-display: 1.06;
+  --lh-display: 1.1;
   --lh-heading: 1.2;
+  --lh-label: 1.3;
   --lh-ui: 1.45;
+  --lh-read: 1.55;
   --lh-body: 1.6;
   --fw-light: 300;
   --fw-regular: 400;
@@ -40,9 +42,17 @@
   --fw-semibold: 600;
   --fw-bold: 700;
   --fw-display: 760;
+  --tr-hero: -0.038em;
   --tr-display: -0.032em;
   --tr-heading: -0.016em;
+  --tr-numeral: -0.035em;
   --tr-caps: 0.1em;
+  /* Motion: a control's change of state; a change a reader should notice
+     (the map's lines); a layer of a drawing coming in. */
+  --dur-state: 0.15s;
+  --dur-emph: 0.3s;
+  --dur-reveal: 0.45s;
+  --ease: ease;
   /* Space, a 4px grid. */
   --sp-1: 4px;
   --sp-2: 8px;
@@ -64,10 +74,21 @@
   --r-5: 16px;
   --r-pill: 999px;
   /* Layout: the front page's column, and the margin column beside its main
-     one, where the numbers of chapters and steps hang. */
+     one, where the numbers of chapters and steps hang. The margin column and
+     its gap make whole squares of the graticule (three, four from 1216px),
+     so the main column starts on a major line, where the docs' text does. */
   --wrap: 1216px;
-  --col-margin: 13.5rem;
+  --grid-sq: 80px;
   --col-gap: var(--sp-9);
+  --col-margin: calc(3 * var(--grid-sq) - var(--col-gap));
+  /* How far in from its edge a plate sets what it holds. */
+  --plate-pad: var(--sp-6);
+  /* The sticky header, its border included; the bar a phone adds under it;
+     and where a page's own sticky boxes and jumped-to headings come to rest
+     below it (where the docs' sidebar sticks). */
+  --header-h: 61px;
+  --here-h: 40px;
+  --clear: calc(var(--header-h) + var(--sp-5) - 1px);
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
@@ -185,8 +206,11 @@
   --accent-wash: #e6f1ef;
   --accent-line: #8cc5ba;
   --on-accent: #ffffff;
-  --grad-a: #0b8a75;
-  --grad-b: #238b78;
+  --brand-teal: #155b4e;
+  --brand-aqua: #11978b;
+  --brand-slate: #4f7682;
+  --grad-a: #155b4e;
+  --grad-b: #0b8a75;
   --grad-c: #4f7682;
   --shadow-2: 0 1px 2px rgba(16, 27, 24, 0.06), 0 16px 36px -18px rgba(16, 27, 24, 0.22);
   --shadow-3: 0 1px 3px rgba(16, 27, 24, 0.08), 0 24px 56px -16px rgba(16, 27, 24, 0.24);
@@ -233,7 +257,7 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 76px;
+  scroll-padding-top: var(--clear);
   -webkit-text-size-adjust: 100%;
 }
 
@@ -273,13 +297,14 @@ body {
   :root {
     --grid-x-major: calc(50% - 544px);
     --grid-x-minor: calc(50% - 576px);
+    --col-margin: calc(4 * var(--grid-sq) - var(--col-gap));
   }
 }
 
 body {
   background:
-    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px) var(--grid-x-major) 0 / 80px 80px,
-    linear-gradient(var(--grid-major) 1px, transparent 1px) 0 0 / 80px 80px,
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px) var(--grid-x-major) 0 / var(--grid-sq) var(--grid-sq),
+    linear-gradient(var(--grid-major) 1px, transparent 1px) 0 0 / var(--grid-sq) var(--grid-sq),
     linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px) var(--grid-x-minor) 0 / 16px 16px,
     linear-gradient(var(--grid-minor) 1px, transparent 1px) 0 0 / 16px 16px,
     var(--surface-0);
@@ -291,16 +316,6 @@ body.docs {
 
 :root[data-theme="light"] body.docs {
   --grid-major: rgba(8, 92, 80, 0.045);
-}
-
-/* Between 861 and 1215px the docs' sidebar and gap come to 272px, not a
-   whole number of squares, so the grid moves by the difference (32px) and
-   the text column keeps its edge on a major line, as on a wider screen. The
-   header's ruler follows. */
-@media (min-width: 861px) and (max-width: 1215px) {
-  body.docs {
-    --grid-x-major: 56px;
-  }
 }
 
 /* In the light theme the front page's chapters of reading (the steps, the
@@ -373,7 +388,7 @@ h1,
 h2 {
   font-weight: var(--fw-display);
   letter-spacing: var(--tr-display);
-  line-height: 1.1;
+  line-height: var(--lh-display);
 }
 
 h2 {
@@ -461,11 +476,58 @@ p {
   content: none;
 }
 
-/* Headings break into lines of even length rather than leave one word. */
+/* Headings and short labels break into lines of even length rather than
+   leave one word; running text and the texts of cards (spans inside links,
+   which p and li do not reach) keep their last line from being one word. */
 h1,
 h2,
-h3 {
+h3,
+h4,
+summary,
+.eyebrow,
+.fig-title,
+.cmd-head,
+.how-steps button,
+.deep a b,
+.docs-nav .page-toc a,
+.toc-inline a,
+.pf-headrow span,
+.pf-name b,
+.pr-step b,
+.opt b,
+.how-genome {
   text-wrap: balance;
+}
+
+p,
+li,
+dd,
+small,
+blockquote,
+figcaption,
+.deep a span,
+.rp-text,
+.oc-text {
+  text-wrap: pretty;
+}
+
+/* A control's label is not part of the text: selecting across it neither
+   paints it unreadable on an accent fill nor copies "Copy" with the rest. */
+.btn,
+.mini-btn,
+.copy,
+.tab,
+.seg button,
+.how-group .seg a,
+.how-steps button,
+.hero-seg,
+.search-btn,
+.sheet-close,
+.icon-btn,
+.gh-link,
+.report-cover {
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Read by screen readers, not drawn. */
@@ -499,7 +561,7 @@ h3 {
   border-radius: var(--r-2);
   background: var(--accent-soft);
   color: var(--accent);
-  font: var(--fw-semibold) var(--fs-n2)/1.3 var(--font);
+  font: var(--fw-semibold) var(--fs-n2)/var(--lh-label) var(--font);
   letter-spacing: 0;
   white-space: nowrap;
   pointer-events: none;
@@ -604,7 +666,7 @@ mark.search-hit {
   height: 7px;
   pointer-events: none;
   background:
-    linear-gradient(90deg, var(--tick-major) 1px, transparent 1px) var(--grid-x-major) 100% / 80px 7px repeat-x,
+    linear-gradient(90deg, var(--tick-major) 1px, transparent 1px) var(--grid-x-major) 100% / var(--grid-sq) 7px repeat-x,
     linear-gradient(90deg, var(--tick) 1px, transparent 1px) var(--grid-x-minor) 100% / 16px 3px repeat-x;
 }
 
@@ -612,7 +674,7 @@ mark.search-hit {
   display: flex;
   align-items: center;
   gap: var(--sp-4);
-  height: 60px;
+  height: calc(var(--header-h) - 1px);
 }
 
 .brand {
@@ -978,12 +1040,12 @@ mark.search-hit {
    phone it also holds the page's contents and the pages people look for. */
 .search-sheet {
   position: fixed;
-  top: 61px;
+  top: var(--header-h);
   left: 0;
   right: 0;
   z-index: 49;
-  max-height: calc(100vh - 61px);
-  max-height: calc(100dvh - 61px);
+  max-height: calc(100vh - var(--header-h));
+  max-height: calc(100dvh - var(--header-h));
   overflow: auto;
   overscroll-behavior: contain;
   padding: var(--sp-4) 0 var(--sp-6);
@@ -999,7 +1061,7 @@ mark.search-hit {
 
 .search-scrim {
   position: fixed;
-  inset: 61px 0 0;
+  inset: var(--header-h) 0 0;
   z-index: 48;
   background: color-mix(in srgb, var(--bg) 62%, transparent);
 }
@@ -1180,19 +1242,19 @@ mark.search-hit {
 
 @media (max-width: 860px) {
   html.has-here-bar {
-    scroll-padding-top: 118px;
+    scroll-padding-top: calc(var(--header-h) + var(--here-h) + var(--sp-4) + 1px);
   }
 
   .here-bar {
     position: fixed;
-    top: 61px;
+    top: var(--header-h);
     left: 0;
     right: 0;
     z-index: 47;
     display: flex;
     align-items: center;
     gap: 8px;
-    height: 40px;
+    height: var(--here-h);
     padding: 0 16px;
     border: 0;
     border-bottom: 1px solid var(--line);
@@ -1457,7 +1519,7 @@ label,
    brand's dot. */
 .eyebrow {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--sp-2);
   justify-self: start;
   margin-bottom: var(--sp-5);
@@ -1475,6 +1537,9 @@ label,
   background: linear-gradient(135deg, var(--brand-aqua), var(--brand-teal));
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
   flex: none;
+  /* Centred on the first line, however many the label takes: half its
+     line less half the dot. */
+  margin-top: calc(0.8em - 4px);
 }
 
 /* One sentence per line: the second, in the gradient, starts its own. The
@@ -1482,7 +1547,7 @@ label,
 .hero h1 {
   font-size: var(--fs-hero);
   font-weight: var(--fw-display);
-  letter-spacing: -0.038em;
+  letter-spacing: var(--tr-hero);
   line-height: 1.02;
   text-wrap: balance;
   margin-bottom: var(--sp-7);
@@ -1490,6 +1555,7 @@ label,
 
 .hero h1 .grad {
   display: block;
+  width: fit-content;
   padding-bottom: 0.06em;
 }
 
@@ -1514,7 +1580,7 @@ label,
 
 .lead {
   font-size: var(--fs-1);
-  line-height: 1.55;
+  line-height: var(--lh-read);
   color: var(--ink-2);
   max-width: 36em;
 }
@@ -1574,7 +1640,6 @@ label,
 
   .eyebrow {
     margin-bottom: var(--sp-4);
-    letter-spacing: 0.06em;
   }
 
   .hero .hero-side .actions {
@@ -1628,7 +1693,7 @@ label,
 .numbers-head .numbers-label {
   font-size: var(--fs-n3);
   font-weight: var(--fw-bold);
-  line-height: 1.3;
+  line-height: var(--lh-label);
   letter-spacing: var(--tr-caps);
   text-transform: uppercase;
   color: var(--ink-3);
@@ -1655,6 +1720,7 @@ label,
 .numbers-list li {
   padding: 0 var(--sp-6);
   border-left: 1px solid var(--line-1);
+  text-wrap: balance;
 }
 
 .numbers-list li:first-child {
@@ -1668,7 +1734,7 @@ label,
   font-size: var(--fs-10);
   font-weight: var(--fw-light);
   line-height: 1;
-  letter-spacing: -0.035em;
+  letter-spacing: var(--tr-numeral);
   font-variant-numeric: tabular-nums;
   color: var(--ink-1);
 }
@@ -2141,7 +2207,7 @@ label,
   background: var(--surface-2);
   border: 1px solid var(--line-2);
   border-radius: var(--r-5);
-  padding: var(--sp-5) var(--sp-6) var(--sp-5);
+  padding: var(--sp-5) var(--plate-pad);
   box-shadow: var(--shadow-2);
   margin: 0;
   display: grid;
@@ -2484,7 +2550,8 @@ label,
   margin: 0 calc(-1 * var(--sp-2));
   padding: var(--sp-2);
   border-radius: var(--r-3);
-  transition: background 0.2s ease;
+  text-wrap: balance;
+  transition: background-color var(--dur-state) var(--ease);
 }
 
 .tally > .lit {
@@ -2504,7 +2571,7 @@ label,
 .tally b {
   font-size: var(--fs-6);
   font-weight: var(--fw-light);
-  letter-spacing: -0.03em;
+  letter-spacing: var(--tr-numeral);
   line-height: 1;
   color: var(--ink-1);
   font-variant-numeric: tabular-nums;
@@ -2549,6 +2616,21 @@ label,
   .tally b {
     font-size: var(--fs-4);
     text-align: left;
+  }
+}
+
+/* On the narrowest phones a column of a third is too thin for its words:
+   each count takes a row, its figure before what it counts. */
+@media (max-width: 420px) {
+  .tally {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--sp-1);
+  }
+
+  .tally > div {
+    display: flex;
+    gap: var(--sp-3);
+    align-items: baseline;
   }
 }
 
@@ -2642,7 +2724,7 @@ main {
   gap: var(--sp-3);
   font-size: var(--fs-n3);
   font-weight: var(--fw-bold);
-  line-height: 1.3;
+  line-height: var(--lh-label);
   text-transform: uppercase;
   letter-spacing: var(--tr-caps);
   color: var(--accent);
@@ -2660,7 +2742,7 @@ main {
   font-size: var(--fs-10);
   font-weight: var(--fw-light);
   line-height: 0.82;
-  letter-spacing: -0.04em;
+  letter-spacing: var(--tr-numeral);
   font-variant-numeric: tabular-nums;
   text-transform: none;
   color: var(--accent);
@@ -2671,7 +2753,7 @@ main {
 .section-head p:not(.kicker, .pull) {
   color: var(--ink-2);
   font-size: var(--fs-1);
-  line-height: 1.55;
+  line-height: var(--lh-read);
   margin-top: var(--sp-4);
   max-width: var(--measure);
 }
@@ -2690,7 +2772,7 @@ main {
   font-size: var(--fs-10);
   font-weight: var(--fw-light);
   line-height: 1;
-  letter-spacing: -0.035em;
+  letter-spacing: var(--tr-numeral);
   font-variant-numeric: tabular-nums;
   color: var(--accent);
 }
@@ -2797,7 +2879,7 @@ main {
   flex: none;
   font-size: var(--fs-n3);
   font-weight: var(--fw-bold);
-  line-height: 1.3;
+  line-height: var(--lh-label);
   letter-spacing: var(--tr-caps);
   text-transform: uppercase;
   color: var(--accent);
@@ -2831,7 +2913,8 @@ main {
     position: fixed;
     z-index: 40;
     top: 160px;
-    left: max(12px, calc(50% - 584px - var(--sp-5) - var(--rail-w)));
+    /* On a minor line of the graticule, 128px left of the column's edge. */
+    left: max(8px, calc(50% - 584px - 8 * var(--sp-4)));
     width: var(--rail-w);
   }
 }
@@ -2845,7 +2928,9 @@ main {
 .rail a {
   position: relative;
   display: grid;
-  grid-template-columns: 2.1ch minmax(0, 1fr);
+  /* The number's column is sized in em, not ch, so a semibold current
+     chapter does not push its name along. */
+  grid-template-columns: 1.3em minmax(0, 1fr);
   column-gap: var(--sp-2);
   align-items: center;
   height: 32px;
@@ -2853,7 +2938,7 @@ main {
   border-left: 1px solid var(--line-2);
   color: var(--ink-3);
   font-size: var(--fs-n3);
-  line-height: 1.3;
+  line-height: var(--lh-label);
   white-space: nowrap;
   text-decoration: none;
 }
@@ -2960,7 +3045,7 @@ main {
 
 .note {
   font-size: var(--fs-n1);
-  line-height: 1.55;
+  line-height: var(--lh-read);
   color: var(--ink-3);
   margin-top: var(--sp-3);
 }
@@ -3015,7 +3100,7 @@ main {
   font-size: var(--fs-7);
   font-weight: var(--fw-light);
   line-height: 1;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--tr-numeral);
   font-variant-numeric: tabular-nums;
   color: var(--accent);
 }
@@ -3040,6 +3125,10 @@ main {
   max-width: var(--measure, 42rem);
 }
 
+.step-body > :last-child {
+  margin-bottom: 0;
+}
+
 .step-body > .code + .code,
 .step-body > .code + .out {
   margin-top: var(--sp-3);
@@ -3061,9 +3150,11 @@ main {
 }
 
 /* The sample sheet, and what its columns take. */
+/* Split where the builder under it splits, so the file and the command
+   share a left column and the notes a right one. */
 .steps .sheet {
   display: grid;
-  grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
   gap: var(--sp-3) var(--sp-6);
   align-items: center;
 }
@@ -3080,7 +3171,7 @@ main {
   padding-right: 18px;
 }
 
-@media (max-width: 820px) {
+@media (max-width: 900px) {
   .steps .sheet {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -3418,7 +3509,7 @@ kbd {
   padding: var(--sp-4) var(--sp-5);
   font-family: var(--mono);
   font-size: var(--fs-n2);
-  line-height: 1.55;
+  line-height: var(--lh-read);
   color: var(--ink-soft);
   white-space: pre;
   overflow-x: auto;
@@ -3476,9 +3567,9 @@ kbd {
 .builder {
   display: grid;
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  gap: 24px;
+  gap: var(--sp-6);
   align-items: start;
-  margin-top: 22px;
+  margin-top: var(--sp-6);
 }
 
 @media (max-width: 900px) {
@@ -3658,7 +3749,7 @@ html:not(.js) .builder {
 
 @media (max-width: 560px) {
   .q {
-    margin-bottom: 14px;
+    margin-bottom: var(--sp-4);
   }
 
   .opt {
@@ -3711,7 +3802,7 @@ html:not(.js) .builder {
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  padding: var(--sp-6) var(--sp-7) var(--sp-6);
+  padding: var(--sp-6) var(--plate-pad);
 }
 
 .cases > .case:nth-child(n + 3) {
@@ -3753,7 +3844,8 @@ html:not(.js) .builder {
   font: var(--fw-bold) var(--fs-n3)/1 var(--font);
   letter-spacing: var(--tr-caps);
   text-transform: uppercase;
-  padding: 0 var(--sp-2);
+  /* The tracking after the last letter counts as room on its right. */
+  padding: 0 calc(var(--sp-2) - var(--tr-caps)) 0 var(--sp-2);
   border-radius: var(--r-pill);
   border: 1px solid;
   background: color-mix(in srgb, currentColor 9%, transparent);
@@ -3788,7 +3880,7 @@ html:not(.js) .builder {
 .case-caps > p {
   color: var(--ink-2);
   font-size: var(--fs-n1);
-  line-height: 1.55;
+  line-height: var(--lh-read);
 }
 
 /* The captions a switcher chooses between share one cell, so the tallest
@@ -3838,6 +3930,24 @@ html:not(.js) .builder {
   min-height: 60px;
 }
 
+/* Panels side by side draw their tracks on the same lines: what room a
+   shorter text leaves goes above the drawing (and what it keeps, which
+   follows it to the panel's foot), and a drawing kept as tall as the
+   tallest a switcher can show sits at the foot of that room. */
+.cases > .case > .case-fig {
+  margin-top: auto;
+}
+
+.cases > .case > .case-fig + .keeps {
+  margin-top: 0;
+}
+
+.fig-svg {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
 .cases-hint {
   display: none;
   margin: calc(-1 * var(--sp-2)) 0 var(--sp-3);
@@ -3876,14 +3986,15 @@ html:not(.js) .builder {
     grid-template-columns: none;
     grid-auto-flow: column;
     grid-auto-columns: 86%;
-    gap: 12px;
+    gap: var(--sp-3);
     margin: 0 -16px;
-    padding: 0 16px 10px;
+    padding: 0 16px var(--sp-3);
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x mandatory;
     scroll-padding: 0 16px;
-    align-items: start;
+    /* Every card as tall as the tallest, what each keeps at its foot. */
+    align-items: stretch;
   }
 
   .cases > .case,
@@ -3917,7 +4028,7 @@ html:not(.js) .builder {
   border: 1px solid var(--line-2);
   border-radius: var(--r-5);
   box-shadow: var(--shadow-2);
-  padding: var(--sp-5) var(--sp-5) var(--sp-4);
+  padding: var(--sp-5) var(--plate-pad);
 }
 
 .metro-opts {
@@ -4328,7 +4439,7 @@ html:not(.js) .builder {
 .file p {
   font-size: var(--fs-n1);
   color: var(--ink-2);
-  line-height: 1.55;
+  line-height: var(--lh-read);
 }
 
 .file .when {
@@ -4375,7 +4486,7 @@ html:not(.js) .builder {
   border: 1px solid var(--line-2);
   border-radius: var(--r-5);
   box-shadow: var(--shadow-2);
-  padding: var(--sp-5);
+  padding: var(--sp-5) var(--plate-pad);
 }
 
 .excerpt-head {
@@ -4413,7 +4524,7 @@ html:not(.js) .builder {
    they keep their shape and scroll. */
 @media (max-width: 600px) {
   .excerpt {
-    padding: 12px;
+    padding: var(--sp-3);
   }
 
   .excerpt pre {
@@ -4596,7 +4707,7 @@ html:not(.js) .builder {
   align-items: center;
   gap: var(--sp-2);
   min-height: 44px;
-  padding: 0 var(--sp-4) 0 var(--sp-5);
+  padding: 0 var(--plate-pad);
   border-bottom: 1px solid var(--line-1);
   font-size: var(--fs-n2);
   color: var(--ink-3);
@@ -4822,7 +4933,7 @@ html:not(.js) .builder {
 
 :root[data-theme="light"] .cta {
   background:
-    radial-gradient(55% 140% at 0% 0%, color-mix(in srgb, var(--brand-teal) 12%, transparent), transparent 70%),
+    radial-gradient(55% 140% at 0% 0%, color-mix(in srgb, var(--brand-aqua) 12%, transparent), transparent 70%),
     radial-gradient(50% 140% at 100% 100%, color-mix(in srgb, var(--brand-slate) 12%, transparent), transparent 70%);
 }
 
@@ -4850,7 +4961,7 @@ html:not(.js) .builder {
    it and one under it, a hairline between each two. */
 .faq {
   display: grid;
-  max-width: 52rem;
+  max-width: none;
   border-top: 1px solid var(--line-2);
   border-bottom: 1px solid var(--line-2);
 }
@@ -4921,10 +5032,11 @@ html:not(.js) .builder {
 }
 
 .faq .ans {
+  max-width: var(--measure);
   padding: 0 var(--sp-8) var(--sp-6) 0;
   color: var(--ink-2);
   font-size: var(--fs-n1);
-  line-height: 1.55;
+  line-height: var(--lh-read);
   display: grid;
   gap: var(--sp-3);
 }
@@ -4984,7 +5096,7 @@ html:not(.js) .builder {
 .foot h3 {
   font-size: var(--fs-n3);
   font-weight: var(--fw-bold);
-  line-height: 1.3;
+  line-height: var(--lh-label);
   text-transform: uppercase;
   letter-spacing: var(--tr-caps);
   color: var(--ink-3);
@@ -5024,6 +5136,7 @@ html:not(.js) .builder {
 .foot .wrap.foot-base {
   display: flex;
   flex-wrap: wrap;
+  align-items: baseline;
   gap: var(--sp-1) var(--sp-5);
   margin-top: var(--sp-8);
   font-size: var(--fs-n2);
@@ -5089,7 +5202,7 @@ html:not(.js) .builder {
   color: var(--ink-2);
   margin-top: var(--sp-4);
   font-size: var(--fs-1);
-  line-height: 1.55;
+  line-height: var(--lh-read);
   max-width: 42rem;
 }
 
@@ -5109,7 +5222,7 @@ html:not(.js) .builder {
 }
 
 .ref-section .note + .deep {
-  margin-top: 18px;
+  margin-top: var(--sp-5);
 }
 
 /* A table set as a paper sets one: a heavy rule over it and under it, a
@@ -5143,7 +5256,8 @@ table {
   border-collapse: collapse;
   width: 100%;
   font-size: var(--fs-n1);
-  line-height: 1.55;
+  line-height: var(--lh-read);
+  font-variant-numeric: tabular-nums;
 }
 
 th,
@@ -5169,16 +5283,19 @@ td {
 }
 
 td {
-  padding-block: 14px;
+  padding-block: var(--sp-4);
+  vertical-align: baseline;
 }
 
-tbody tr:hover > td {
-  background: color-mix(in srgb, var(--ink-1) 2.5%, transparent);
+@media (hover: hover) {
+  tbody tr:hover > td {
+    background: color-mix(in srgb, var(--ink-1) 2.5%, transparent);
+  }
 }
 
 th {
   font-size: var(--fs-n3);
-  line-height: 1.3;
+  line-height: var(--lh-label);
   text-transform: uppercase;
   letter-spacing: var(--tr-caps);
   color: var(--ink-3);
@@ -5195,6 +5312,7 @@ td.num,
 th.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .deep {
@@ -5246,7 +5364,10 @@ th.num {
    its edges. Running text keeps a reading measure inside the column, while
    code, tables and drawings use all of it. */
 .docs-layout {
-  --side: 224px;
+  /* The sidebar and its gap make whole squares of the graticule: three up
+     to 1215px, four from 1216px, so the text column starts on a major line
+     while the logo, the sidebar and the footer keep theirs. */
+  --side: calc(3 * var(--grid-sq) - var(--sp-9));
   display: grid;
   grid-template-columns: var(--side) minmax(0, 1fr);
   column-gap: var(--sp-9);
@@ -5260,7 +5381,7 @@ th.num {
 
 @media (min-width: 1216px) {
   .docs-layout {
-    --side: 272px;
+    --side: calc(4 * var(--grid-sq) - var(--sp-9));
   }
 }
 
@@ -5275,7 +5396,7 @@ th.num {
 
 .docs-nav {
   position: sticky;
-  top: 80px;
+  top: var(--clear);
   align-self: start;
   font-size: var(--fs-n1);
 }
@@ -5547,7 +5668,7 @@ th.num {
   align-items: center;
   font-size: var(--fs-n3);
   font-weight: var(--fw-bold);
-  line-height: 1.3;
+  line-height: var(--lh-label);
   text-transform: uppercase;
   letter-spacing: var(--tr-caps);
   color: var(--ink-3);
@@ -5754,10 +5875,6 @@ th.num {
   max-width: 68ch;
 }
 
-.prose :is(p, li) {
-  text-wrap: pretty;
-}
-
 .prose .crumb-row {
   display: flex;
   flex-wrap: wrap;
@@ -5785,7 +5902,7 @@ th.num {
 .prose .crumb {
   font-size: var(--fs-n3);
   font-weight: var(--fw-bold);
-  line-height: 1.3;
+  line-height: var(--lh-label);
   letter-spacing: var(--tr-caps);
   text-transform: uppercase;
   color: var(--accent);
@@ -5809,7 +5926,7 @@ th.num {
   font-size: var(--fs-title);
   font-weight: var(--fw-display);
   letter-spacing: var(--tr-display);
-  line-height: 1.1;
+  line-height: var(--lh-display);
   margin-bottom: var(--sp-4);
 }
 
@@ -5818,7 +5935,7 @@ th.num {
   max-width: 40em;
   margin: calc(-1 * var(--sp-1)) 0 var(--sp-4);
   font-size: var(--fs-1);
-  line-height: 1.5;
+  line-height: var(--lh-read);
   color: var(--ink-2);
   text-wrap: pretty;
 }
@@ -5885,6 +6002,12 @@ th.num {
   margin: var(--sp-8) 0 var(--sp-4);
   padding-top: var(--sp-5);
   border-top: 1px solid var(--line-1);
+}
+
+/* A chapter jumped to lands with its rule, not its words, where the page
+   clears the header: level with the sidebar's search box. */
+.prose .hx-2 > h2 {
+  scroll-margin-top: calc(var(--sp-5) + 1px);
 }
 
 .prose .hx-3 {
@@ -5954,6 +6077,24 @@ th.num {
 @media (hover: none) {
   .prose .anchor {
     opacity: 1;
+  }
+}
+
+/* Narrower, the # follows the heading's last word, however the heading
+   wraps, rather than a column of its own at the right. */
+@media (max-width: 860px) {
+  .prose .hx {
+    display: block;
+    text-wrap: balance;
+    line-height: var(--lh-heading);
+  }
+
+  .prose .hx > :is(h2, h3, h4, h5, h6) {
+    display: inline;
+  }
+
+  .prose .hx > .anchor {
+    margin-left: 0.3em;
   }
 }
 
@@ -6047,10 +6188,6 @@ th.num {
     padding: 10px;
   }
 
-  .prose th {
-    letter-spacing: 0.03em;
-  }
-
   /* A table of four columns or more becomes one card per row: the first
      cell as its title, the second as its text, the rest on one muted line,
      each with its column's name. */
@@ -6078,7 +6215,7 @@ th.num {
   }
 
   .prose table.cards tr {
-    margin-bottom: 10px;
+    margin-bottom: var(--sp-3);
     padding: var(--sp-3) var(--sp-4);
     border: 1px solid var(--line-2);
     border-radius: var(--r-3);
@@ -6144,17 +6281,19 @@ th.num {
 }
 
 .prose .to-top {
-  margin-top: 2em;
+  margin-top: var(--sp-7);
   font-size: var(--fs-n1);
 }
 
 .prose .edit {
-  margin-top: 2.5em;
+  margin-top: var(--sp-8);
   font-size: var(--fs-n1);
 }
 
+/* Under "Back to the top", the pair reads as one, with room between them
+   for each one's finger target (see Touch and pointer). */
 .prose .to-top + .edit {
-  margin-top: 0.6em;
+  margin-top: var(--sp-6);
 }
 
 .prose .edit a {
@@ -6166,6 +6305,14 @@ th.num {
 .prose .edit svg {
   width: 16px;
   height: 16px;
+}
+
+/* Where the headings' # hangs in the gutter, so does the mark, and the
+   words line up with "Back to the top". */
+@media (min-width: 861px) {
+  .prose .edit a {
+    margin-left: calc(-16px - var(--sp-2));
+  }
 }
 
 /* GitHub's alerts (> [!WARNING]) as callouts, which say their kind in words
@@ -6243,7 +6390,7 @@ th.num {
 
 /* The Docs tab: the questions people come with, before the list of pages. */
 .prose .hub-tasks {
-  margin: 20px 0 6px;
+  margin: var(--sp-5) 0 var(--sp-2);
 }
 
 .prose .hub-label {
@@ -6403,14 +6550,18 @@ th.num {
   }
 }
 
-/* A drawing in a page of text. */
+/* A drawing in a page of text, with the room of a block round it; right
+   under its heading it needs none above. */
 .prose .fig {
-  margin-top: 1.4em;
-  margin-bottom: 1.6em;
+  margin: var(--sp-6) 0;
+}
+
+.prose .hx + .fig {
+  margin-top: 0;
 }
 
 .prose .fig.case {
-  padding: 16px 16px 12px;
+  padding: var(--sp-4);
 }
 
 /* A figure's caption, as a paper sets one: "Figure n" in caps, counted down
@@ -6502,7 +6653,7 @@ th.num {
 
 .docs-group {
   font-size: var(--fs-0) !important;
-  margin: 1.6em 0 0.7em !important;
+  margin: var(--sp-7) 0 var(--sp-3) !important;
   display: flex;
   align-items: baseline;
   gap: var(--sp-3);
@@ -6515,7 +6666,7 @@ th.num {
   font-weight: var(--fw-light);
   font-size: var(--fs-2);
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tr-numeral);
   font-variant-numeric: tabular-nums;
   color: var(--accent);
 }
@@ -6528,7 +6679,7 @@ th.num {
   background: var(--surface-1);
   border: 1px solid var(--line-2);
   border-radius: var(--r-4);
-  padding: 16px;
+  padding: var(--sp-4);
 }
 
 .cb-rows {
@@ -6664,7 +6815,8 @@ th.num {
   width: 14px;
   height: 6px;
   border-radius: 3px;
-  align-self: center;
+  align-self: start;
+  margin-top: var(--sp-2);
 }
 
 .rm-main {
@@ -6694,7 +6846,7 @@ th.num {
 }
 
 .rm-by {
-  font: var(--fs-n2) var(--mono);
+  font: var(--fs-n2)/var(--lh-ui) var(--mono);
   color: var(--ink-soft);
 }
 
@@ -6793,7 +6945,7 @@ th.num {
 .how-hero .crumb {
   font-size: var(--fs-n3);
   font-weight: var(--fw-bold);
-  line-height: 1.3;
+  line-height: var(--lh-label);
   letter-spacing: var(--tr-caps);
   text-transform: uppercase;
   color: var(--accent);
@@ -6821,7 +6973,7 @@ th.num {
 .how-pick {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--sp-3);
+  gap: var(--sp-6);
   margin-bottom: var(--sp-6);
 }
 
@@ -6861,7 +7013,7 @@ th.num {
 .trk .hot,
 .metro .stn,
 .net .hot {
-  scroll-margin-top: 84px;
+  scroll-margin-top: var(--clear);
   scroll-margin-bottom: 16px;
 }
 
@@ -6938,6 +7090,15 @@ th.num {
   align-items: start;
 }
 
+/* From 1216px the stepper takes the front page's margin column, so the
+   stage starts where the front page's and the docs' text does. */
+@media (min-width: 1216px) {
+  .how-layout {
+    grid-template-columns: var(--col-margin) minmax(0, 1fr);
+    column-gap: var(--col-gap);
+  }
+}
+
 @media (max-width: 900px) {
   .how-layout {
     grid-template-columns: minmax(0, 1fr);
@@ -6951,7 +7112,7 @@ th.num {
   display: grid;
   gap: var(--sp-1);
   position: sticky;
-  top: 84px;
+  top: var(--clear);
 }
 
 @media (max-width: 900px) {
@@ -6981,7 +7142,7 @@ th.num {
   border: 1px solid transparent;
   background: none;
   color: var(--ink-2);
-  font: var(--fw-semibold) var(--fs-n1)/1.3 var(--font);
+  font: var(--fw-semibold) var(--fs-n1)/var(--lh-label) var(--font);
   padding: var(--sp-2) var(--sp-3);
   min-height: 44px;
   border-radius: var(--r-3);
@@ -7264,7 +7425,7 @@ html:not(.js) .how-nav {
 .how-kicker {
   font-size: var(--fs-n3);
   font-weight: var(--fw-bold);
-  line-height: 1.3;
+  line-height: var(--lh-label);
   text-transform: uppercase;
   letter-spacing: var(--tr-caps);
   color: var(--accent);
@@ -7542,7 +7703,7 @@ html:not(.js) .how-nav {
 }
 
 .hpc-shared {
-  margin-top: 14px;
+  margin-top: var(--sp-4);
   border-style: dashed;
 }
 
@@ -7597,7 +7758,7 @@ html:not(.js) .how-nav {
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  font: var(--fw-semibold) var(--fs-n2)/1.3 var(--mono);
+  font: var(--fw-semibold) var(--fs-n2)/var(--lh-label) var(--mono);
   color: var(--muted);
 }
 
@@ -7892,8 +8053,6 @@ html:not(.js) .how-nav {
   margin: 0 0 8px;
   font: var(--fw-semibold) var(--fs-n3)/1 var(--mono);
   color: var(--code-muted);
-  text-transform: uppercase;
-  letter-spacing: var(--tr-caps);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -8001,7 +8160,7 @@ html:not(.js) .how-nav {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
-  margin-top: 14px;
+  margin-top: var(--sp-4);
 }
 
 .prose .sheet-when {
@@ -8022,7 +8181,7 @@ html:not(.js) .how-nav {
   border: 1px solid var(--code-border);
   border-left: 3px solid var(--danger);
   color: var(--code-ink);
-  font: var(--fs-n3)/1.55 var(--mono);
+  font: var(--fs-n3)/var(--lh-read) var(--mono);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -8234,6 +8393,15 @@ html:not(.js) .how-nav {
   align-items: start;
   padding: var(--sp-4) 0;
   border-top: 1px solid var(--line-1);
+}
+
+/* On a wide screen the genomes' names take the margin column, so the bars
+   start where the chapter's text does. */
+@media (min-width: 941px) {
+  .pf-row {
+    grid-template-columns: var(--col-margin) minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--col-gap);
+  }
 }
 
 .pf-headrow {
@@ -8688,7 +8856,7 @@ html:not(.js) .how-nav {
   font-size: var(--fs-n2);
   font-weight: var(--fw-semibold);
   color: var(--m-dup);
-  padding-top: 14px;
+  padding-top: var(--sp-4);
 }
 
 .dup-bridge::before {

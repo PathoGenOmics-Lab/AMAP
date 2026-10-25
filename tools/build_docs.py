@@ -82,10 +82,14 @@ SUN_SVG = (
     '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1'
     'l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
 )
+# The theme is set before the page draws, and so is the browser bar's colour
+# (site.js keeps it in step after that).
 THEME_BOOT = (
     '<script>document.documentElement.classList.add("js"); try { document.documentElement.dataset.theme = '
     'localStorage.getItem("amap.theme") === "light" ? "light" : "dark"; } catch (e) { '
-    'document.documentElement.dataset.theme = "dark"; }</script>'
+    'document.documentElement.dataset.theme = "dark"; } '
+    'if (document.documentElement.dataset.theme === "light") { '
+    '(document.querySelector(\'meta[name="theme-color"]\') || {}).content = "#f5f7f6"; }</script>'
 )
 INLINE_TAGS = re.compile(r"</?(kbd|br|sup|sub|strong|em|b|i)\s*/?>", re.I)
 # What figures.js looks for to draw: a page with none of these needs neither it nor its data.
@@ -2059,11 +2063,14 @@ def not_found_page() -> tuple[Path, str]:
         "    link.href = ROOT + best.page.href;\n"
         "    link.textContent = best.page.title;\n"
         "    near.hidden = false;\n"
+        "    var ask = document.querySelector(\"[data-search-label]\");\n"
+        "    if (ask) ask.textContent = \"Or search for it:\";\n"
         "  }\n"
         "  // The search box starts with the words of the address, for the reader to\n"
-        "  // correct; its results open when they do.\n"
+        "  // correct; its results open when they do. Not with 404, the name of this\n"
+        "  // page itself when it is opened by its own address.\n"
         "  var box = document.querySelector(\".lost-search [data-docs-search]\");\n"
-        "  if (box && word) box.value = word.replace(/[-_]+/g, \" \");\n"
+        "  if (box && word && word !== \"404\") box.value = word.replace(/[-_]+/g, \" \");\n"
         "})();\n</script>\n"
     )
     body = (
@@ -2072,8 +2079,9 @@ def not_found_page() -> tuple[Path, str]:
         "      <h1>That page is not here</h1>\n"
         "      <p>The link that brought you here points at something that has moved or never existed. Nothing is broken on your side.</p>\n"
         '      <p class="nearest" data-nearest hidden>The nearest page: <a href="' + root + 'documentation.html">Documentation</a></p>\n'
+        '      <p class="nearest search-label" data-search-label>Search for it:</p>\n'
         '      <div class="docs-search lost-search">\n'
-        '        <input type="search" placeholder="Search the docs" aria-label="Search the documentation" data-docs-search>\n'
+        '        <input type="search" placeholder="Search the docs" aria-label="Search for it in the documentation" data-docs-search>\n'
         '        <div class="docs-results" data-docs-results hidden></div>\n      </div>\n'
         '      <figure class="lost" aria-label="A drawing in the site\'s style: the link you followed, drawn as a call, and no page of the site aligned under it.">\n'
         '        <div class="lost-scroll">\n'

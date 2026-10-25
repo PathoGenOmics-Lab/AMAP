@@ -563,6 +563,14 @@ figcaption,
   animation-duration: var(--dur-state);
 }
 
+/* For the frames of the swap itself, no control fades on its own from the
+   old theme's colours (site.js sets the class and takes it off). */
+.theme-swap *,
+.theme-swap *::before,
+.theme-swap *::after {
+  transition: none !important;
+}
+
 /* Every control changes state at one speed: colour, fill, edge, shadow and
    fade together. A press (the 1px sink) is not animated. */
 .nav a,
@@ -9090,6 +9098,11 @@ html:not(.js) .how-nav {
 .lost-search {
   max-width: 420px;
   margin-top: var(--sp-5);
+}
+
+/* "Search for it:" names the box under it, and keeps to it. */
+.lost-hero .search-label + .lost-search {
+  margin-top: var(--sp-2);
 }
 
 /* Its results open within its own width, over the drawing, not past it. */

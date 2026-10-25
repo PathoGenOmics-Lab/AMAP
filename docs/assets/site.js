@@ -75,9 +75,19 @@
     button.setAttribute("aria-label", "Light theme");
     button.addEventListener("click", function () {
       var next = currentTheme() === "dark" ? "light" : "dark";
+      // Every surface takes the new theme at once: the controls' own
+      // transitions are held for the swap, so none fades in behind the page.
       var apply = function () {
-        document.documentElement.dataset.theme = next;
+        var html = document.documentElement;
+        html.classList.add("theme-swap");
+        html.dataset.theme = next;
         syncTheme();
+        void document.body.offsetWidth;
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            html.classList.remove("theme-swap");
+          });
+        });
       };
       // A short cross-fade where the browser can draw one, none under reduced motion.
       if (document.startViewTransition && !reducedMotion()) document.startViewTransition(apply);

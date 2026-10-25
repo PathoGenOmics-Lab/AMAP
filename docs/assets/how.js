@@ -553,7 +553,10 @@
   }
 
   // The text under the drawing keeps the height of the story's longest step,
-  // so nothing below it moves while stepping.
+  // so nothing below it moves while stepping. On a phone the step 7 file
+  // excerpt is left out of that height: it would open every story on a
+  // screenful of empty space, and the controls sit above the text, so what
+  // it pushes down is only the page under it.
   function fitText() {
     var w = textBox.offsetWidth;
     if (!w) return;
@@ -572,7 +575,7 @@
       parts[0].textContent = "Step " + n + " of 7 · " + story.label;
       parts[1].textContent = STEPS[n - 1];
       setText(parts[2], story.text[n - 1]);
-      out.hidden = n < 7 || !story.out.length;
+      out.hidden = n < 7 || !story.out.length || w < 600;
       tallest = Math.max(tallest, probe.offsetHeight);
     }
     probe.remove();

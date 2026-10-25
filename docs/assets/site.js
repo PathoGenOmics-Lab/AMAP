@@ -143,11 +143,13 @@
       tab.addEventListener("click", function () {
         select(tab);
       });
+      // The arrows move along the row, Home and End to its ends, as the
+      // builder's radio groups do.
       tab.addEventListener("keydown", function (event) {
-        var step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-        if (!step) return;
+        var to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[event.key];
+        if (to === undefined) return;
         event.preventDefault();
-        var next = tabs[(i + step + tabs.length) % tabs.length];
+        var next = tabs[(to + tabs.length) % tabs.length];
         select(next);
         next.focus();
       });
@@ -261,21 +263,49 @@
     return fallback();
   }
 
+  // The button's two words share one cell, so it keeps its width when it
+  // says "Copied"; each click starts the 1.6 s again. Where the browser
+  // refuses, the block's text is selected for the reader's own Ctrl+C, and
+  // the button says so for as long.
   function addCopy(button, source) {
     var label = button.textContent;
+    button.textContent = "";
+    var ready = document.createElement("span");
+    ready.className = "say-1";
+    ready.textContent = label;
+    var said = document.createElement("span");
+    said.className = "say-2";
+    said.textContent = "Copied";
+    button.appendChild(ready);
+    button.appendChild(said);
+    function settle() {
+      clearTimeout(button._t);
+      button._t = setTimeout(function () {
+        button.classList.remove("done", "ask");
+        said.textContent = "Copied";
+      }, 1600);
+    }
     button.addEventListener("click", function () {
       copyText(plainText(source)).then(
         function () {
-          button.textContent = "Copied";
+          said.textContent = "Copied";
+          button.classList.remove("ask");
           button.classList.add("done");
           announce("Copied to the clipboard");
-          setTimeout(function () {
-            button.textContent = label;
-            button.classList.remove("done");
-          }, 1600);
+          settle();
         },
         function () {
-          button.textContent = "Select and copy";
+          var selection = window.getSelection && window.getSelection();
+          if (selection) selection.selectAllChildren(source);
+          // The keys to press where there is a keyboard; on a touch screen,
+          // only that the text is selected.
+          var touch = window.matchMedia && window.matchMedia("(hover: none)").matches;
+          var mac = /Mac|iP(hone|ad|od)/.test(navigator.platform || "");
+          said.textContent = touch ? "Selected" : mac ? "Press Cmd+C" : "Press Ctrl+C";
+          button.classList.remove("done");
+          button.classList.add("ask");
+          announce(touch ? "The text is selected, ready to copy" : "Selected: press " + (mac ? "Command" : "Control") + " and C to copy");
+          settle();
         }
       );
     });
@@ -505,6 +535,10 @@
         out.push("<b>Only the corrected genes</b> is ticked for you: eggNOG loads its whole database into memory and asks for 50 GB. Untick it on a machine that has that much.");
       } else if (small && !opt("only")) {
         out.push("eggNOG loads its whole database into memory and asks for 50 GB, which a laptop does not have: tick <b>Only the corrected genes</b>, or run it on a larger machine.");
+      }
+      var dbBox = box("db");
+      if (dbBox && dbBox.checked && dbBox.disabled) {
+        out.push("<b>Keep the eggNOG database</b> waits for eggNOG: with <b>Only the corrected genes</b> the run never builds it.");
       }
       if (choice.organism === "other") {
         out.push(
@@ -1662,6 +1696,15 @@
     footBase.appendChild(slashToggle);
   }
   setSlash(slashOn, false);
+  // A key pressed away from a text field means a real keyboard (a phone's
+  // own keyboard only types into fields): the footer then offers the /
+  // switch, which site.css hides on a touch screen until then.
+  document.addEventListener("keydown", function onKey(event) {
+    var t = event.target;
+    if (t && (/^(input|textarea|select)$/i.test(t.tagName) || t.isContentEditable)) return;
+    document.documentElement.classList.add("keys");
+    document.removeEventListener("keydown", onKey);
+  });
 
   document.addEventListener("keydown", function (event) {
     var t = event.target;

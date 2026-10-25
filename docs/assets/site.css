@@ -3541,6 +3541,27 @@ code .brk,
   border-color: currentColor;
 }
 
+/* "Copy" and "Copied" (or "Press Ctrl+C") in one cell, so the button keeps
+   its width when its word changes. */
+.copy {
+  display: inline-grid;
+  place-items: center;
+  align-content: center;
+}
+
+.copy > span {
+  grid-area: 1 / 1;
+}
+
+.copy > .say-2,
+.copy:is(.done, .ask) > .say-1 {
+  visibility: hidden;
+}
+
+.copy:is(.done, .ask) > .say-2 {
+  visibility: visible;
+}
+
 /* A block's head: what it is (a terminal, a file, a command's output), with
    Copy at its right. A file name is written as it is spelled. */
 .code-title {
@@ -3578,7 +3599,7 @@ code .brk,
 }
 
 /* A tab-separated file says what Copy keeps. */
-.code.tsv .copy::after {
+.code.tsv .copy > .say-1::after {
   content: " with tabs";
 }
 
@@ -5393,6 +5414,14 @@ html:not(.js) .builder {
   .slash-toggle:hover {
     color: var(--accent);
     text-decoration-color: currentColor;
+  }
+}
+
+/* A touch phone has no / key to switch, until a keyboard is used on it
+   (site.js marks the page then). */
+@media (hover: none) and (pointer: coarse) {
+  html:not(.keys) .slash-toggle {
+    display: none;
   }
 }
 

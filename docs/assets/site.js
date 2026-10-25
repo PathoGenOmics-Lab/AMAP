@@ -547,7 +547,7 @@
         out.push("eggNOG loads its whole database into memory and asks for 50 GB, which a laptop does not have: tick <b>Only the corrected genes</b>, or run it on a larger machine.");
       }
       var dbBox = box("db");
-      if (dbBox && dbBox.checked && dbBox.disabled) {
+      if (dbBox && dbBox.disabled) {
         out.push("<b>Keep the eggNOG database</b> waits for eggNOG: with <b>Only the corrected genes</b> the run never builds it.");
       }
       if (choice.organism === "other") {
@@ -662,7 +662,13 @@
   document.querySelectorAll("[data-report-stage]").forEach(function (stage) {
     var cover = stage.querySelector(".report-cover");
     var frame = stage.querySelector("iframe");
-    var done = stage.querySelector(".report-done");
+    // Done sits in the window's bar, outside the stage: a touch, a pointer
+    // or focus going to it does not close the report before it is tapped.
+    var frameBox = stage.closest(".report-frame");
+    var done = frameBox ? frameBox.querySelector(".report-done") : null;
+    var toDone = function (target) {
+      return !!(done && target && done.contains(target));
+    };
     if (!cover || !frame) return;
     frame.inert = true;
 
@@ -714,16 +720,16 @@
         rest(true);
       });
     }
-    stage.addEventListener("mouseleave", function () {
-      rest(false);
+    stage.addEventListener("mouseleave", function (event) {
+      if (!toDone(event.relatedTarget)) rest(false);
     });
     stage.addEventListener("focusout", function (event) {
-      if (event.relatedTarget && !stage.contains(event.relatedTarget)) rest(false);
+      if (event.relatedTarget && !stage.contains(event.relatedTarget) && !toDone(event.relatedTarget)) rest(false);
     });
     document.addEventListener(
       "touchstart",
       function (event) {
-        if (!stage.contains(event.target)) rest(false);
+        if (!stage.contains(event.target) && !toDone(event.target)) rest(false);
       },
       { passive: true }
     );
@@ -1190,7 +1196,10 @@
     var end = start + 170;
     if (end < text.length) end = text.lastIndexOf(" ", end) > start ? text.lastIndexOf(" ", end) : end;
     else end = text.length;
-    return (start > 0 ? "…" : "") + text.slice(start, end) + (end < text.length ? "…" : "");
+    // A cut snippet ends in its ellipsis alone, never in ".…" or ",…".
+    var body = text.slice(start, end);
+    if (end < text.length) body = body.replace(/[\s.,;:]+$/, "") + "…";
+    return (start > 0 ? "…" : "") + body;
   }
 
   // ── The search box: an ARIA combobox ──
@@ -1535,16 +1544,25 @@
       else openSearch(searchButton);
     });
 
-    var quick = QUICK.map(function (q) {
-      return '<li><a href="' + escapeHtml(ROOT + q[0]) + '"><b>' + escapeHtml(q[1]) + "</b><small>" + escapeHtml(q[2]) + "</small></a></li>";
+    // Where to go from here: never the page this is, and a page once, on
+    // its first card.
+    var cards = QUICK.map(function (q) {
+      return [ROOT + q[0], q[1], q[2], ""];
     });
-    if (lastVisited) {
+    if (lastVisited) cards.push([lastVisited.url, lastVisited.title, "Last visited", "sheet-last"]);
+    cards.push([ROOT + "documentation.html", "All the docs", "Every page, by section", ""]);
+    var listed = {};
+    listed[here.url] = true;
+    var quick = [];
+    cards.forEach(function (c) {
+      var url = new URL(c[0], location.href).href.split("#")[0];
+      if (listed[url]) return;
+      listed[url] = true;
       quick.push(
-        '<li><a class="sheet-last" href="' + escapeHtml(lastVisited.url) + '"><b>' + escapeHtml(lastVisited.title) +
-          "</b><small>Last visited</small></a></li>"
+        "<li><a" + (c[3] ? ' class="' + c[3] + '"' : "") + ' href="' + escapeHtml(c[0]) + '"><b>' + escapeHtml(c[1]) +
+          "</b><small>" + escapeHtml(c[2]) + "</small></a></li>"
       );
-    }
-    quick.push('<li><a href="' + escapeHtml(ROOT + "documentation.html") + '"><b>All the docs</b><small>Every page, by section</small></a></li>');
+    });
 
     sheet = document.createElement("div");
     sheet.className = "search-sheet";
@@ -2122,6 +2140,14 @@
     };
     menu.addEventListener("scroll", saveMenu, { passive: true });
     window.addEventListener("pagehide", saveMenu);
+    // While more of the list is below its edge, the edge fades, rather than
+    // cut a page's name in half as if the list ended there.
+    var moreBelow = function () {
+      menu.classList.toggle("more-below", menu.scrollTop + menu.clientHeight < menu.scrollHeight - 2);
+    };
+    moreBelow();
+    menu.addEventListener("scroll", moreBelow, { passive: true });
+    window.addEventListener("resize", moreBelow);
   }
 
   // ── The header's "you are here" ──

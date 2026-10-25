@@ -53,7 +53,7 @@ gives the sequence the gene is on.
   these is skipped.
 
 > [!NOTE]
-> **Details**
+> **Genes across the origin**
 >
 > A CDS across the origin of a circular sequence ends past the sequence's last
 > base, the way GFF3 writes it: tagA on plasmid pO157 (92,721 bp) of *E. coli*
@@ -105,7 +105,7 @@ sample ID where a typed run would use its lineage name.
 *E. coli* O157:H7 Sakai corrected against K-12 MG1655, both straight from
 RefSeq, in [the tutorial's run](../getting-started/tutorial.md#9-the-same-thing-for-another-organism):
 
-```text
+```text output
 reference proteins extracted from the K-12 GenBank   4318
 CDS Bakta called on that same reference genome       4296
 Bakta false positives derived from the difference     142

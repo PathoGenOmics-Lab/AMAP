@@ -2207,8 +2207,9 @@ html {
   opacity: 1;
 }
 
+/* The dropped calls overlap: lit, each is a whole outline, not dashes. */
 .trk[data-light="drop"] [data-k="drop"] .g {
-  stroke-width: 2.6;
+  stroke-dasharray: none;
 }
 
 /* Elements a step has just brought in, outlined for a moment. */
@@ -3037,8 +3038,9 @@ main {
     position: fixed;
     z-index: 40;
     top: 160px;
-    /* On a minor line of the graticule, 128px left of the column's edge. */
-    left: max(8px, calc(50% - 584px - 8 * var(--sp-4)));
+    /* On a minor line of the graticule, 128px left of the column's edge;
+       where the margin is too narrow for that, 12px from the screen's. */
+    left: max(var(--sp-3), calc(50% - 584px - 8 * var(--sp-4)));
     width: var(--rail-w);
   }
 }
@@ -3436,6 +3438,11 @@ code .nw {
   white-space: nowrap;
 }
 
+/* A name with a hyphen in it, K-12, kept on one line (build_docs.py's tie). */
+.tie {
+  white-space: nowrap;
+}
+
 /* Words a command line keeps together: its indent with its first word, and
    its closing backslash with its last. pre keeps the indent's spaces. */
 .code .ln .nw {
@@ -3455,7 +3462,8 @@ code .nw {
    anywhere rather than run off a phone's screen; a long word of a command
    too, after any spaces it has. */
 code .brk,
-.code :is(.t, .f, .v).brk {
+.code :is(.t, .f, .v).brk,
+.code .path .brk {
   overflow-wrap: anywhere;
 }
 
@@ -3468,6 +3476,13 @@ code .brk,
    as on the front page. */
 .prose .code:not(.cmd) pre:not([data-command], [data-check]) {
   white-space: pre;
+}
+
+/* A block of one line has no columns to keep: it wraps, rather than hide
+   the end the text goes on to read (site.js marks it). */
+.prose .code.one-line:not(.cmd) pre:not([data-command], [data-check]) {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .code .p {
@@ -4356,6 +4371,18 @@ html:not(.js) .builder {
   display: block;
 }
 
+/* Where the margin beside the column has room, the plate runs into it and
+   holds the whole map: nothing to scroll. */
+@media (min-width: 1620px) {
+  .prose .fig.metro-wrap {
+    margin-right: -202px;
+  }
+
+  .prose .metro-hint {
+    display: none;
+  }
+}
+
 @media (max-width: 860px) {
   .metro-hint {
     display: block;
@@ -5115,26 +5142,28 @@ html:not(.js) .builder {
   display: none;
 }
 
-/* On a touch screen nothing leaves the report the way a mouse does: Done
-   gives the page its swipes back. */
+/* On a touch screen nothing leaves the report the way a mouse does: Done,
+   in the window's bar beside the link, gives the page its swipes back. It
+   sits over none of the report. */
 .report-done {
-  position: absolute;
-  top: 12px;
-  right: 12px;
   display: none;
-  padding: 8px 16px;
+  margin-left: auto;
+  padding: var(--sp-2) var(--sp-4);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-pill);
   background: var(--bg-elev);
   color: var(--ink);
   font: var(--fw-semibold) var(--fs-n2) var(--font);
-  box-shadow: var(--shadow);
   cursor: pointer;
 }
 
 @media (hover: none) {
-  .report-stage.live .report-done:not([hidden]) {
-    display: block;
+  .report-frame:has(.report-stage.live) .report-done:not([hidden]) {
+    display: inline-flex;
+  }
+
+  .report-frame:has(.report-stage.live) .report-done:not([hidden]) + a {
+    margin-left: var(--sp-2);
   }
 }
 
@@ -5441,6 +5470,14 @@ html:not(.js) .builder {
   }
 }
 
+/* The missing page's own search field is the first thing under its title,
+   so neither does it where the header's button would show the / key too. */
+@media (min-width: 900px) {
+  body.lost-page .top .search-btn {
+    display: none;
+  }
+}
+
 /* With the / key off, nothing advertises it. */
 .no-slash .search-key {
   display: none;
@@ -5498,16 +5535,21 @@ html:not(.js) .builder {
 }
 
 /* A table set as a paper sets one: a heavy rule over it and under it, a
-   hairline under its head and between its rows, no box. A table wider than
-   its box scrolls, and shades the edge it continues past (the same covers
-   and shadows as a block of code); the covers are the colour of what the
-   table sits on, the page or a figure's card. */
+   hairline under its head and between its rows, no box: it sits on the
+   page's grid as the text round it does. A table wider than its box scrolls,
+   and shades the edge it continues past (the same covers and shadows as a
+   block of code); the covers are the colour of what the table sits on, the
+   page or a figure's card. site.js marks a table while it scrolls. */
 .table-wrap {
   overflow-x: auto;
   border-top: 2px solid var(--ink-3);
   border-bottom: 2px solid var(--ink-3);
   --cover: var(--surface-0);
   --shade: rgba(255, 255, 255, 0.16);
+}
+
+.table-wrap[data-scroll-region],
+html:not(.js) .table-wrap {
   background:
     linear-gradient(to right, var(--cover) 40%, transparent) left / 28px 100% no-repeat local,
     linear-gradient(to left, var(--cover) 40%, transparent) right / 28px 100% no-repeat local,
@@ -5584,6 +5626,10 @@ td.num,
 th.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+/* A number stays whole; the name over its column may wrap. */
+td.num {
   white-space: nowrap;
 }
 
@@ -5596,6 +5642,14 @@ th.num {
 @media (max-width: 860px) {
   .deep {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A last card alone on its row takes the whole row, rather than sit beside
+   two empty cells. */
+@media (min-width: 861px) {
+  .deep > a:last-child:nth-child(3n + 1) {
+    grid-column: 1 / -1;
   }
 }
 
@@ -5926,9 +5980,16 @@ th.num {
 }
 
 /* The page list, scrolled to the current page by site.js, ends with room
-   so its last page is not cut by the edge. */
+   so its last page is not cut by the edge. While more of it is below the
+   edge, the edge fades (site.js marks it); the top stays sharp, where the
+   current page's entry holds. */
 .docs-menu {
   padding-bottom: 8px;
+}
+
+.docs-menu.more-below {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--sp-8)), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--sp-8)), transparent);
 }
 
 .docs-results .none {
@@ -6511,6 +6572,14 @@ th.num {
 
 .prose .table-wrap {
   font-size: var(--fs-n1);
+}
+
+/* The parameters page's tables, one under the other, start their second
+   column at one place: the first holds the longest option name. */
+@media (min-width: 861px) {
+  .prose table.params th:first-child {
+    width: 16rem;
+  }
 }
 
 /* A type is a word to read, not a chip of code. */
@@ -7573,17 +7642,7 @@ th.num {
   .how-steps {
     position: static;
     grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 4px;
-  }
-
-  .how-steps button {
-    justify-content: center;
-    padding: 8px 4px !important;
-    font-size: 0 !important;
-  }
-
-  .how-steps .how-n {
-    font-size: var(--fs-n2);
+    gap: var(--sp-1);
   }
 }
 
@@ -7603,10 +7662,27 @@ th.num {
   cursor: pointer;
 }
 
+/* Pointed at, a step is outlined: quieter than the current one's raised
+   fill, so it never looks the more chosen of the two. */
 @media (hover: hover) {
   .how-steps button:hover {
-    background: var(--surface-3);
+    border-color: var(--line-1);
     color: var(--ink-1);
+  }
+}
+
+/* On a narrow screen the steps are a row of their numbers alone, each
+   centred in its button: the hidden name leaves no gap beside it. */
+@media (max-width: 900px) {
+  .how-steps button {
+    justify-content: center;
+    gap: 0;
+    padding: var(--sp-2) var(--sp-1);
+    font-size: 0;
+  }
+
+  .how-steps .how-n {
+    font-size: var(--fs-n2);
   }
 }
 
@@ -7804,7 +7880,14 @@ th.num {
   visibility: hidden;
 }
 
-.how-hint kbd {
+.tip-keys {
+  display: block;
+  margin-top: var(--sp-1);
+  font-size: var(--fs-n3);
+  color: var(--ink-3);
+}
+
+:is(.how-hint, .tip-keys) kbd {
   display: inline-block;
   min-width: 1.6em;
   padding: 0 4px;
@@ -7915,7 +7998,7 @@ html:not(.js) .how-nav {
   color: var(--code-ink);
   font: var(--fs-n2)/1.6 var(--mono);
   white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .how-note {
@@ -8548,9 +8631,11 @@ html:not(.js) .how-nav {
   vertical-align: top;
 }
 
+/* A column's name keeps its numbered badge beside it. */
 .prose .sheet-table th {
   color: var(--code-flag);
   font-weight: var(--fw-bold);
+  white-space: nowrap;
 }
 
 .prose .sheet-table .sheet-tab {
@@ -8641,9 +8726,11 @@ html:not(.js) .how-nav {
   white-space: nowrap;
 }
 
+/* A little less room on the right keeps main.nf's longest line whole in
+   the two columns of a wide screen. */
 .prose .sheet-check pre {
   margin: 0;
-  padding: var(--sp-3);
+  padding: var(--sp-3) var(--sp-2) var(--sp-3) var(--sp-3);
   border-radius: var(--r-3);
   background: var(--code-bg);
   border: 1px solid var(--code-border);
@@ -9148,14 +9235,21 @@ body.lost-page > main {
 }
 
 /* The room each network takes, kept before the script draws it: the same
-   proportions as netSvg in figures.js. */
-.dup-fig,
+   proportions as netSvg in figures.js. The figure itself is not a container,
+   because a container scopes the figure counter its caption steps. */
 .dup-side {
   container-type: inline-size;
 }
 
 .dup-fig > .case-fig:empty {
-  height: 105cqw;
+  aspect-ratio: 100 / 105;
+}
+
+@media (min-width: 600px) {
+  .dup-fig > .case-fig:empty {
+    aspect-ratio: 100 / 62;
+    max-height: 420px;
+  }
 }
 
 .dup-side > .case-fig:empty {
@@ -9163,10 +9257,6 @@ body.lost-page > main {
 }
 
 @container (min-width: 520px) {
-  .dup-fig > .case-fig:empty {
-    height: min(420px, 62cqw);
-  }
-
   .dup-side > .case-fig:empty {
     height: min(380px, 56cqw);
   }
@@ -9411,6 +9501,18 @@ body.lost-page > main {
 .dup-metrics .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+/* On a phone the cells take less room, so both genomes' columns show. */
+@media (max-width: 600px) {
+  .prose .dup-metrics td,
+  .prose .dup-metrics th {
+    padding: var(--sp-1) var(--sp-2);
+  }
+
+  .prose .dup-metrics :is(td, th):first-child {
+    padding-left: 0;
+  }
 }
 
 .dup-metrics code {

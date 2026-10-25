@@ -558,6 +558,20 @@
   // excerpt is left out of that height: it would open every story on a
   // screenful of empty space, and the controls sit above the text, so what
   // it pushes down is only the page under it.
+  // What a story writes, one GFF3 line after another: a line breaks between
+  // its attributes, after a ';', rather than inside a name.
+  function fillOut(pre, lines) {
+    pre.textContent = "";
+    lines.forEach(function (line, k) {
+      if (k) pre.appendChild(document.createTextNode("\n"));
+      line.split(/(;)/).forEach(function (piece) {
+        if (!piece) return;
+        pre.appendChild(document.createTextNode(piece));
+        if (piece === ";") pre.appendChild(document.createElement("wbr"));
+      });
+    });
+  }
+
   function fitText() {
     var w = textBox.offsetWidth;
     if (!w) return;
@@ -570,7 +584,7 @@
       return probe.querySelector(sel);
     });
     var out = probe.querySelector("[data-out]");
-    out.querySelector("pre").textContent = story.out.join("\n");
+    fillOut(out.querySelector("pre"), story.out);
     var tallest = 0;
     for (var n = 1; n <= 7; n++) {
       parts[0].textContent = "Step " + n + " of 7 · " + story.label;
@@ -617,7 +631,7 @@
     // Species in italics, as everywhere else on the site.
     genomeLabel.innerHTML = F.esc(win.genome).replace(/^([A-Z]\.) ([a-z]+)/, "<i>$1&nbsp;$2</i>") + (/coli/.test(win.genome) ? ", against K-12" : ", against H37Rv");
     if (legendBox) legendBox.innerHTML = F.legend(used, /coli/.test(win.genome) ? "K-12" : "H37Rv");
-    outBox.querySelector("pre").textContent = story.out.join("\n");
+    fillOut(outBox.querySelector("pre"), story.out);
     picker.querySelectorAll("[data-story]").forEach(function (b) {
       if (b.getAttribute("data-story") === story.key) b.setAttribute("aria-current", "true");
       else b.removeAttribute("aria-current");

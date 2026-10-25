@@ -256,8 +256,7 @@ than by reading it. Several changed what the pipeline outputs, so results from
 - **Output tree**: documents `.clean.faa`, `.qc.tsv`, `pipeline_info/` new files
 
 ### 🐛 Bug fixes (85 total)
-- 20 critical (🔴) + 65 improvements (🟡)
-- See commit history on `fix` branch for full details
+- 20 critical fixes and 65 improvements
 
 ## [0.1.0] - 2025
 

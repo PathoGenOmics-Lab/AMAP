@@ -454,8 +454,12 @@
       var first0 = Math.ceil(spec.from / step) * step;
       for (var t = first0; t <= spec.to; t += step) {
         var tx = X(t);
+        // A label at an end of the axis stays inside the drawing: it ends, or
+        // starts, at its tick rather than run into the plate's margin.
+        var half = textWidth(label(t), 10) / 2;
+        var anchor = tx + half > W - 2 ? "end" : tx - half < 2 ? "start" : "middle";
         out.push('<line x1="' + tx.toFixed(1) + '" x2="' + tx.toFixed(1) + '" y1="' + ay + '" y2="' + (ay + 4) + '"/>');
-        out.push('<text x="' + tx.toFixed(1) + '" y="' + (ay + 15) + '" text-anchor="middle">' + esc(label(t)) + "</text>");
+        out.push('<text x="' + tx.toFixed(1) + '" y="' + (ay + 15) + '" text-anchor="' + anchor + '">' + esc(label(t)) + "</text>");
       }
       out.push("</g>");
     }
@@ -719,6 +723,20 @@
       });
       probe.remove();
       if (tallest) readout.style.minHeight = tallest + "px";
+      // The two networks of a pair read out side by side, so both lines keep
+      // the taller of their two heights and end level.
+      var pair = container.closest(".dup-sides");
+      if (!pair) return;
+      container.setAttribute("data-tallest", tallest);
+      var most = 0;
+      pair.querySelectorAll("[data-tallest]").forEach(function (c) {
+        most = Math.max(most, +c.getAttribute("data-tallest"));
+      });
+      if (most) {
+        pair.querySelectorAll(".fig-readout").forEach(function (r) {
+          r.style.minHeight = most + "px";
+        });
+      }
     }
     function sync() {
       var on = inline();
@@ -729,12 +747,23 @@
     sync();
     if ("ResizeObserver" in window) new ResizeObserver(sync).observe(container);
     var shownTarget = null;
+    // A gene reached by keyboard says which keys move on from it, in the
+    // words how-it-works.html uses beside its own drawing.
+    function keysFor(target) {
+      var svg = target.closest("svg");
+      if (!svg || container.closest("[data-how]") || !target.matches(":focus-visible")) return "";
+      var keys = svg.classList.contains("trk")
+        ? "<kbd>&larr;</kbd> <kbd>&rarr;</kbd> along a row, <kbd>&uarr;</kbd> <kbd>&darr;</kbd> between rows"
+        : "<kbd>&larr;</kbd> <kbd>&rarr;</kbd> from one to the next";
+      return '<span class="tip-keys" aria-hidden="true">' + keys + "</span>";
+    }
     // A tip stays while the pointer is on it, and for a moment after the
     // pointer leaves a gene, so it can be read and pointed at (WCAG 1.4.13).
     var tipTimer = 0;
     function show(target) {
       var text = target.getAttribute("data-tip");
       if (!text) return;
+      text += keysFor(target);
       clearTimeout(tipTimer);
       sync();
       container.querySelectorAll(".hot.on").forEach(function (el) {
@@ -1289,7 +1318,18 @@
       item.setAttribute("role", "button");
       item.setAttribute("aria-pressed", "false");
       var toggle = function () {
-        pinned = pinned === key ? null : key;
+        // A count not made yet is made first: the drawing goes to the phase
+        // that makes it, as pressing that phase would, and the press then
+        // keeps lit what the count names.
+        if (item.classList.contains("t-off")) {
+          spoke();
+          played = true;
+          stopAuto();
+          setPhase(key === "agree" ? 3 : 4);
+          pinned = key;
+        } else {
+          pinned = pinned === key ? null : key;
+        }
         show(pinned || key);
       };
       item.addEventListener("pointerenter", function () {
@@ -1880,7 +1920,10 @@
 
   function infoHtml(key, state) {
     if (!key) {
-      return '<p class="hint">Pick a station to see what it does, what it reads and where its files go. The switches above show what a run leaves out.</p>';
+      // Reached by keyboard, it says how to move along the map.
+      return state.keys
+        ? '<p class="hint">Move along the stations with the arrow keys; Enter shows what one does, what it reads and where its files go. The switches above show what a run leaves out.</p>'
+        : '<p class="hint">Pick a station to see what it does, what it reads and where its files go. The switches above show what a run leaves out.</p>';
     }
     var s = STATIONS[key];
     var proc = state.custom && s.procCustom ? s.procCustom : s.proc;
@@ -2004,6 +2047,17 @@
     stage.addEventListener("click", function (event) {
       var g = event.target.closest(".stn");
       if (g) pick(g);
+    });
+    stage.addEventListener("focusin", function (event) {
+      var g = event.target.closest && event.target.closest(".stn");
+      if (!g || state.keys || !g.matches(":focus-visible")) return;
+      state.keys = true;
+      describe();
+    });
+    stage.addEventListener("focusout", function (event) {
+      if (!state.keys || (event.relatedTarget && stage.contains(event.relatedTarget))) return;
+      state.keys = false;
+      describe();
     });
     stage.addEventListener("keydown", function (event) {
       if (event.key !== "Enter" && event.key !== " ") return;

@@ -157,7 +157,6 @@ Failed      : 0
 Ignored     : 0
 Output      : amap-test
 Work dir    : /Users/you/amap-check/work
-Command     : nextflow run PathoGenOmics-Lab/AMAP -profile docker,test --skip_functional_annotation --outdir amap-test
 <span class="cm">=======================================</span></div>
             <p class="note">The first run pulls the image: about 3.4&nbsp;GB compressed, 12&nbsp;GB on disk, once.</p>
           </div>
@@ -203,7 +202,7 @@ Erdman<span class="tsv-tab">	</span>/data/erdman.fna</pre><button class="copy" t
 </span><span class="ln" style="--i:4"><span class="nw">    <span class="f">-profile</span></span> <span class="nw"><span class="v">docker</span> \</span>
 </span><span class="ln" style="--i:4"><span class="nw">    <span class="f">--tsv</span></span> <span class="nw"><span class="v">samples.tsv</span> \</span>
 </span><span class="ln" style="--i:4"><span class="nw">    <span class="f">--validate_only</span></span></span></pre><button class="copy" type="button" data-copy-from="[data-check]">Copy</button></div>
-                <p class="note">Seconds per genome. A check that fails stops and prints its whole report. One that passes prints nothing, warnings included: its verdict is in <code><span class="nw">results/</span><wbr><span class="nw">pipeline_</span><wbr><span class="nw">info/</span><wbr><span class="nw">validation.</span><wbr><span class="nw">log</span></code>, here for the tutorial's genome:</p>
+                <p class="note">Seconds per genome. A check that fails stops and prints its whole report. One that passes prints nothing, warnings included: its verdict is in <code><span class="nw">results/</span><wbr><span class="nw">pipeline_</span><wbr><span class="nw">info/</span><wbr><span class="nw">validation.log</span></code>, here for the tutorial's genome:</p>
                 <div class="out">Results: 1 OK, 0 warnings, 0 failed
 Total: 0 error(s), 0 warning(s)</div>
                 <p class="cmd-head">Then run it</p>
@@ -221,7 +220,7 @@ Total: 0 error(s), 0 warning(s)</div>
           <span class="step-num" aria-hidden="true">4</span>
           <div class="step-body">
             <h3>Open what came out</h3>
-            <p>Open <code class="nw">results/amap_report.html</code> first: every run writes it (the test of step&nbsp;2, in <code class="nw">amap-test/</code>), and it answers the first questions genome by genome. A full run, with eggNOG, also writes <code><span class="nw">results/</span><wbr><span class="nw">final_</span><wbr><span class="nw">report.</span><wbr><span class="nw">html</span></code>, the whole run on one page. The corrected files are listed <a href="#outputs">under What you get</a>.</p>
+            <p>Open <code class="nw">results/amap_report.html</code> first: every run writes it (the test of step&nbsp;2, in <code class="nw">amap-test/</code>), and it answers the first questions genome by genome. A full run, with eggNOG, also writes <code><span class="nw">results/</span><wbr><span class="nw">final_</span><wbr><span class="nw">report.html</span></code>, the whole run on one page. The corrected files are listed <a href="#outputs">under What you get</a>.</p>
           </div>
         </li>
       </ol>
@@ -305,8 +304,8 @@ Total: 0 error(s), 0 warning(s)</div>
 <div class="pf-row" role="row"><span class="pf-name" role="rowheader"><b><i>M.&nbsp;tuberculosis</i> CDC1551</b><small>against H37Rv</small></span><span class="pf-bar pf-exact" role="cell" data-found="3097" data-total="3097" data-bakta="2245"><span class="pf-track"><i class="pf-fill" style="width:100.00%" aria-hidden="true"></i><i class="pf-ghost" style="width:72.49%" aria-hidden="true"></i><b>3,097 / 3,097</b></span><small>Bakta alone: 2,245</small></span><span class="pf-bar pf-changed" role="cell" data-found="860" data-total="862" data-bakta="705"><span class="pf-track"><i class="pf-fill" style="width:99.77%" aria-hidden="true"></i><i class="pf-ghost" style="width:81.79%" aria-hidden="true"></i><b>860 / 862</b></span><small>Bakta alone: 705</small></span></div>
 <div class="pf-row" role="row"><span class="pf-name" role="rowheader"><b><i>M.&nbsp;bovis</i> AF2122/97</b><small>against H37Rv</small></span><span class="pf-bar pf-exact" role="cell" data-found="2391" data-total="2391" data-bakta="1742"><span class="pf-track"><i class="pf-fill" style="width:100.00%" aria-hidden="true"></i><i class="pf-ghost" style="width:72.86%" aria-hidden="true"></i><b>2,391 / 2,391</b></span><small>Bakta alone: 1,742</small></span><span class="pf-bar pf-changed" role="cell" data-found="1515" data-total="1515" data-bakta="1290"><span class="pf-track"><i class="pf-fill" style="width:100.00%" aria-hidden="true"></i><i class="pf-ghost" style="width:85.15%" aria-hidden="true"></i><b>1,515 / 1,515</b></span><small>Bakta alone: 1,290</small></span></div>
 <div class="pf-row" role="row"><span class="pf-name" role="rowheader"><b>CDC1551 in 40 contigs</b><small>a draft, against H37Rv</small></span><span class="pf-bar pf-exact" role="cell" data-found="3072" data-total="3072" data-bakta="2231"><span class="pf-track"><i class="pf-fill" style="width:100.00%" aria-hidden="true"></i><i class="pf-ghost" style="width:72.62%" aria-hidden="true"></i><b>3,072 / 3,072</b></span><small>Bakta alone: 2,231</small></span><span class="pf-bar pf-changed pf-none" role="cell"><span class="pf-track">no gene changed</span></span></div>
-<div class="pf-row" role="row"><span class="pf-name" role="rowheader"><b><i>E.&nbsp;coli</i> K-12 MG1655</b><small>against itself</small></span><span class="pf-bar pf-exact" role="cell" data-found="4286" data-total="4286" data-bakta="3841"><span class="pf-track"><i class="pf-fill" style="width:100.00%" aria-hidden="true"></i><i class="pf-ghost" style="width:89.62%" aria-hidden="true"></i><b>4,286 / 4,286</b></span><small>Bakta alone: 3,841</small></span><span class="pf-bar pf-changed pf-none" role="cell"><span class="pf-track">no gene changed</span></span></div>
-<div class="pf-row" role="row"><span class="pf-name" role="rowheader"><b><i>E.&nbsp;coli</i> O157:H7 Sakai</b><small>against K-12</small></span><span class="pf-bar pf-exact" role="cell" data-found="220" data-total="220" data-bakta="148"><span class="pf-track"><i class="pf-fill" style="width:100.00%" aria-hidden="true"></i><i class="pf-ghost" style="width:67.27%" aria-hidden="true"></i><b>220 / 220</b></span><small>Bakta alone: 148</small></span><span class="pf-bar pf-changed" role="cell" data-found="3363" data-total="3367" data-bakta="3202"><span class="pf-track"><i class="pf-fill" style="width:99.88%" aria-hidden="true"></i><i class="pf-ghost" style="width:95.10%" aria-hidden="true"></i><b>3,363 / 3,367</b></span><small>Bakta alone: 3,202</small></span></div>
+<div class="pf-row" role="row"><span class="pf-name" role="rowheader"><b><i>E.&nbsp;coli</i> <span class="tie">K-12</span> MG1655</b><small>against itself</small></span><span class="pf-bar pf-exact" role="cell" data-found="4286" data-total="4286" data-bakta="3841"><span class="pf-track"><i class="pf-fill" style="width:100.00%" aria-hidden="true"></i><i class="pf-ghost" style="width:89.62%" aria-hidden="true"></i><b>4,286 / 4,286</b></span><small>Bakta alone: 3,841</small></span><span class="pf-bar pf-changed pf-none" role="cell"><span class="pf-track">no gene changed</span></span></div>
+<div class="pf-row" role="row"><span class="pf-name" role="rowheader"><b><i>E.&nbsp;coli</i> O157:H7 Sakai</b><small>against <span class="tie">K-12</span></small></span><span class="pf-bar pf-exact" role="cell" data-found="220" data-total="220" data-bakta="148"><span class="pf-track"><i class="pf-fill" style="width:100.00%" aria-hidden="true"></i><i class="pf-ghost" style="width:67.27%" aria-hidden="true"></i><b>220 / 220</b></span><small>Bakta alone: 148</small></span><span class="pf-bar pf-changed" role="cell" data-found="3363" data-total="3367" data-bakta="3202"><span class="pf-track"><i class="pf-fill" style="width:99.88%" aria-hidden="true"></i><i class="pf-ghost" style="width:95.10%" aria-hidden="true"></i><b>3,363 / 3,367</b></span><small>Bakta alone: 3,202</small></span></div>
       </div>
       <p class="note">Each bar is AMAP; shaded up to the line, what Bakta finds alone. Scores of <a href="https://github.com/PathoGenOmics-Lab/AMAP/tree/main/tests/benchmark">tests/benchmark</a>, which anyone can rerun in the container; the truth comes from the references and minimap2, never from AMAP.</p>
     </div>
@@ -324,7 +323,7 @@ Total: 0 error(s), 0 warning(s)</div>
         <div class="metro-opts">
           <span>Run with</span>
           <label><input type="checkbox" data-metro-opt="skipTyping"><code class="nw">--skip_typing</code></label>
-          <label><input type="checkbox" data-metro-opt="skipFunctional"><code><span class="nw">--skip_</span><wbr><span class="nw">functional_</span><wbr><span class="nw">annotation</span></code></label>
+          <label><input type="checkbox" data-metro-opt="skipFunctional"><code class="nw">--skip_functional_annotation</code></label>
           <label><input type="checkbox" data-metro-opt="custom">your own reference</label>
         </div>
         <div class="metro-lines" aria-hidden="true">
@@ -457,12 +456,11 @@ case1_kept     11</pre>
       </div>
       <p class="fig-title"><span class="fig-n" aria-hidden="true"></span><span>The example report, open in the page</span></p>
       <div class="report-frame">
-        <div class="report-bar"><i></i><i></i><i></i><span>final_report.html</span><em class="tag-synthetic">synthetic data</em><a href="examples/demo_report.html" target="_blank" rel="noopener">Open full screen <span aria-hidden="true">&#8599;</span><span class="visually-hidden">(opens in a new tab)</span></a></div>
+        <div class="report-bar"><i></i><i></i><i></i><span>final_report.html</span><em class="tag-synthetic">synthetic data</em><button class="report-done" type="button" hidden>Done</button><a href="examples/demo_report.html" target="_blank" rel="noopener">Open full screen <span aria-hidden="true">&#8599;</span><span class="visually-hidden">(opens in a new tab)</span></a></div>
         <div class="report-stage" data-report-stage>
-          <img class="report-poster" src="assets/report/poster.webp" width="1070" height="680" alt="" decoding="async" loading="lazy">
+          <img class="report-poster" src="assets/report/poster.webp" width="1166" height="680" alt="" decoding="async" loading="lazy">
           <iframe data-src="examples/demo_report.html" title="Example AMAP report, on synthetic data" inert></iframe>
           <button class="report-cover" type="button"><span>Explore the example report (4.5&nbsp;MB)</span></button>
-          <button class="report-done" type="button" hidden>Done</button>
         </div>
         <div class="report-mobile">
           <p>The report is made for a large screen. This one is the example, on synthetic data.</p>
@@ -488,9 +486,9 @@ case1_kept     11</pre>
               <li><span>The check of step&nbsp;3, one genome</span><b>9&nbsp;s</b></li>
               <li><span>The test of step&nbsp;2</span><b>2&nbsp;min 47&nbsp;s</b></li>
               <li><span><i>M.&nbsp;tuberculosis</i> CDC1551 without eggNOG, the tutorial's run</span><b>2&nbsp;min 16&nbsp;s</b></li>
-              <li><span><i>E.&nbsp;coli</i> Sakai against K-12, your own reference, without eggNOG</span><b>5&nbsp;min 47&nbsp;s</b></li>
+              <li><span><i>E.&nbsp;coli</i> Sakai against <span class="tie">K-12</span>, your own reference, without eggNOG</span><b>5&nbsp;min 47&nbsp;s</b></li>
             </ul>
-            <p>Bakta takes most of a run: 1&nbsp;min 46&nbsp;s of the CDC1551 one. With your own reference it runs on the reference too, 2&nbsp;min 36&nbsp;s for K-12. The eggNOG steps are not timed here: they ask for 45 and 50&nbsp;GB of memory, more than a laptop gives Docker. The database is built once, on the first full run, and kept where <code class="nw">--eggnog_db</code> points. <a href="getting-started/tutorial.html#the-machine">What each step needs</a>.</p>
+            <p>Bakta takes most of a run: 1&nbsp;min 46&nbsp;s of the CDC1551 one. With your own reference it runs on the reference too, 2&nbsp;min 36&nbsp;s for <span class="tie">K-12</span>. The eggNOG steps are not timed here: they ask for 45 and 50&nbsp;GB of memory, more than a laptop gives Docker. The database is built once, on the first full run, and kept where <code class="nw">--eggnog_db</code> points. <a href="getting-started/tutorial.html#the-machine">What each step needs</a>.</p>
           </div>
         </details>
         <details>

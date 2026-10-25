@@ -149,7 +149,8 @@ doi: 10.5281/zenodo.8024446</pre></div></div></div>
 <div class="table-wrap cards-wrap" aria-labelledby="cite-the-tools-too"><table class="cards"><thead><tr><th>Tool</th><th>What it does here</th><th>Paper</th></tr></thead><tbody><tr><td data-label="Tool"><a href="https://www.nextflow.io/">Nextflow</a></td><td data-label="What it does here">Runs the pipeline</td><td data-label="Paper">Di Tommaso et al., <em>Nature Biotechnology</em> 35, 316-319 (2017). <a href="https://doi.org/10.1038/nbt.3820">10.1038/nbt.3820</a></td></tr><tr><td data-label="Tool"><a href="https://github.com/oschwengers/bakta">Bakta</a></td><td data-label="What it does here">Baseline annotation</td><td data-label="Paper">Schwengers et al., <em>Microbial Genomics</em> 7, 000685 (2021). <a href="https://doi.org/10.1099/mgen.0.000685">10.1099/mgen.0.000685</a></td></tr><tr><td data-label="Tool"><a href="https://github.com/lh3/miniprot">miniprot</a></td><td data-label="What it does here">Reference proteome alignment</td><td data-label="Paper">Li, <em>Bioinformatics</em> 39, btad014 (2023). <a href="https://doi.org/10.1093/bioinformatics/btad014">10.1093/bioinformatics/btad014</a></td></tr><tr><td data-label="Tool"><a href="https://github.com/eggnogdb/eggnog-mapper">eggNOG-mapper</a></td><td data-label="What it does here">Functional annotation</td><td data-label="Paper">Cantalapiedra et al., <em>Molecular Biology and Evolution</em> 38, 5825-5829 (2021). <a href="https://doi.org/10.1093/molbev/msab293">10.1093/molbev/msab293</a></td></tr><tr><td data-label="Tool"><a href="https://github.com/bbuchfink/diamond">Diamond</a></td><td data-label="What it does here">Duplication searches, and eggNOG's</td><td data-label="Paper">Buchfink et al., <em>Nature Methods</em> 18, 366-368 (2021). <a href="https://doi.org/10.1038/s41592-021-01101-x">10.1038/s41592-021-01101-x</a></td></tr><tr><td data-label="Tool"><a href="https://github.com/lh3/pangene">pangene</a></td><td data-label="What it does here">Pangenome graph</td><td data-label="Paper">Li et al., <em>Bioinformatics</em> 40, btae456 (2024). <a href="https://doi.org/10.1093/bioinformatics/btae456">10.1093/bioinformatics/btae456</a></td></tr><tr><td data-label="Tool"><a href="https://github.com/PathoGenOmics-Lab/pathotypr">pathotypr</a></td><td data-label="What it does here">Lineage typing of the <em>Mycobacterium tuberculosis</em> complex (MTBC)</td><td data-label="Paper">Its repository, and its lineage markers below</td></tr></tbody></table></div>
 <p>All of them in one block, for a reference manager:</p>
 <div class="code bare" data-lang="bibtex"><pre>@article{DiTommaso_Nextflow_2017,
-  author = {Di Tommaso, Paolo and Chatzou, Maria and Floden, Evan W. and Barja, Pablo Prieto and Palumbo, Emilio and Notredame, Cedric},
+  author = {Di Tommaso, Paolo and Chatzou, Maria and Floden, Evan W. and
+    Barja, Pablo Prieto and Palumbo, Emilio and Notredame, Cedric},
   title = {Nextflow enables reproducible computational workflows},
   journal = {Nature Biotechnology},
   volume = {35},
@@ -159,8 +160,10 @@ doi: 10.5281/zenodo.8024446</pre></div></div></div>
   doi = {10.1038/nbt.3820}}
 
 @article{Schwengers_Bakta_2021,
-  author = {Schwengers, Oliver and Jelonek, Lukas and Dieckmann, Marius Alfred and Beyvers, Sebastian and Blom, Jochen and Goesmann, Alexander},
-  title = {Bakta: rapid and standardized annotation of bacterial genomes via alignment-free sequence identification},
+  author = {Schwengers, Oliver and Jelonek, Lukas and Dieckmann, Marius Alfred and
+    Beyvers, Sebastian and Blom, Jochen and Goesmann, Alexander},
+  title = {Bakta: rapid and standardized annotation of bacterial genomes via alignment-free
+    sequence identification},
   journal = {Microbial Genomics},
   volume = {7},
   number = {11},
@@ -179,8 +182,10 @@ doi: 10.5281/zenodo.8024446</pre></div></div></div>
   doi = {10.1093/bioinformatics/btad014}}
 
 @article{Cantalapiedra_eggNOGmapper_2021,
-  author = {Cantalapiedra, Carlos P. and Hern{\&#x27;a}ndez-Plaza, Ana and Letunic, Ivica and Bork, Peer and Huerta-Cepas, Jaime},
-  title = {{eggNOG-mapper} v2: Functional Annotation, Orthology Assignments, and Domain Prediction at the Metagenomic Scale},
+  author = {Cantalapiedra, Carlos P. and Hern{\&#x27;a}ndez-Plaza, Ana and Letunic, Ivica and
+    Bork, Peer and Huerta-Cepas, Jaime},
+  title = {{eggNOG-mapper} v2: Functional Annotation, Orthology Assignments, and Domain
+    Prediction at the Metagenomic Scale},
   journal = {Molecular Biology and Evolution},
   volume = {38},
   number = {12},
@@ -207,7 +212,7 @@ doi: 10.5281/zenodo.8024446</pre></div></div></div>
   pages = {btae456},
   year = {2024},
   doi = {10.1093/bioinformatics/btae456}}</pre></div>
-<p>The exact version of each one used by a given run is recorded in <code><span class="nw">results/</span><wbr><span class="nw">pipeline_</span><wbr><span class="nw">info/</span><wbr><span class="nw">software_</span><wbr><span class="nw">versions.</span><wbr><span class="nw">yml</span></code>.</p>
+<p>The exact version of each one used by a given run is recorded in <code><span class="nw">results/</span><wbr><span class="nw">pipeline_</span><wbr><span class="nw">info/</span><wbr><span class="nw">software_</span><wbr><span class="nw">versions.yml</span></code>.</p>
 <div class="hx hx-2"><h2 id="reference-data">Reference data</h2><a class="anchor" href="#reference-data" aria-label="Link to: Reference data">#</a></div>
 <p>The MTBC reference files bundled in the container come from public repositories. The pathotypr lineage markers are archived on Zenodo under <a href="https://doi.org/10.5281/zenodo.19210044">10.5281/zenodo.19210044</a>, and Mycobrowser functional categories come from <a href="https://mycobrowser.epfl.ch/">mycobrowser.epfl.ch</a>.</p>
 <div class="hx hx-2"><h2 id="licence">Licence</h2><a class="anchor" href="#licence" aria-label="Link to: Licence">#</a></div>

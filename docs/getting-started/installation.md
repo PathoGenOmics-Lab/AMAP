@@ -58,7 +58,7 @@ docker info --format 'Docker can give containers {{.NCPU}} CPUs and {{.MemTotal}
 On a machine with Docker Desktop running, the second line prints something like
 this:
 
-```text
+```text output
 Docker can give containers 14 CPUs and 8217014272 bytes
 ```
 

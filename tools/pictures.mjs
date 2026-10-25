@@ -3,7 +3,8 @@
 // shows where it is shared.
 //
 // Opens docs/examples/demo_report.html in headless Chrome and keeps its first
-// screen, as the front page's frame shows it (1070 by 680), as
+// screen, as the front page's frame shows it (1166 by 680, at twice that for
+// a sharp screen), as
 // docs/assets/report/poster.webp: the front page shows that picture until the
 // reader opens the report itself. Then scrolls to each top-level section and
 // keeps the top of its column as a small WebP in docs/assets/report/. Then
@@ -35,9 +36,10 @@ const OUT = join(ROOT, 'docs', 'assets', 'report')
 export const SECTIONS = ['overview', 'amap-annotation-results', 'functional-annotation', 'gene-duplications', 'pangenome-analysis', 'amap-cds-stats', 'master-table-explorer']
 const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-// The size of the front page's report frame, and the most its picture may
-// weigh: it stands in for 1.9 MB, so it has to cost next to nothing.
-const POSTER = { width: 1070, height: 680, maxBytes: 80000 }
+// The size of the front page's report frame, the scale of a sharp screen,
+// and the most its picture may weigh: it stands in for 1.9 MB, so it has to
+// cost next to nothing.
+const POSTER = { width: 1166, height: 680, scale: 2, maxBytes: 80000 }
 const PARTS = ['poster', 'sections', 'card', 'readme', 'hero', 'icon']
 const asked = process.argv.slice(2)
 for (const part of asked) {
@@ -85,7 +87,7 @@ try {
   // The report's first screen, header and all, as the front page's frame
   // shows it; WebP, at the best quality that keeps it under its weight.
   if (want('poster')) {
-    await page('Emulation.setDeviceMetricsOverride', { width: POSTER.width, height: POSTER.height, deviceScaleFactor: 1, mobile: false })
+    await page('Emulation.setDeviceMetricsOverride', { width: POSTER.width, height: POSTER.height, deviceScaleFactor: POSTER.scale, mobile: false })
     await page('Page.navigate', { url: pathToFileURL(REPORT).href })
     await sleep(5000)
     let kept = null

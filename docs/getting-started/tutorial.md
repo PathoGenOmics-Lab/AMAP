@@ -167,7 +167,7 @@ the folder it ran from.
 If the whole chain works, it ends like this, and then names the work
 directory and the command:
 
-```text
+```text output
 =======================================
 ✓ COMPLETED
 =======================================
@@ -378,7 +378,7 @@ column -t -s$'\t' results/AMAP/*/*-AMAP.qc.tsv
 
 Six of its eleven columns:
 
-```text
+```text output
 genome_size  n_contigs  gc_pct  total_cds  pseudogene_count  coding_density_pct
 4403837      1          65.61   4014       123               91.3
 ```

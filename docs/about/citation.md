@@ -85,7 +85,8 @@ All of them in one block, for a reference manager:
 
 ```bibtex
 @article{DiTommaso_Nextflow_2017,
-  author = {Di Tommaso, Paolo and Chatzou, Maria and Floden, Evan W. and Barja, Pablo Prieto and Palumbo, Emilio and Notredame, Cedric},
+  author = {Di Tommaso, Paolo and Chatzou, Maria and Floden, Evan W. and
+    Barja, Pablo Prieto and Palumbo, Emilio and Notredame, Cedric},
   title = {Nextflow enables reproducible computational workflows},
   journal = {Nature Biotechnology},
   volume = {35},
@@ -95,8 +96,10 @@ All of them in one block, for a reference manager:
   doi = {10.1038/nbt.3820}}
 
 @article{Schwengers_Bakta_2021,
-  author = {Schwengers, Oliver and Jelonek, Lukas and Dieckmann, Marius Alfred and Beyvers, Sebastian and Blom, Jochen and Goesmann, Alexander},
-  title = {Bakta: rapid and standardized annotation of bacterial genomes via alignment-free sequence identification},
+  author = {Schwengers, Oliver and Jelonek, Lukas and Dieckmann, Marius Alfred and
+    Beyvers, Sebastian and Blom, Jochen and Goesmann, Alexander},
+  title = {Bakta: rapid and standardized annotation of bacterial genomes via alignment-free
+    sequence identification},
   journal = {Microbial Genomics},
   volume = {7},
   number = {11},
@@ -115,8 +118,10 @@ All of them in one block, for a reference manager:
   doi = {10.1093/bioinformatics/btad014}}
 
 @article{Cantalapiedra_eggNOGmapper_2021,
-  author = {Cantalapiedra, Carlos P. and Hern{\'a}ndez-Plaza, Ana and Letunic, Ivica and Bork, Peer and Huerta-Cepas, Jaime},
-  title = {{eggNOG-mapper} v2: Functional Annotation, Orthology Assignments, and Domain Prediction at the Metagenomic Scale},
+  author = {Cantalapiedra, Carlos P. and Hern{\'a}ndez-Plaza, Ana and Letunic, Ivica and
+    Bork, Peer and Huerta-Cepas, Jaime},
+  title = {{eggNOG-mapper} v2: Functional Annotation, Orthology Assignments, and Domain
+    Prediction at the Metagenomic Scale},
   journal = {Molecular Biology and Evolution},
   volume = {38},
   number = {12},

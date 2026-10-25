@@ -107,16 +107,17 @@ python3 bin/report/demo/make_demo.py demo_inputs
 docker run --rm -v "$PWD:/w" -w /w paururo/amap:latest \
   Rscript -e 'rmarkdown::render("bin/report/report_AMAP.Rmd",
     output_file="/w/demo.html",
-    params=list(version="v1.0.1",
-                cog_file="/w/demo_inputs/input_cog.txt",
-                myco_file="/w/demo_inputs/input_myco.txt",
-                summary_file="/w/demo_inputs/input_summary.txt",
-                empty_file="/w/demo_inputs/input_noref.txt",
-                rvmissing_file="/w/demo_inputs/input_rvmissing.txt",
-                mastertable_file="/w/demo_inputs/input_mastertables.txt",
-                pangene_file="/w/demo_inputs/input_pangene.txt",
-                dup_file="/w/demo_inputs/homologous_communities.tsv",
-                qc_file="/w/demo_inputs/input_qc.txt"))'
+    params=list(
+      version="v1.0.1",
+      cog_file="/w/demo_inputs/input_cog.txt",
+      myco_file="/w/demo_inputs/input_myco.txt",
+      summary_file="/w/demo_inputs/input_summary.txt",
+      empty_file="/w/demo_inputs/input_noref.txt",
+      rvmissing_file="/w/demo_inputs/input_rvmissing.txt",
+      mastertable_file="/w/demo_inputs/input_mastertables.txt",
+      pangene_file="/w/demo_inputs/input_pangene.txt",
+      dup_file="/w/demo_inputs/homologous_communities.tsv",
+      qc_file="/w/demo_inputs/input_qc.txt"))'
 ```
 
 > [!WARNING]

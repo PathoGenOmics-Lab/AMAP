@@ -47,8 +47,8 @@ PAGES = [
     ("User guide", "user-guide/parameters.md", "Parameters", "Every option, its default, and when to change it."),
     ("User guide", "user-guide/running.md", "Running AMAP", "Profiles, schedulers and larger runs."),
     ("User guide", "user-guide/outputs.md", "Outputs", "Every folder and file, and what a healthy run looks like."),
-    ("User guide", "user-guide/report.md", "The full report", "What each section of final_report.html shows."),
-    ("User guide", "user-guide/amap-report.md", "The report by question", "amap_report.html, question by question, with or without eggNOG."),
+    ("User guide", "user-guide/report.md", "The full report", "Each section of the full report, and what it shows."),
+    ("User guide", "user-guide/amap-report.md", "The report by question", "Every question the report answers, with or without eggNOG."),
     ("User guide", "user-guide/custom-reference.md", "Custom reference", "Any organism, against a trusted annotation of your own."),
     ("How it works", "how-it-works.html", "Step by step, illustrated", "One gene at a time, from Bakta's call to what AMAP keeps."),
     ("How it works", "how-it-works/index.md", "Overview", "What goes into a decision, and the five outcomes."),
@@ -187,8 +187,16 @@ FIGURES = {
         '<label><input type="checkbox" data-metro-opt="skipTyping"><code>--skip_typing</code></label>'
         '<label><input type="checkbox" data-metro-opt="skipFunctional"><code>--skip_functional_annotation</code></label>'
         '<label><input type="checkbox" data-metro-opt="custom">your own reference</label></div>'
+        '<div class="metro-lines" aria-hidden="true">'
+        '<span><i style="background:var(--m-main)"></i>a sample, genome to report</span>'
+        '<span><i style="background:var(--m-ref)"></i>the reference</span>'
+        '<span><i style="background:var(--m-db)"></i>the eggNOG database</span>'
+        '<span><i style="background:var(--m-dup)"></i>duplications</span>'
+        '<span><i style="background:var(--m-pan)"></i>pangenome</span></div>'
         '<p class="metro-hint">Scroll sideways to follow the lines.</p><div class="metro-scroll" data-metro-stage></div><div class="metro-info" data-metro-info aria-live="polite"></div>'
-        '<p class="metro-writes" data-metro-writes></p></figure>'
+        '<p class="metro-writes" data-metro-writes></p>'
+        "<figcaption>Every process of <code>main.nf</code>, in the order it runs them. The line under the panel lists what a run "
+        "with these switches writes.</figcaption></figure>"
     ),
 }
 
@@ -400,7 +408,16 @@ UNITS = r"(?:bp|kb|Mb|GB|MB|KB|ms|s|min|h|%|CPUs?|cores|residues|bytes)"
 SPECIES = r"(?:tuberculosis|bovis|coli|africanum|canettii)"
 
 
+# A strain whose name has a hyphen in it: a line would break after the hyphen.
+WHOLE_NAMES = re.compile(r'(?<!<span class="tie">)\bK-12\b')
+
+
+def keep_names(fragment: str) -> str:
+    return WHOLE_NAMES.sub(r'<span class="tie">\g<0></span>', fragment)
+
+
 def tie(text: str) -> str:
+    text = keep_names(text)
     text = re.sub(rf"\b([A-Z])\. (?={SPECIES}\b)", rf"\1.{NBSP}", text)
     text = re.sub(rf"(?<=\d) (?={UNITS}(?!\w))", NBSP, text)
     text = re.sub(r"\b(case|Case|step|Step|Figure|version|Nextflow|Java) (?=\d)", rf"\1{NBSP}", text)
@@ -443,13 +460,37 @@ def strip_front_matter(lines: list[str]) -> list[str]:
 #
 # A chip of code never splits inside a word. Up to SHORT_CODE characters it
 # does not wrap at all; a longer one wraps only at a space or after a /, _ or
-# ., so a path or a long option name comes apart where it reads in pieces.
-# Each piece is a span that does not wrap, with a <wbr> between pieces: the
-# browser's own rules would also break after a hyphen, '--|skip_typing'. A
-# piece longer than LONG_TOKEN with nothing to break at, a commit hash, may
-# break anywhere, or it would run off a phone's screen.
+# ., so a path or a long file name comes apart where it reads in pieces. An
+# option name is one word: the longest, --skip_functional_annotation, fits a
+# phone's line whole. A piece of a few characters stays with the next one
+# ('/' or 'L4_' does not end a line alone) and an extension with its name
+# ('versions.tsv'). Each piece is a span that does not wrap, with a <wbr>
+# between pieces: the browser's own rules would also break after a hyphen,
+# '--|skip_typing'. A piece longer than LONG_TOKEN with nothing to break at, a
+# commit hash, may break anywhere, or it would run off a phone's screen.
 
 SHORT_CODE = 24
+SHORT_PIECE = 4
+
+
+def chip_pieces(token: str) -> list[str]:
+    """Where a chip of code without spaces may break: after a /, _ or ., with
+    a short piece kept on the next one and the extension on its name, and
+    nowhere in an option name."""
+    if token.startswith("-") and "/" not in token:
+        return [token]
+    pieces: list[str] = []
+    held = ""
+    for piece in re.findall(r"[^/_.]*[/_.]+|[^/_.]+", token):
+        held += piece
+        if len(held) > SHORT_PIECE:
+            pieces.append(held)
+            held = ""
+    if held:
+        pieces.append(held)
+    if len(pieces) > 1 and pieces[-2].endswith(".") and re.fullmatch(r"[A-Za-z0-9]+", pieces[-1]):
+        pieces[-2:] = [pieces[-2] + pieces[-1]]
+    return pieces
 
 
 def code_pieces(text: str) -> str:
@@ -460,7 +501,7 @@ def code_pieces(text: str) -> str:
         if token.isspace():
             out.append(token)
             continue
-        pieces = re.findall(r"[^/_.]*[/_.]+|[^/_.]+", token)
+        pieces = chip_pieces(token)
         out.append("<wbr>".join(f'<span class="{"nw" if len(p) <= LONG_TOKEN else "brk"}">{html.escape(p)}</span>' for p in pieces))
     return "".join(out)
 
@@ -556,8 +597,21 @@ SHELL_LONG = 26
 
 def shell_token(token: str, kind: str) -> str:
     """One word of a command, which never wraps inside itself unless it is
-    too long for a phone's line: a path then breaks after a /, and anything
-    else at its spaces or, failing those, anywhere."""
+    too long for a phone's line: an option name then breaks after an _ (its
+    dashes stay with its first word), a quoted word without spaces after a /
+    or a \t or \n escape (its closing quote stays with the piece before), a
+    path after a /, and anything else at its spaces or, failing those,
+    anywhere. A piece still too long for the line may break anywhere."""
+    pieces: list[str] = []
+    if len(token) > SHELL_LONG and token.startswith("-") and "_" in token and "/" not in token:
+        pieces = re.findall(r"[^_]*_+|[^_]+", token)
+    elif len(token) > SHELL_LONG and token.startswith(("'", '"')) and " " not in token and re.search(r"/|\\[tn]", token):
+        pieces = re.findall(r"[^/\\]*(?:/+|\\[tn])|[^/\\]+", token)
+        if len(pieces) > 1 and len(pieces[-1]) <= 2:
+            pieces[-2:] = [pieces[-2] + pieces[-1]]
+    if len(pieces) > 1 and "".join(pieces) == token:
+        inner = "<wbr>".join(f'<span class="{"nw" if len(p) <= SHELL_LONG else "brk"}">{html.escape(p)}</span>' for p in pieces)
+        return f'<span class="{kind} path">{inner}</span>'
     if len(token) > SHELL_LONG and "/" in token and not token.startswith(("'", '"')):
         # After each /, and in a file name too long for a line after _ or .
         pieces = [q for p in re.findall(r"[^/]*/+|[^/]+", token)
@@ -700,7 +754,7 @@ def phone_width(head: list[str], body: list[list[str]]) -> float:
                 if k == 0 or len(code) <= SHORT_CODE:
                     units.append(len(code) + 1.5)
                 else:
-                    units.append(max(len(p) for t in code.split() for p in re.findall(r"[^/_.]*[/_.]+|[^/_.]+", t)) + 1.5)
+                    units.append(max(len(p) for t in code.split() for p in chip_pieces(t)) + 1.5)
             units += [len(w) for w in plain(re.sub(r"`[^`]+`", " ", cell)).split()]
             columns[k] = max([columns[k]] + units)
     return sum(c * PHONE_CHAR + PHONE_CELL for c in columns)
@@ -1108,7 +1162,10 @@ class Renderer:
         cards = len(head) >= 4 or phone_width(head, body) > PHONE_TABLE
         named = f' aria-labelledby="{self.sections[-1]["slug"]}"' if self.sections else ""
         wrap = "table-wrap cards-wrap" if cards else "table-wrap"
-        table_class = ' class="cards"' if cards else ""
+        # The parameters page stacks one table per group: their first columns
+        # share one width, so each Description starts at the same place.
+        names = (["cards"] if cards else []) + (["params"] if self.source == PARAMETERS else [])
+        table_class = f' class="{" ".join(names)}"' if names else ""
         # site.js makes it a named, focusable region only while it scrolls.
         out = [f'<div class="{wrap}"{named}><table{table_class}><thead><tr>']
         out += [f"<th{cls(k)}>{self.inline(c)}</th>" for k, c in enumerate(head)]
@@ -1122,8 +1179,9 @@ class Renderer:
 
     def code(self, info: str, body: list[str], after_shell: bool = False) -> str:
         """A fenced block. A shell block is a terminal, its lines wrapping
-        between words with a hanging indent; the text block right after one is
-        what it prints; a file keeps its layout and says its name."""
+        between words with a hanging indent; the text block right after one,
+        or one marked ```text output, is what a program prints; a file keeps
+        its layout and says its name."""
         self.last_code = body
         title = re.search(r'title="([^"]*)"', info)
         lang = info.split()[0] if info and not info.startswith("title=") else ""
@@ -1138,7 +1196,7 @@ class Renderer:
             text = shell_html(body, prompts=not title)
             if not title:
                 head = '<div class="code-title">Terminal</div>'
-        elif lang == "text" and after_shell and not title:
+        elif lang == "text" and (after_shell or "output" in info.split()[1:]) and not title:
             classes.append("out")
             head = '<div class="code-title">Output</div>'
             text = html.escape("\n".join(body))
@@ -1777,8 +1835,8 @@ VOID = {"br", "wbr", "img", "hr", "input", "source", "col"}
 def lead_in(caption: str) -> str:
     """A caption with its first sentence, or what comes before its first
     colon, set bold, the way a paper sets a figure's: the rest explains it. A
-    caption of one sentence stays as it is. A full stop after an initial (the
-    M. of M. bovis) ends nothing, and neither does one inside an element."""
+    caption of one sentence is all lead. A full stop after an initial (the M.
+    of M. bovis) ends nothing, and neither does one inside an element."""
     depth = 0
     i = 0
     while i < len(caption):
@@ -1795,19 +1853,19 @@ def lead_in(caption: str) -> str:
             continue
         if depth == 0 and c in ".:" and caption[i + 1 : i + 2] == " ":
             word = re.search(r"([^\s>]*)$", caption[:i]).group(1)
-            if c == "." and len(word) <= 1:
+            if c == "." and len(word) == 1:
                 i += 1
                 continue
             if caption[i + 1 :].strip():
                 return f'<b class="cap-lead">{caption[: i + 1]}</b>{caption[i + 1 :]}'
-            return caption
+            break
         i += 1
-    return caption
+    return f'<b class="cap-lead">{caption}</b>'
 
 
 def lead_ins(body: str) -> str:
     """Every figure caption of a page, with its lead-in."""
-    return re.sub(r"<figcaption>(.*?)</figcaption>", lambda m: f"<figcaption>{lead_in(m.group(1))}</figcaption>", body, flags=re.S)
+    return re.sub(r"<figcaption>(.*?)</figcaption>", lambda m: f"<figcaption>{lead_in(keep_names(m.group(1)))}</figcaption>", body, flags=re.S)
 
 
 def section_id(section: str) -> str:
@@ -1952,8 +2010,13 @@ def doc_page(position: int) -> tuple[Path, str, list[dict]]:
     content = renderer.blocks(source_lines(path))
     if renderer.legacy:
         raise SystemExit(f"tools/build_docs.py: {path} has no heading {sorted(renderer.legacy)} for LEGACY_IDS to lead to")
+    # The changelog's first line says what the standfirst already does, so
+    # the page and its search entry give the standfirst alone.
     if renderer.changelog:
-        content = content.replace("documented in this file", "documented on this page")
+        intro = "All notable changes to AMAP are documented in this file."
+        content = content.replace(f"<p>{intro}</p>\n", "", 1)
+        for s in renderer.sections[:1]:
+            s["text"] = [t for t in s["text"] if t != intro] or [description]
     root = "../" * path.count("/")
     # The changelog's contents are its versions; its categories repeat in each.
     levels = (2,) if renderer.changelog else (2, 3)
@@ -1976,7 +2039,10 @@ def doc_page(position: int) -> tuple[Path, str, list[dict]]:
     end = content.find("</h1>")
     if end >= 0:
         content = content[: end + 5] + "\n" + under + content[end + 5 :]
-    to_top = '<p class="to-top"><a href="#content">Back to the top</a></p>\n' if len(h2s) >= 6 else ""
+    # A long page ends with a way back up: one of many sections, or of many
+    # words (its tables' and blocks' too) in a few long ones.
+    long_page = len(h2s) >= 6 or len(html.unescape(re.sub(r"<[^>]+>", " ", content)).split()) >= 1500
+    to_top = '<p class="to-top"><a href="#content">Back to the top</a></p>\n' if long_page else ""
     prev_page = PAGES[position - 1] if position > 0 else None
     next_page = PAGES[position + 1] if position + 1 < len(PAGES) else None
     pager = '<nav class="pager docs-pager" aria-label="Previous and next page">'
@@ -2212,9 +2278,14 @@ def option_entries() -> list[dict]:
 
 
 def tag_text(fragment: str) -> str:
-    """The words of an HTML fragment."""
+    """The words of an HTML fragment. A tag stands for a space, so the space
+    it leaves before a mark of punctuation that ends a word, or after an
+    opening bracket, goes: 'docker info, from', not 'docker info , from'; a
+    file name that starts with a dot, '.command.err', keeps its space."""
     text = re.sub(r"<(script|style)\b.*?</\1>", " ", fragment, flags=re.S)
-    return " ".join(html.unescape(re.sub(r"<[^>]+>", " ", text)).split())
+    text = " ".join(html.unescape(re.sub(r"<[^>]+>", " ", text)).split())
+    text = re.sub(r"\s+([,.;:!?)])(?=\s|$)", r"\1", text)
+    return re.sub(r"\(\s+", "(", text)
 
 
 FRONT_SECTIONS = ["start", "cases", "proof", "pipeline", "outputs", "report", "faq"]

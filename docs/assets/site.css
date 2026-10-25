@@ -6192,7 +6192,8 @@ td.num {
 }
 
 /* The contents where there is no sidebar (a phone): folded under the h1,
-   its sections only. */
+   its sections only. Like the box of pages above it, it takes the whole
+   column, so the two share their edges. */
 .toc-inline {
   display: none;
 }
@@ -6200,7 +6201,6 @@ td.num {
 @media (max-width: 860px) {
   .prose .toc-inline {
     display: block;
-    max-width: 68ch;
     margin: 0 0 var(--sp-7);
     padding: 0 var(--sp-4);
     border: 1px solid var(--line-2);

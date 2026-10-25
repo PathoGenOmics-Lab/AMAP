@@ -444,7 +444,8 @@ p {
 .metro-wrap,
 .how-stage-card,
 .excerpt,
-.report-frame {
+.report-frame,
+.lost {
   --halo: var(--surface-2);
   --control: var(--control-raised);
   position: relative;
@@ -454,7 +455,7 @@ p {
    the accent, over its own edge and bent with it (its border, redrawn, and
    masked down to the corners). The panels inside the front page's plate of
    cases are not plates, until a phone deals them out as cards. */
-:is(.demo, .cases, .case, .metro-wrap, .how-stage-card, .excerpt, .report-frame)::after {
+:is(.demo, .cases, .case, .metro-wrap, .how-stage-card, .excerpt, .report-frame, .lost)::after {
   --c: 22px;
   content: "";
   position: absolute;
@@ -6722,7 +6723,7 @@ th.num {
   .top::after,
   .rail,
   .here-bar,
-  :is(.demo, .cases, .case, .metro-wrap, .how-stage-card, .excerpt, .report-frame)::after {
+  :is(.demo, .cases, .case, .metro-wrap, .how-stage-card, .excerpt, .report-frame, .lost)::after {
     display: none !important;
   }
 }
@@ -6733,7 +6734,7 @@ th.num {
   }
 
   .top::after,
-  :is(.demo, .cases, .case, .metro-wrap, .how-stage-card, .excerpt, .report-frame)::after {
+  :is(.demo, .cases, .case, .metro-wrap, .how-stage-card, .excerpt, .report-frame, .lost)::after {
     display: none;
   }
 }
@@ -8854,13 +8855,15 @@ html:not(.js) .how-nav {
 
 /* ── The page that is not there ── */
 
+/* A plate, as the drawings of the other pages stand on. */
 .lost {
   max-width: 560px;
-  margin: 26px 0 30px;
+  margin: var(--sp-6) 0 var(--sp-7);
   padding: var(--sp-4) var(--sp-5) var(--sp-3);
-  background: var(--surface-1);
+  background: var(--surface-2);
   border: 1px solid var(--line-2);
-  border-radius: var(--r-4);
+  border-radius: var(--r-5);
+  box-shadow: var(--shadow-2);
 }
 
 .lost figcaption {
@@ -8869,8 +8872,9 @@ html:not(.js) .how-nav {
   color: var(--muted);
 }
 
-/* The drawing keeps a size at which its words read (at least 9 px) and
-   scrolls sideways on a phone instead of shrinking. */
+/* The drawing keeps a size at which its words read (at least 9 px): wide,
+   its rows' names beside them; on a phone, a narrower one with each name
+   over its row, which fits the screen whole. */
 .lost-scroll {
   overflow-x: auto;
 }
@@ -8881,12 +8885,27 @@ html:not(.js) .how-nav {
   min-width: 520px;
 }
 
+.lost-scroll svg.lost-narrow {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .lost-scroll svg.lost-wide {
+    display: none;
+  }
+
+  .lost-scroll svg.lost-narrow {
+    display: block;
+    min-width: 0;
+  }
+}
+
 .lost-hero {
   padding-bottom: 72px;
 }
 
 .lost-hero .nearest {
-  margin-top: 18px;
+  margin-top: var(--sp-5);
   font-size: var(--fs-0);
   color: var(--ink-soft);
 }
@@ -8897,7 +8916,23 @@ html:not(.js) .how-nav {
 
 .lost-search {
   max-width: 420px;
-  margin-top: 18px;
+  margin-top: var(--sp-5);
+}
+
+/* Its results open within its own width, over the drawing, not past it. */
+.lost-search .docs-results {
+  right: 0;
+}
+
+/* On a tall screen the footer still closes the page. */
+body.lost-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+body.lost-page > main {
+  flex: 1 0 auto;
 }
 
 /* ── Duplications: a family and a pair of communities, as networks ── */

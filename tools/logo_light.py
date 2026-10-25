@@ -10,7 +10,10 @@ they hold against a light ground.
     python3 tools/logo_light.py [.github/AMAP.png] [docs/assets/amap-logo-light.png]
 
 Needs Pillow. The header shows it at 57 x 40, so it is written at 137 x 96,
-the size of the dark one.
+the size of the dark one. The favicon for a light browser tab is the dark
+favicon recoloured the same way, at its own size and framing:
+
+    python3 tools/logo_light.py docs/assets/favicon.png docs/assets/favicon-light.png --same-size
 """
 import colorsys
 import sys
@@ -21,8 +24,10 @@ from PIL import Image
 SIZE = (137, 96)
 
 
-def recolour(src: Path, out: Path) -> None:
-    im = Image.open(src).convert("RGBA").resize(SIZE, Image.LANCZOS)
+def recolour(src: Path, out: Path, size: tuple[int, int] | None = SIZE) -> None:
+    im = Image.open(src).convert("RGBA")
+    if size:
+        im = im.resize(size, Image.LANCZOS)
     px = im.load()
     for y in range(im.height):
         for x in range(im.width):
@@ -45,5 +50,7 @@ def recolour(src: Path, out: Path) -> None:
 if __name__ == "__main__":
     src = Path(sys.argv[1] if len(sys.argv) > 1 else ".github/AMAP.png")
     out = Path(sys.argv[2] if len(sys.argv) > 2 else "docs/assets/amap-logo-light.png")
-    recolour(src, out)
-    print(f"{out}: {SIZE[0]} x {SIZE[1]}")
+    same = "--same-size" in sys.argv[3:]
+    recolour(src, out, None if same else SIZE)
+    w, h = Image.open(out).size
+    print(f"{out}: {w} x {h}")

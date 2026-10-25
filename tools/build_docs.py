@@ -74,9 +74,11 @@ GH_PATH = (
     " 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25"
     ".54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
 )
-GH_SVG = f'<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="{GH_PATH}"/></svg>'
+# The icons carry a size of their own, so a page whose stylesheet does not
+# load (404.html opened from a clone) does not draw them a screen wide.
+GH_SVG = f'<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="{GH_PATH}"/></svg>'
 SUN_SVG = (
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">'
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">'
     '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1'
     'l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
 )
@@ -1834,6 +1836,7 @@ def page(root: str, title: str, description: str, body: str, figures: list[str] 
         f"<title>{html.escape(title)}</title>\n"
         f'<meta name="description" content="{html.escape(description)}">\n'
         f'<link rel="icon" href="{root}assets/favicon.png" type="image/png">\n'
+        f'<link rel="icon" href="{root}assets/favicon-light.png" type="image/png" media="(prefers-color-scheme: light)">\n'
         + social(root, title, description, path)
         + f'<link rel="stylesheet" href="{root}assets/site.css">\n'
         f'{THEME_BOOT}\n</head>\n<body class="{body_class}">\n'
@@ -2062,7 +2065,7 @@ def not_found_page() -> tuple[Path, str]:
         '        <div class="docs-results" data-docs-results hidden></div>\n      </div>\n'
         '      <figure class="lost" aria-label="A drawing in the site\'s style: the link you followed, drawn as a call, and no page of the site aligned under it.">\n'
         '        <div class="lost-scroll">\n'
-        '        <svg class="trk" viewBox="0 0 560 96" role="img" aria-hidden="true">\n'
+        '        <svg class="trk lost-wide" viewBox="0 0 560 96" role="img" aria-hidden="true">\n'
         '          <text class="row-label" x="0" y="28">Your link</text>\n'
         '          <line class="row-line" x1="96" x2="556" y1="24" y2="24"/>\n'
         '          <path class="g g-bakta" d="M190,14 H408 L420,24 L408,34 H190 Z"/>\n'
@@ -2070,6 +2073,17 @@ def not_found_page() -> tuple[Path, str]:
         '          <text class="row-label" x="0" y="74">The site</text>\n'
         '          <line class="row-line" x1="96" x2="556" y1="70" y2="70"/>\n'
         '          <text class="gsub" x="305" y="64" text-anchor="middle">no page aligns here</text>\n'
+        "        </svg>\n"
+        # A phone's version: each row's name over its row, so the whole of it
+        # fits the screen with its words at the size they read.
+        '        <svg class="trk lost-narrow" viewBox="0 0 260 108" role="img" aria-hidden="true">\n'
+        '          <text class="row-label" x="0" y="12">Your link</text>\n'
+        '          <line class="row-line" x1="0" x2="260" y1="34" y2="34"/>\n'
+        '          <path class="g g-bakta" d="M40,24 H196 L208,34 L196,44 H40 Z"/>\n'
+        '          <text class="gname" x="124" y="38" text-anchor="middle">this page</text>\n'
+        '          <text class="row-label" x="0" y="72">The site</text>\n'
+        '          <line class="row-line" x1="0" x2="260" y1="100" y2="100"/>\n'
+        '          <text class="gsub" x="130" y="94" text-anchor="middle">no page aligns here</text>\n'
         "        </svg>\n        </div>\n"
         "        <figcaption>Case 1, for a page: nothing aligns where this link points.</figcaption>\n"
         "      </figure>\n"

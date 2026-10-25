@@ -795,6 +795,12 @@
     "much many mean means get with for it this that there").split(" ").forEach(function (w) {
     STOP[w] = true;
   });
+  // Words in nearly every sentence: never searched for, even alone ("the"
+  // would list every page and mark it inside "them").
+  var NOISE = {};
+  "a an the and or of to in on for is are be it this that with by at as".split(" ").forEach(function (w) {
+    NOISE[w] = true;
+  });
 
   // A query word matches where a word starts, so "skip" finds --skip_typing and
   // not the middle of another word. A lone number matches only as a whole
@@ -811,8 +817,9 @@
     };
   }
 
-  function queryWords(query) {
-    var words = query
+  // The words as typed, cleaned of punctuation.
+  function typedWords(query) {
+    return query
       .toLowerCase()
       .split(/\s+/)
       .map(function (w) {
@@ -821,6 +828,14 @@
       .filter(function (w) {
         return w.length > 1 || /^[0-9]$/.test(w);
       });
+  }
+
+  // The words searched for: no noise word, and no question word when the
+  // query has a word that names something.
+  function queryWords(query) {
+    var words = typedWords(query).filter(function (w) {
+      return !NOISE[w];
+    });
     var content = words.filter(function (w) {
       return !STOP[w];
     });
@@ -1074,14 +1089,47 @@
     return merged;
   }
 
+  // The text with the words marked, and each flag (--max_memory, -profile)
+  // held on one line, so a narrow list never leaves its dashes at the end of
+  // one line and its name on the next.
   function highlight(text, words) {
-    var out = "";
-    var at = 0;
-    ranges(text, words).forEach(function (r) {
-      out += escapeHtml(text.slice(at, r[0])) + "<mark>" + escapeHtml(text.slice(r[0], r[1])) + "</mark>";
-      at = r[1];
+    var marks = ranges(text, words);
+    var flags = [];
+    var re = /(^|[^\w-])(--?[A-Za-z][\w-]*)/g;
+    var m;
+    while ((m = re.exec(text))) {
+      var from = m.index + m[1].length;
+      flags.push([from, from + m[2].length]);
+    }
+    var cuts = [0, text.length];
+    marks.concat(flags).forEach(function (r) {
+      cuts.push(r[0], r[1]);
     });
-    return out + escapeHtml(text.slice(at));
+    cuts = cuts
+      .sort(function (a, b) {
+        return a - b;
+      })
+      .filter(function (c, i, all) {
+        return i === 0 || c !== all[i - 1];
+      });
+    var inside = function (list, at) {
+      return list.some(function (r) {
+        return r[0] <= at && at < r[1];
+      });
+    };
+    var out = "";
+    var inFlag = false;
+    for (var i = 0; i + 1 < cuts.length; i++) {
+      var a = cuts[i];
+      var piece = escapeHtml(text.slice(a, cuts[i + 1]));
+      var flag = inside(flags, a);
+      if (flag !== inFlag) {
+        out += flag ? '<span class="nw">' : "</span>";
+        inFlag = flag;
+      }
+      out += inside(marks, a) ? "<mark>" + piece + "</mark>" : piece;
+    }
+    return out + (inFlag ? "</span>" : "");
   }
 
   // A line of prose around the first place the words appear, from the
@@ -1106,6 +1154,7 @@
   // one, Esc closes. The panel closes when focus leaves the search.
 
   var searchBoxes = [];
+  var HINT = 'Try another word, or a flag such as <span class="nw">--skip_typing</span>.';
 
   function bindSearch(input, panel, options) {
     var box = { input: input, panel: panel };
@@ -1183,8 +1232,10 @@
         if (found.suggestion) {
           html += option(k++, "r-suggest", "#", "Did you mean <b>" + escapeHtml(found.suggestion) + "</b>?", ' data-suggest="' + escapeHtml(found.suggestion) + '"');
         } else {
-          html += '<div class="none" aria-hidden="true">Try another word, or a flag such as --skip_typing.</div>';
+          html += '<div class="none" aria-hidden="true">' + HINT + "</div>";
         }
+        // Never a dead end: Enter, or a tap, still has somewhere to go.
+        html += option(k++, "r-page", ROOT + "documentation.html", '<span class="r-title">All the docs</span><small>Every page, by section</small>');
         announce("Nothing matches " + query + (found.suggestion ? ". Did you mean " + found.suggestion + "?" : ""), 350);
       } else {
         var groups = found.groups.slice(0, 8);
@@ -1233,13 +1284,21 @@
           350
         );
       }
-      html += '<div class="r-foot" aria-hidden="true"><kbd>↑</kbd> <kbd>↓</kbd> to move, <kbd>Enter</kbd> to open, <kbd>Esc</kbd> to close</div>';
+      html += foot(k);
       panel.innerHTML = html;
       list = Array.prototype.slice.call(panel.querySelectorAll('[role="option"]'));
       panel.scrollTop = 0;
       show();
       // The match that Enter opens is marked from the start.
-      select(found.total ? best : -1);
+      select(found.total ? best : 0);
+    }
+
+    // The keys under the list: the arrows and Enter only when there is
+    // something to move to and open.
+    function foot(options) {
+      return options
+        ? '<div class="r-foot" aria-hidden="true"><kbd>↑</kbd> <kbd>↓</kbd> to move, <kbd>Enter</kbd> to open, <kbd>Esc</kbd> to close</div>'
+        : '<div class="r-foot" aria-hidden="true"><kbd>Esc</kbd> to close</div>';
     }
 
     function run() {
@@ -1247,7 +1306,16 @@
       if (options.onQuery) options.onQuery(query);
       if (!queryWords(query).length) {
         list = [];
-        hide();
+        if (!typedWords(query).length) {
+          hide();
+          return;
+        }
+        // Only words such as "the", which every page has: a hint, no list.
+        input.removeAttribute("aria-activedescendant");
+        active = -1;
+        panel.innerHTML = '<div class="none" aria-hidden="true">' + HINT + "</div>" + foot(0);
+        show();
+        announce("Try another word, or a flag such as --skip_typing.", 350);
         return;
       }
       if (indexState !== "ready") {
@@ -1499,6 +1567,14 @@
 
   function openSheet(opener) {
     if (!sheet) return;
+    // Already open (Ctrl+K again): back to its box, and Esc still returns
+    // to what opened it first.
+    if (!sheet.hidden) {
+      var again = sheet.querySelector("input");
+      again.focus();
+      again.select();
+      return;
+    }
     sheetOpener = opener || document.activeElement;
     sheet.hidden = false;
     scrim.hidden = false;

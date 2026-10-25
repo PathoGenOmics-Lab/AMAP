@@ -259,6 +259,15 @@ html {
   scroll-behavior: smooth;
   scroll-padding-top: var(--clear);
   -webkit-text-size-adjust: 100%;
+  /* The scrollbar's room is kept while the search sheet hides it, so the
+     page does not shift sideways under the sheet. */
+  scrollbar-gutter: stable;
+}
+
+/* The page under the open search sheet stays where it is; the sheet scrolls
+   on its own. */
+html.sheet-open {
+  overflow: hidden;
 }
 
 body {
@@ -5849,6 +5858,11 @@ th.num {
   background: color-mix(in srgb, var(--accent) 26%, transparent);
   color: var(--ink);
   border-radius: 3px;
+}
+
+/* A flag in a result is one word: its dashes stay with its name. */
+.docs-results .nw {
+  white-space: nowrap;
 }
 
 /* The keys, at the foot of the list on screens that have them. */

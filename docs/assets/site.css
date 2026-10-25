@@ -222,8 +222,8 @@
   --code-flag: #076d5c;
   --code-value: #8f4a00;
   --copy-border: rgba(16, 27, 24, 0.16);
-  --copy-bg: rgba(255, 255, 255, 0.85);
-  --copy-hover: #ffffff;
+  --copy-bg: #ffffff;
+  --copy-hover: color-mix(in srgb, var(--ink-1) 6%, #ffffff);
   --copy-done: #0f7a52;
   --bakta: #a85a06;
   --ref: #5845cc;
@@ -336,9 +336,11 @@ a {
   text-underline-offset: 0.22em;
 }
 
-a:hover {
-  color: var(--accent-hover);
-  text-decoration-color: currentColor;
+@media (hover: hover) {
+  a:hover {
+    color: var(--accent-hover);
+    text-decoration-color: currentColor;
+  }
 }
 
 :focus-visible {
@@ -548,7 +550,33 @@ figcaption,
    reduced motion). */
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 0.15s;
+  animation-duration: var(--dur-state);
+}
+
+/* Every control changes state at one speed: colour, fill, edge, shadow and
+   fade together. A press (the 1px sink) is not animated. */
+.nav a,
+.gh-link,
+.icon-btn,
+.search-btn,
+.btn,
+.mini-btn,
+.tab,
+.seg button,
+.copy,
+.opt,
+.metro-opts label,
+.docs-nav li a,
+.sheet-links a,
+.faq summary,
+.how-group .seg a,
+.how-steps button,
+.prose .anchor,
+.sheet-close,
+.slash-toggle,
+.hero-seg::before,
+.hero-seg i {
+  transition: color var(--dur-state) var(--ease), background-color var(--dur-state) var(--ease), border-color var(--dur-state) var(--ease), box-shadow var(--dur-state) var(--ease), opacity var(--dur-state) var(--ease);
 }
 
 /* "Link copied" and "Copied", beside what was copied (placed by site.js). */
@@ -581,6 +609,13 @@ figcaption,
 
 .copyable {
   cursor: copy;
+}
+
+@media (hover: hover) {
+  .copyable:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
 }
 
 /* The heading a link lands on: an accent bar in the margin that fades. */
@@ -686,6 +721,12 @@ mark.search-hit {
   color: var(--ink-1);
 }
 
+@media (hover: hover) {
+  .brand:hover {
+    color: var(--ink-1);
+  }
+}
+
 /* The logo is drawn for a dark ground; the light theme takes the variant
    made from it (same shapes, its greys turned to ink and its teals deepened). */
 .brand .logo-light,
@@ -717,27 +758,39 @@ mark.search-hit {
   }
 }
 
+/* The links, then the controls, 4px apart; the controls stand 8px further
+   off the last link (Docs, on every page), so the two groups read as two.
+   Links and buttons are one height, 36px. */
 .nav {
   display: flex;
-  gap: 2px;
+  column-gap: var(--sp-1);
   margin-left: auto;
   align-items: center;
   min-width: 0;
 }
 
 .nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
   color: var(--ink-2);
   text-decoration: none;
   font-size: var(--fs-n1);
   font-weight: var(--fw-medium);
-  padding: 7px 10px;
+  padding: 0 10px;
   border-radius: var(--r-3);
   white-space: nowrap;
 }
 
-.nav a:hover {
-  color: var(--ink-1);
-  background: var(--surface-3);
+.nav a[href$="documentation.html"] {
+  margin-right: var(--sp-2);
+}
+
+@media (hover: hover) {
+  .nav a:hover {
+    color: var(--ink-1);
+    background: var(--surface-3);
+  }
 }
 
 /* Where you are, apart from where the pointer is: accent text on an accent
@@ -749,8 +802,10 @@ mark.search-hit {
   border-radius: var(--r-3) var(--r-3) 0 0;
 }
 
-.nav a[aria-current]:hover {
-  color: var(--accent-hover);
+@media (hover: hover) {
+  .nav a[aria-current]:hover {
+    color: var(--accent-hover);
+  }
 }
 
 .gh-link {
@@ -759,7 +814,6 @@ mark.search-hit {
   gap: 7px;
   height: 36px;
   padding: 0 12px !important;
-  margin-left: 4px;
   border: 1px solid var(--line-2);
   border-radius: var(--r-3);
   background: var(--control);
@@ -770,10 +824,12 @@ mark.search-hit {
   flex: none;
 }
 
-.gh-link:hover {
-  color: var(--ink-1);
-  border-color: var(--line-3);
-  background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+@media (hover: hover) {
+  .gh-link:hover {
+    color: var(--ink-1);
+    border-color: var(--line-3);
+    background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+  }
 }
 
 .gh-link svg {
@@ -786,7 +842,6 @@ mark.search-hit {
   place-items: center;
   width: 36px;
   height: 36px;
-  margin-left: 4px;
   border: 1px solid var(--line-2);
   border-radius: var(--r-3);
   background: var(--control);
@@ -795,10 +850,12 @@ mark.search-hit {
   flex: none;
 }
 
-.icon-btn:hover {
-  color: var(--ink-1);
-  border-color: var(--line-3);
-  background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+@media (hover: hover) {
+  .icon-btn:hover {
+    color: var(--ink-1);
+    border-color: var(--line-3);
+    background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+  }
 }
 
 .icon-btn svg {
@@ -825,7 +882,6 @@ mark.search-hit {
   gap: 8px;
   height: 36px;
   min-width: 36px;
-  margin-left: 6px;
   padding: 0 7px 0 11px;
   border: 1px solid var(--line-input);
   border-radius: var(--r-3);
@@ -836,9 +892,12 @@ mark.search-hit {
   flex: none;
 }
 
-.search-btn:hover {
-  color: var(--ink);
-  border-color: var(--ink-soft);
+@media (hover: hover) {
+  .search-btn:hover,
+  .docs-search input:hover {
+    color: var(--ink);
+    border-color: var(--ink-3);
+  }
 }
 
 .search-btn svg {
@@ -860,8 +919,7 @@ mark.search-hit {
   .search-btn {
     justify-content: center;
     padding: 0;
-    margin-left: 4px;
-    border-color: var(--line);
+    border-color: var(--line-2);
     color: var(--ink-soft);
   }
 
@@ -885,6 +943,35 @@ mark.search-hit {
   }
 }
 
+/* A page whose own link has left the bar (the tutorial's under 640px, How
+   it works' under 560px) marks Docs, the link that stays for it, so the bar
+   still says where the reader is. */
+@media (max-width: 639px) {
+  .nav:has(> a.nav-optional[href$="tutorial.html"][aria-current]) > a[href$="documentation.html"] {
+    color: var(--accent);
+    font-weight: var(--fw-semibold);
+    box-shadow: inset 0 -2px 0 var(--accent);
+    border-radius: var(--r-3) var(--r-3) 0 0;
+  }
+}
+
+@media (max-width: 559px) {
+  .nav:has(> a.nav-optional[href$="how-it-works.html"][aria-current]) > a[href$="documentation.html"] {
+    color: var(--accent);
+    font-weight: var(--fw-semibold);
+    box-shadow: inset 0 -2px 0 var(--accent);
+    border-radius: var(--r-3) var(--r-3) 0 0;
+  }
+}
+
+.top.squeeze-3 .nav:has(> a.nav-optional[href$="tutorial.html"][aria-current]) > a[href$="documentation.html"],
+.top.squeeze-4 .nav:has(> a.nav-optional[href$="how-it-works.html"][aria-current]) > a[href$="documentation.html"] {
+  color: var(--accent);
+  font-weight: var(--fw-semibold);
+  box-shadow: inset 0 -2px 0 var(--accent);
+  border-radius: var(--r-3) var(--r-3) 0 0;
+}
+
 /* On a phone the controls keep their room: tighter gaps, a smaller logo, and
    GitHub as its mark (its name stays for screen readers). */
 @media (max-width: 439px) {
@@ -897,17 +984,22 @@ mark.search-hit {
   }
 
   .nav {
-    gap: 0;
+    column-gap: 2px;
   }
 
   .nav a {
-    padding: 7px 8px;
+    padding: 0 8px;
   }
 
-  .gh-link,
-  .icon-btn,
-  .search-btn {
-    margin-left: 2px;
+  .nav a[href$="documentation.html"] {
+    margin-right: var(--sp-1);
+  }
+
+  /* GitHub as its mark alone: a square, as the other two. */
+  .gh-link {
+    padding: 0 !important;
+    width: 36px;
+    justify-content: center;
   }
 
   .gh-link span {
@@ -922,7 +1014,7 @@ mark.search-hit {
 
 @media (max-width: 380px) {
   .nav a {
-    padding: 7px 6px;
+    padding: 0 6px;
   }
 }
 
@@ -944,7 +1036,7 @@ mark.search-hit {
 .top.squeeze-2 .search-btn {
   justify-content: center;
   padding: 0;
-  margin-left: 4px;
+  border-color: var(--line-2);
 }
 
 .top.squeeze-2 .search-btn .search-btn-label,
@@ -953,6 +1045,12 @@ mark.search-hit {
 .top.squeeze-4 .nav a.nav-optional[href$="how-it-works.html"],
 .top.squeeze-6 .nav .gh-link {
   display: none;
+}
+
+.top.squeeze-5 .gh-link {
+  padding: 0 !important;
+  width: 36px;
+  justify-content: center;
 }
 
 .top.squeeze-5 .gh-link span {
@@ -985,7 +1083,6 @@ mark.search-hit {
   cursor: pointer;
   line-height: 1.2;
   font-family: var(--font);
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .btn svg {
@@ -1000,9 +1097,11 @@ mark.search-hit {
   box-shadow: var(--glow);
 }
 
-.btn-primary:hover {
-  background: var(--accent-hover);
-  color: var(--on-accent);
+@media (hover: hover) {
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    color: var(--on-accent);
+  }
 }
 
 .btn-ghost {
@@ -1011,10 +1110,12 @@ mark.search-hit {
   border-color: var(--line-2);
 }
 
-.btn-ghost:hover {
-  color: var(--ink-1);
-  background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
-  border-color: var(--line-3);
+@media (hover: hover) {
+  .btn-ghost:hover {
+    color: var(--ink-1);
+    background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+    border-color: var(--line-3);
+  }
 }
 
 .mini-btn {
@@ -1028,10 +1129,12 @@ mark.search-hit {
   cursor: pointer;
 }
 
-.mini-btn:hover {
-  color: var(--ink-1);
-  border-color: var(--line-3);
-  background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+@media (hover: hover) {
+  .mini-btn:hover {
+    color: var(--ink-1);
+    border-color: var(--line-3);
+    background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+  }
 }
 
 /* ── Search sheet ── */
@@ -1106,8 +1209,12 @@ mark.search-hit {
   cursor: pointer;
 }
 
-.sheet-close:hover {
-  color: var(--ink);
+@media (hover: hover) {
+  .sheet-close:hover {
+    color: var(--ink-1);
+    border-color: var(--line-3);
+    background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+  }
 }
 
 /* "Esc" where there is a keyboard to press it on, "Close" on a touch screen. */
@@ -1186,8 +1293,10 @@ mark.search-hit {
   line-height: 1.35;
 }
 
-.sheet-toc a:hover {
-  color: var(--ink);
+@media (hover: hover) {
+  .sheet-toc a:hover {
+    color: var(--ink);
+  }
 }
 
 .sheet-toc a.active {
@@ -1214,8 +1323,11 @@ mark.search-hit {
   text-decoration: none;
 }
 
-.sheet-links a:hover {
-  border-color: var(--line-strong);
+@media (hover: hover) {
+  .sheet-links a:hover {
+    border-color: var(--accent-line);
+    background: var(--surface-2);
+  }
 }
 
 .sheet-links b {
@@ -1282,6 +1394,12 @@ mark.search-hit {
     visibility: hidden;
   }
 
+  /* The ring inside the bar: outside, the header and the screen's edges
+     would cut it to a line that reads as the progress bar. */
+  .here-bar:focus-visible {
+    outline-offset: -3px;
+  }
+
   .here-label {
     flex: 1;
     min-width: 0;
@@ -1311,17 +1429,10 @@ mark.search-hit {
 
 /* ── Touch and pointer ── */
 
-/* A press is drawn by the design, not by the browser's grey flash: buttons
-   sink a pixel and take a firmer fill. */
-a,
-button,
-summary,
-input,
-select,
-label,
-[role="button"],
-[role="tab"],
-[role="option"] {
+/* A press is drawn by the design, not by the browser's grey flash (the
+   colour is inherited, so the genes and marks of a drawing lose it too):
+   buttons sink a pixel and take a firmer fill. */
+html {
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -1333,8 +1444,15 @@ label,
 .gh-link:active,
 .search-btn:active,
 .sheet-close:active,
-.seg button:active {
+.seg button:active,
+.how-group .seg a:active,
+.how-steps button:active {
   transform: translateY(1px);
+}
+
+/* A button that cannot be pressed does not sink. */
+.btn[aria-disabled="true"]:active {
+  transform: none;
 }
 
 .btn-primary:active {
@@ -1349,7 +1467,9 @@ label,
 .gh-link:active,
 .search-btn:active,
 .sheet-close:active,
-.seg button:active {
+.seg button:active,
+.how-group .seg a:active,
+.how-steps button:active {
   background: color-mix(in srgb, var(--ink) 12%, var(--bg-elev));
 }
 
@@ -1359,37 +1479,8 @@ label,
   background: var(--bg-subtle);
 }
 
-/* A finger needs a 40px target. */
-@media (pointer: coarse) {
-  .copy,
-  .mini-btn,
-  .tab,
-  .seg button,
-  .icon-btn,
-  .gh-link,
-  .search-btn,
-  .sheet-close {
-    min-height: 40px;
-    min-width: 40px;
-  }
-
-  .sheet-close {
-    top: 4px;
-  }
-
-  /* A block's head holds the taller Copy with 4px above and below it. */
-  .code > .code-title {
-    min-height: 48px;
-  }
-
-  .nav a {
-    padding-block: 10px;
-  }
-
-  .docs-nav li a {
-    padding-block: 9px;
-  }
-}
+/* A finger's 40px targets are set at the end of the sheet (Touch, again),
+   after the rules of the controls they enlarge. */
 
 @media (prefers-reduced-motion: reduce) {
   .btn:active,
@@ -1400,7 +1491,9 @@ label,
   .gh-link:active,
   .search-btn:active,
   .sheet-close:active,
-  .seg button:active {
+  .seg button:active,
+  .how-group .seg a:active,
+  .how-steps button:active {
     transform: none;
   }
 
@@ -1842,7 +1935,7 @@ label,
 }
 
 .trk .row-frame {
-  transition: opacity 0.45s ease;
+  transition: opacity var(--dur-reveal) var(--ease);
 }
 
 .trk .axis line,
@@ -1858,7 +1951,7 @@ label,
 
 .trk .g {
   stroke-width: 1.4;
-  transition: opacity 0.35s ease, transform 0.45s ease;
+  transition: opacity var(--dur-reveal) var(--ease), transform var(--dur-reveal) var(--ease);
 }
 
 .trk .g-bakta {
@@ -1990,7 +2083,7 @@ label,
 }
 
 .trk .rib-g {
-  transition: opacity 0.45s ease;
+  transition: opacity var(--dur-reveal) var(--ease);
 }
 
 .trk .rib-agree {
@@ -2046,12 +2139,17 @@ label,
 
 .trk .hot {
   cursor: pointer;
-  transition: opacity 0.45s ease;
+  transition: opacity var(--dur-reveal) var(--ease);
 }
 
-.trk .hot:hover .g,
 .trk .hot.on .g {
   stroke-width: 2.6;
+}
+
+@media (hover: hover) {
+  .trk .hot:hover .g {
+    stroke-width: 2.6;
+  }
 }
 
 .trk .hot:focus {
@@ -2319,8 +2417,16 @@ label,
   background: var(--line-3);
 }
 
-.hero-seg:hover::before {
-  background: var(--ink-3);
+@media (hover: hover) {
+  .hero-seg:hover::before {
+    background: var(--ink-3);
+  }
+}
+
+@media (hover: hover) {
+  .hero-seg:hover i {
+    background: var(--accent-hover);
+  }
 }
 
 .hero-seg i {
@@ -2576,7 +2682,7 @@ label,
   color: var(--ink-1);
   font-variant-numeric: tabular-nums;
   text-align: center;
-  transition: color 0.4s ease;
+  transition: color var(--dur-reveal) var(--ease);
 }
 
 .tally .t-agree b {
@@ -2641,7 +2747,7 @@ label,
 [data-phase] .ph-amap {
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.45s ease, visibility 0s linear 0.45s;
+  transition: opacity var(--dur-reveal) var(--ease), visibility 0s linear var(--dur-reveal);
 }
 
 [data-phase="2"] .ph-ref,
@@ -2979,12 +3085,16 @@ main {
   color: var(--accent);
 }
 
-.rail a:hover {
-  color: var(--ink-1);
+@media (hover: hover) {
+  .rail a:hover {
+    color: var(--ink-1);
+  }
 }
 
-.rail a.rail-fig:hover {
-  color: var(--accent-hover);
+@media (hover: hover) {
+  .rail a.rail-fig:hover {
+    color: var(--accent-hover);
+  }
 }
 
 .rail a[aria-current]::before {
@@ -3263,11 +3373,27 @@ main {
 }
 
 /* On the front page a block wraps on a phone rather than run under the copy
-   button; the docs' blocks keep their layout (see below). */
+   button; the docs' blocks keep their layout (see below). A block with no
+   head keeps a strip above its text for Copy, instead of a margin down the
+   right of every line. */
 @media (max-width: 600px) {
   .code pre {
     white-space: pre-wrap;
-    padding-right: var(--sp-11);
+  }
+
+  .code:not(.out):not(:has(> .code-title)) {
+    padding-top: 30px;
+  }
+
+  .code:not(.out):not(:has(> .code-title)) > pre {
+    padding-top: var(--sp-2);
+    padding-right: var(--sp-4);
+  }
+
+  .code:not(.out):not(:has(> .code-title)) > .copy {
+    top: 3px;
+    right: 6px;
+    padding: 3px 10px;
   }
 }
 
@@ -3320,9 +3446,9 @@ code .brk,
 }
 
 /* Files, trees and program output keep their layout at every width, and
-   scroll. The command a builder writes ([data-command]) wraps as on the front
-   page. */
-.prose .code:not(.cmd) pre:not([data-command]) {
+   scroll. The commands a builder writes ([data-command], [data-check]) wrap
+   as on the front page. */
+.prose .code:not(.cmd) pre:not([data-command], [data-check]) {
   white-space: pre;
 }
 
@@ -3393,8 +3519,11 @@ code .brk,
   cursor: pointer;
 }
 
-.copy:hover {
-  background: var(--copy-hover);
+@media (hover: hover) {
+  .copy:hover {
+    background: var(--copy-hover);
+    border-color: var(--line-3);
+  }
 }
 
 .copy.done {
@@ -3422,13 +3551,20 @@ code .brk,
 }
 
 .code-title + pre {
-  padding-top: var(--sp-3);
+  padding-block: var(--sp-4);
   padding-right: var(--sp-5);
 }
 
+/* Copy, centred in the 40px head. */
 .code-title ~ .copy {
-  top: 5px;
+  top: 6px;
   right: 6px;
+}
+
+/* A citation is one long line to read, not a file to keep the shape of. */
+.prose .code.bare[data-lang="apa"] pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* A tab-separated file says what Copy keeps. */
@@ -3460,25 +3596,15 @@ code .brk,
   display: none;
 }
 
-/* A command and what it prints read as one. */
+/* A command and what it prints read as one: 12px apart, not a block's 20. */
 .prose .code.cmd + .code.out {
-  margin-top: -0.5em;
+  margin-top: calc(var(--sp-3) - var(--sp-5));
 }
 
-/* On a phone a block with no head keeps a strip above its text for Copy,
-   instead of a margin down the right of every line. */
+/* On a phone the docs' blocks sit a little further out to their edges (the
+   strip above a block with no head is set with the front page's, above). */
 @media (max-width: 600px) {
-  .prose .code.bare {
-    padding-top: 30px;
-  }
-
-  .prose .code.bare .copy {
-    top: 3px;
-    right: 6px;
-    padding: 3px 10px;
-  }
-
-  .prose .code pre:not([data-command]) {
+  .prose .code pre:not([data-command], [data-check]) {
     padding-right: 16px;
     padding-left: 14px;
   }
@@ -3544,10 +3670,12 @@ kbd {
   cursor: pointer;
 }
 
-.tab:hover {
-  color: var(--ink);
-  border-color: var(--line-3);
-  background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+@media (hover: hover) {
+  .tab:hover {
+    color: var(--ink);
+    border-color: var(--line-3);
+    background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+  }
 }
 
 /* Chosen: the one solid accent of a set of choices, as the segments and the
@@ -3625,9 +3753,11 @@ html:not(.js) .builder {
   color: var(--on-accent);
 }
 
-.seg button:not([aria-pressed="true"], [aria-checked="true"]):hover {
-  border-color: var(--line-3);
-  background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+@media (hover: hover) {
+  .seg button:not([aria-pressed="true"], [aria-checked="true"]):hover {
+    border-color: var(--line-3);
+    background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+  }
 }
 
 .opt {
@@ -3643,8 +3773,10 @@ html:not(.js) .builder {
   cursor: pointer;
 }
 
-.opt:hover {
-  border-color: var(--line-3);
+@media (hover: hover) {
+  .opt:hover {
+    border-color: var(--line-3);
+  }
 }
 
 .opt:has(input:checked) {
@@ -3657,6 +3789,7 @@ html:not(.js) .builder {
   height: 18px;
   margin: 2px 0 0;
   accent-color: var(--accent);
+  cursor: inherit;
 }
 
 .opt b {
@@ -3676,6 +3809,12 @@ html:not(.js) .builder {
 .opt:has(input:disabled) {
   cursor: not-allowed;
   border-style: dashed;
+  border-color: var(--line-2);
+  background: var(--control);
+}
+
+.opt:has(input:disabled) input {
+  opacity: 0.6;
 }
 
 .opt:has(input:disabled) b {
@@ -4054,17 +4193,42 @@ html:not(.js) .builder {
   color: var(--ink-soft);
 }
 
-.metro-opts label:hover {
-  border-color: var(--line-3);
+@media (hover: hover) {
+  .metro-opts label:hover {
+    border-color: var(--line-3);
+  }
+}
+
+.metro-opts label:has(input:checked) {
+  border-color: var(--accent-line);
+  background: var(--accent-wash);
+  color: var(--ink-1);
 }
 
 .metro-opts input {
   accent-color: var(--accent);
   margin: 0;
+  cursor: inherit;
 }
 
 .metro-opts code {
   font-size: var(--fs-n2);
+}
+
+/* Under 375px the longest switch, --skip_functional_annotation, keeps to
+   one line: a step smaller, in a plate and a chip a little less padded. */
+@media (max-width: 374px) {
+  .metro-wrap {
+    padding-inline: var(--sp-4);
+  }
+
+  .metro-opts label {
+    padding-inline: var(--sp-2);
+  }
+
+  .metro-opts code {
+    font-size: var(--fs-n3);
+  }
 }
 
 /* On a narrow screen the map keeps its size and scrolls sideways, rather
@@ -4145,7 +4309,7 @@ html:not(.js) .builder {
   stroke-width: 7;
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: opacity 0.3s ease, stroke 0.3s ease;
+  transition: opacity var(--dur-emph) var(--ease), stroke var(--dur-emph) var(--ease);
 }
 
 .metro .ml-main,
@@ -4176,7 +4340,7 @@ html:not(.js) .builder {
 
 .metro .stn {
   cursor: pointer;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--dur-emph) var(--ease);
 }
 
 .metro .stn .dot {
@@ -4217,12 +4381,18 @@ html:not(.js) .builder {
 
 /* Picked: filled with the accent. Focused: a heavy ring of ink, so the two
    never look alike. */
-.metro .stn:hover .dot,
-.metro .stn:hover .hub,
 .metro .stn.on .dot,
 .metro .stn.on .hub {
   fill: var(--accent);
   stroke: var(--accent);
+}
+
+@media (hover: hover) {
+  .metro .stn:hover .dot,
+  .metro .stn:hover .hub {
+    fill: var(--accent);
+    stroke: var(--accent);
+  }
 }
 
 .metro .stn:focus {
@@ -4250,7 +4420,7 @@ html:not(.js) .builder {
   font-size: 10.5px;
   font-family: var(--mono);
   fill: var(--muted);
-  transition: opacity 0.3s ease;
+  transition: opacity var(--dur-emph) var(--ease);
 }
 
 .metro .exit-tick {
@@ -4358,7 +4528,7 @@ html:not(.js) .builder {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--dur-emph) var(--ease);
 }
 
 /* A line the switches leave out, faded in the key as on the map. */
@@ -4795,7 +4965,7 @@ html:not(.js) .builder {
   border: 0;
   background: #fff;
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity var(--dur-emph) var(--ease);
 }
 
 .report-stage.loaded iframe {
@@ -4852,8 +5022,10 @@ html:not(.js) .builder {
   box-shadow: var(--shadow);
 }
 
-.report-cover:hover span {
-  background: var(--accent-hover);
+@media (hover: hover) {
+  .report-cover:hover span {
+    background: var(--accent-hover);
+  }
 }
 
 /* The ring goes round the button, on the frosted band: on the dimmed
@@ -4985,8 +5157,17 @@ html:not(.js) .builder {
   gap: var(--sp-4);
 }
 
-.faq summary:hover {
-  color: var(--accent);
+@media (hover: hover) {
+  .faq summary:hover {
+    color: var(--accent);
+  }
+}
+
+@media (hover: hover) {
+  .faq summary:hover::after {
+    border-color: var(--accent-line);
+    color: var(--accent);
+  }
 }
 
 .faq summary > span {
@@ -4999,7 +5180,7 @@ html:not(.js) .builder {
 
 /* Drawn, not read: the empty alternative text keeps "+" out of the question's
    name (a browser without it keeps the first declaration). */
-.faq summary::after {
+:is(.faq details, .docs-menu, .toc-inline) > summary::after {
   content: "+";
   content: "+" / "";
   flex: none;
@@ -5016,7 +5197,7 @@ html:not(.js) .builder {
   line-height: 1;
 }
 
-.faq details[open] summary::after {
+:is(.faq details, .docs-menu, .toc-inline)[open] > summary::after {
   content: "\2212";
   content: "\2212" / "";
   border-color: var(--accent-line);
@@ -5117,9 +5298,11 @@ html:not(.js) .builder {
   text-decoration: none;
 }
 
-.foot a:hover {
-  color: var(--accent);
-  text-decoration: underline;
+@media (hover: hover) {
+  .foot a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
 }
 
 .foot blockquote {
@@ -5163,8 +5346,11 @@ html:not(.js) .builder {
   cursor: pointer;
 }
 
-.slash-toggle:hover {
-  color: var(--ink-1);
+@media (hover: hover) {
+  .slash-toggle:hover {
+    color: var(--accent);
+    text-decoration-color: currentColor;
+  }
 }
 
 /* A docs page has its search box in the sidebar, which stays in view, so
@@ -5180,9 +5366,15 @@ html:not(.js) .builder {
   display: none;
 }
 
+/* On a phone the citation spans the footer, its two lists of links side by
+   side under it. */
 @media (max-width: 760px) {
-  .foot .wrap {
-    grid-template-columns: minmax(0, 1fr);
+  .foot .wrap:not(.foot-base) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .foot .wrap:not(.foot-base) > :first-child {
+    grid-column: 1 / -1;
   }
 }
 
@@ -5335,12 +5527,14 @@ th.num {
   border-radius: var(--r-4);
   padding: var(--sp-4) var(--sp-5);
   color: var(--ink-1);
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color var(--dur-state) var(--ease), background-color var(--dur-state) var(--ease);
 }
 
-.deep a:hover {
-  border-color: var(--accent-line);
-  background: var(--surface-2);
+@media (hover: hover) {
+  .deep a:hover {
+    border-color: var(--accent-line);
+    background: var(--surface-2);
+  }
 }
 
 .deep a b {
@@ -5447,6 +5641,25 @@ th.num {
   opacity: 1;
 }
 
+/* The field's clear button, drawn in the palette rather than the browser's. */
+.docs-search input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-left: var(--sp-2);
+  background-color: var(--ink-3);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6l12 12M18 6 6 18' stroke='%23000' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") center / 12px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6l12 12M18 6 6 18' stroke='%23000' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") center / 12px no-repeat;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .docs-search input::-webkit-search-cancel-button:hover {
+    background-color: var(--ink-1);
+  }
+}
+
 /* Phones zoom into a field typed in at under 16px; this one stays put. */
 @media (max-width: 860px) {
   .docs-search input {
@@ -5531,8 +5744,10 @@ th.num {
   color: var(--ink);
 }
 
-.docs-results a:hover {
-  background: var(--bg-subtle);
+@media (hover: hover) {
+  .docs-results a:hover {
+    background: var(--bg-subtle);
+  }
 }
 
 /* The result Enter opens: an accent bar, 3:1 and more on the panel. */
@@ -5650,10 +5865,26 @@ th.num {
   }
 
   .docs-menu summary {
-    display: list-item;
+    display: flex;
     cursor: pointer;
     font-weight: var(--fw-semibold);
     padding: 8px 0;
+  }
+
+  /* Folded, it has as much room under its name as over it. */
+  .docs-menu:not([open]) {
+    padding-bottom: var(--sp-1);
+  }
+
+  /* Two search boxes at the top of a page is one too many: the header's
+     opens the same search, with the page's contents under it. */
+  .docs-nav .docs-search {
+    display: none;
+  }
+
+  /* The Docs tab lists its pages as cards; it needs no folded list too. */
+  .docs-home > .docs-nav {
+    display: none;
   }
 }
 
@@ -5715,9 +5946,11 @@ th.num {
   outline-offset: -3px;
 }
 
-.docs-nav li a:hover {
-  background: var(--surface-3);
-  color: var(--ink-1);
+@media (hover: hover) {
+  .docs-nav li a:hover {
+    background: var(--surface-3);
+    color: var(--ink-1);
+  }
 }
 
 .docs-nav li a[aria-current="page"] {
@@ -5771,8 +6004,10 @@ th.num {
   padding-left: calc(var(--sp-3) * 2);
 }
 
-.docs-nav .page-toc a:hover {
-  color: var(--ink-1);
+@media (hover: hover) {
+  .docs-nav .page-toc a:hover {
+    color: var(--ink-1);
+  }
 }
 
 /* Marked by its colour and the bar, not by weight, which would rewrap a long
@@ -5829,6 +6064,24 @@ th.num {
   color: var(--ink-1);
 }
 
+/* The foldouts of a phone's docs page open with the questions' +, not the
+   browser's triangle. */
+.docs-menu summary,
+.toc-inline summary {
+  list-style: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+
+.toc-inline summary {
+  display: flex;
+}
+
+:is(.docs-menu, .toc-inline) summary::-webkit-details-marker {
+  display: none;
+}
+
 .prose .toc-inline ul {
   list-style: none;
   margin: 0;
@@ -5848,10 +6101,16 @@ th.num {
   line-height: 1.4;
 }
 
-.toc-inline a:hover,
 .toc-inline a.active {
   border-left-color: var(--accent);
   color: var(--ink-1);
+}
+
+@media (hover: hover) {
+  .toc-inline a:hover {
+    border-left-color: var(--accent);
+    color: var(--ink-1);
+  }
 }
 
 /* Long-form text: headings, bold and table heads in full ink, the rest a
@@ -5894,8 +6153,10 @@ th.num {
   color: var(--ink-3);
 }
 
-.prose .crumb-row a:hover {
-  color: var(--accent);
+@media (hover: hover) {
+  .prose .crumb-row a:hover {
+    color: var(--accent);
+  }
 }
 
 /* Where the page is: a caps label in the accent, as a chapter's kicker. */
@@ -5913,9 +6174,11 @@ th.num {
   text-decoration: none;
 }
 
-.prose .crumb a:hover {
-  color: var(--accent-hover);
-  text-decoration: underline;
+@media (hover: hover) {
+  .prose .crumb a:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+  }
 }
 
 .prose .ver {
@@ -6056,13 +6319,20 @@ th.num {
   opacity: 0;
 }
 
-.prose .hx:hover .anchor,
 .prose .anchor:focus-visible {
   opacity: 1;
 }
 
-.prose .anchor:hover {
-  color: var(--accent);
+@media (hover: hover) {
+  .prose .hx:hover .anchor {
+    opacity: 1;
+  }
+}
+
+@media (hover: hover) {
+  .prose .anchor:hover {
+    color: var(--accent);
+  }
 }
 
 @media (min-width: 861px) {
@@ -6177,9 +6447,11 @@ th.num {
   border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
 }
 
-.prose a.opt-link:hover code {
-  border-color: var(--accent);
-  color: var(--accent-hover);
+@media (hover: hover) {
+  .prose a.opt-link:hover code {
+    border-color: var(--accent);
+    color: var(--accent-hover);
+  }
 }
 
 @media (max-width: 600px) {
@@ -6368,7 +6640,6 @@ th.num {
 @media (hover: hover) and (pointer: fine) {
   .prose .code.bare .copy {
     opacity: 0;
-    transition: opacity 0.15s ease;
   }
 
   .prose .code.bare:hover .copy,
@@ -6427,10 +6698,12 @@ th.num {
   text-decoration: none;
 }
 
-.prose .hub-tasks a:hover {
-  border-color: var(--accent-line);
-  background: var(--accent-wash);
-  color: var(--accent);
+@media (hover: hover) {
+  .prose .hub-tasks a:hover {
+    border-color: var(--accent-line);
+    background: var(--accent-wash);
+    color: var(--accent);
+  }
 }
 
 /* On paper: light colours, the text alone, and the address of every link
@@ -6611,13 +6884,15 @@ th.num {
   font-size: var(--fs-1);
   font-weight: var(--fw-semibold);
   letter-spacing: var(--tr-heading);
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: color var(--dur-state) var(--ease), border-color var(--dur-state) var(--ease), background-color var(--dur-state) var(--ease);
 }
 
-.pager a:hover {
-  border-color: var(--accent-line);
-  background: var(--surface-2);
-  color: var(--accent);
+@media (hover: hover) {
+  .pager a:hover {
+    border-color: var(--accent-line);
+    background: var(--surface-2);
+    color: var(--accent);
+  }
 }
 
 .pager a span {
@@ -6957,9 +7232,11 @@ th.num {
   text-decoration: none;
 }
 
-.how-hero .crumb a:hover {
-  color: var(--accent-hover);
-  text-decoration: underline;
+@media (hover: hover) {
+  .how-hero .crumb a:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+  }
 }
 
 .how {
@@ -7001,10 +7278,12 @@ th.num {
   text-decoration: none;
 }
 
-.how-group .seg a:hover {
-  border-color: var(--line-3);
-  background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
-  color: var(--ink-1);
+@media (hover: hover) {
+  .how-group .seg a:hover {
+    border-color: var(--line-3);
+    background: color-mix(in srgb, var(--ink-1) 7%, var(--control));
+    color: var(--ink-1);
+  }
 }
 
 /* A gene, a station or a link of a drawing that the keyboard reaches is
@@ -7028,12 +7307,14 @@ th.num {
   color: var(--on-accent);
 }
 
-.how-group .seg a[aria-current="true"]:hover,
-.seg button:is([aria-pressed="true"], [aria-checked="true"]):hover,
-.tab[aria-selected="true"]:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
-  color: var(--on-accent);
+@media (hover: hover) {
+  .how-group .seg a[aria-current="true"]:hover,
+  .seg button:is([aria-pressed="true"], [aria-checked="true"]):hover,
+  .tab[aria-selected="true"]:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: var(--on-accent);
+  }
 }
 
 .how-tag {
@@ -7149,9 +7430,11 @@ th.num {
   cursor: pointer;
 }
 
-.how-steps button:hover {
-  background: var(--surface-3);
-  color: var(--ink-1);
+@media (hover: hover) {
+  .how-steps button:hover {
+    background: var(--surface-3);
+    color: var(--ink-1);
+  }
 }
 
 .how-steps button[aria-current="step"] {
@@ -7293,13 +7576,13 @@ th.num {
 /* An element waits for its step hidden: it fades, then leaves the pointer
    and the keyboard. */
 .trk [data-from] {
-  transition: opacity 0.4s ease, visibility 0s linear 0s;
+  transition: opacity var(--dur-reveal) var(--ease), visibility 0s linear 0s;
 }
 
 .trk .step-off {
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.4s ease, visibility 0s linear 0.4s;
+  transition: opacity var(--dur-reveal) var(--ease), visibility 0s linear var(--dur-reveal);
 }
 
 /* The name of a row still to come, quieter, and still readable: the same
@@ -7332,7 +7615,7 @@ th.num {
   border-color: var(--line-1);
   color: var(--ink-3);
   box-shadow: none;
-  cursor: default;
+  cursor: not-allowed;
 }
 
 .how-hint {
@@ -7777,13 +8060,17 @@ html:not(.js) .how-nav {
   text-decoration: none;
   color: var(--ink-soft);
   background: var(--bg);
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition: border-color var(--dur-state) var(--ease), background-color var(--dur-state) var(--ease);
 }
 
-.prose a.rp-card:hover {
-  border-color: var(--accent);
-  color: var(--ink-soft);
-  transform: translateY(-2px);
+/* A card that is a link answers a pointer as every link card does: an
+   accent edge on a raised fill, no lift. */
+@media (hover: hover) {
+  .prose a.rp-card:hover {
+    border-color: var(--accent-line);
+    background: var(--surface-2);
+    color: var(--ink-soft);
+  }
 }
 
 .rp-card img {
@@ -7965,13 +8252,15 @@ html:not(.js) .how-nav {
   background: var(--bg);
   color: var(--ink-soft);
   text-decoration: none;
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition: border-color var(--dur-state) var(--ease), background-color var(--dur-state) var(--ease);
 }
 
-.prose a.oc:hover {
-  border-color: var(--accent);
-  color: var(--ink-soft);
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .prose a.oc:hover {
+    border-color: var(--accent-line);
+    background: var(--surface-2);
+    color: var(--ink-soft);
+  }
 }
 
 .oc-head {
@@ -8686,8 +8975,13 @@ html:not(.js) .how-nav {
 }
 
 .net-link {
-  cursor: default;
   outline: none;
+}
+
+/* Each protein and link has its numbers to show: a target, as a gene is. */
+.net-link,
+.net-node {
+  cursor: pointer;
 }
 
 .net-link.kept .net-line {
@@ -8922,6 +9216,104 @@ html:not(.js) .how-nav {
 
   .dup-side + .dup-side {
     order: 2;
+  }
+}
+
+/* ── Touch, again ──
+   A finger needs a 40px target. Set here, after every control's own rules,
+   so a later rule of the same weight cannot take it back. */
+@media (pointer: coarse) {
+  .copy,
+  .mini-btn,
+  .tab,
+  .seg button,
+  .case .seg button,
+  .how-group .seg a,
+  .metro-opts label,
+  .icon-btn,
+  .gh-link,
+  .search-btn,
+  .sheet-close {
+    min-height: 40px;
+    min-width: 40px;
+  }
+
+  .sheet-close {
+    top: 4px;
+  }
+
+  /* A block's head holds the taller Copy with 4px above and below it, and
+     so does the strip over a block with no head. */
+  .code > .code-title {
+    min-height: 48px;
+  }
+
+  .code-title ~ .copy {
+    top: 4px;
+  }
+
+  .nav a {
+    padding-block: 10px;
+  }
+
+  .docs-nav li a,
+  .toc-inline a {
+    padding-block: 9px;
+  }
+
+  .foot ul {
+    gap: 0;
+  }
+
+  .foot li a {
+    display: inline-block;
+    padding-block: 11px;
+  }
+
+  /* The hero's phases: a taller press, the same thin bar. */
+  .hero-seg {
+    height: 40px;
+  }
+
+  .hero-seg::before,
+  .hero-seg i {
+    top: 18px;
+  }
+
+  /* Links set in a line of text grow round it without moving it. */
+  .to-top a,
+  .numbers-head a,
+  .crumb a {
+    display: inline-block;
+  }
+
+  .to-top a,
+  .edit a,
+  .numbers-head a,
+  .crumb a {
+    padding-block: 11px;
+    margin-block: -11px;
+  }
+
+  .prose .anchor {
+    padding: 6px 10px;
+    margin: -6px -10px;
+  }
+}
+
+@media (pointer: coarse) and (max-width: 860px) {
+  .prose .hx > .anchor {
+    margin-left: calc(0.3em - 10px);
+  }
+}
+
+@media (pointer: coarse) and (max-width: 600px) {
+  .code:not(.out):not(:has(> .code-title)) {
+    padding-top: 48px;
+  }
+
+  .code:not(.out):not(:has(> .code-title)) > .copy {
+    top: 4px;
   }
 }
 

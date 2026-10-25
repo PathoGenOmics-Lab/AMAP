@@ -6,7 +6,7 @@ resolves to the newest version.
 
 **APA**
 
-```text
+```apa
 Ruiz-Rodriguez, P., & Coscolla, M. (2026). AMAP (Version 1.0.1) [Computer software]. https://doi.org/10.5281/zenodo.8024446
 ```
 

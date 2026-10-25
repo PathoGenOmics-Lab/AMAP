@@ -1654,8 +1654,15 @@
     sheet.scrollTop = 0;
     // From the bar that names the section, the contents come first, with no
     // keyboard popping up over them; from anywhere else, the search box.
+    // An earlier search left in the box would hide the contents, so the bar
+    // clears it.
     var on = sheet.querySelector(".sheet-toc:not([hidden]) a.active");
     if (opener && opener === hereBar && on) {
+      var old = sheet.querySelector("input");
+      if (old.value) {
+        old.value = "";
+        sheetBox.run();
+      }
       on.focus({ preventScroll: true });
       var top = on.getBoundingClientRect().top - sheet.getBoundingClientRect().top;
       if (top > sheet.clientHeight - 60) sheet.scrollTop = top - sheet.clientHeight / 2;
@@ -1909,11 +1916,40 @@
     if (link && menuReady) revealInMenu(link, false);
   }
 
+  // The main section a heading belongs to: the heading itself, or for a
+  // subsection the main section before it.
+  function sectionOf(id) {
+    var section = null;
+    for (var i = 0; i < tocTargets.length; i++) {
+      if (tocTargets[i].level === 2) section = tocTargets[i].id;
+      if (tocTargets[i].id === id) return section;
+    }
+    return null;
+  }
+
+  // The addresses a contents link's own list holds (the sidebar's, the
+  // phone's box under the title, the sheet's, or the rail).
+  function listOf(link) {
+    if (!link._list) {
+      var root = link.closest(".page-toc, .toc-inline, .sheet-toc, .rail") || link.parentNode;
+      link._list = {};
+      root.querySelectorAll("a").forEach(function (a) {
+        link._list[a.getAttribute("href")] = true;
+      });
+    }
+    return link._list;
+  }
+
   function setCurrent(id) {
     currentId = id;
+    // The sheet and the phone's box list the main sections only: while a
+    // subsection is read they mark the section it is in, so the bar that
+    // names it opens the contents at their place, not the keyboard.
+    var section = sectionOf(id);
     var side = null;
     tocLinks.forEach(function (link) {
-      var on = link.getAttribute("href") === "#" + id;
+      var href = link.getAttribute("href");
+      var on = href === "#" + id || (!!section && section !== id && href === "#" + section && !listOf(link)["#" + id]);
       link.classList.toggle("active", on);
       if (on) link.setAttribute("aria-current", "location");
       else link.removeAttribute("aria-current");

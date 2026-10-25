@@ -206,7 +206,7 @@ than by reading it. Several changed what the pipeline outputs, so results from
 - **`environment.yml`**: Conda environment with pinned versions
 - **Louvain seed**: fixed to 42 for reproducible community detection
 
-### ⚡ Performance & HPC
+### ⚡ Performance and HPC
 - **Dynamic resource scaling**: memory grows with each retry attempt
 - **Node-local scratch**: `--scratch true` (default on SLURM/SGE/PBS/LSF)
 - **Diamond block size tuning**: auto-calculated from available RAM
@@ -223,7 +223,7 @@ than by reading it. Several changed what the pipeline outputs, so results from
 - **awk `close()`**: prevents file handle exhaustion on 500+ sample eggNOG splits
 - **JVM tuning docs**: NXF_OPTS guidance for large runs
 
-### 🧬 Organism-Agnostic
+### 🧬 Organism-agnostic
 - **Custom reference**: `--ref_annotation` + `--ref_genome` replaces built-in H37Rv
 - **Auto-detect mode**: `--skip_mycobrowser` auto-enabled when genus ≠ Mycobacterium
 - **Dynamic reference comparison**: report uses median distribution (not hardcoded H37Rv)
@@ -231,13 +231,13 @@ than by reading it. Several changed what the pipeline outputs, so results from
 - **Generic labels**: "Ratio to Median" instead of "Ratio to H37Rv"
 - **Manifest updated**: "Assisted Microbial Annotator Pipeline"
 
-### 📊 Output Quality
+### 📊 Output quality
 - **Clean proteome**: `{sample}-AMAP.clean.faa` without pseudogenes or internal stops
 - **Annotation QC**: per-sample metrics (genome size, GC%, coding density, hypothetical %, annotation rate)
 - **GFF3 spec compliance**: `##sequence-region` pragmas, attribute escaping, sorted features
 - **QC report section**: interactive table + coding density / hypothetical % / genome size plots
 
-### 🧪 Code Quality
+### 🧪 Code quality
 - **58 unit tests**: covering IDs, overlaps, reconciliation, validation, clean proteome, QC, merge
 - **GitHub Actions CI**: Python 3.9 + 3.11 matrix (currently disabled, ready to activate)
 - **Type hints**: core modules with `Coord`, `Coord3`, `CoordDict` aliases
@@ -255,7 +255,7 @@ than by reading it. Several changed what the pipeline outputs, so results from
 - **CHANGELOG**: this file
 - **Output tree**: documents `.clean.faa`, `.qc.tsv`, `pipeline_info/` new files
 
-### 🐛 Bug Fixes (85 total)
+### 🐛 Bug fixes (85 total)
 - 20 critical (🔴) + 65 improvements (🟡)
 - See commit history on `fix` branch for full details
 

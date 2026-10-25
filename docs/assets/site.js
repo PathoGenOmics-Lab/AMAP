@@ -1286,7 +1286,7 @@
         var pages = found.groups.length;
         var line =
           (found.partial ? "No page has every word: " : "") +
-          found.total + (found.total === 1 ? " result" : " results") + (found.partial ? " with all but one," : "") +
+          found.total + (found.total === 1 ? " result" : " results") + (found.partial ? " with all but one word," : "") +
           " in " + pages + (pages === 1 ? " page" : " pages");
         html += '<div class="r-count" aria-hidden="true">' + line + (pages > groups.length ? ", the best " + groups.length + " shown" : "") + "</div>";
         groups.forEach(function (g, gi) {
@@ -1483,7 +1483,7 @@
     return p && p.url && p.url !== here.url;
   });
   var lastVisited = trail[0] || null;
-  if (here.title !== "Not here") sessionSet("amap.trail", [here].concat(trail).slice(0, 5));
+  if (here.title !== "Page not found") sessionSet("amap.trail", [here].concat(trail).slice(0, 5));
 
   var GLASS =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>';
